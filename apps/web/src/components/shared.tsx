@@ -78,7 +78,7 @@ export function LogoMark({ dark = false }: { dark?: boolean }) {
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -103,18 +103,35 @@ export function SiteHeader() {
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
             <CurrencySelect />
-            <Link
-              to="/login"
-              className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/login"
-              className="bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra"
-            >
-              Become a contributor
-            </Link>
+            {user ? (
+              <>
+                <span className="max-w-[140px] truncate font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                  {user.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
+                  className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/login"
+                  className="bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra"
+                >
+                  Become a contributor
+                </Link>
+              </>
+            )}
           </div>
           <button
             onClick={() => setOpen(!open)}
@@ -274,6 +291,7 @@ export function PortalShell({
   children: ReactNode
 }) {
   const { pathname } = useLocation()
+  const { user, logout } = useAuth()
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[240px_1fr]">
       {/* sidebar */}
@@ -303,6 +321,15 @@ export function PortalShell({
           })}
         </nav>
         <div className="hidden border-t border-paper/10 px-6 py-5 lg:block">
+          {user && (
+            <button
+              type="button"
+              onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
+              className="mb-3 block font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
+            >
+              Log out · {user.accountType}
+            </button>
+          )}
           <Link to="/" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft transition-colors hover:text-terra">
             ← Back to marketplace
           </Link>
