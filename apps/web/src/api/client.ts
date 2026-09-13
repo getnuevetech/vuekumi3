@@ -1,5 +1,13 @@
-import type { AuthUser, PaginatedPhotos, PhotoDto } from '@vuekumi/shared'
-import type { AccountType, LoginInput, RegisterInput } from '@vuekumi/shared'
+import type {
+  AgreementDto,
+  AuthUser,
+  LicenseGrantDto,
+  LicenseProductDto,
+  LicenseQuoteDto,
+  PaginatedPhotos,
+  PhotoDto,
+} from '@vuekumi/shared'
+import type { AccountType, LoginInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -66,6 +74,85 @@ export const api = {
   },
 
   photo: (id: string) => request<PhotoDto>(`/api/photos/${id}`),
+
+  agreement: () => request<AgreementDto>('/api/agreements/current'),
+
+  licenses: () => request<{ items: LicenseProductDto[] }>('/api/licenses'),
+
+  photoLicenses: (id: string) => request<{ items: LicenseProductDto[] }>(`/api/photos/${id}/licenses`),
+
+  purchaseLicense: (photoId: string, type: string) =>
+    request<{ grant: LicenseGrantDto; existing?: boolean }>(`/api/photos/${photoId}/licenses`, {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    }),
+
+  requestQuote: (photoId: string, body: { territory: string; duration: string; channels: string; notes?: string }) =>
+    request<{ quote: LicenseQuoteDto }>(`/api/photos/${photoId}/quotes`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  myGrants: () => request<{ items: LicenseGrantDto[] }>('/api/licenses/grants'),
+  myQuotes: () => request<{ items: LicenseQuoteDto[] }>('/api/licenses/quotes'),
+  acceptQuote: (id: string) =>
+    request<{ grant: LicenseGrantDto }>(`/api/licenses/quotes/${id}/accept`, { method: 'POST' }),
+
+  async downloadCertificate(grantId: string) {
+    const res = await fetch(`${API_BASE}/api/licenses/grants/${grantId}/certificate`, { credentials: 'include' })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new ApiError((data as { error?: string }).error ?? res.statusText, res.status)
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `vuekumi-license-${grantId}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+
+  submitPhoto: (body: SubmitPhotoInput) =>
+    request<{ photo: PhotoDto }>('/api/contributor/photos', { method: 'POST', body: JSON.stringify(body) }),
+
+  contributorPhotos: () => request<{ items: PhotoDto[] }>('/api/contributor/photos'),
+
+  adminContent: (params?: { q?: string; status?: string; page?: number }) => {
+    const qs = new URLSearchParams()
+    if (params?.q) qs.set('q', params.q)
+    if (params?.status) qs.set('status', params.status)
+    if (params?.page) qs.set('page', String(params.page))
+    const q = qs.toString()
+    return request<{ items: AdminContentRow[]; total: number }>(`/api/admin/content${q ? `?${q}` : ''}`)
+  },
+
+  adminContentDetail: (id: string) => request<AdminContentDetail>(`/api/admin/content/${id}`),
+
+  patchRights: (id: string, body: Record<string, unknown>) =>
+    request<{ photo: PhotoDto }>(`/api/admin/content/${id}/rights`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  reviewModelRelease: (id: string, status: 'verified' | 'rejected', notes?: string) =>
+    request<{ ok: boolean }>(`/api/admin/model-releases/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ status, notes }),
+    }),
+
+  adminModeration: () => request<{ items: AdminModerationRow[] }>('/api/admin/moderation'),
+
+  decideModeration: (id: string, action: 'approve' | 'reject', notes?: string) =>
+    request<{ ok: boolean }>(`/api/admin/moderation/${id}/decide`, {
+      method: 'POST',
+      body: JSON.stringify({ action, notes }),
+    }),
+
+  adminQuotes: () => request<{ items: LicenseQuoteDto[] }>('/api/licenses/quotes'),
+
+  priceQuote: (id: string, quoteUsd: number) =>
+    request<{ quote: LicenseQuoteDto }>(`/api/admin/quotes/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quoteUsd, status: 'quoted' }),
+    }),
 
   sendPasswordReset: (userId: string) =>
     request<{ ok: boolean }>(`/api/auth/admin/send-password-reset/${userId}`, { method: 'POST' }),
@@ -198,6 +285,38 @@ export interface AiProvider {
   enabled: boolean
   hasKey: boolean
   keyMasked?: string
+}
+
+export interface AdminContentRow extends PhotoDto {
+  modelReleases?: { id: string; fileName: string; status: string; notes: string | null }[]
+  grantsCount?: number
+}
+
+export interface AdminContentDetail {
+  photo: PhotoDto
+  modelReleases: { id: string; fileName: string; status: string; notes: string | null }[]
+  grants: {
+    id: string
+    licenseType: string
+    licenseName: string
+    certificateCode: string
+    buyerEmail: string
+    amountUsd: number
+    createdAt: string
+  }[]
+  quotes: LicenseQuoteDto[]
+  moderation: { id: string; flag: string; status: string; notes: string | null }[]
+}
+
+export interface AdminModerationRow {
+  id: string
+  flag: string
+  status: string
+  submittedBy: string
+  createdAt: string
+  liveReady: boolean
+  liveBlockers: string[]
+  photo: PhotoDto
 }
 
 export interface AdminSetting {

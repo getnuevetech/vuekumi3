@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { toast } from 'sonner';
+import { api, ApiError } from '../api/client';
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -31,6 +33,12 @@ const icons = {
       <circle cx="12" cy="12" r="9" /><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 .9-3 2.2c0 3 6 1.5 6 4.6 0 1.3-1.3 2.2-3 2.2s-3-1.1-3-2.5" strokeLinecap="round" />
     </svg>
   ),
+  grid: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
   gear: (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="12" cy="12" r="3" />
@@ -45,6 +53,7 @@ export const adminLinks: PortalLink[] = [
   { to: '/admin/contributors', label: 'Contributors', icon: icons.users },
   { to: '/admin/agencies', label: 'Agencies', icon: icons.users },
   { to: '/admin/admins', label: 'Admins', icon: icons.shield },
+  { to: '/admin/content', label: 'Content', icon: icons.grid },
   { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
   { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
   { to: '/admin/countries', label: 'Countries', icon: icons.gear },
@@ -144,59 +153,83 @@ export function AdminDashboard() {
 /* ---------------- moderation ---------------- */
 
 export function AdminModeration() {
-  const [decided, setDecided] = useState<Record<string, 'approved' | 'rejected'>>({});
+  const [items, setItems] = useState<import('../api/client').AdminModerationRow[]>([])
+  const [busy, setBusy] = useState<string | null>(null)
+
+  const load = () => {
+    api.adminModeration().then((d) => setItems(d.items)).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load'))
+  }
+  useEffect(() => { load() }, [])
 
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Moderation</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Review queue.</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        {moderationQueue.length} of {adminStats.pendingReview} submissions shown — approve, reject, or escalate.
+        {items.length} pending. Photos go live only after approval and required rights.
       </p>
 
       <div className="mt-8 space-y-4">
-        {moderationQueue.map((m) => {
-          const photo = photoById(m.photoId);
-          if (!photo) return null;
-          const d = decided[m.id];
-          return (
-            <div key={m.id} className="flex flex-col gap-4 rounded-2xl border border-sand-soft bg-white p-4 sm:flex-row sm:items-center">
-              <img src={photo.src} alt={photo.title} className="h-36 w-full rounded-xl object-cover sm:h-28 sm:w-40" />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium">{photo.title}</p>
-                  <StatusPill status={d ?? m.flag} />
-                </div>
-                <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
-                  {m.id} · by @{m.submittedBy} · {photo.country} · {photo.category} · submitted {m.age} ago
-                </p>
-                <p className="mt-2 line-clamp-2 text-[13px] text-ink-soft">
-                  Check EXIF & source files, verify model releases for recognisable people,
-                  and confirm the image meets the technical quality bar before publishing.
-                </p>
+        {items.map((m) => (
+          <div key={m.id} className="flex flex-col gap-4 rounded-2xl border border-sand-soft bg-white p-4 sm:flex-row sm:items-center">
+            <img src={m.photo.src} alt={m.photo.title} className="h-36 w-full rounded-xl object-cover sm:h-28 sm:w-40" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">{m.photo.title}</p>
+                <StatusPill status={m.flag} />
+                <StatusPill status={m.liveReady ? 'active' : 'pending'} />
               </div>
-              <div className="flex shrink-0 gap-2 sm:flex-col">
-                <button
-                  onClick={() => setDecided((s) => ({ ...s, [m.id]: 'approved' }))}
-                  disabled={!!d}
-                  className="flex-1 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-[#2e6b3e] disabled:opacity-30 sm:flex-none"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => setDecided((s) => ({ ...s, [m.id]: 'rejected' }))}
-                  disabled={!!d}
-                  className="flex-1 rounded-full border border-sand px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-soft transition-colors hover:border-[#b3382e] hover:text-[#b3382e] disabled:opacity-30 sm:flex-none"
-                >
-                  Reject
-                </button>
-              </div>
+              <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
+                {m.id} · by @{m.submittedBy} · {m.photo.country} · {m.photo.category}
+              </p>
+              {!m.liveReady && (
+                <p className="mt-2 text-[13px] text-[#b3382e]">{m.liveBlockers.join('; ')}</p>
+              )}
             </div>
-          );
-        })}
+            <div className="flex shrink-0 gap-2 sm:flex-col">
+              <button
+                disabled={busy === m.id}
+                onClick={async () => {
+                  setBusy(m.id)
+                  try {
+                    await api.decideModeration(m.id, 'approve')
+                    toast.success('Published')
+                    load()
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Approve failed')
+                  } finally {
+                    setBusy(null)
+                  }
+                }}
+                className="flex-1 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-[#2e6b3e] disabled:opacity-30 sm:flex-none"
+              >
+                Approve
+              </button>
+              <button
+                disabled={busy === m.id}
+                onClick={async () => {
+                  setBusy(m.id)
+                  try {
+                    await api.decideModeration(m.id, 'reject')
+                    toast.success('Rejected')
+                    load()
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Reject failed')
+                  } finally {
+                    setBusy(null)
+                  }
+                }}
+                className="flex-1 rounded-full border border-sand px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-soft transition-colors hover:border-[#b3382e] hover:text-[#b3382e] disabled:opacity-30 sm:flex-none"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-sm text-ink-soft">Queue is clear.</p>}
       </div>
     </Shell>
-  );
+  )
 }
 
 /* ---------------- payouts ---------------- */

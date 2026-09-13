@@ -8,6 +8,7 @@ export const registerSchema = z.object({
   name: z.string().min(1).max(120),
   accountType: z.enum(['contributor', 'user', 'agency']),
   country: z.string().min(2).max(2).optional(),
+  acceptAgreement: z.boolean().optional(),
 })
 
 export const loginSchema = z.object({

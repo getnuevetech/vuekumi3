@@ -54,6 +54,22 @@ enum LicenseType {
   premium
 }
 
+enum GrantLicenseType {
+  royalty_free
+  commercial
+  extended
+  editorial
+  rights_managed
+  exclusive
+}
+
+enum ModelReleaseStatus {
+  not_required
+  pending
+  verified
+  rejected
+}
+
 enum PlatformAgreementStatus {
   accepted
   revoked
@@ -84,6 +100,9 @@ model User {
   platformAgreements PlatformAgreement[]
   auditLogs          AuditLog[]           @relation("AuditActor")
   moderationReviews  ModerationItem[]     @relation("ModerationReviewer")
+  licenseGrants       LicenseGrant[]
+  modelReleaseReviews ModelRelease[]  @relation("ModelReleaseReviewer")
+  licenseQuotes       LicenseQuote[]  @relation("QuoteRequester")
 
   @@index([accountType])
   @@index([status])
@@ -140,8 +159,10 @@ model Agency {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  owner   User           @relation("AgencyOwner", fields: [ownerUserId], references: [id])
-  members AgencyMember[]
+  owner         User           @relation("AgencyOwner", fields: [ownerUserId], references: [id])
+  members       AgencyMember[]
+  licenseGrants LicenseGrant[]
+  licenseQuotes LicenseQuote[]
 }
 
 model AgencyMember {
@@ -179,10 +200,15 @@ model Photo {
   updatedAt             DateTime    @updatedAt
   publishedAt           DateTime?
 
+  exclusiveSold    Boolean           @default(false)
+
   contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
   tags             PhotoTag[]
   rightsRecord     RightsRecord?
   moderationItems  ModerationItem[]
+  modelReleases    ModelRelease[]
+  licenseGrants    LicenseGrant[]
+  licenseQuotes    LicenseQuote[]
 
   @@index([status])
   @@index([category])
@@ -202,17 +228,119 @@ model PhotoTag {
 }
 
 model RightsRecord {
-  id                   String   @id @default(cuid())
-  photoId              String   @unique
-  copyrightVerified    Boolean  @default(false)
-  modelReleaseRequired Boolean  @default(false)
-  modelReleaseStatus   String   @default("not_required")
+  id                   String             @id @default(cuid())
+  photoId              String             @unique
+  copyrightVerified    Boolean            @default(false)
+  copyrightHolder      String?
+  modelReleaseRequired Boolean            @default(false)
+  modelReleaseStatus   ModelReleaseStatus @default(not_required)
   modelReleaseFileKey  String?
-  platformRightsOk     Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  platformRightsOk     Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+}
+
+model ModelRelease {
+  id           String             @id @default(cuid())
+  photoId      String
+  fileName     String
+  notes        String?
+  status       ModelReleaseStatus @default(pending)
+  verifiedById String?
+  verifiedAt   DateTime?
+  createdAt    DateTime           @default(now())
+
+  photo      Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("ModelReleaseReviewer", fields: [verifiedById], references: [id])
+
+  @@index([photoId])
+  @@index([status])
+}
+
+model LicenseProduct {
+  id                   String           @id
+  type                 GrantLicenseType @unique
+  name                 String
+  description          String
+  defaultUsd           Float            @default(0)
+  points               String[]
+  commercialAllowed    Boolean          @default(true)
+  requiresModelRelease Boolean          @default(false)
+  agencyPreferred      Boolean          @default(false)
+  quoteOnly            Boolean          @default(false)
+  exclusiveOptIn       Boolean          @default(false)
+  sortOrder            Int              @default(0)
+  active               Boolean          @default(true)
+  grants               LicenseGrant[]
+  quotes               LicenseQuote[]
+}
+
+enum QuoteStatus {
+  pending
+  quoted
+  accepted
+  declined
+}
+
+model LicenseQuote {
+  id          String         @id @default(cuid())
+  photoId     String
+  requesterId String
+  agencyId    String?
+  productId   String
+  territory   String
+  duration    String
+  channels    String
+  notes       String?
+  quoteUsd    Float?
+  status      QuoteStatus    @default(pending)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  photo     Photo          @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  requester User           @relation("QuoteRequester", fields: [requesterId], references: [id])
+  agency    Agency?        @relation(fields: [agencyId], references: [id])
+  product   LicenseProduct @relation(fields: [productId], references: [id])
+  grants    LicenseGrant[]
+
+  @@index([photoId])
+  @@index([requesterId])
+  @@index([status])
+}
+
+model LicenseGrant {
+  id              String           @id @default(cuid())
+  buyerId         String
+  photoId         String
+  productId       String
+  agencyId        String?
+  quoteId         String?          @unique
+  licenseType     GrantLicenseType
+  amountUsd       Float
+  currency        String           @default("USD")
+  amountLocal     Float
+  scopeJson       Json
+  certificateCode String           @unique
+  createdAt       DateTime         @default(now())
+
+  buyer   User           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  photo   Photo          @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  product LicenseProduct @relation(fields: [productId], references: [id])
+  agency  Agency?        @relation(fields: [agencyId], references: [id])
+  quote   LicenseQuote?  @relation(fields: [quoteId], references: [id])
+
+  @@index([buyerId])
+  @@index([photoId])
+}
+
+model AgreementVersion {
+  version     String   @id
+  title       String
+  body        String
+  current     Boolean  @default(false)
+  publishedAt DateTime @default(now())
 }
 
 model PlatformAgreement {

@@ -143,6 +143,27 @@ export default function Pricing() {
           ))}
         </div>
 
+        <Reveal>
+          <div className="mt-20">
+            <SectionHead kicker="Licence types" title="Permission, not ownership." />
+            <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                { name: 'Royalty-Free', note: 'Free collection. Commercial use. Model release required if people are recognisable.' },
+                { name: 'Commercial', note: 'Premium collection at the photo price. Full resolution. 50% to the photographer.' },
+                { name: 'Extended Commercial', note: '$49. Merchandise, unlimited print, broadcast.' },
+                { name: 'Editorial', note: 'News and commentary only. Model release not required.' },
+                { name: 'Rights-Managed', note: 'Quoted by territory, duration and channels. Not a fixed price.' },
+                { name: 'Exclusive', note: 'Contributor opt-in per photo. Sale delists the image.' },
+              ].map((item) => (
+                <div key={item.name} className="border border-sand-soft bg-white p-5">
+                  <h3 className="font-serif-display text-xl font-light">{item.name}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{item.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+
         {/* contributor economics */}
         <Reveal>
           <div className="mt-24 rounded-3xl bg-cream p-8 md:p-12">

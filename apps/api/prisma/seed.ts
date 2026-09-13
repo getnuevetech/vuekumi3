@@ -15,6 +15,9 @@ async function main() {
   const userPassword = await hashPassword('User12345!')
 
   await prisma.auditLog.deleteMany()
+  await prisma.licenseGrant.deleteMany()
+  await prisma.licenseQuote.deleteMany()
+  await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
   await prisma.photoTag.deleteMany()
   await prisma.rightsRecord.deleteMany()
@@ -109,9 +112,15 @@ async function main() {
     },
   })
 
+  const peopleCategories = new Set(['People', 'Fashion'])
+  const peopleTags = new Set(['portrait', 'model', 'woman', 'man', 'dance', 'maasai'])
+
   for (const p of photos) {
     const contributorId = contributorUsers.get(p.photographer)
     if (!contributorId) continue
+
+    const hasPeople = peopleCategories.has(p.category) || p.tags.some((t) => peopleTags.has(t))
+    const photographer = photographers.find((ph) => ph.handle === p.photographer)
 
     await prisma.photo.create({
       data: {
@@ -127,14 +136,74 @@ async function main() {
         downloads: p.downloads,
         views: p.views,
         likes: p.likes,
+        hasRecognizablePeople: hasPeople,
+        exclusiveAvailable: p.id === 'afr-011',
         publishedAt: new Date(),
         tags: { create: p.tags.map((tag) => ({ tag })) },
         rightsRecord: {
           create: {
             copyrightVerified: true,
+            copyrightHolder: photographer?.name ?? 'Contributor',
             platformRightsOk: true,
-            modelReleaseRequired: p.category === 'People',
-            modelReleaseStatus: p.category === 'People' ? 'verified' : 'not_required',
+            modelReleaseRequired: hasPeople,
+            modelReleaseStatus: hasPeople ? 'verified' : 'not_required',
+          },
+        },
+        ...(hasPeople
+          ? {
+              modelReleases: {
+                create: {
+                  fileName: `${p.id}-model-release.pdf`,
+                  notes: 'Seeded verified release',
+                  status: 'verified',
+                  verifiedById: admin.id,
+                  verifiedAt: new Date(),
+                },
+              },
+            }
+          : {}),
+      },
+    })
+  }
+
+  const pendingContributor = contributorUsers.get('amara-okafor')
+  if (pendingContributor) {
+    await prisma.photo.create({
+      data: {
+        id: 'afr-pend-1',
+        contributorId: pendingContributor,
+        title: 'Studio Sitting, Unreleased',
+        description: 'Pending rights review — recognisable person, model release uploaded.',
+        category: 'People',
+        country: 'Nigeria',
+        licenseType: 'premium',
+        price: 14,
+        status: 'pending',
+        src: '/images/photos/fashion-portrait.jpg',
+        hasRecognizablePeople: true,
+        exclusiveAvailable: true,
+        tags: { create: [{ tag: 'portrait' }, { tag: 'studio' }] },
+        rightsRecord: {
+          create: {
+            copyrightVerified: true,
+            copyrightHolder: 'Amara Okafor',
+            platformRightsOk: true,
+            modelReleaseRequired: true,
+            modelReleaseStatus: 'pending',
+          },
+        },
+        modelReleases: {
+          create: {
+            fileName: 'amara-studio-release.pdf',
+            notes: 'Awaiting admin verification',
+            status: 'pending',
+          },
+        },
+        moderationItems: {
+          create: {
+            flag: 'copyright check',
+            submittedBy: 'amara-okafor',
+            status: 'pending',
           },
         },
       },
@@ -143,6 +212,8 @@ async function main() {
 
   const { ALL_COUNTRIES, DEFAULT_GATEWAYS, DEFAULT_AI_PROVIDERS } = await import('../src/data/countries.js')
   const { syncExchangeRates } = await import('../src/lib/fx.js')
+  const { seedLicenseCatalog } = await import('../src/lib/licenses-seed.js')
+  await seedLicenseCatalog()
 
   for (const c of ALL_COUNTRIES) {
     await prisma.country.upsert({

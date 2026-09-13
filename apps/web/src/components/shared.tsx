@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { fmt, type Photo } from '../data/content'
 import { api, type GeoCountry } from '../api/client'
 import { useCurrency } from '../context/CurrencyContext'
+import { useAuth } from '../context/AuthContext'
 
 /* ---------------- Reveal on scroll ---------------- */
 
@@ -77,6 +78,7 @@ export function LogoMark({ dark = false }: { dark?: boolean }) {
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const { user } = useAuth()
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -95,6 +97,7 @@ export function SiteHeader() {
           <nav className="hidden items-center gap-7 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:flex">
             <a href="/#explore" className="link-slide hover:text-terra">Explore</a>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
+            {user && <Link to="/licenses" className="link-slide hover:text-terra">Licences</Link>}
             <Link to="/contributor" className="link-slide hover:text-terra">Contributor</Link>
             <Link to="/admin" className="link-slide hover:text-terra">Admin</Link>
           </nav>
@@ -350,6 +353,20 @@ export function StatusPill({ status }: { status: string }) {
     reported: 'bg-[#fbe7e4] text-[#b3382e]',
     premium: 'bg-terra text-paper',
     free: 'bg-cream text-ink',
+    pending: 'bg-[#f5ece5] text-[#bc773f]',
+    verified: 'bg-[#e7f2e9] text-[#2e6b3e]',
+    rejected: 'bg-[#fbe7e4] text-[#b3382e]',
+    delisted: 'bg-[#fbe7e4] text-[#b3382e]',
+    exclusive: 'bg-[#f3e9f5] text-[#7a4a8f]',
+    editorial: 'bg-[#e8eef7] text-[#33588f]',
+    commercial: 'bg-terra text-paper',
+    extended: 'bg-ink text-paper',
+    royalty_free: 'bg-cream text-ink',
+    rights_managed: 'bg-[#e8eef7] text-[#33588f]',
+    quoted: 'bg-[#f5ece5] text-[#bc773f]',
+    accepted: 'bg-[#e7f2e9] text-[#2e6b3e]',
+    declined: 'bg-[#fbe7e4] text-[#b3382e]',
+    not_required: 'bg-cream text-ink',
     override: 'bg-[#f5ece5] text-[#bc773f]',
     auto: 'bg-[#e7f2e9] text-[#2e6b3e]',
     default: 'bg-cream text-ink',

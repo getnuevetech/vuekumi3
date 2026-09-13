@@ -3,11 +3,13 @@ import { config } from './config.js'
 import { seedCountries } from './lib/geo.js'
 import { syncExchangeRates } from './lib/fx.js'
 import { prisma } from './lib/prisma.js'
+import { seedLicenseCatalog } from './lib/licenses-seed.js'
 
 const app = await buildApp()
 
 try {
   await seedCountries()
+  await seedLicenseCatalog()
   if ((await prisma.exchangeRate.count()) === 0) {
     await syncExchangeRates().catch((err) => app.log.warn({ err }, 'initial FX sync failed'))
   }

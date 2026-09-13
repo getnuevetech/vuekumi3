@@ -28,7 +28,8 @@ export async function photoRoutes(app: FastifyInstance) {
         where,
         include: {
           tags: true,
-          contributor: { include: { contributorProfile: true } },
+          rightsRecord: true,
+          contributor: { include: { contributorProfile: true, platformAgreements: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (query.page - 1) * query.limit,
@@ -38,7 +39,11 @@ export async function photoRoutes(app: FastifyInstance) {
 
     return {
       items: photos.map((p) =>
-        serializePhoto(p, p.contributor.contributorProfile?.handle ?? p.contributorId),
+        serializePhoto(
+          p,
+          p.contributor.contributorProfile?.handle ?? p.contributorId,
+          p.contributor.platformAgreements.some((a) => a.status === 'accepted'),
+        ),
       ),
       page: query.page,
       limit: query.limit,
@@ -53,7 +58,8 @@ export async function photoRoutes(app: FastifyInstance) {
       where: { id },
       include: {
         tags: true,
-        contributor: { include: { contributorProfile: true } },
+        rightsRecord: true,
+        contributor: { include: { contributorProfile: true, platformAgreements: true } },
       },
     })
 
@@ -66,6 +72,10 @@ export async function photoRoutes(app: FastifyInstance) {
       data: { views: { increment: 1 } },
     })
 
-    return serializePhoto(photo, photo.contributor.contributorProfile?.handle ?? photo.contributorId)
+    return serializePhoto(
+      photo,
+      photo.contributor.contributorProfile?.handle ?? photo.contributorId,
+      photo.contributor.platformAgreements.some((a) => a.status === 'accepted'),
+    )
   })
 }

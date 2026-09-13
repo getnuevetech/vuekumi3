@@ -18,6 +18,8 @@ import { AdminSettings } from './pages/AdminSettings'
 import { AdminAdmins, AdminAgencies, AdminContributors, AdminUsers } from './pages/AdminAccounts'
 import { AdminCountries, AdminRates } from './pages/AdminGeo'
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
+import { AdminContent } from './pages/AdminContent'
+import Licenses from './pages/Licenses'
 import { ProtectedRoute } from './guards/ProtectedRoute'
 
 function ScrollToTop() {
@@ -40,6 +42,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />
 
         <Route path="/contributor" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorDashboard /></ProtectedRoute>} />
         <Route path="/contributor/upload" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorUpload /></ProtectedRoute>} />
@@ -53,6 +56,7 @@ export default function App() {
         <Route path="/admin/contributors" element={<ProtectedRoute allowed={['admin']}><AdminContributors /></ProtectedRoute>} />
         <Route path="/admin/agencies" element={<ProtectedRoute allowed={['admin']}><AdminAgencies /></ProtectedRoute>} />
         <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']}><AdminAdmins /></ProtectedRoute>} />
+        <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']}><AdminContent /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']}><AdminModeration /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']}><AdminPayouts /></ProtectedRoute>} />
         <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']}><AdminCountries /></ProtectedRoute>} />

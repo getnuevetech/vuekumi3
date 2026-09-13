@@ -11,6 +11,9 @@ import { geoRoutes } from './routes/geo.js'
 import { adminGeoRoutes } from './routes/admin-geo.js'
 import { adminAccountRoutes } from './routes/admin-accounts.js'
 import { adminIntegrationRoutes } from './routes/admin-integrations.js'
+import { licenseRoutes } from './routes/licenses.js'
+import { contributorRoutes } from './routes/contributor.js'
+import { adminContentRoutes } from './routes/admin-content.js'
 
 export async function buildApp() {
   const app = Fastify({ logger: true })
@@ -32,6 +35,9 @@ export async function buildApp() {
     await api.register(adminGeoRoutes)
     await api.register(adminAccountRoutes)
     await api.register(adminIntegrationRoutes)
+    await api.register(licenseRoutes)
+    await api.register(contributorRoutes)
+    await api.register(adminContentRoutes)
   }, { prefix: '/api' })
 
   return app

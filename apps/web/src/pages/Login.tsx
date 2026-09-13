@@ -14,6 +14,8 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [country, setCountry] = useState('')
+  const [acceptAgreement, setAcceptAgreement] = useState(false)
+  const [agreementTitle, setAgreementTitle] = useState('VueKumi Contributor Platform Agreement')
   const [countries, setCountries] = useState<GeoCountry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,6 +30,9 @@ export default function Login() {
     api.countries(role === 'contributor')
       .then((d) => setCountries(d.countries))
       .catch(() => setCountries([]))
+    if (role === 'contributor') {
+      api.agreement().then((a) => setAgreementTitle(a.title)).catch(() => undefined)
+    }
   }, [mode, role])
 
   return (
@@ -96,7 +101,14 @@ export default function Login() {
                 const user =
                   mode === 'signin'
                     ? await login({ email, password })
-                    : await register({ email, password, name, accountType, country: country || undefined })
+                    : await register({
+                        email,
+                        password,
+                        name,
+                        accountType,
+                        country: country || undefined,
+                        acceptAgreement: accountType === 'contributor' ? acceptAgreement : undefined,
+                      })
                 const dest = redirect && redirect.startsWith('/') ? redirect : homeForAccountType(user.accountType)
                 navigate(dest)
               } catch (err) {
@@ -141,6 +153,18 @@ export default function Login() {
               placeholder="Email address"
               className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
             />
+            {mode === 'signup' && role === 'contributor' && (
+              <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
+                <input
+                  type="checkbox"
+                  required
+                  checked={acceptAgreement}
+                  onChange={(e) => setAcceptAgreement(e.target.checked)}
+                  className="mt-0.5 accent-[#bc773f]"
+                />
+                I accept the {agreementTitle}. Vuekumi receives a platform licence to sublicense usage rights — not ownership of my photographs.
+              </label>
+            )}
             <input
               required
               type="password"

@@ -93,6 +93,9 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     if (body.accountType === 'contributor') {
+      if (!body.acceptAgreement) {
+        return reply.code(400).send({ error: 'Contributors must accept the VueKumi platform agreement' })
+      }
       try {
         await assertContributorCountry(body.country)
       } catch (err) {
