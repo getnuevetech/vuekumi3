@@ -14,6 +14,7 @@ import {
 import {
   AdminDashboard, AdminModeration, AdminPayouts, AdminUsers,
 } from './pages/Admin'
+import { AdminSettings } from './pages/AdminSettings'
 import { ProtectedRoute } from './guards/ProtectedRoute'
 
 function ScrollToTop() {
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']}><AdminModeration /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']}><AdminUsers /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']}><AdminPayouts /></ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute allowed={['admin']}><AdminSettings /></ProtectedRoute>} />
 
         <Route path="*" element={<Home />} />
       </Routes>

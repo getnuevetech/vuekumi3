@@ -65,6 +65,8 @@ npm run dev:web   # http://localhost:3000
 
 Copy `.env.example` to `apps/api/.env` and adjust as needed.
 
+Payment, email, AI, and storage keys are managed in **Admin → Settings** after login.
+
 ## Deploy on AWS Lightsail (Ubuntu)
 
 Full guide: **[deploy/lightsail/README.md](deploy/lightsail/README.md)**

@@ -69,6 +69,26 @@ export const api = {
 
   sendPasswordReset: (userId: string) =>
     request<{ ok: boolean }>(`/api/auth/admin/send-password-reset/${userId}`, { method: 'POST' }),
+
+  adminSettings: () =>
+    request<{ settings: AdminSetting[] }>('/api/admin/settings'),
+
+  updateAdminSettings: (settings: { key: string; value: string }[]) =>
+    request<{ settings: AdminSetting[] }>('/api/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ settings }),
+    }),
+}
+
+export interface AdminSetting {
+  key: string
+  label: string
+  group: string
+  secret: boolean
+  placeholder?: string
+  configured: boolean
+  value: string
+  masked?: string
 }
 
 export function homeForAccountType(accountType: AccountType): string {

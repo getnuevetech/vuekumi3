@@ -300,3 +300,13 @@ model AuditLog {
   @@index([actorId])
   @@index([entityType, entityId])
 }
+
+model PlatformSetting {
+  key       String   @id
+  value     String
+  secret    Boolean  @default(true)
+  label     String?
+  group     String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}

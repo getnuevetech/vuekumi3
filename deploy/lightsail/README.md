@@ -85,6 +85,9 @@ COOKIE_SECRET=<generated>
 WEB_URL=http://YOUR_STATIC_IP        # change to https:// after SSL step
 ```
 
+Do **not** put Stripe / Flutterwave / OpenAI / Resend keys in `.env`.
+After deploy, sign in as admin and open **Settings** to paste those keys.
+
 ---
 
 ## 4. Deploy
@@ -109,6 +112,14 @@ This will:
 | Contributor | amara-okafor@vuekumi.demo | User12345! |
 
 Change the admin password immediately after first login.
+
+Then open **Admin → Settings** and add:
+
+- Stripe (secret, publishable, webhook)
+- Flutterwave (secret, public)
+- Resend (email)
+- OpenAI + Replicate (AI)
+- Object storage credentials
 
 ---
 
