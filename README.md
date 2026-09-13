@@ -64,3 +64,17 @@ npm run dev:web   # http://localhost:3000
 ## Environment
 
 Copy `.env.example` to `apps/api/.env` and adjust as needed.
+
+## Deploy on AWS Lightsail (Ubuntu)
+
+Full guide: **[deploy/lightsail/README.md](deploy/lightsail/README.md)**
+
+```bash
+# On a fresh Ubuntu Lightsail instance
+git clone https://github.com/getnuevetech/vuekumi3.git /opt/vuekumi && cd /opt/vuekumi
+sudo bash deploy/lightsail/setup.sh
+cp deploy/lightsail/env.production.example .env && nano .env
+bash deploy/lightsail/deploy.sh
+# After DNS points to your static IP:
+bash deploy/lightsail/ssl-init.sh your-domain.com you@email.com
+```

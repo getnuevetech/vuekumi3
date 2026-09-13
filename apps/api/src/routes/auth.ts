@@ -21,7 +21,7 @@ import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 const PLATFORM_AGREEMENT_VERSION = '1.0'
 
 function setAuthCookies(reply: FastifyReply, accessToken: string, refreshToken: string) {
-  const secure = !config.isDev
+  const secure = config.cookieSecure
   reply.setCookie('access_token', accessToken, {
     httpOnly: true,
     secure,

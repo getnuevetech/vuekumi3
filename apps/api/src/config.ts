@@ -18,4 +18,5 @@ export const config = {
   resetTokenHours: 1,
   verifyTokenHours: 48,
   isDev: (process.env.NODE_ENV ?? 'development') !== 'production',
+  cookieSecure: (process.env.WEB_URL ?? '').startsWith('https://'),
 }

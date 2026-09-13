@@ -1,6 +1,10 @@
 import { PrismaClient } from '@prisma/client'
-import { hashPassword } from '../src/lib/password.js'
+import bcrypt from 'bcryptjs'
 import { photos, photographers } from './seed-data.js'
+
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12)
+}
 
 const prisma = new PrismaClient()
 
