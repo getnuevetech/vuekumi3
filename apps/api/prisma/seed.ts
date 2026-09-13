@@ -36,7 +36,7 @@ async function main() {
       passwordHash: adminPassword,
       name: 'Vuekumi Admin',
       accountType: 'admin',
-      country: 'Kenya',
+      country: 'KE',
       emailVerifiedAt: new Date(),
       adminProfile: { create: { adminRole: 'super_admin' } },
     },
@@ -51,7 +51,7 @@ async function main() {
         passwordHash: userPassword,
         name: ph.name,
         accountType: 'contributor',
-        country: ph.location.split(', ').pop() ?? 'Africa',
+        country: ({ Nigeria: 'NG', 'South Africa': 'ZA', Ghana: 'GH', Ethiopia: 'ET', Kenya: 'KE' } as Record<string, string>)[ph.location.split(', ').pop() ?? ''] ?? 'NG',
         avatarUrl: ph.avatar,
         emailVerifiedAt: new Date(),
         contributorProfile: {
@@ -78,7 +78,7 @@ async function main() {
       passwordHash: userPassword,
       name: 'Zuri Hassan',
       accountType: 'user',
-      country: 'Tanzania',
+      country: 'TZ',
       emailVerifiedAt: new Date(),
       userProfile: { create: { subscriptionPlan: 'free' } },
     },
@@ -90,7 +90,7 @@ async function main() {
       passwordHash: userPassword,
       name: 'DDB Lagos',
       accountType: 'agency',
-      country: 'Nigeria',
+      country: 'NG',
       emailVerifiedAt: new Date(),
       status: 'active',
     },
@@ -138,6 +138,59 @@ async function main() {
           },
         },
       },
+    })
+  }
+
+  const { ALL_COUNTRIES, DEFAULT_GATEWAYS, DEFAULT_AI_PROVIDERS } = await import('../src/data/countries.js')
+  const { syncExchangeRates } = await import('../src/lib/fx.js')
+
+  for (const c of ALL_COUNTRIES) {
+    await prisma.country.upsert({
+      where: { code: c.code },
+      create: {
+        code: c.code,
+        name: c.name,
+        currency: c.currency,
+        currencyName: c.currencyName,
+        region: c.region,
+        contributorEligible: c.contributorEligible,
+        sortOrder: c.sortOrder ?? (c.region === 'africa' ? 10 : 50),
+      },
+      update: {
+        name: c.name,
+        currency: c.currency,
+        currencyName: c.currencyName,
+        region: c.region,
+        contributorEligible: c.contributorEligible,
+      },
+    })
+  }
+
+  for (const g of DEFAULT_GATEWAYS) {
+    await prisma.paymentGateway.upsert({
+      where: { slug: g.slug },
+      create: g,
+      update: { name: g.name, kind: g.kind, countries: g.countries, currencies: g.currencies, notes: g.notes },
+    })
+  }
+
+  for (const p of DEFAULT_AI_PROVIDERS) {
+    await prisma.aiProvider.upsert({
+      where: { slug: p.slug },
+      create: p,
+      update: { name: p.name, purpose: p.purpose, apiBaseUrl: p.apiBaseUrl, notes: p.notes },
+    })
+  }
+
+  try {
+    const fx = await syncExchangeRates()
+    console.log(`Exchange rates synced: ${fx.updated} currencies`)
+  } catch (err) {
+    console.warn('Exchange rate sync skipped:', err)
+    await prisma.exchangeRate.upsert({
+      where: { currency: 'USD' },
+      create: { currency: 'USD', rateToUsd: 1, source: 'auto', fetchedAt: new Date() },
+      update: { rateToUsd: 1 },
     })
   }
 

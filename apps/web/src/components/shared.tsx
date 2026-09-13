@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { fmt, type Photo } from '../data/content'
+import { api, type GeoCountry } from '../api/client'
+import { useCurrency } from '../context/CurrencyContext'
 
 /* ---------------- Reveal on scroll ---------------- */
 
@@ -29,6 +31,26 @@ export function Reveal({
     <div ref={ref} className={`reveal ${visible ? 'is-visible' : ''} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
       {children}
     </div>
+  )
+}
+
+function CurrencySelect() {
+  const { quote, setCountry } = useCurrency()
+  const [countries, setCountries] = useState<GeoCountry[]>([])
+  useEffect(() => {
+    api.countries().then((d) => setCountries(d.countries)).catch(() => undefined)
+  }, [])
+  return (
+    <select
+      aria-label="Display currency"
+      value={quote.countryCode ?? 'US'}
+      onChange={(e) => setCountry(e.target.value)}
+      className="max-w-[140px] border border-sand bg-transparent px-2 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft outline-none"
+    >
+      {countries.map((c) => (
+        <option key={c.code} value={c.code}>{c.code} · {c.currency}</option>
+      ))}
+    </select>
   )
 }
 
@@ -77,6 +99,7 @@ export function SiteHeader() {
             <Link to="/admin" className="link-slide hover:text-terra">Admin</Link>
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
+            <CurrencySelect />
             <Link
               to="/login"
               className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
@@ -327,6 +350,9 @@ export function StatusPill({ status }: { status: string }) {
     reported: 'bg-[#fbe7e4] text-[#b3382e]',
     premium: 'bg-terra text-paper',
     free: 'bg-cream text-ink',
+    override: 'bg-[#f5ece5] text-[#bc773f]',
+    auto: 'bg-[#e7f2e9] text-[#2e6b3e]',
+    default: 'bg-cream text-ink',
   }
   return (
     <span className={`inline-block px-2 py-0.5 font-mono-tech text-[9px] uppercase tracking-[0.12em] ${map[status] ?? 'bg-cream text-ink'}`}>

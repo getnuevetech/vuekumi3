@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import {
-  adminStats, fmt, moderationQueue, money, pendingPayouts, photoById, platformUsers, revenueSeries,
+  adminStats, fmt, moderationQueue, money, pendingPayouts, photoById, revenueSeries,
 } from '../data/content';
 
 const icons = {
@@ -41,9 +41,16 @@ const icons = {
 
 export const adminLinks: PortalLink[] = [
   { to: '/admin', label: 'Overview', icon: icons.dash },
-  { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
   { to: '/admin/users', label: 'Users', icon: icons.users },
+  { to: '/admin/contributors', label: 'Contributors', icon: icons.users },
+  { to: '/admin/agencies', label: 'Agencies', icon: icons.users },
+  { to: '/admin/admins', label: 'Admins', icon: icons.shield },
+  { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
   { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
+  { to: '/admin/countries', label: 'Countries', icon: icons.gear },
+  { to: '/admin/rates', label: 'FX rates', icon: icons.money },
+  { to: '/admin/gateways', label: 'Gateways', icon: icons.money },
+  { to: '/admin/ai', label: 'AI APIs', icon: icons.gear },
   { to: '/admin/settings', label: 'Settings', icon: icons.gear },
 ];
 
@@ -187,89 +194,6 @@ export function AdminModeration() {
             </div>
           );
         })}
-      </div>
-    </Shell>
-  );
-}
-
-/* ---------------- users ---------------- */
-
-export function AdminUsers() {
-  const [q, setQ] = useState('');
-  const [role, setRole] = useState<'all' | 'member' | 'contributor' | 'admin'>('all');
-  const shown = platformUsers.filter(
-    (u) =>
-      (role === 'all' || u.role === role) &&
-      (u.name.toLowerCase().includes(q.toLowerCase()) ||
-        u.email.toLowerCase().includes(q.toLowerCase()) ||
-        u.country.toLowerCase().includes(q.toLowerCase())),
-  );
-
-  return (
-    <Shell>
-      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Users</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Accounts.</h1>
-      <p className="mt-1 text-sm text-ink-soft">Search, filter and manage members & contributors.</p>
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name, email, country…"
-          className="w-full max-w-xs rounded-full border border-sand-soft bg-white px-4 py-2 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
-        />
-        <div className="flex rounded-full border border-sand-soft bg-cream p-1">
-          {(['all', 'member', 'contributor', 'admin'] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRole(r)}
-              className={`rounded-full px-3.5 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] transition-colors ${
-                role === r ? 'bg-ink text-paper' : 'text-ink-soft hover:text-ink'
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-sand-soft bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-              <th className="px-4 py-3 font-medium">User</th>
-              <th className="px-4 py-3 font-medium">Role</th>
-              <th className="px-4 py-3 font-medium">Country</th>
-              <th className="px-4 py-3 font-medium">Joined</th>
-              <th className="px-4 py-3 text-right font-medium">Downloads</th>
-              <th className="px-4 py-3 text-right font-medium">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((u) => (
-              <tr key={u.id} className="border-b border-sand-soft last:border-0 hover:bg-cream/50">
-                <td className="px-4 py-3">
-                  <p className="font-medium">{u.name}</p>
-                  <p className="font-mono-tech text-[10px] text-ink-faint">{u.email} · {u.id}</p>
-                </td>
-                <td className="px-4 py-3 capitalize">{u.role}</td>
-                <td className="px-4 py-3">{u.country}</td>
-                <td className="px-4 py-3">{u.joined}</td>
-                <td className="px-4 py-3 text-right">{fmt(u.downloads)}</td>
-                <td className="px-4 py-3 text-right"><StatusPill status={u.status} /></td>
-                <td className="px-4 py-3 text-right">
-                  <button className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-terra hover:text-ink">
-                    {u.status === 'active' ? 'Suspend' : 'Reinstate'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {shown.length === 0 && (
-          <p className="px-4 py-10 text-center font-mono-tech text-[11px] text-ink-faint">No users match this filter.</p>
-        )}
       </div>
     </Shell>
   );

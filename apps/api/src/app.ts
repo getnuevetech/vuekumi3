@@ -7,6 +7,10 @@ import { authRoutes } from './routes/auth.js'
 import { healthRoutes } from './routes/health.js'
 import { photoRoutes } from './routes/photos.js'
 import { settingsRoutes } from './routes/settings.js'
+import { geoRoutes } from './routes/geo.js'
+import { adminGeoRoutes } from './routes/admin-geo.js'
+import { adminAccountRoutes } from './routes/admin-accounts.js'
+import { adminIntegrationRoutes } from './routes/admin-integrations.js'
 
 export async function buildApp() {
   const app = Fastify({ logger: true })
@@ -24,6 +28,10 @@ export async function buildApp() {
     await api.register(authRoutes)
     await api.register(photoRoutes)
     await api.register(settingsRoutes)
+    await api.register(geoRoutes)
+    await api.register(adminGeoRoutes)
+    await api.register(adminAccountRoutes)
+    await api.register(adminIntegrationRoutes)
   }, { prefix: '/api' })
 
   return app

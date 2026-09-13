@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { fmt, photoById, photographerOf, photos } from '../data/content'
+import { useCurrency } from '../context/CurrencyContext'
 import { BlurImage, PhotoCard, SectionHead, SiteHeader } from '../components/shared'
 
 const licenseOptions = [
@@ -28,6 +29,7 @@ export default function PhotoDetail() {
   const { id } = useParams()
   const photo = photoById(id ?? '') ?? photos[0]
   const photographer = photographerOf(photo.photographer)
+  const { format } = useCurrency()
   const [license, setLicense] = useState<'free' | 'premium' | 'extended'>(photo.license)
   const [downloaded, setDownloaded] = useState(false)
 
@@ -97,7 +99,7 @@ export default function PhotoDetail() {
                         <span className={`h-2 w-2 rounded-full ${active ? 'bg-terra' : 'bg-sand'}`} />
                         <span className="text-sm font-medium">{opt.name}</span>
                       </span>
-                      <span className="font-mono-tech text-xs">{price === 0 ? 'Free' : `$${price}`}</span>
+                      <span className="font-mono-tech text-xs">{price === 0 ? 'Free' : format(price)}</span>
                     </div>
                     <ul className="mt-2.5 space-y-1 pl-[18px]">
                       {opt.points.map((pt) => (
@@ -115,7 +117,7 @@ export default function PhotoDetail() {
               onClick={() => setDownloaded(true)}
               className="mt-4 w-full bg-ink py-4 font-mono-tech text-[11px] uppercase tracking-[0.18em] text-paper transition-colors hover:bg-terra"
             >
-              {downloaded ? '✓ Added to your downloads' : activePrice === 0 ? 'Download free' : `Buy & download — $${activePrice}`}
+              {downloaded ? '✓ Added to your downloads' : activePrice === 0 ? 'Download free' : `Buy & download — ${format(activePrice)}`}
             </button>
             <p className="mt-3 text-center font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-faint">
               Template UI — wire to your checkout & storage

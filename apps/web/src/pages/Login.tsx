@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
-import { ApiError, homeForAccountType } from '../api/client'
+import { api, ApiError, homeForAccountType, type GeoCountry } from '../api/client'
 
 type Mode = 'signin' | 'signup'
 type Role = 'member' | 'contributor' | 'agency'
@@ -13,6 +13,8 @@ export default function Login() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [country, setCountry] = useState('')
+  const [countries, setCountries] = useState<GeoCountry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -20,6 +22,13 @@ export default function Login() {
   const { login, register } = useAuth()
 
   const redirect = searchParams.get('redirect')
+
+  useEffect(() => {
+    if (mode !== 'signup') return
+    api.countries(role === 'contributor')
+      .then((d) => setCountries(d.countries))
+      .catch(() => setCountries([]))
+  }, [mode, role])
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -87,7 +96,7 @@ export default function Login() {
                 const user =
                   mode === 'signin'
                     ? await login({ email, password })
-                    : await register({ email, password, name, accountType })
+                    : await register({ email, password, name, accountType, country: country || undefined })
                 const dest = redirect && redirect.startsWith('/') ? redirect : homeForAccountType(user.accountType)
                 navigate(dest)
               } catch (err) {
@@ -98,13 +107,31 @@ export default function Login() {
             }}
           >
             {mode === 'signup' && (
-              <input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full name"
-                className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
-              />
+              <>
+                <input
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full name"
+                  className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
+                />
+                <select
+                  required={role === 'contributor'}
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra"
+                >
+                  <option value="">{role === 'contributor' ? 'African country (required)' : 'Country (optional)'}</option>
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name} · {c.currency}</option>
+                  ))}
+                </select>
+                {role === 'contributor' && (
+                  <p className="font-mono-tech text-[10px] text-ink-faint">
+                    Contributors must be based in an African country.
+                  </p>
+                )}
+              </>
             )}
             <input
               required

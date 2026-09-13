@@ -310,3 +310,56 @@ model PlatformSetting {
   updatedAt DateTime @updatedAt
   updatedBy String?
 }
+
+model Country {
+  code                  String   @id
+  name                  String
+  currency              String
+  currencyName          String
+  region                String
+  contributorEligible   Boolean  @default(false)
+  enabled               Boolean  @default(true)
+  sortOrder             Int      @default(100)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([region])
+  @@index([contributorEligible])
+}
+
+model ExchangeRate {
+  currency     String    @id
+  rateToUsd    Float
+  source       String    @default("auto")
+  overrideRate Float?
+  fetchedAt    DateTime?
+  updatedAt    DateTime  @updatedAt
+}
+
+model PaymentGateway {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  kind        String
+  countries   String[]
+  currencies  String[]
+  configEnc   String?
+  publicKey   String?
+  notes       String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AiProvider {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  purpose    String
+  apiBaseUrl String?
+  apiKeyEnc  String?
+  notes      String?
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -17,6 +17,7 @@ import { hashPassword, createToken, hashToken, verifyPassword } from '../lib/pas
 import { prisma } from '../lib/prisma.js'
 import { serializeUser } from '../lib/serialize.js'
 import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { assertContributorCountry } from '../lib/geo.js'
 
 const PLATFORM_AGREEMENT_VERSION = '1.0'
 
@@ -91,6 +92,15 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: 'Email already registered' })
     }
 
+    if (body.accountType === 'contributor') {
+      try {
+        await assertContributorCountry(body.country)
+      } catch (err) {
+        const e = err as Error & { statusCode?: number }
+        return reply.code(e.statusCode ?? 400).send({ error: e.message })
+      }
+    }
+
     const passwordHash = await hashPassword(body.password)
     const status = body.accountType === 'agency' ? 'pending' : 'active'
 
@@ -101,7 +111,7 @@ export async function authRoutes(app: FastifyInstance) {
           passwordHash,
           name: body.name,
           accountType: body.accountType,
-          country: body.country,
+          country: body.country?.toUpperCase(),
           status,
         },
       })

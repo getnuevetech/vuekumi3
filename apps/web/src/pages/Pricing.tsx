@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { Reveal, SectionHead, SiteHeader, StatusPill } from '../components/shared';
+import { useCurrency } from '../context/CurrencyContext';
 
 const plans = [
   {
@@ -68,6 +69,7 @@ const faqs = [
 ];
 
 export default function Pricing() {
+  const { format, quote } = useCurrency();
   return (
     <div className="pt-32 pb-28">
       <SiteHeader />
@@ -83,6 +85,8 @@ export default function Pricing() {
             <p className="mt-5 text-sm leading-relaxed text-ink-soft">
               Free for the community, sustainable for the creators. Every premium
               purchase sends 50% straight to the photographer.
+              Prices shown in {quote.currency}{quote.countryName ? ` · ${quote.countryName}` : ''}
+              {quote.source === 'default' ? ' (USD default)' : ''}.
             </p>
           </div>
         </Reveal>
@@ -107,7 +111,9 @@ export default function Pricing() {
                   {p.tone === 'ink' ? <StatusPill status="premium" /> : null}
                 </div>
                 <div className="mt-6 flex items-end gap-2">
-                  <span className="font-serif-display text-5xl font-light">{p.price}</span>
+                  <span className="font-serif-display text-5xl font-light">
+                    {p.name === 'Free' ? format(0) : p.name === 'Vuekumi+' ? format(19) : format(49)}
+                  </span>
                   <span className={`pb-1.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] ${p.tone === 'ink' ? 'text-paper-faint' : 'text-ink-faint'}`}>
                     {p.per}
                   </span>
