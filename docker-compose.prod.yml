@@ -64,7 +64,16 @@ services:
     volumes:
       - certbot-www:/var/www/certbot
       - certbot-certs:/etc/letsencrypt
-    entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew --webroot -w /var/www/certbot --quiet; done"
+    # Default image entrypoint is `certbot`. The loop is the service command only.
+    # `docker compose run --entrypoint certbot certbot certonly …` issues certs.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        trap exit TERM
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet || true
+          sleep 12h
+        done
     restart: unless-stopped
 
 volumes:

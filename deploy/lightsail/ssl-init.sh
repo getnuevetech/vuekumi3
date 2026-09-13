@@ -25,10 +25,12 @@ bash "$ROOT/deploy/lightsail/write-nginx-config.sh"
 $DC -f "$COMPOSE_FILE" up -d nginx
 
 echo "==> Requesting certificate for ${DOMAIN} and www.${DOMAIN}..."
-$DC -f "$COMPOSE_FILE" run --rm certbot certonly \
+echo "    Talking to Let's Encrypt (usually 15–45s). Ctrl+C if this sits idle with no certbot logs."
+# Must override the service entrypoint — otherwise this starts the 12h renew sleep loop.
+$DC -f "$COMPOSE_FILE" run --rm --no-deps --entrypoint certbot certbot certonly \
   --webroot -w /var/www/certbot \
   --email "$EMAIL" \
-  --agree-tos --no-eff-email \
+  --agree-tos --no-eff-email --non-interactive \
   --keep-until-expiring \
   -d "$DOMAIN" -d "www.${DOMAIN}"
 

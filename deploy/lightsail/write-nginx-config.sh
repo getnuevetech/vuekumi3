@@ -32,9 +32,18 @@ fi
 
 has_cert=0
 if [[ -n "$DOMAIN" ]]; then
-  if $DC -f "$COMPOSE_FILE" run --rm --no-deps --entrypoint sh certbot -c \
-    "test -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem" >/dev/null 2>&1; then
+  if $DC -f "$COMPOSE_FILE" exec -T nginx test -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" 2>/dev/null; then
     has_cert=1
+  else
+    # Do not `compose run certbot` here — the service entrypoint is a 12h sleep.
+    while read -r vol; do
+      [[ -z "$vol" ]] && continue
+      if docker run --rm -v "${vol}:/certs:ro" alpine:3.20 \
+        test -f "/certs/live/${DOMAIN}/fullchain.pem" 2>/dev/null; then
+        has_cert=1
+        break
+      fi
+    done < <(docker volume ls -q | grep -E 'certbot-certs$' || true)
   fi
 fi
 
