@@ -28,6 +28,7 @@ RUN apk add --no-cache openssl
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist
+COPY --from=build /app/apps/api/src ./src
 COPY --from=build /app/apps/api/prisma ./prisma
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json

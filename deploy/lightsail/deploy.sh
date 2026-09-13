@@ -82,8 +82,12 @@ if [[ $healthy -eq 0 ]]; then
 fi
 
 echo "==> Seeding database..."
-$DC -f "$COMPOSE_FILE" exec -T api npx tsx prisma/seed.ts || \
-  echo "Seed note: if data already exists this is fine — try logging in."
+if $DC -f "$COMPOSE_FILE" exec -T api npx tsx prisma/seed.ts; then
+  echo "Seed complete."
+else
+  echo "WARNING: seed failed. Demo logins will not work until it succeeds."
+  echo "  Retry: $DC -f $COMPOSE_FILE exec -T api npx tsx prisma/seed.ts"
+fi
 
 echo ""
 echo "Deploy complete."

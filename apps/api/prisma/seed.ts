@@ -2,6 +2,23 @@ import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { photos, photographers } from './seed-data.js'
 
+/** Production image ships `dist/`; local `tsx prisma/seed.ts` uses `src/`. */
+async function importApp(rel: string) {
+  const candidates = [
+    new URL(`../src/${rel}`, import.meta.url).href,
+    new URL(`../dist/${rel}`, import.meta.url).href,
+  ]
+  let last: unknown
+  for (const href of candidates) {
+    try {
+      return await import(href)
+    } catch (err) {
+      last = err
+    }
+  }
+  throw last
+}
+
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12)
 }
@@ -210,9 +227,13 @@ async function main() {
     })
   }
 
-  const { ALL_COUNTRIES, DEFAULT_GATEWAYS, DEFAULT_AI_PROVIDERS } = await import('../src/data/countries.js')
-  const { syncExchangeRates } = await import('../src/lib/fx.js')
-  const { seedLicenseCatalog } = await import('../src/lib/licenses-seed.js')
+  const { ALL_COUNTRIES, DEFAULT_GATEWAYS, DEFAULT_AI_PROVIDERS } = await importApp(
+    'data/countries.js',
+  ) as typeof import('../src/data/countries.js')
+  const { syncExchangeRates } = await importApp('lib/fx.js') as typeof import('../src/lib/fx.js')
+  const { seedLicenseCatalog } = await importApp(
+    'lib/licenses-seed.js',
+  ) as typeof import('../src/lib/licenses-seed.js')
   await seedLicenseCatalog()
 
   for (const c of ALL_COUNTRIES) {
