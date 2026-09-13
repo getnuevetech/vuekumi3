@@ -1,5 +1,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+ENV NODE_ENV=production
+ENV NODE_OPTIONS=--max-old-space-size=768
 
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
@@ -9,7 +11,8 @@ RUN npm ci
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 RUN npm run build -w @vuekumi/shared
-RUN npm run build -w @vuekumi/web
+# Vite only — skip tsc typecheck in the image (it OOMs 1–2 GB Lightsail boxes)
+RUN npm exec -w @vuekumi/web -- vite build
 
 FROM nginx:alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html

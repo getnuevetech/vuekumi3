@@ -38,6 +38,12 @@ ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
 
+echo "==> Ensuring 2G swap on small instances..."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "$SCRIPT_DIR/ensure-swap.sh" ]]; then
+  bash "$SCRIPT_DIR/ensure-swap.sh" || true
+fi
+
 echo "==> Creating app directory..."
 mkdir -p /opt/vuekumi
 chown -R "${APP_USER}:$(id -gn "$APP_USER")" /opt/vuekumi 2>/dev/null || true

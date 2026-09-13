@@ -10,6 +10,7 @@ RUN npm ci
 
 # --- build shared + api ---
 FROM base AS build
+ENV NODE_OPTIONS=--max-old-space-size=768
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
 COPY packages/shared ./packages/shared

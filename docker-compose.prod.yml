@@ -1,3 +1,5 @@
+# Build nginx then api one at a time via deploy/lightsail/deploy.sh.
+# `docker compose build` (both at once) can freeze a 1–2 GB Lightsail instance.
 services:
   postgres:
     image: postgres:16-alpine

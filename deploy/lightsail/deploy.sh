@@ -41,8 +41,25 @@ else
   exit 1
 fi
 
-echo "==> Building images (frontend + API) — this may take several minutes..."
-$DC -f "$COMPOSE_FILE" build
+echo "==> Ensuring swap so parallel TypeScript builds cannot freeze the instance..."
+if [[ -x "$ROOT/deploy/lightsail/ensure-swap.sh" ]] || [[ -f "$ROOT/deploy/lightsail/ensure-swap.sh" ]]; then
+  bash "$ROOT/deploy/lightsail/ensure-swap.sh" || echo "WARNING: could not add swap (need sudo). Build may still freeze on 1–2 GB RAM."
+fi
+
+# Compose builds nginx + api at the same time by default. Two Node compiles
+# on a 1–2 GB Lightsail box swap-thrash and look "stuck" at tsc / vite.
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+PROGRESS=(--progress=plain)
+if ! $DC -f "$COMPOSE_FILE" build --help 2>&1 | grep -q -- '--progress'; then
+  PROGRESS=()
+fi
+
+echo "==> Building frontend image (nginx)…"
+$DC -f "$COMPOSE_FILE" build "${PROGRESS[@]}" nginx
+
+echo "==> Building API image…"
+$DC -f "$COMPOSE_FILE" build "${PROGRESS[@]}" api
 
 echo "==> Starting services..."
 $DC -f "$COMPOSE_FILE" up -d
