@@ -1,17 +1,18 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=768
 
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
-RUN npm ci
+# typescript + vite are devDependencies — do not set NODE_ENV=production before this
+RUN npm ci --include=dev
 
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 RUN npm run build -w @vuekumi/shared
 # Vite only — skip tsc typecheck in the image (it OOMs 1–2 GB Lightsail boxes)
+ENV NODE_ENV=production
 RUN npm exec -w @vuekumi/web -- vite build
 
 FROM nginx:alpine
