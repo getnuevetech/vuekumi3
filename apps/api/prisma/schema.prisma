@@ -1,0 +1,302 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  admin
+  contributor
+  user
+  agency
+}
+
+enum UserStatus {
+  active
+  suspended
+  pending
+}
+
+enum AdminRole {
+  super_admin
+  moderator
+  finance
+  support
+}
+
+enum AgencyRole {
+  owner
+  admin
+  manager
+  member
+  viewer
+}
+
+enum AgencyStatus {
+  pending
+  active
+  suspended
+}
+
+enum PhotoStatus {
+  draft
+  pending
+  active
+  rejected
+  delisted
+}
+
+enum LicenseType {
+  free
+  premium
+}
+
+enum PlatformAgreementStatus {
+  accepted
+  revoked
+}
+
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  passwordHash    String?
+  name            String
+  accountType     AccountType
+  status          UserStatus   @default(active)
+  country         String?
+  avatarUrl       String?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  contributorProfile ContributorProfile?
+  userProfile        UserProfile?
+  adminProfile       AdminProfile?
+  agencyMembers      AgencyMember[]
+  ownedAgencies      Agency[]             @relation("AgencyOwner")
+  photos             Photo[]              @relation("ContributorPhotos")
+  refreshTokens      RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  platformAgreements PlatformAgreement[]
+  auditLogs          AuditLog[]           @relation("AuditActor")
+  moderationReviews  ModerationItem[]     @relation("ModerationReviewer")
+
+  @@index([accountType])
+  @@index([status])
+}
+
+model ContributorProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  handle        String   @unique
+  location      String?
+  bio           String?
+  photosCount   Int      @default(0)
+  downloads     Int      @default(0)
+  earnings      Float    @default(0)
+  approvalRate  Int      @default(0)
+  payoutMethod  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  subscriptionPlan    String   @default("free")
+  downloadQuotaUsed   Int      @default(0)
+  downloadQuotaReset  DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  adminRole AdminRole @default(support)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Agency {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique
+  ownerUserId     String
+  status          AgencyStatus @default(pending)
+  plan            String       @default("enterprise")
+  seatLimit       Int          @default(20)
+  billingEmail    String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  owner   User           @relation("AgencyOwner", fields: [ownerUserId], references: [id])
+  members AgencyMember[]
+}
+
+model AgencyMember {
+  id         String     @id @default(cuid())
+  agencyId   String
+  userId     String
+  agencyRole AgencyRole @default(member)
+  status     String     @default("active")
+  joinedAt   DateTime   @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, userId])
+}
+
+model Photo {
+  id                    String      @id
+  contributorId         String
+  title                 String
+  description           String?
+  category              String
+  country               String
+  licenseType           LicenseType @default(free)
+  price                 Float       @default(0)
+  status                PhotoStatus @default(active)
+  src                   String
+  storageKey            String?
+  downloads             Int         @default(0)
+  views                 Int         @default(0)
+  likes                 Int         @default(0)
+  hasRecognizablePeople Boolean     @default(false)
+  exclusiveAvailable    Boolean     @default(false)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  publishedAt           DateTime?
+
+  contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
+  tags             PhotoTag[]
+  rightsRecord     RightsRecord?
+  moderationItems  ModerationItem[]
+
+  @@index([status])
+  @@index([category])
+  @@index([country])
+  @@index([contributorId])
+}
+
+model PhotoTag {
+  id      String @id @default(cuid())
+  photoId String
+  tag     String
+
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, tag])
+  @@index([tag])
+}
+
+model RightsRecord {
+  id                   String   @id @default(cuid())
+  photoId              String   @unique
+  copyrightVerified    Boolean  @default(false)
+  modelReleaseRequired Boolean  @default(false)
+  modelReleaseStatus   String   @default("not_required")
+  modelReleaseFileKey  String?
+  platformRightsOk     Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+}
+
+model PlatformAgreement {
+  id              String                  @id @default(cuid())
+  userId          String
+  version         String
+  status          PlatformAgreementStatus @default(accepted)
+  acceptedAt      DateTime                @default(now())
+  ipAddress       String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ModerationItem {
+  id           String    @id @default(cuid())
+  photoId      String
+  flag         String
+  status       String    @default("pending")
+  submittedBy  String
+  reviewerId   String?
+  decidedAt    DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  photo    Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("ModerationReviewer", fields: [reviewerId], references: [id])
+
+  @@index([status])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  initiatedBy String    @default("self")
+  adminId     String?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+}

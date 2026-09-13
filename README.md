@@ -1,47 +1,66 @@
 # Vuekumi
 
-**Vuekumi** — a stock image platform for authentic African photography. Free and premium
-images shot by photographers across all 54 countries, with a contributor portal for
-uploads and earnings, and an admin portal for moderation, users, and payouts.
+**Vuekumi** — a stock image platform for authentic African photography.
 
-This is a **frontend design template** built with React 19 + TypeScript + Vite + Tailwind
-CSS. All data is mock data (`src/data/content.ts`) — wire it to your own API, auth, and
-storage to go live.
-
-## Highlights
-
-- **Noir landing page** — full-screen crossfading hero slider with script accents, edge-to-edge
-  image strips, marquee ticker, endless-scroll masonry feed (IntersectionObserver),
-  circular progress-ring stats band, snap-scroll contributor rail, image-topped pricing cards
-- **Photo detail pages** with license selection (Free / Premium / Extended)
-- **Contributor portal** — dashboard, upload flow, portfolio grid, earnings & payout history
-- **Admin portal** — overview stats, moderation queue (approve/reject), user management, payouts
-- Fully responsive, dark noir theme with a warm terra accent
-
-## Getting started
-
-```bash
-npm install
-npm run dev      # local dev server
-npm run build    # production build → dist/
-npm run preview  # preview the production build
-```
-
-## Deploying
-
-The site is a static SPA. Deploy `dist/` to any static host (Netlify, Vercel, GitHub Pages).
-If the host supports it, add an SPA fallback so all routes serve `index.html`.
+Monorepo with React frontend, Fastify API, PostgreSQL, and Docker-based local development.
 
 ## Structure
 
 ```
-src/
-  pages/        Home (Noir landing), Pricing, Login, PhotoDetail, Contributor*, Admin*
-  components/   shared.tsx (header, photo cards, portal shell), ui/ (shadcn components)
-  data/         content.ts — all mock data; replace with API calls
-public/images/  demo photography (placeholder content)
+apps/
+  web/          React 19 + Vite + Tailwind (marketplace UI)
+  api/          Fastify + Prisma + PostgreSQL
+packages/
+  shared/       Shared types and Zod schemas
 ```
 
----
+## Quick start
 
-*All photography is demo content. Replace with licensed images before production use.*
+### 1. Start database
+
+```bash
+docker compose up -d
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Setup API database
+
+```bash
+npm run build -w @vuekumi/shared
+cd apps/api && npx prisma migrate dev --name init && npm run db:seed
+```
+
+### 4. Run dev servers
+
+```bash
+npm run dev:api   # http://localhost:3001
+npm run dev:web   # http://localhost:3000
+```
+
+## Seed accounts
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@vuekumi.com | Admin123! |
+| Contributor | amara-okafor@vuekumi.demo | User12345! |
+| Member | member@vuekumi.demo | User12345! |
+| Agency | agency@vuekumi.demo | User12345! |
+
+## API endpoints (Phase 0–1)
+
+- `GET /api/health`
+- `POST /api/auth/register` · `login` · `logout` · `refresh`
+- `GET /api/auth/me`
+- `POST /api/auth/forgot-password` · `reset-password/:token`
+- `GET /api/auth/verify-email/:token`
+- `POST /api/auth/admin/send-password-reset/:userId` (admin)
+- `GET /api/photos` · `GET /api/photos/:id`
+
+## Environment
+
+Copy `.env.example` to `apps/api/.env` and adjust as needed.

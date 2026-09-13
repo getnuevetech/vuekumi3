@@ -655,7 +655,7 @@ function NoirFooter() {
   return (
     <footer className="border-t border-noir bg-noir px-6 py-16 text-center">
       <Link to="/" className="font-condensed text-3xl font-semibold uppercase tracking-[0.3em] text-paper">
-        Afri<span className="text-terra">Stock</span>
+        Vue<span className="text-terra">kumi</span>
       </Link>
       <p className="mx-auto mt-4 max-w-md text-[13px] leading-relaxed text-noir-soft">
         The stock image platform for authentic African photography. Free and premium
