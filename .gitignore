@@ -5,3 +5,4 @@ dist-old
 .DS_Store
 .env
 .env.*
+docker/nginx/nginx.runtime.conf

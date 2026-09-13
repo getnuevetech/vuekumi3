@@ -61,8 +61,11 @@ $DC -f "$COMPOSE_FILE" build "${PROGRESS[@]}" nginx
 echo "==> Building API image…"
 $DC -f "$COMPOSE_FILE" build "${PROGRESS[@]}" api
 
+echo "==> Writing nginx runtime config (restores HTTPS if certs already exist)..."
+bash "$ROOT/deploy/lightsail/write-nginx-config.sh"
+
 echo "==> Starting services..."
-$DC -f "$COMPOSE_FILE" up -d
+$DC -f "$COMPOSE_FILE" up -d nginx api postgres redis certbot
 
 echo "==> Waiting for API health..."
 healthy=0
