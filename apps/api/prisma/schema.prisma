@@ -111,6 +111,7 @@ model User {
   payoutMethods       PayoutMethod[]
   payouts             Payout[]         @relation("ContributorPayouts")
   payoutsProcessed    Payout[]         @relation("PayoutProcessor")
+  photoFavorites      PhotoFavorite[]
 
   @@index([accountType])
   @@index([status])
@@ -258,6 +259,7 @@ model Photo {
   payments         Payment[]
   earningsLedgers  EarningsLedger[]
   aiSuggestions    AiSuggestion[]
+  favorites        PhotoFavorite[]
 
   @@index([status])
   @@index([category])
@@ -321,6 +323,20 @@ model PhotoTag {
 
   @@unique([photoId, tag])
   @@index([tag])
+}
+
+model PhotoFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  photoId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, photoId])
+  @@index([photoId])
+  @@index([userId])
 }
 
 model RightsRecord {

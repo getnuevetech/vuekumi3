@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Reveal } from '../components/shared';
+import type { PhotoDto, PhotographerDto } from '@vuekumi/shared';
+import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
-import { fmt, money, photoById, photographerOf, photographers, photos, type Photo } from '../data/content';
+import { api } from '../api/client';
+import { fmt, photoById, photographerOf, photos, type Photo } from '../data/content';
 
 /* ============================================================
    NOIR — a dark, edge-to-edge, endlessly scrolling variant.
@@ -28,8 +30,9 @@ function NoirHeader() {
   }, []);
 
   const links = [
-    { label: 'Library', to: '#feed' },
+    { label: 'Library', to: '/search' },
     { label: 'License & Pricing', to: '/pricing' },
+    ...(user ? [{ label: 'Favorites', to: '/favorites' }] : []),
     ...(user ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
     { label: 'Contributor', to: '/contributor' },
@@ -67,6 +70,7 @@ function NoirHeader() {
             ))}
           </nav>
           <div className="hidden items-center gap-4 lg:flex">
+            <SearchForm dark compact />
             {user ? (
               <>
                 <span className="max-w-[160px] truncate font-condensed text-[12px] uppercase tracking-[0.18em] text-paper-soft">
@@ -252,7 +256,12 @@ function Marquee() {
       <div className="marquee-track items-center gap-10">
         {row.map((t, i) => (
           <span key={i} className="flex items-center gap-10 whitespace-nowrap">
-            <span className="font-condensed text-xl font-light uppercase tracking-[0.3em] text-paper-soft">{t}</span>
+            <Link
+              to={`/search?category=${encodeURIComponent(t === 'Portraits' ? 'People' : t)}`}
+              className="font-condensed text-xl font-light uppercase tracking-[0.3em] text-paper-soft hover:text-terra"
+            >
+              {t}
+            </Link>
             <span className="h-1.5 w-1.5 rotate-45 bg-terra" />
           </span>
         ))}
@@ -367,10 +376,7 @@ function CtaBand() {
 
 /* ---------------- endless masonry feed ---------------- */
 
-const BATCH = 8;
-
-function FeedCard({ photo }: { photo: Photo }) {
-  const ph = photographerOf(photo.photographer);
+function FeedCard({ photo }: { photo: PhotoDto }) {
   return (
     <Link to={`/photo/${photo.id}`} className="strip-cell group relative mb-1 block break-inside-avoid overflow-hidden">
       <img src={photo.src} alt={photo.title} loading="lazy" className="w-full" />
@@ -381,7 +387,7 @@ function FeedCard({ photo }: { photo: Photo }) {
               {photo.title}
             </p>
             <p className="mt-0.5 font-mono-tech text-[9px] uppercase tracking-[0.16em] text-terra">
-              {ph.name} — {photo.country}
+              {photo.photographerName ?? photo.photographer} — {photo.country}
             </p>
           </div>
           <span className="shrink-0 font-mono-tech text-[9px] text-paper-soft">{fmt(photo.downloads)}↓</span>
@@ -397,31 +403,50 @@ function FeedCard({ photo }: { photo: Photo }) {
 }
 
 function InfiniteFeed() {
-  const [batches, setBatches] = useState(3);
+  const [items, setItems] = useState<PhotoDto[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
+
+  const load = useCallback(async (nextPage: number) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    setLoading(true);
+    try {
+      const data = await api.photos({ page: nextPage, limit: 12, facets: '0' });
+      setItems((prev) => (nextPage === 1 ? data.items : [...prev, ...data.items]));
+      setHasMore(data.hasMore);
+      setTotal(data.total);
+      setPage(nextPage);
+    } catch {
+      setHasMore(false);
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load(1);
+  }, [load]);
 
   useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loading) {
-          setLoading(true);
-          // simulated fetch delay — replace with real pagination API
-          setTimeout(() => {
-            setBatches((b) => b + 1);
-            setLoading(false);
-          }, 450);
+        if (entries[0].isIntersecting && hasMore && page > 0 && !loadingRef.current) {
+          void load(page + 1);
         }
       },
       { rootMargin: '900px' },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [loading]);
-
-  const feed = Array.from({ length: batches * BATCH }, (_, i) => photos[i % photos.length]);
+  }, [hasMore, page, load]);
 
   return (
     <section id="feed" className="bg-noir">
@@ -432,24 +457,32 @@ function InfiniteFeed() {
             Endless<span className="text-outline-paper"> Scroll</span>
           </h2>
         </div>
-        <p className="hidden font-mono-tech text-[10px] uppercase tracking-[0.2em] text-noir-soft md:block">
-          {feed.length} images loaded — keep scrolling
-        </p>
+        <Link to="/search" className="hidden font-mono-tech text-[10px] uppercase tracking-[0.2em] text-noir-soft hover:text-terra md:block">
+          {total ? `${fmt(total)} images` : 'Browse'} — search the catalog →
+        </Link>
       </div>
 
       <div className="columns-2 gap-1 px-1 md:columns-3 xl:columns-4">
-        {feed.map((p, i) => (
-          <FeedCard key={`${p.id}-${i}`} photo={p} />
+        {items.map((p) => (
+          <FeedCard key={p.id} photo={p} />
         ))}
       </div>
 
       <div ref={sentinel} className="flex items-center justify-center gap-3 py-10">
-        <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" />
-        <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.15s' }} />
-        <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.3s' }} />
-        <span className="ml-2 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-          Loading more from the continent
-        </span>
+        {hasMore || loading ? (
+          <>
+            <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" />
+            <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.15s' }} />
+            <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.3s' }} />
+            <span className="ml-2 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
+              Loading more from the continent
+            </span>
+          </>
+        ) : (
+          <span className="font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
+            That is the live library — {fmt(total)} photographs
+          </span>
+        )}
       </div>
     </section>
   );
@@ -563,6 +596,12 @@ function StatsBand() {
 /* ---------------- contributors rail ---------------- */
 
 function ContributorsRail() {
+  const [makers, setMakers] = useState<PhotographerDto[]>([]);
+
+  useEffect(() => {
+    api.photographers({ limit: 20 }).then((d) => setMakers(d.items)).catch(() => setMakers([]));
+  }, []);
+
   return (
     <section className="bg-noir py-20 md:py-24">
       <div className="flex items-end justify-between px-5 md:px-10">
@@ -572,24 +611,24 @@ function ContributorsRail() {
             Contributors
           </h2>
         </div>
-        <Link to="/contributor" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
-          View all →
+        <Link to="/search" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
+          Browse the library →
         </Link>
       </div>
       <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
-        {photographers.map((ph) => (
+        {makers.map((ph) => (
           <Link
             key={ph.handle}
-            to="/contributor"
+            to={`/p/${ph.handle}`}
             className="strip-cell group relative w-[70vw] shrink-0 snap-start overflow-hidden sm:w-[44vw] lg:w-[30vw]"
           >
-            <img src={ph.avatar} alt={ph.name} loading="lazy" className="aspect-[4/5] w-full object-cover" />
+            <img src={ph.avatarUrl ?? '/images/avatars/photographer-bw.jpg'} alt={ph.name} loading="lazy" className="aspect-[4/5] w-full object-cover" />
             <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-5 pt-12">
               <p className="font-condensed text-xl font-medium uppercase tracking-[0.15em] text-paper">
                 {ph.name} <span className="mx-1 text-terra">—</span> <span className="text-sm font-light text-paper-soft">{ph.location}</span>
               </p>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
-                {fmt(ph.downloads)} downloads · {money(ph.earnings)} earned
+                {fmt(ph.downloads)} downloads · {ph.photosCount} photographs
               </p>
             </div>
           </Link>

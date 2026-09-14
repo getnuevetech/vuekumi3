@@ -1,37 +1,48 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import type { LicenseProductDto, PaymentMethodsDto, PhotoDto } from '@vuekumi/shared'
-import { fmt, photoById, photographerOf, photos } from '../data/content'
+import { fmt } from '../data/content'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
-import { BlurImage, PhotoCard, SectionHead, SiteHeader } from '../components/shared'
+import { BlurImage, PhotoMasonry, SectionHead, SiteHeader } from '../components/shared'
 import { api, ApiError } from '../api/client'
 import { toast } from 'sonner'
 
 export default function PhotoDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const mock = photoById(id ?? '') ?? photos[0]
   const { format } = useCurrency()
   const { user } = useAuth()
 
   const [photo, setPhoto] = useState<PhotoDto | null>(null)
+  const [related, setRelated] = useState<PhotoDto[]>([])
   const [options, setOptions] = useState<LicenseProductDto[]>([])
   const [license, setLicense] = useState<string>('')
   const [busy, setBusy] = useState(false)
+  const [favBusy, setFavBusy] = useState(false)
   const [grantCode, setGrantCode] = useState<string | null>(null)
   const [quote, setQuote] = useState({ territory: '', duration: '', channels: '', notes: '' })
   const [methods, setMethods] = useState<PaymentMethodsDto | null>(null)
   const [provider, setProvider] = useState<'stripe' | 'flutterwave' | undefined>(undefined)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
 
   useEffect(() => {
     if (!id) return
-    api.photo(id).then(setPhoto).catch(() => setPhoto(null))
+    setStatus('loading')
+    setGrantCode(null)
+    api.photo(id).then((p) => {
+      setPhoto(p)
+      setStatus('ready')
+    }).catch(() => {
+      setPhoto(null)
+      setStatus('missing')
+    })
     api.photoLicenses(id).then((d) => {
       setOptions(d.items)
       const first = d.items.find((i) => i.offered) ?? d.items[0]
       if (first) setLicense(first.type)
     }).catch(() => setOptions([]))
+    api.relatedPhotos(id).then((d) => setRelated(d.items)).catch(() => setRelated([]))
     if (user) {
       api.paymentMethods().then((m) => {
         setMethods(m)
@@ -42,27 +53,57 @@ export default function PhotoDetail() {
     }
   }, [id, user])
 
-  const view: PhotoDto = photo ?? {
-    ...mock,
-    status: 'active',
-    photographerName: photographerOf(mock.photographer).name,
-    photographerAvatar: photographerOf(mock.photographer).avatar,
-    photographerLocation: photographerOf(mock.photographer).location,
+  if (status === 'missing') {
+    return (
+      <div className="min-h-screen bg-paper text-ink">
+        <SiteHeader />
+        <div className="mx-auto max-w-md px-6 pb-24 pt-36 text-center">
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
+          <h1 className="font-serif-display mt-2 text-4xl font-light">Photograph not found.</h1>
+          <Link to="/search" className="mt-8 inline-block bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper">
+            Back to the library
+          </Link>
+        </div>
+      </div>
+    )
   }
 
+  if (status === 'loading' || !photo) {
+    return (
+      <div className="min-h-screen bg-paper text-ink">
+        <SiteHeader />
+        <p className="pt-36 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading photograph…</p>
+      </div>
+    )
+  }
+
+  const view = photo
   const photographer = {
-    name: view.photographerName ?? photographerOf(view.photographer)?.name ?? view.photographer,
-    avatar: view.photographerAvatar ?? photographerOf(view.photographer)?.avatar ?? '',
-    location: view.photographerLocation ?? photographerOf(view.photographer)?.location ?? view.country,
+    handle: view.photographer,
+    name: view.photographerName ?? view.photographer,
+    avatar: view.photographerAvatar ?? '',
+    location: view.photographerLocation ?? view.country,
   }
-
-  const related = useMemo(
-    () => photos.filter((p) => p.id !== view.id && (p.category === view.category || p.country === view.country)).slice(0, 8),
-    [view],
-  )
 
   const selected = options.find((o) => o.type === license)
   const activePrice = selected?.priceUsd ?? null
+
+  async function toggleFavorite() {
+    if (!id) return
+    if (!user) {
+      navigate(`/login?redirect=/photo/${id}`)
+      return
+    }
+    setFavBusy(true)
+    try {
+      const result = await api.toggleFavorite(id)
+      setPhoto((p) => p ? { ...p, favorited: result.favorited, likes: result.likes } : p)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save favourite')
+    } finally {
+      setFavBusy(false)
+    }
+  }
 
   async function buy() {
     if (!id || !selected) return
@@ -106,9 +147,9 @@ export default function PhotoDetail() {
 
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-24 md:px-8 md:pt-28">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">
-          <Link to="/" className="hover:text-terra">Library</Link>
+          <Link to="/search" className="hover:text-terra">Library</Link>
           <span className="mx-2 text-ink-faint">/</span>
-          {view.category}
+          <Link to={`/search?category=${encodeURIComponent(view.category)}`} className="hover:text-terra">{view.category}</Link>
           <span className="mx-2 text-ink-faint">/</span>
           <span className="text-terra">{view.id.toUpperCase()}</span>
         </p>
@@ -129,15 +170,29 @@ export default function PhotoDetail() {
             </p>
 
             <div className="mt-6 flex items-center gap-4 border border-sand bg-white p-4">
-              {photographer.avatar ? (
-                <img src={photographer.avatar} alt={photographer.name} className="h-12 w-12 rounded-full object-cover" />
-              ) : (
-                <div className="h-12 w-12 rounded-full bg-cream" />
-              )}
-              <div className="flex-1">
-                <p className="text-sm font-medium">{photographer.name}</p>
-                <p className="font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-soft">{photographer.location}</p>
-              </div>
+              <Link to={`/p/${photographer.handle}`} className="flex flex-1 items-center gap-4">
+                {photographer.avatar ? (
+                  <img src={photographer.avatar} alt={photographer.name} className="h-12 w-12 rounded-full object-cover" />
+                ) : (
+                  <div className="h-12 w-12 rounded-full bg-cream" />
+                )}
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{photographer.name}</p>
+                  <p className="font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-soft">{photographer.location}</p>
+                </div>
+              </Link>
+              <button
+                type="button"
+                disabled={favBusy}
+                onClick={() => void toggleFavorite()}
+                className="flex h-10 w-10 items-center justify-center border border-sand hover:border-terra"
+                aria-label={view.favorited ? 'Remove from favorites' : 'Save to favorites'}
+                aria-pressed={Boolean(view.favorited)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={view.favorited ? '#bc773f' : 'none'} stroke="currentColor" strokeWidth="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
             </div>
 
             {view.rights?.exclusiveSold && (
@@ -280,9 +335,13 @@ export default function PhotoDetail() {
 
             <div className="mt-6 flex flex-wrap gap-1.5">
               {view.tags.map((t) => (
-                <span key={t} className="border border-sand px-2.5 py-1 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-soft">
+                <Link
+                  key={t}
+                  to={`/search?tag=${encodeURIComponent(t)}`}
+                  className="border border-sand px-2.5 py-1 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-soft hover:border-terra hover:text-terra"
+                >
                   {t}
-                </span>
+                </Link>
               ))}
             </div>
           </aside>
@@ -290,11 +349,7 @@ export default function PhotoDetail() {
 
         <div className="mt-20">
           <SectionHead kicker="Keep browsing" title="Related images" />
-          <div className="masonry mt-8">
-            {related.map((p) => (
-              <PhotoCard key={p.id} photo={p} photographer={photographerOf(p.photographer)} />
-            ))}
-          </div>
+          <PhotoMasonry photos={related} />
         </div>
       </div>
     </div>

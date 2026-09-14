@@ -92,7 +92,12 @@ function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
   return photo.src
 }
 
-export function serializePhoto(photo: PhotoWithTags, photographerHandle: string, hasAgreement = true): PhotoDto {
+export function serializePhoto(
+  photo: PhotoWithTags,
+  photographerHandle: string,
+  hasAgreement = true,
+  extras?: { favorited?: boolean },
+): PhotoDto {
   const contributor = photo.contributor
   return {
     id: photo.id,
@@ -115,6 +120,7 @@ export function serializePhoto(photo: PhotoWithTags, photographerHandle: string,
     downloads: photo.downloads,
     views: photo.views,
     likes: photo.likes,
+    favorited: extras?.favorited,
     tags: photo.tags.map((t) => t.tag),
     status: photo.status,
     exclusiveAvailable: photo.exclusiveAvailable,

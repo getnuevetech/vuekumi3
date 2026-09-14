@@ -59,6 +59,7 @@ export interface PhotoDto {
   downloads: number
   views: number
   likes: number
+  favorited?: boolean
   tags: string[]
   status: PhotoStatus
   exclusiveAvailable?: boolean
@@ -181,12 +182,44 @@ export interface AiStatusDto {
   manualOnly: true
 }
 
+export interface CatalogFacet {
+  value: string
+  count: number
+}
+
+export interface CatalogFacets {
+  categories: CatalogFacet[]
+  countries: CatalogFacet[]
+  licenses: CatalogFacet[]
+  tags: CatalogFacet[]
+}
+
 export interface PaginatedPhotos {
   items: PhotoDto[]
   page: number
   limit: number
   total: number
   hasMore: boolean
+  facets?: CatalogFacets
+}
+
+export interface PhotographerDto {
+  handle: string
+  name: string
+  avatarUrl: string | null
+  location: string | null
+  bio: string | null
+  photosCount: number
+  downloads: number
+}
+
+export interface PhotographerProfileDto extends PaginatedPhotos {
+  photographer: PhotographerDto
+}
+
+export interface FavoriteResult {
+  favorited: boolean
+  likes: number
 }
 
 export interface AgencyDto {

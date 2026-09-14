@@ -41,6 +41,7 @@ async function main() {
   await prisma.agencyInvite.deleteMany()
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
+  await prisma.photoFavorite.deleteMany()
   await prisma.photoTag.deleteMany()
   await prisma.rightsRecord.deleteMany()
   await prisma.photo.deleteMany()
@@ -98,7 +99,7 @@ async function main() {
     contributorUsers.set(ph.handle, user.id)
   }
 
-  await prisma.user.create({
+  const member = await prisma.user.create({
     data: {
       email: 'member@vuekumi.demo',
       passwordHash: userPassword,
@@ -331,6 +332,14 @@ async function main() {
       where: { userId: amaraId },
       data: { payoutMethod: 'Mobile money (MTN MoMo)', earnings: 90 },
     })
+  }
+
+  const favoriteIds = ['afr-011', 'afr-008', 'afr-020']
+  await prisma.photoFavorite.createMany({
+    data: favoriteIds.map((photoId) => ({ userId: member.id, photoId })),
+  })
+  for (const photoId of favoriteIds) {
+    await prisma.photo.update({ where: { id: photoId }, data: { likes: { increment: 1 } } })
   }
 
   console.log('Seed complete.')

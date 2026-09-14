@@ -12,6 +12,9 @@ import type {
   PaymentDto,
   PaymentMethodsDto,
   PhotoDto,
+  PhotographerDto,
+  PhotographerProfileDto,
+  FavoriteResult,
   PurchaseLicenseResult,
   AiSuggestionDto,
   AiStatusDto,
@@ -93,6 +96,46 @@ export const api = {
   },
 
   photo: (id: string) => request<PhotoDto>(`/api/photos/${id}`),
+
+  relatedPhotos: (id: string) => request<{ items: PhotoDto[] }>(`/api/photos/${id}/related`),
+
+  toggleFavorite: (id: string) =>
+    request<FavoriteResult>(`/api/photos/${id}/favorite`, { method: 'POST', body: JSON.stringify({}) }),
+
+  favorites: (params?: Record<string, string | number | undefined>) => {
+    const qs = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined) qs.set(k, String(v))
+      })
+    }
+    const query = qs.toString()
+    return request<PaginatedPhotos>(`/api/favorites${query ? `?${query}` : ''}`)
+  },
+
+  photographers: (params?: Record<string, string | number | undefined>) => {
+    const qs = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined) qs.set(k, String(v))
+      })
+    }
+    const query = qs.toString()
+    return request<{ items: PhotographerDto[]; page: number; limit: number; total: number; hasMore: boolean }>(
+      `/api/photographers${query ? `?${query}` : ''}`,
+    )
+  },
+
+  photographer: (handle: string, params?: Record<string, string | number | undefined>) => {
+    const qs = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined) qs.set(k, String(v))
+      })
+    }
+    const query = qs.toString()
+    return request<PhotographerProfileDto>(`/api/photographers/${encodeURIComponent(handle)}${query ? `?${query}` : ''}`)
+  },
 
   agreement: () => request<AgreementDto>('/api/agreements/current'),
 

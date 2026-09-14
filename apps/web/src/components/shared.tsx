@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useLocation } from 'react-router'
+import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
+import type { PhotoDto } from '@vuekumi/shared'
 import { fmt, type Photo } from '../data/content'
-import { api, type GeoCountry } from '../api/client'
+import { api, ApiError, type GeoCountry } from '../api/client'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
+import { toast } from 'sonner'
 
 /* ---------------- Reveal on scroll ---------------- */
 
@@ -73,7 +75,49 @@ export function LogoMark({ dark = false }: { dark?: boolean }) {
   )
 }
 
-/* ---------------- Public site header ---------------- */
+/* ---------------- Public search ---------------- */
+
+export function SearchForm({
+  dark = false,
+  defaultQuery = '',
+  compact = false,
+}: {
+  dark?: boolean
+  defaultQuery?: string
+  compact?: boolean
+}) {
+  const reactId = useId()
+  const [q, setQ] = useState(defaultQuery)
+  const navigate = useNavigate()
+  const inputId = dark ? `noir-search-${reactId}` : `site-search-${reactId}`
+
+  useEffect(() => {
+    setQ(defaultQuery)
+  }, [defaultQuery])
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    const next = q.trim()
+    navigate(next ? `/search?q=${encodeURIComponent(next)}` : '/search')
+  }
+
+  return (
+    <form onSubmit={submit} className={compact ? 'w-44 xl:w-56' : 'w-full max-w-md'}>
+      <label className="sr-only" htmlFor={inputId}>Search the library</label>
+      <input
+        id={inputId}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search Africa…"
+        className={`w-full px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] outline-none ${
+          dark
+            ? 'border border-paper/30 bg-transparent text-paper placeholder:text-paper-soft/70 focus:border-terra'
+            : 'border border-sand bg-transparent text-ink placeholder:text-ink-faint focus:border-terra'
+        }`}
+      />
+    </form>
+  )
+}
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
@@ -95,8 +139,9 @@ export function SiteHeader() {
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
           <LogoMark />
           <nav className="hidden items-center gap-7 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:flex">
-            <a href="/#explore" className="link-slide hover:text-terra">Explore</a>
+            <Link to="/search" className="link-slide hover:text-terra">Library</Link>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
+            {user && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
             {user && <Link to="/licenses" className="link-slide hover:text-terra">Licences</Link>}
             {(user?.accountType === 'agency' || user?.agencyId) && (
               <Link to="/agency" className="link-slide hover:text-terra">Agency</Link>
@@ -105,6 +150,7 @@ export function SiteHeader() {
             <Link to="/admin" className="link-slide hover:text-terra">Admin</Link>
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
+            <SearchForm compact defaultQuery="" />
             <CurrencySelect />
             {user ? (
               <>
@@ -153,8 +199,9 @@ export function SiteHeader() {
       >
         <div className="flex h-full flex-col justify-center gap-1 px-8">
           {[
-            { label: 'Explore', href: '/#explore' },
+            { label: 'Library', href: '/search' },
             { label: 'License & Pricing', href: '/pricing' },
+            ...(user ? [{ label: 'Favorites', href: '/favorites' }] : []),
             { label: 'Contributor Portal', href: '/contributor' },
             { label: 'Admin Portal', href: '/admin' },
             { label: 'Log in', href: '/login' },
@@ -202,8 +249,52 @@ export function BlurImage({
 
 /* ---------------- Photo card (masonry cell) ---------------- */
 
-export function PhotoCard({ photo, photographer }: { photo: Photo; photographer?: { name: string } }) {
-  const [liked, setLiked] = useState(false)
+type CardPhoto = Pick<Photo, 'id' | 'src' | 'title' | 'country' | 'license' | 'price' | 'downloads'> & {
+  likes?: number
+  favorited?: boolean
+  photographer?: string
+  photographerName?: string
+}
+
+export function PhotoCard({
+  photo,
+  photographer,
+}: {
+  photo: CardPhoto | PhotoDto
+  photographer?: { name: string }
+}) {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [liked, setLiked] = useState(Boolean(photo.favorited))
+  const [busy, setBusy] = useState(false)
+  const name = photographer?.name ?? ('photographerName' in photo ? photo.photographerName : undefined) ?? photo.photographer
+
+  useEffect(() => {
+    setLiked(Boolean(photo.favorited))
+  }, [photo.favorited, photo.id])
+
+  async function toggle(e: MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) {
+      navigate(`/login?redirect=/photo/${photo.id}`)
+      return
+    }
+    if (busy) return
+    setBusy(true)
+    const previous = liked
+    setLiked(!previous)
+    try {
+      const result = await api.toggleFavorite(photo.id)
+      setLiked(result.favorited)
+    } catch (err) {
+      setLiked(previous)
+      toast.error(err instanceof ApiError ? err.message : 'Could not save favourite')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <Link to={`/photo/${photo.id}`} className="group relative block overflow-hidden bg-cream">
       <BlurImage
@@ -224,12 +315,11 @@ export function PhotoCard({ photo, photographer }: { photo: Photo; photographer?
             </span>
           )}
           <button
-            onClick={(e) => {
-              e.preventDefault()
-              setLiked(!liked)
-            }}
+            type="button"
+            onClick={(e) => { void toggle(e) }}
             className="pointer-events-auto flex h-8 w-8 items-center justify-center bg-paper/90 transition-colors hover:bg-terra hover:text-paper"
-            aria-label="Like photo"
+            aria-label={liked ? 'Remove from favorites' : 'Save to favorites'}
+            aria-pressed={liked}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? '#bc773f' : 'none'} stroke="currentColor" strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -240,13 +330,23 @@ export function PhotoCard({ photo, photographer }: { photo: Photo; photographer?
           <div>
             <p className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-white/95">{photo.title}</p>
             <p className="mt-0.5 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-white/60">
-              {photographer?.name} — {photo.country}
+              {name} — {photo.country}
             </p>
           </div>
           <span className="font-mono-tech text-[9px] text-white/70">{fmt(photo.downloads)}↓</span>
         </div>
       </div>
     </Link>
+  )
+}
+
+export function PhotoMasonry({ photos }: { photos: PhotoDto[] }) {
+  return (
+    <div className="masonry mt-8">
+      {photos.map((p) => (
+        <PhotoCard key={p.id} photo={p} photographer={{ name: p.photographerName ?? p.photographer }} />
+      ))}
+    </div>
   )
 }
 
