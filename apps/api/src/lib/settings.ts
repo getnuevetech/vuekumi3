@@ -50,6 +50,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'email.resend_api_key', label: 'Resend API key', group: 'Email', secret: true, envFallback: 'RESEND_API_KEY' },
   { key: 'email.from_address', label: 'From email address', group: 'Email', secret: false, placeholder: 'Vuekumi <hello@yourdomain.com>' },
   { key: 'ai.openai_api_key', label: 'OpenAI API key', group: 'AI', secret: true, envFallback: 'OPENAI_API_KEY' },
+  { key: 'ai.openai_model', label: 'OpenAI vision model', group: 'AI', secret: false, placeholder: 'gpt-4o-mini' },
   { key: 'ai.replicate_api_token', label: 'Replicate API token', group: 'AI', secret: true, envFallback: 'REPLICATE_API_TOKEN' },
   { key: 'storage.s3_endpoint', label: 'Object storage endpoint', group: 'Storage', secret: false, placeholder: 'https://s3.amazonaws.com or Lightsail / MinIO endpoint', envFallback: 'S3_ENDPOINT' },
   { key: 'storage.s3_region', label: 'Object storage region', group: 'Storage', secret: false, envFallback: 'S3_REGION' },

@@ -100,7 +100,9 @@ export function AdminAiProviders() {
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">AI APIs</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Providers.</h1>
-      <p className="mt-1 text-sm text-ink-soft">Add OpenAI, Replicate, or any other model endpoint. Keys are encrypted.</p>
+      <p className="mt-1 text-sm text-ink-soft">
+        Keys are encrypted. Suggestions run only when a contributor or admin clicks Suggest — never on upload.
+      </p>
 
       <form
         className="mt-6 grid gap-2 rounded-2xl border border-sand-soft bg-white p-4 md:grid-cols-2"

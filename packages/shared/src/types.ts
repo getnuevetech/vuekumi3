@@ -156,6 +156,27 @@ export interface AgreementDto {
   body: string
 }
 
+export interface AiSuggestionDto {
+  id?: string
+  photoId?: string
+  provider: 'openai' | 'dev'
+  status?: string
+  title: string | null
+  description: string | null
+  category: string | null
+  country: string | null
+  tags: string[]
+  hasRecognizablePeople: boolean | null
+  notes: string | null
+  createdAt?: string
+}
+
+export interface AiStatusDto {
+  configured: boolean
+  provider: 'openai' | 'dev'
+  manualOnly: true
+}
+
 export interface PaginatedPhotos {
   items: PhotoDto[]
   page: number

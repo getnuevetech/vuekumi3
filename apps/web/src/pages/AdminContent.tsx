@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { PortalShell, StatusPill } from '../components/shared'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { api, ApiError, type AdminContentDetail, type AdminContentRow } from '../api/client'
+import { AiSuggestPanel } from '../components/AiSuggestPanel'
 import { adminLinks } from './Admin'
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -88,6 +89,12 @@ export function AdminContent() {
                 <SheetTitle>{detail.photo.title}</SheetTitle>
               </SheetHeader>
               <img src={detail.photo.src} alt="" className="mt-4 h-40 w-full rounded-xl object-cover" />
+              <div className="mt-4">
+                <AiSuggestPanel
+                  photoId={detail.photo.id}
+                  onApplied={() => { open(detail.photo.id); load() }}
+                />
+              </div>
               <p className="mt-3 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
                 {detail.photo.id} · @{detail.photo.photographer}
               </p>

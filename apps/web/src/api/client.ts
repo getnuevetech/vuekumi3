@@ -9,6 +9,8 @@ import type {
   PaymentMethodsDto,
   PhotoDto,
   PurchaseLicenseResult,
+  AiSuggestionDto,
+  AiStatusDto,
 } from '@vuekumi/shared'
 import type { AccountType, LoginInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
 
@@ -165,6 +167,23 @@ export const api = {
 
   submitPhoto: (body: SubmitPhotoInput) =>
     request<{ photo: PhotoDto }>('/api/contributor/photos', { method: 'POST', body: JSON.stringify(body) }),
+
+  updatePhoto: (id: string, body: Record<string, unknown>) =>
+    request<{ photo: PhotoDto }>(`/api/contributor/photos/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  aiStatus: () => request<AiStatusDto>('/api/ai/status'),
+
+  suggestFile: (body: { imageBase64: string; mimeType: string; filename?: string; title?: string; country?: string; category?: string }) =>
+    request<{ suggestion: AiSuggestionDto }>('/api/ai/suggest-file', { method: 'POST', body: JSON.stringify(body) }),
+
+  suggestPhoto: (id: string) =>
+    request<{ suggestion: AiSuggestionDto }>(`/api/photos/${id}/ai/suggest`, { method: 'POST', body: JSON.stringify({}) }),
+
+  applySuggestion: (photoId: string, suggestionId: string, fields: string[]) =>
+    request<{ photo: PhotoDto }>(`/api/photos/${photoId}/ai/suggestions/${suggestionId}/apply`, {
+      method: 'POST',
+      body: JSON.stringify({ fields }),
+    }),
 
   async downloadOriginal(photoId: string) {
     const res = await fetch(`${API_BASE}/api/media/${photoId}/original`, { credentials: 'include' })

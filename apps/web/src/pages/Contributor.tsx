@@ -10,6 +10,7 @@ import {
   contributorStats, earningsSeries, fmt, money, payoutHistory, photoById, photographerOf, photos,
 } from '../data/content';
 import { api, ApiError } from '../api/client';
+import { AiSuggestPanel } from '../components/AiSuggestPanel';
 
 const ME = 'amara-okafor';
 
@@ -209,6 +210,23 @@ export function ContributorUpload() {
       </div>
 
       {files.length > 0 && (
+        <div className="mt-6">
+          <AiSuggestPanel
+            file={files[0]}
+            context={{ title, country, category }}
+            onFill={(s) => {
+              if (s.title) setTitle(s.title)
+              if (s.description) setDescription(s.description)
+              if (s.category) setCategory(s.category)
+              if (s.country) setCountry(s.country)
+              if (s.tags.length) setTags(s.tags.join(', '))
+              if (s.hasRecognizablePeople != null) setPeople(s.hasRecognizablePeople)
+            }}
+          />
+        </div>
+      )}
+
+      {files.length > 0 && (
         <div className="mt-6 rounded-2xl border border-sand-soft bg-white">
           {files.map((f, i) => (
             <div key={`${f.name}-${i}`} className="flex items-center justify-between border-b border-sand-soft px-5 py-3 last:border-0">
@@ -360,6 +378,7 @@ export function ContributorUpload() {
 export function ContributorPortfolio() {
   const [mine, setMine] = useState<PhotoDto[]>([]);
   const [tab, setTab] = useState<'all' | 'free' | 'premium'>('all');
+  const [suggestId, setSuggestId] = useState<string | null>(null);
   useEffect(() => {
     api.contributorPhotos().then((d) => setMine(d.items)).catch(() => setMine([]));
   }, []);
@@ -416,7 +435,14 @@ export function ContributorPortfolio() {
                 <td className="hidden px-4 py-3 sm:table-cell">{fmt(p.downloads)}</td>
                 <td className="hidden px-4 py-3 lg:table-cell"><StatusPill status={p.rights?.modelReleaseStatus ?? 'not_required'} /></td>
                 <td className="px-4 py-3"><StatusPill status={p.status} /></td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-right space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setSuggestId(suggestId === p.id ? null : p.id)}
+                    className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-terra hover:text-ink"
+                  >
+                    Suggest
+                  </button>
                   <Link to={`/photo/${p.id}`} className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-terra hover:text-ink">
                     View
                   </Link>
@@ -426,6 +452,15 @@ export function ContributorPortfolio() {
           </tbody>
         </table>
       </div>
+
+      {suggestId && (
+        <div className="mt-6">
+          <AiSuggestPanel
+            photoId={suggestId}
+            onApplied={(photo) => setMine((cur) => cur.map((p) => (p.id === photo.id ? photo : p)))}
+          />
+        </div>
+      )}
     </Shell>
   );
 }

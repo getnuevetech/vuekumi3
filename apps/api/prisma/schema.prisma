@@ -105,6 +105,7 @@ model User {
   licenseQuotes       LicenseQuote[]  @relation("QuoteRequester")
   payments            Payment[]
   earningsLedgers     EarningsLedger[] @relation("ContributorEarnings")
+  aiSuggestions       AiSuggestion[]   @relation("AiSuggestionRequester")
 
   @@index([accountType])
   @@index([status])
@@ -217,11 +218,35 @@ model Photo {
   assets           PhotoAsset[]
   payments         Payment[]
   earningsLedgers  EarningsLedger[]
+  aiSuggestions    AiSuggestion[]
 
   @@index([status])
   @@index([category])
   @@index([country])
   @@index([contributorId])
+}
+
+model AiSuggestion {
+  id                      String   @id @default(cuid())
+  photoId                 String
+  requestedById           String
+  provider                String
+  status                  String   @default("ready")
+  title                   String?
+  description             String?
+  category                String?
+  country                 String?
+  tags                    String[]
+  hasRecognizablePeople   Boolean?
+  notes                   String?
+  createdAt               DateTime @default(now())
+  appliedAt               DateTime?
+
+  photo       Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  requestedBy User  @relation("AiSuggestionRequester", fields: [requestedById], references: [id])
+
+  @@index([photoId])
+  @@index([requestedById])
 }
 
 enum AssetKind {

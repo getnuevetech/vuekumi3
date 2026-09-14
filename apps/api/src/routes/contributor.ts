@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { presignUploadSchema, submitPhotoSchema } from '@vuekumi/shared'
+import { presignUploadSchema, submitPhotoSchema, updatePhotoSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
@@ -205,6 +205,51 @@ export async function contributorRoutes(app: FastifyInstance) {
 
     return {
       photo: serializePhoto(photo, photo.contributor.contributorProfile?.handle ?? contributorId, true),
+    }
+  })
+
+  app.patch('/contributor/photos/:id', gate, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const body = updatePhotoSchema.parse(request.body)
+    const existing = await prisma.photo.findUnique({ where: { id } })
+    if (!existing) return reply.code(404).send({ error: 'Photo not found' })
+    if (request.authUser?.accountType !== 'admin' && existing.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+
+    const photo = await prisma.$transaction(async (tx) => {
+      if (body.tags) {
+        await tx.photoTag.deleteMany({ where: { photoId: id } })
+        if (body.tags.length) {
+          await tx.photoTag.createMany({ data: body.tags.map((tag) => ({ photoId: id, tag })) })
+        }
+      }
+      const updated = await tx.photo.update({
+        where: { id },
+        data: {
+          ...(body.title ? { title: body.title } : {}),
+          ...(body.description !== undefined ? { description: body.description } : {}),
+          ...(body.category ? { category: body.category } : {}),
+          ...(body.country ? { country: body.country } : {}),
+          ...(body.hasRecognizablePeople !== undefined ? { hasRecognizablePeople: body.hasRecognizablePeople } : {}),
+        },
+        include: {
+          tags: true,
+          rightsRecord: true,
+          contributor: { include: { contributorProfile: true } },
+        },
+      })
+      if (body.hasRecognizablePeople) {
+        await tx.rightsRecord.updateMany({
+          where: { photoId: id },
+          data: { modelReleaseRequired: true, modelReleaseStatus: 'pending' },
+        })
+      }
+      return updated
+    })
+
+    return {
+      photo: serializePhoto(photo, photo.contributor.contributorProfile?.handle ?? photo.contributorId, true),
     }
   })
 }
