@@ -222,6 +222,38 @@ export interface FavoriteResult {
   likes: number
 }
 
+export interface CollectionDto {
+  id: string
+  name: string
+  description: string | null
+  visibility: 'private' | 'unlisted' | 'public'
+  shareToken?: string
+  ownerName: string
+  agencyId: string | null
+  agencyName: string | null
+  photoCount: number
+  coverSrc: string | null
+  mine: boolean
+  canEdit: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CollectionDetailDto extends CollectionDto {
+  items: PhotoDto[]
+  page: number
+  limit: number
+  total: number
+  hasMore: boolean
+}
+
+export interface CollectionMembershipDto {
+  id: string
+  name: string
+  contains: boolean
+  shared: boolean
+}
+
 export interface AgencyDto {
   id: string
   name: string

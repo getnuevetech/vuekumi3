@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'node:crypto'
 import { photos, photographers } from './seed-data.js'
 
 /** Production image ships `dist/`; local `tsx prisma/seed.ts` uses `src/`. */
@@ -42,6 +43,8 @@ async function main() {
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
   await prisma.photoFavorite.deleteMany()
+  await prisma.collectionPhoto.deleteMany()
+  await prisma.collection.deleteMany()
   await prisma.photoTag.deleteMany()
   await prisma.rightsRecord.deleteMany()
   await prisma.photo.deleteMany()
@@ -341,6 +344,40 @@ async function main() {
   for (const photoId of favoriteIds) {
     await prisma.photo.update({ where: { id: photoId }, data: { likes: { increment: 1 } } })
   }
+
+  await prisma.collection.create({
+    data: {
+      ownerId: member.id,
+      name: 'West Africa campaign',
+      description: 'Cast and colour for a Q4 social set.',
+      visibility: 'private',
+      shareToken: randomBytes(16).toString('hex'),
+      photos: {
+        create: [
+          { photoId: 'afr-011', addedById: member.id },
+          { photoId: 'afr-004', addedById: member.id },
+          { photoId: 'afr-009', addedById: member.id },
+        ],
+      },
+    },
+  })
+
+  await prisma.collection.create({
+    data: {
+      ownerId: agencyOwner.id,
+      agencyId: agency.id,
+      name: 'Lagos pitch',
+      description: 'Shared lightbox for the DDB Lagos team.',
+      visibility: 'unlisted',
+      shareToken: randomBytes(16).toString('hex'),
+      photos: {
+        create: [
+          { photoId: 'afr-004', addedById: agencyOwner.id },
+          { photoId: 'afr-023', addedById: agencyOwner.id },
+        ],
+      },
+    },
+  })
 
   console.log('Seed complete.')
   console.log('Admin: admin@vuekumi.com / Admin123!')

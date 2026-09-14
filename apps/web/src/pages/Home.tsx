@@ -33,6 +33,7 @@ function NoirHeader() {
     { label: 'Library', to: '/search' },
     { label: 'License & Pricing', to: '/pricing' },
     ...(user ? [{ label: 'Favorites', to: '/favorites' }] : []),
+    ...(user ? [{ label: 'Collections', to: '/collections' }] : []),
     ...(user ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
     { label: 'Contributor', to: '/contributor' },

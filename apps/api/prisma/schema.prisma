@@ -112,6 +112,8 @@ model User {
   payouts             Payout[]         @relation("ContributorPayouts")
   payoutsProcessed    Payout[]         @relation("PayoutProcessor")
   photoFavorites      PhotoFavorite[]
+  collections         Collection[]        @relation("CollectionOwner")
+  collectionAdds      CollectionPhoto[]   @relation("CollectionAdder")
 
   @@index([accountType])
   @@index([status])
@@ -188,6 +190,7 @@ model Agency {
   invites       AgencyInvite[]
   licenseGrants LicenseGrant[]
   licenseQuotes LicenseQuote[]
+  collections   Collection[]
 }
 
 model AgencyInvite {
@@ -260,6 +263,7 @@ model Photo {
   earningsLedgers  EarningsLedger[]
   aiSuggestions    AiSuggestion[]
   favorites        PhotoFavorite[]
+  collectionPhotos CollectionPhoto[]
 
   @@index([status])
   @@index([category])
@@ -337,6 +341,41 @@ model PhotoFavorite {
   @@unique([userId, photoId])
   @@index([photoId])
   @@index([userId])
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  ownerId     String
+  agencyId    String?
+  name        String
+  description String?
+  visibility  String   @default("private")
+  shareToken  String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner  User              @relation("CollectionOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  agency Agency?           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  photos CollectionPhoto[]
+
+  @@index([ownerId])
+  @@index([agencyId])
+}
+
+model CollectionPhoto {
+  id           String   @id @default(cuid())
+  collectionId String
+  photoId      String
+  addedById    String
+  createdAt    DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  photo      Photo      @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  addedBy    User       @relation("CollectionAdder", fields: [addedById], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, photoId])
+  @@index([photoId])
+  @@index([addedById])
 }
 
 model RightsRecord {

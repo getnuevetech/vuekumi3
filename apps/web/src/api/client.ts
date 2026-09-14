@@ -15,6 +15,11 @@ import type {
   PhotographerDto,
   PhotographerProfileDto,
   FavoriteResult,
+  CollectionDto,
+  CollectionDetailDto,
+  CollectionMembershipDto,
+  CreateCollectionInput,
+  UpdateCollectionInput,
   PurchaseLicenseResult,
   AiSuggestionDto,
   AiStatusDto,
@@ -136,6 +141,40 @@ export const api = {
     const query = qs.toString()
     return request<PhotographerProfileDto>(`/api/photographers/${encodeURIComponent(handle)}${query ? `?${query}` : ''}`)
   },
+
+  collections: () => request<{ items: CollectionDto[] }>('/api/collections'),
+
+  createCollection: (body: CreateCollectionInput) =>
+    request<{ collection: CollectionDto }>('/api/collections', { method: 'POST', body: JSON.stringify(body) }),
+
+  collection: (id: string, params?: Record<string, string | number | undefined>) => {
+    const qs = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined) qs.set(k, String(v))
+      })
+    }
+    const query = qs.toString()
+    return request<CollectionDetailDto>(`/api/collections/${id}${query ? `?${query}` : ''}`)
+  },
+
+  updateCollection: (id: string, body: UpdateCollectionInput) =>
+    request<{ collection: CollectionDto }>(`/api/collections/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  deleteCollection: (id: string) =>
+    request<{ ok: boolean }>(`/api/collections/${id}`, { method: 'DELETE' }),
+
+  photoCollections: (photoId: string) =>
+    request<{ items: CollectionMembershipDto[] }>(`/api/photos/${photoId}/collections`),
+
+  addToCollection: (collectionId: string, photoId: string) =>
+    request<{ added: boolean; photoId: string }>(`/api/collections/${collectionId}/photos`, {
+      method: 'POST',
+      body: JSON.stringify({ photoId }),
+    }),
+
+  removeFromCollection: (collectionId: string, photoId: string) =>
+    request<{ ok: boolean }>(`/api/collections/${collectionId}/photos/${photoId}`, { method: 'DELETE' }),
 
   agreement: () => request<AgreementDto>('/api/agreements/current'),
 

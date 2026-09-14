@@ -26,6 +26,7 @@ import { aiRoutes } from './routes/ai.js'
 import { agencyRoutes } from './routes/agency.js'
 import { payoutRoutes } from './routes/payouts.js'
 import { photographerRoutes } from './routes/photographers.js'
+import { collectionRoutes } from './routes/collections.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -95,6 +96,7 @@ export async function buildApp() {
     await api.register(agencyRoutes)
     await api.register(payoutRoutes)
     await api.register(photographerRoutes)
+    await api.register(collectionRoutes)
   }, { prefix: '/api' })
 
   app.setNotFoundHandler((_request, reply) => {

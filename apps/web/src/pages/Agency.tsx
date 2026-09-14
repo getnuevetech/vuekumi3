@@ -37,6 +37,12 @@ const icons = {
       <path d="M4 6h16M4 12h10M4 18h13" strokeLinecap="round" />
     </svg>
   ),
+  box: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="6" width="18" height="13" rx="1" />
+      <path d="M3 10h18M8 6V4h8v2" strokeLinecap="round" />
+    </svg>
+  ),
 }
 
 const links: PortalLink[] = [
@@ -44,6 +50,7 @@ const links: PortalLink[] = [
   { to: '/agency/team', label: 'Team', icon: icons.team },
   { to: '/agency/licenses', label: 'Licences', icon: icons.licenses },
   { to: '/agency/quotes', label: 'Quotes', icon: icons.quotes },
+  { to: '/collections', label: 'Collections', icon: icons.box },
 ]
 
 function Shell({ children }: { children: React.ReactNode }) {

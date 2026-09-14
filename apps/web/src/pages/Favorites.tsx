@@ -41,7 +41,8 @@ export default function Favorites() {
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Saved</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Favorites.</h1>
         <p className="mt-2 max-w-xl text-sm text-ink-soft">
-          Hearts on the library save a photograph to this list. Vuekumi still sells usage permission, not ownership.
+          Hearts on the library save a photograph to this list. Group a campaign in{' '}
+          <Link to="/collections" className="text-terra">collections</Link>. Vuekumi still sells usage permission, not ownership.
         </p>
 
         {loading ? (
