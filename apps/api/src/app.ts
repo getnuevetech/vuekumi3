@@ -58,6 +58,9 @@ export async function buildApp() {
       err && typeof err === 'object' && 'statusCode' in err && typeof err.statusCode === 'number'
         ? err.statusCode
         : 500
+    if (status === 429) {
+      return reply.code(429).send({ error: 'Too many requests' })
+    }
     const message =
       err && typeof err === 'object' && 'message' in err && typeof err.message === 'string'
         ? err.message

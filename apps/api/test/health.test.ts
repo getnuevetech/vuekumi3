@@ -43,6 +43,22 @@ test('Google OAuth start redirects to login when keys are missing', async () => 
   await app.close()
 })
 
+test('auth rate limit returns the 429 envelope', async () => {
+  const app = await buildApp()
+  let last = { statusCode: 0, body: { error: '' } }
+  for (let i = 0; i < 16; i += 1) {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { email: 'nobody@example.com', password: 'wrong-password' },
+    })
+    last = { statusCode: res.statusCode, body: res.json() as { error: string } }
+  }
+  assert.equal(last.statusCode, 429)
+  assert.equal(last.body.error, 'Too many requests')
+  await app.close()
+})
+
 test('invalid login body returns a 400 error envelope', async () => {
   const app = await buildApp()
   const res = await app.inject({
