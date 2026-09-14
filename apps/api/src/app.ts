@@ -17,7 +17,7 @@ import { adminContentRoutes } from './routes/admin-content.js'
 import { mediaRoutes } from './routes/media.js'
 
 export async function buildApp() {
-  const app = Fastify({ logger: true, bodyLimit: 55 * 1024 * 1024 })
+  const app = Fastify({ logger: true, bodyLimit: 55 * 1024 * 1024, maxParamLength: 2048 })
 
   await app.register(cors, {
     origin: true,
