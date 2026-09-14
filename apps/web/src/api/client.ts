@@ -28,7 +28,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
       ...(init?.headers ?? {}),
     },
     ...init,
@@ -108,10 +108,11 @@ export const api = {
 
   payment: (id: string) => request<{ payment: PaymentDto; grant: LicenseGrantDto | null }>(`/api/payments/${id}`),
 
-  verifyPayment: (id: string) => request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/verify`, { method: 'POST' }),
+  verifyPayment: (id: string) =>
+    request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/verify`, { method: 'POST', body: JSON.stringify({}) }),
 
   completeDevPayment: (id: string) =>
-    request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/complete-dev`, { method: 'POST' }),
+    request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/complete-dev`, { method: 'POST', body: JSON.stringify({}) }),
 
   contributorEarnings: () =>
     request<{
