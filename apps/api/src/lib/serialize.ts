@@ -71,11 +71,21 @@ type PhotoWithTags = Photo & {
   agreements?: Pick<PlatformAgreement, 'version' | 'status'>[]
 }
 
+function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
+  if (photo.storageKey && photo.processingStatus === 'ready') return `/api/media/${photo.id}/${kind}`
+  return photo.src
+}
+
 export function serializePhoto(photo: PhotoWithTags, photographerHandle: string, hasAgreement = true): PhotoDto {
   const contributor = photo.contributor
   return {
     id: photo.id,
-    src: photo.src,
+    src: mediaSrc(photo, 'preview'),
+    thumbSrc: mediaSrc(photo, 'thumb'),
+    hasOriginal: Boolean(photo.storageKey),
+    processingStatus: photo.processingStatus,
+    width: photo.width,
+    height: photo.height,
     title: photo.title,
     description: photo.description,
     category: photo.category,
@@ -128,7 +138,7 @@ export function serializeLicenseProduct(
 
 export function serializeGrant(
   grant: LicenseGrant & {
-    photo: Pick<Photo, 'id' | 'title' | 'src'>
+    photo: Pick<Photo, 'id' | 'title' | 'src' | 'storageKey' | 'processingStatus'>
     product: Pick<LicenseProduct, 'name'>
   },
 ): LicenseGrantDto {
@@ -136,7 +146,11 @@ export function serializeGrant(
     id: grant.id,
     photoId: grant.photoId,
     photoTitle: grant.photo.title,
-    photoSrc: grant.photo.src,
+    photoSrc:
+      grant.photo.storageKey && grant.photo.processingStatus === 'ready'
+        ? `/api/media/${grant.photo.id}/preview`
+        : grant.photo.src,
+    hasOriginal: Boolean(grant.photo.storageKey),
     licenseType: grant.licenseType,
     licenseName: grant.product.name,
     amountUsd: grant.amountUsd,

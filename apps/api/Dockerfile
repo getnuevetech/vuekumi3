@@ -23,8 +23,10 @@ RUN npm run build -w @vuekumi/api
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV STORAGE_DIR=/app/storage
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl libc6-compat
+RUN mkdir -p /app/storage
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist

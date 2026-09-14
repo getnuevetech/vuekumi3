@@ -1,15 +1,65 @@
 import type { FastifyInstance } from 'fastify'
-import { submitPhotoSchema } from '@vuekumi/shared'
+import { presignUploadSchema, submitPhotoSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
+import { processPhotoAssets } from '../lib/process-photo.js'
 import { contributorHasAgreement } from '../lib/rights.js'
 import { serializePhoto } from '../lib/serialize.js'
+import {
+  ALLOWED_IMAGE_TYPES,
+  assertOwnedOriginalKey,
+  extensionFor,
+  objectExists,
+  originalKeyFor,
+  presignPut,
+  verifyLocalToken,
+  writeLocalUpload,
+} from '../lib/storage.js'
 
 const PLACEHOLDER_SRC = '/images/photos/fashion-portrait.jpg'
+const photoInclude = {
+  tags: true,
+  rightsRecord: true,
+  contributor: { include: { contributorProfile: true } },
+} as const
 
 export async function contributorRoutes(app: FastifyInstance) {
   const gate = { preHandler: requireAccountTypes(app, 'contributor', 'admin') }
+
+  app.post('/contributor/uploads/presign', gate, async (request, reply) => {
+    const body = presignUploadSchema.parse(request.body)
+    const contentType = body.contentType.toLowerCase()
+    if (!ALLOWED_IMAGE_TYPES.has(contentType)) {
+      return reply.code(400).send({ error: 'Only JPEG, PNG, WebP and TIFF images are accepted' })
+    }
+    const ext = extensionFor(body.filename, contentType)
+    const key = originalKeyFor(request.userId!, ext)
+    const signed = await presignPut(key, contentType)
+    return signed
+  })
+
+  await app.register(async (scope) => {
+    scope.addContentTypeParser('*', (request, payload, done) => {
+      done(null, payload)
+    })
+
+    scope.put('/contributor/uploads/bin/:token', {
+      preHandler: requireAccountTypes(app, 'contributor', 'admin'),
+      bodyLimit: 55 * 1024 * 1024,
+    }, async (request, reply) => {
+      const { token } = request.params as { token: string }
+      const key = verifyLocalToken(token)
+      if (!key) return reply.code(400).send({ error: 'Upload token is invalid or expired' })
+      try {
+        assertOwnedOriginalKey(key, request.userId!)
+      } catch {
+        return reply.code(403).send({ error: 'Invalid storage key' })
+      }
+      const stored = await writeLocalUpload(key, request.body as NodeJS.ReadableStream)
+      return { ok: true, key: stored.key, bytes: stored.bytes }
+    })
+  })
 
   app.get('/contributor/photos', gate, async (request) => {
     const contributorId = request.authUser?.accountType === 'admin' && (request.query as { userId?: string }).userId
@@ -49,11 +99,23 @@ export async function contributorRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'Accept the current VueKumi contributor agreement before submitting' })
     }
 
+    if (body.originalKey) {
+      try {
+        assertOwnedOriginalKey(body.originalKey, contributorId)
+      } catch {
+        return reply.code(400).send({ error: 'Invalid original storage key' })
+      }
+      if (!(await objectExists(body.originalKey))) {
+        return reply.code(400).send({ error: 'Upload the image file before submitting' })
+      }
+    }
+
     const people = body.hasRecognizablePeople
     const modelReleaseAttached = Boolean(body.modelReleaseFileName)
     const id = `sub-${Date.now().toString(36)}`
+    const processingStatus = body.originalKey ? 'pending' : 'ready'
 
-    const photo = await prisma.$transaction(async (tx) => {
+    let photo = await prisma.$transaction(async (tx) => {
       const created = await tx.photo.create({
         data: {
           id,
@@ -66,9 +128,20 @@ export async function contributorRoutes(app: FastifyInstance) {
           price: body.licenseType === 'premium' ? (body.price ?? 12) : 0,
           status: 'pending',
           src: body.src || PLACEHOLDER_SRC,
+          storageKey: body.originalKey,
+          processingStatus,
           hasRecognizablePeople: people,
           exclusiveAvailable: Boolean(body.exclusiveAvailable),
           tags: body.tags?.length ? { create: body.tags.map((tag) => ({ tag })) } : undefined,
+          assets: body.originalKey
+            ? {
+                create: {
+                  kind: 'original',
+                  storageKey: body.originalKey,
+                  mimeType: 'application/octet-stream',
+                },
+              }
+            : undefined,
           rightsRecord: {
             create: {
               copyrightVerified: true,
@@ -86,11 +159,7 @@ export async function contributorRoutes(app: FastifyInstance) {
             },
           },
         },
-        include: {
-          tags: true,
-          rightsRecord: true,
-          contributor: { include: { contributorProfile: true } },
-        },
+        include: photoInclude,
       })
 
       if (people && modelReleaseAttached) {
@@ -112,12 +181,25 @@ export async function contributorRoutes(app: FastifyInstance) {
       return created
     })
 
+    if (body.originalKey) {
+      try {
+        await processPhotoAssets(photo.id)
+        const reloaded = await prisma.photo.findUnique({
+          where: { id: photo.id },
+          include: photoInclude,
+        })
+        if (reloaded) photo = reloaded
+      } catch (err) {
+        request.log.warn({ err, photoId: photo.id }, 'inline derivative processing failed')
+      }
+    }
+
     await writeAuditLog({
       actorId: request.userId,
       action: 'contributor.submit_photo',
       entityType: 'photo',
       entityId: photo.id,
-      metadata: { hasRecognizablePeople: people, exclusiveAvailable: body.exclusiveAvailable },
+      metadata: { hasRecognizablePeople: people, exclusiveAvailable: body.exclusiveAvailable, originalKey: Boolean(body.originalKey) },
       ipAddress: request.ip,
     })
 

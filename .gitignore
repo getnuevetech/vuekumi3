@@ -6,3 +6,5 @@ dist-old
 .env
 .env.*
 docker/nginx/nginx.runtime.conf
+apps/api/storage
+storage

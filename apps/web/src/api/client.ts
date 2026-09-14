@@ -113,8 +113,64 @@ export const api = {
     URL.revokeObjectURL(url)
   },
 
+  presignUpload: (filename: string, contentType: string) =>
+    request<{
+      driver: 's3' | 'local'
+      key: string
+      uploadUrl: string
+      method: 'PUT'
+      headers: Record<string, string>
+    }>('/api/contributor/uploads/presign', {
+      method: 'POST',
+      body: JSON.stringify({ filename, contentType }),
+    }),
+
+  async putUpload(uploadUrl: string, file: File, headers: Record<string, string>) {
+    const target = uploadUrl.startsWith('http') ? uploadUrl : `${API_BASE}${uploadUrl}`
+    const res = await fetch(target, {
+      method: 'PUT',
+      headers,
+      body: file,
+      credentials: uploadUrl.startsWith('http') ? 'omit' : 'include',
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new ApiError((data as { error?: string }).error ?? 'Upload failed', res.status)
+    }
+  },
+
   submitPhoto: (body: SubmitPhotoInput) =>
     request<{ photo: PhotoDto }>('/api/contributor/photos', { method: 'POST', body: JSON.stringify(body) }),
+
+  async downloadOriginal(photoId: string) {
+    const res = await fetch(`${API_BASE}/api/media/${photoId}/original`, { credentials: 'include' })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new ApiError((data as { error?: string }).error ?? res.statusText, res.status)
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${photoId}-original.jpg`
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+
+  async downloadGrantFile(grantId: string) {
+    const res = await fetch(`${API_BASE}/api/licenses/grants/${grantId}/file`, { credentials: 'include' })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new ApiError((data as { error?: string }).error ?? res.statusText, res.status)
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `vuekumi-${grantId}.jpg`
+    a.click()
+    URL.revokeObjectURL(url)
+  },
 
   contributorPhotos: () => request<{ items: PhotoDto[] }>('/api/contributor/photos'),
 

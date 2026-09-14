@@ -60,8 +60,15 @@ export const submitPhotoSchema = z.object({
   modelReleaseFileName: z.string().max(200).optional(),
   modelReleaseNotes: z.string().max(2000).optional(),
   src: z.string().max(500).optional(),
+  originalKey: z.string().min(8).max(400).optional(),
+})
+
+export const presignUploadSchema = z.object({
+  filename: z.string().min(1).max(200),
+  contentType: z.string().min(3).max(100),
 })
 
 export type PurchaseLicenseInput = z.infer<typeof purchaseLicenseSchema>
 export type RightsManagedQuoteInput = z.infer<typeof rightsManagedQuoteSchema>
 export type SubmitPhotoInput = z.infer<typeof submitPhotoSchema>
+export type PresignUploadInput = z.infer<typeof presignUploadSchema>

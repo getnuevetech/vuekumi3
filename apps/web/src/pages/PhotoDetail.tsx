@@ -74,6 +74,9 @@ export default function PhotoDetail() {
       const result = await api.purchaseLicense(id, selected.type)
       setGrantCode(result.grant.certificateCode)
       await api.downloadCertificate(result.grant.id)
+      if (result.grant.hasOriginal || view.hasOriginal) {
+        await api.downloadGrantFile(result.grant.id).catch(() => undefined)
+      }
       toast.success(result.existing ? 'Licence already on file — certificate downloaded' : 'Licence granted — certificate downloaded')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not complete licence')

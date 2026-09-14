@@ -19,3 +19,5 @@ terminals
 tmp
 /tmp
 *.log
+apps/api/storage
+storage

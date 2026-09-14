@@ -11,6 +11,7 @@ import { convertFromUsd, pricingForCountry } from '../lib/fx.js'
 import { prisma } from '../lib/prisma.js'
 import { serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
 import { assertCanGrant, certificateCode, priceForProduct, RightsError } from '../lib/rights.js'
+import { streamObject } from '../lib/storage.js'
 
 function rightsError(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, err: unknown) {
   if (err instanceof RightsError) {
@@ -358,5 +359,33 @@ export async function licenseRoutes(app: FastifyInstance) {
       .header('Content-Type', 'application/pdf')
       .header('Content-Disposition', `attachment; filename="${grant.certificateCode}.pdf"`)
       .send(pdf)
+  })
+
+  app.get('/licenses/grants/:id/file', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const grant = await prisma.licenseGrant.findUnique({
+      where: { id },
+      include: { photo: { include: { assets: true } } },
+    })
+    if (!grant) return reply.code(404).send({ error: 'Grant not found' })
+    if (grant.buyerId !== request.userId && request.authUser?.accountType !== 'admin') {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+
+    const original = grant.photo.assets.find((a) => a.kind === 'original')
+    const key = original?.storageKey ?? grant.photo.storageKey
+    if (!key) {
+      return reply.code(404).send({ error: 'Original is not stored for this image' })
+    }
+
+    const obj = await streamObject(key)
+    reply
+      .header('Content-Type', original?.mimeType || obj.mimeType || 'application/octet-stream')
+      .header('Content-Disposition', `attachment; filename="${grant.photo.id}-original.jpg"`)
+      .header('Cache-Control', 'private, no-store')
+    if (obj.bytes) reply.header('Content-Length', obj.bytes)
+    return reply.send(obj.stream)
   })
 }

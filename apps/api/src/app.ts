@@ -14,9 +14,10 @@ import { adminIntegrationRoutes } from './routes/admin-integrations.js'
 import { licenseRoutes } from './routes/licenses.js'
 import { contributorRoutes } from './routes/contributor.js'
 import { adminContentRoutes } from './routes/admin-content.js'
+import { mediaRoutes } from './routes/media.js'
 
 export async function buildApp() {
-  const app = Fastify({ logger: true })
+  const app = Fastify({ logger: true, bodyLimit: 55 * 1024 * 1024 })
 
   await app.register(cors, {
     origin: true,
@@ -38,6 +39,7 @@ export async function buildApp() {
     await api.register(licenseRoutes)
     await api.register(contributorRoutes)
     await api.register(adminContentRoutes)
+    await api.register(mediaRoutes)
   }, { prefix: '/api' })
 
   return app

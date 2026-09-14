@@ -143,7 +143,7 @@ export function ContributorDashboard() {
 
 export function ContributorUpload() {
   const [dragging, setDragging] = useState(false);
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Landscape');
   const [country, setCountry] = useState('');
@@ -157,13 +157,18 @@ export function ContributorUpload() {
   const [releaseNotes, setReleaseNotes] = useState('');
   const [attested, setAttested] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState('');
+
+  const addFiles = (incoming: File[]) => {
+    const images = incoming.filter((f) => f.type.startsWith('image/'));
+    setFiles((prev) => [...prev, ...images]);
+    if (images[0] && !releaseName) setReleaseName(images[0].name);
+  };
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const names = Array.from(e.dataTransfer.files).map((f) => f.name);
-    setFiles((prev) => [...prev, ...names]);
-    if (names[0] && !releaseName) setReleaseName(names[0]);
+    addFiles(Array.from(e.dataTransfer.files));
   };
 
   return (
@@ -195,18 +200,20 @@ export function ContributorUpload() {
             multiple
             accept="image/*"
             className="hidden"
-            onChange={(e) => setFiles((prev) => [...prev, ...Array.from(e.target.files ?? []).map((f) => f.name)])}
+            onChange={(e) => addFiles(Array.from(e.target.files ?? []))}
           />
         </label>
-        <p className="mt-4 font-mono-tech text-[10px] text-ink-faint">Object storage arrives in the next phase — metadata and rights are stored now.</p>
+        <p className="mt-4 font-mono-tech text-[10px] text-ink-faint">
+          JPEG, PNG, WebP or TIFF · up to 50 MB · originals stay private
+        </p>
       </div>
 
       {files.length > 0 && (
         <div className="mt-6 rounded-2xl border border-sand-soft bg-white">
           {files.map((f, i) => (
-            <div key={`${f}-${i}`} className="flex items-center justify-between border-b border-sand-soft px-5 py-3 last:border-0">
-              <span className="truncate text-sm">{f}</span>
-              <StatusPill status="pending" />
+            <div key={`${f.name}-${i}`} className="flex items-center justify-between border-b border-sand-soft px-5 py-3 last:border-0">
+              <span className="truncate text-sm">{f.name}</span>
+              <span className="font-mono-tech text-[10px] text-ink-faint">{Math.round(f.size / 1024)} KB</span>
             </div>
           ))}
         </div>
@@ -221,29 +228,45 @@ export function ContributorUpload() {
               toast.error('Confirm you hold copyright');
               return;
             }
+            if (files.length === 0) {
+              toast.error('Add at least one image file');
+              return;
+            }
             setBusy(true);
             try {
-              const photo = await api.submitPhoto({
-                title,
-                description,
-                category,
-                country,
-                tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-                licenseType,
-                hasRecognizablePeople: people,
-                exclusiveAvailable: exclusive,
-                copyrightHolder,
-                copyrightAttested: true,
-                modelReleaseFileName: people ? (releaseName || files[0] || 'model-release.pdf') : undefined,
-                modelReleaseNotes: releaseNotes || undefined,
-              });
-              toast.success(`Submitted ${photo.photo.id} for review`);
+              let lastId = '';
+              for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                setProgress(`Uploading ${i + 1} of ${files.length}`);
+                const signed = await api.presignUpload(file.name, file.type || 'image/jpeg');
+                await api.putUpload(signed.uploadUrl, file, signed.headers);
+                setProgress(`Processing ${i + 1} of ${files.length}`);
+                const photo = await api.submitPhoto({
+                  title: files.length === 1 ? title : `${title || file.name.replace(/\.[^.]+$/, '')} ${i + 1}`,
+                  description,
+                  category,
+                  country,
+                  tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+                  licenseType,
+                  hasRecognizablePeople: people,
+                  exclusiveAvailable: exclusive,
+                  copyrightHolder,
+                  copyrightAttested: true,
+                  modelReleaseFileName: people ? (releaseName || file.name) : undefined,
+                  modelReleaseNotes: releaseNotes || undefined,
+                  originalKey: signed.key,
+                });
+                lastId = photo.photo.id;
+              }
+              toast.success(files.length === 1 ? `Submitted ${lastId} for review` : `Submitted ${files.length} images for review`);
               setTitle('');
               setFiles([]);
+              setProgress('');
             } catch (err) {
               toast.error(err instanceof ApiError ? err.message : 'Submit failed');
             } finally {
               setBusy(false);
+              setProgress('');
             }
           }}
         >
@@ -305,7 +328,7 @@ export function ContributorUpload() {
             I confirm I own the copyright. Vuekumi receives a platform licence to sublicense usage rights, not ownership.
           </label>
           <button disabled={busy} className="rounded-full bg-ink px-8 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper transition-colors hover:bg-terra disabled:opacity-50">
-            {busy ? 'Submitting…' : 'Submit for review'}
+            {busy ? (progress || 'Submitting…') : 'Submit for review'}
           </button>
         </form>
 
@@ -382,7 +405,7 @@ export function ContributorPortfolio() {
               <tr key={p.id} className="border-b border-sand-soft last:border-0 hover:bg-cream/50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <img src={p.src} alt="" className="h-11 w-14 rounded-lg object-cover" />
+                    <img src={p.thumbSrc ?? p.src} alt="" className="h-11 w-14 rounded-lg object-cover" />
                     <div className="min-w-0">
                       <p className="truncate font-medium">{p.title}</p>
                       <p className="font-mono-tech text-[10px] text-ink-faint">{p.country} · {p.category}</p>

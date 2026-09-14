@@ -4,6 +4,7 @@ import { seedCountries } from './lib/geo.js'
 import { syncExchangeRates } from './lib/fx.js'
 import { prisma } from './lib/prisma.js'
 import { seedLicenseCatalog } from './lib/licenses-seed.js'
+import { startMediaWorker } from './lib/media-worker.js'
 
 const app = await buildApp()
 
@@ -13,6 +14,7 @@ try {
   if ((await prisma.exchangeRate.count()) === 0) {
     await syncExchangeRates().catch((err) => app.log.warn({ err }, 'initial FX sync failed'))
   }
+  startMediaWorker(app.log)
   await app.listen({ port: config.port, host: '0.0.0.0' })
 } catch (err) {
   app.log.error(err)

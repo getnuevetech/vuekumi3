@@ -200,7 +200,10 @@ model Photo {
   updatedAt             DateTime    @updatedAt
   publishedAt           DateTime?
 
-  exclusiveSold    Boolean           @default(false)
+  exclusiveSold      Boolean           @default(false)
+  width              Int?
+  height             Int?
+  processingStatus   String            @default("ready")
 
   contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
   tags             PhotoTag[]
@@ -209,11 +212,36 @@ model Photo {
   modelReleases    ModelRelease[]
   licenseGrants    LicenseGrant[]
   licenseQuotes    LicenseQuote[]
+  assets           PhotoAsset[]
 
   @@index([status])
   @@index([category])
   @@index([country])
   @@index([contributorId])
+}
+
+enum AssetKind {
+  original
+  preview
+  watermarked
+  thumb
+}
+
+model PhotoAsset {
+  id         String    @id @default(cuid())
+  photoId    String
+  kind       AssetKind
+  storageKey String
+  bytes      Int       @default(0)
+  width      Int?
+  height     Int?
+  mimeType   String    @default("image/jpeg")
+  createdAt  DateTime  @default(now())
+
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, kind])
+  @@index([storageKey])
 }
 
 model PhotoTag {

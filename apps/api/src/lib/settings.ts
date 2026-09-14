@@ -49,11 +49,11 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'email.from_address', label: 'From email address', group: 'Email', secret: false, placeholder: 'Vuekumi <hello@yourdomain.com>' },
   { key: 'ai.openai_api_key', label: 'OpenAI API key', group: 'AI', secret: true, envFallback: 'OPENAI_API_KEY' },
   { key: 'ai.replicate_api_token', label: 'Replicate API token', group: 'AI', secret: true, envFallback: 'REPLICATE_API_TOKEN' },
-  { key: 'storage.s3_endpoint', label: 'Object storage endpoint', group: 'Storage', secret: false, placeholder: 'https://s3.amazonaws.com or Lightsail endpoint' },
-  { key: 'storage.s3_region', label: 'Object storage region', group: 'Storage', secret: false },
-  { key: 'storage.s3_bucket', label: 'Bucket name', group: 'Storage', secret: false },
-  { key: 'storage.s3_access_key', label: 'Access key', group: 'Storage', secret: true },
-  { key: 'storage.s3_secret_key', label: 'Secret key', group: 'Storage', secret: true },
+  { key: 'storage.s3_endpoint', label: 'Object storage endpoint', group: 'Storage', secret: false, placeholder: 'https://s3.amazonaws.com or Lightsail / MinIO endpoint', envFallback: 'S3_ENDPOINT' },
+  { key: 'storage.s3_region', label: 'Object storage region', group: 'Storage', secret: false, envFallback: 'S3_REGION' },
+  { key: 'storage.s3_bucket', label: 'Bucket name', group: 'Storage', secret: false, envFallback: 'S3_BUCKET' },
+  { key: 'storage.s3_access_key', label: 'Access key', group: 'Storage', secret: true, envFallback: 'S3_ACCESS_KEY' },
+  { key: 'storage.s3_secret_key', label: 'Secret key', group: 'Storage', secret: true, envFallback: 'S3_SECRET_KEY' },
 ]
 
 export async function getSetting(key: string): Promise<string | null> {

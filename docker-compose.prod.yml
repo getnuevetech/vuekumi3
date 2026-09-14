@@ -37,9 +37,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECRET: ${COOKIE_SECRET}
       WEB_URL: ${WEB_URL}
+      STORAGE_DIR: /app/storage
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - api-storage:/app/storage
     expose:
       - "3001"
     restart: unless-stopped
@@ -81,3 +84,4 @@ volumes:
   redisdata:
   certbot-www:
   certbot-certs:
+  api-storage:

@@ -51,7 +51,16 @@ export default function Licenses() {
                   <td className="px-4 py-3"><StatusPill status={g.licenseType} /></td>
                   <td className="hidden px-4 py-3 font-mono-tech text-[10px] md:table-cell">{g.certificateCode}</td>
                   <td className="px-4 py-3">{g.amountUsd === 0 ? 'Free' : format(g.amountUsd)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right space-x-3">
+                    {g.hasOriginal && (
+                      <button
+                        type="button"
+                        onClick={() => api.downloadGrantFile(g.id).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Download failed'))}
+                        className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-terra hover:text-ink"
+                      >
+                        Original
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => api.downloadCertificate(g.id).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Download failed'))}

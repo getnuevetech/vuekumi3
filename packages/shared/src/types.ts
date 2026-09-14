@@ -63,6 +63,11 @@ export interface PhotoDto {
   exclusiveSold?: boolean
   hasRecognizablePeople?: boolean
   rights?: RightsDto
+  thumbSrc?: string
+  hasOriginal?: boolean
+  processingStatus?: string
+  width?: number | null
+  height?: number | null
 }
 
 export interface LicenseProductDto {
@@ -93,6 +98,7 @@ export interface LicenseGrantDto {
   certificateCode: string
   createdAt: string
   scope: Record<string, unknown>
+  hasOriginal?: boolean
 }
 
 export interface LicenseQuoteDto {
