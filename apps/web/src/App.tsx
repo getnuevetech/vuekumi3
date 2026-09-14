@@ -25,6 +25,7 @@ import Checkout from './pages/Checkout'
 import Search from './pages/Search'
 import Photographer from './pages/Photographer'
 import Favorites from './pages/Favorites'
+import Following from './pages/Following'
 import Collections from './pages/Collections'
 import CollectionDetail from './pages/CollectionDetail'
 import NotFound from './pages/NotFound'
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/join/:token" element={<JoinAgency />} />
         <Route path="/favorites" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Favorites /></ProtectedRoute>} />
+        <Route path="/following" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Following /></ProtectedRoute>} />
         <Route path="/collections" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Collections /></ProtectedRoute>} />
         <Route path="/c/:id" element={<CollectionDetail />} />
         <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />

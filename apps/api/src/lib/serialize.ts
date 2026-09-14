@@ -96,7 +96,7 @@ export function serializePhoto(
   photo: PhotoWithTags,
   photographerHandle: string,
   hasAgreement = true,
-  extras?: { favorited?: boolean },
+  extras?: { favorited?: boolean; photographerFollowed?: boolean },
 ): PhotoDto {
   const contributor = photo.contributor
   return {
@@ -121,6 +121,7 @@ export function serializePhoto(
     views: photo.views,
     likes: photo.likes,
     favorited: extras?.favorited,
+    photographerFollowed: extras?.photographerFollowed,
     tags: photo.tags.map((t) => t.tag),
     status: photo.status,
     exclusiveAvailable: photo.exclusiveAvailable,

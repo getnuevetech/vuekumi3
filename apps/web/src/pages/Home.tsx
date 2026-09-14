@@ -33,6 +33,7 @@ function NoirHeader() {
     { label: 'Library', to: '/search' },
     { label: 'License & Pricing', to: '/pricing' },
     ...(user ? [{ label: 'Favorites', to: '/favorites' }] : []),
+    ...(user ? [{ label: 'Following', to: '/following' }] : []),
     ...(user ? [{ label: 'Collections', to: '/collections' }] : []),
     ...(user ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
@@ -629,7 +630,7 @@ function ContributorsRail() {
                 {ph.name} <span className="mx-1 text-terra">—</span> <span className="text-sm font-light text-paper-soft">{ph.location}</span>
               </p>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
-                {fmt(ph.downloads)} downloads · {ph.photosCount} photographs
+                {fmt(ph.followers)} followers · {ph.photosCount} photographs
               </p>
             </div>
           </Link>

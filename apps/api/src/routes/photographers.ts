@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { photographerListQuerySchema, photoListQuerySchema } from '@vuekumi/shared'
 import type { PhotographerDto } from '@vuekumi/shared'
-import { optionalAuthenticate } from '../lib/auth-middleware.js'
+import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
 import {
   buildPhotoWhere,
   catalogPhotoInclude,
@@ -10,16 +10,25 @@ import {
   photoOrderBy,
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
+import { followBlocked } from '../lib/follows.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPhotographer(
   user: {
+    id: string
     name: string
     avatarUrl: string | null
-    contributorProfile: { handle: string; location: string | null; bio: string | null } | null
+    contributorProfile: {
+      handle: string
+      location: string | null
+      bio: string | null
+      profileViews?: number
+    } | null
   },
   photosCount: number,
   downloads: number,
+  followers: number,
+  extras?: { following?: boolean; profileViews?: number },
 ): PhotographerDto | null {
   if (!user.contributorProfile) return null
   return {
@@ -30,11 +39,16 @@ function toPhotographer(
     bio: user.contributorProfile.bio,
     photosCount,
     downloads,
+    followers,
+    profileViews: extras?.profileViews ?? user.contributorProfile.profileViews,
+    following: extras?.following,
   }
 }
 
 export async function photographerRoutes(app: FastifyInstance) {
-  app.get('/photographers', async (request) => {
+  app.get('/photographers', {
+    preHandler: (request, reply) => optionalAuthenticate(app, request, reply),
+  }, async (request) => {
     const query = photographerListQuerySchema.parse(request.query)
     const q = normalizeQuery(query.q)
 
@@ -58,14 +72,28 @@ export async function photographerRoutes(app: FastifyInstance) {
       include: {
         contributorProfile: true,
         photos: { where: { status: 'active' }, select: { downloads: true } },
+        _count: { select: { followers: true } },
       },
     })
+
+    const followed = request.userId
+      ? new Set(
+          (
+            await prisma.photographerFollow.findMany({
+              where: { followerId: request.userId, photographerId: { in: users.map((u) => u.id) } },
+              select: { photographerId: true },
+            })
+          ).map((row) => row.photographerId),
+        )
+      : null
 
     const items = users
       .map((user) => {
         const photosCount = user.photos.length
         const downloads = user.photos.reduce((sum, p) => sum + p.downloads, 0)
-        return toPhotographer(user, photosCount, downloads)
+        return toPhotographer(user, photosCount, downloads, user._count.followers, {
+          following: followed ? followed.has(user.id) : undefined,
+        })
       })
       .filter((row): row is PhotographerDto => Boolean(row))
       .sort((a, b) => b.downloads - a.downloads || a.name.localeCompare(b.name))
@@ -79,6 +107,49 @@ export async function photographerRoutes(app: FastifyInstance) {
       limit: query.limit,
       total: items.length,
       hasMore: start + query.limit < items.length,
+    }
+  })
+
+  app.get('/following', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request) => {
+    const query = photographerListQuerySchema.parse(request.query)
+    const where = { followerId: request.userId! }
+
+    const [total, rows] = await Promise.all([
+      prisma.photographerFollow.count({ where }),
+      prisma.photographerFollow.findMany({
+        where,
+        include: {
+          photographer: {
+            include: {
+              contributorProfile: true,
+              photos: { where: { status: 'active' }, select: { downloads: true } },
+              _count: { select: { followers: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+    ])
+
+    const items = rows
+      .map((row) => {
+        const user = row.photographer
+        const photosCount = user.photos.length
+        const downloads = user.photos.reduce((sum, p) => sum + p.downloads, 0)
+        return toPhotographer(user, photosCount, downloads, user._count.followers, { following: true })
+      })
+      .filter((row): row is PhotographerDto => Boolean(row))
+
+    return {
+      items,
+      page: query.page,
+      limit: query.limit,
+      total,
+      hasMore: query.page * query.limit < total,
     }
   })
 
@@ -99,7 +170,17 @@ export async function photographerRoutes(app: FastifyInstance) {
     const photoQuery = { ...query, photographer: profile.handle }
     const where = buildPhotoWhere(photoQuery)
 
-    const [total, photos, live] = await Promise.all([
+    const countOwnView = query.page === 1 && request.userId !== profile.userId
+    if (countOwnView) {
+      const updated = await prisma.contributorProfile.update({
+        where: { id: profile.id },
+        data: { profileViews: { increment: 1 } },
+        select: { profileViews: true },
+      })
+      profile.profileViews = updated.profileViews
+    }
+
+    const [total, photos, live, followers, followingRow] = await Promise.all([
       prisma.photo.count({ where }),
       prisma.photo.findMany({
         where,
@@ -113,12 +194,25 @@ export async function photographerRoutes(app: FastifyInstance) {
         _count: { _all: true },
         _sum: { downloads: true },
       }),
+      prisma.photographerFollow.count({ where: { photographerId: profile.userId } }),
+      request.userId
+        ? prisma.photographerFollow.findUnique({
+            where: {
+              followerId_photographerId: { followerId: request.userId, photographerId: profile.userId },
+            },
+          })
+        : Promise.resolve(null),
     ])
 
     const photographer = toPhotographer(
       { ...profile.user, contributorProfile: profile },
       live._count._all,
       live._sum.downloads ?? 0,
+      followers,
+      {
+        following: request.userId ? Boolean(followingRow) : undefined,
+        profileViews: profile.profileViews,
+      },
     )
     if (!photographer) {
       return reply.code(404).send({ error: 'Photographer not found' })
@@ -134,5 +228,38 @@ export async function photographerRoutes(app: FastifyInstance) {
       total,
       hasMore: query.page * query.limit < total,
     }
+  })
+
+  app.post('/photographers/:handle/follow', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const { handle } = request.params as { handle: string }
+    const profile = await prisma.contributorProfile.findFirst({
+      where: { handle: { equals: handle, mode: 'insensitive' } },
+      include: { user: { select: { id: true, accountType: true, status: true } } },
+    })
+
+    const blocked = followBlocked({ followerId: request.userId!, photographer: profile?.user ?? null })
+    if (blocked) {
+      return reply.code(blocked.status).send({ error: blocked.error })
+    }
+
+    const photographerId = profile!.user.id
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.photographerFollow.findUnique({
+        where: { followerId_photographerId: { followerId: request.userId!, photographerId } },
+      })
+      if (existing) {
+        await tx.photographerFollow.delete({ where: { id: existing.id } })
+      } else {
+        await tx.photographerFollow.create({
+          data: { followerId: request.userId!, photographerId },
+        })
+      }
+      const followers = await tx.photographerFollow.count({ where: { photographerId } })
+      return { following: !existing, followers }
+    })
+
+    return result
   })
 }

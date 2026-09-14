@@ -15,6 +15,8 @@ import type {
   PhotographerDto,
   PhotographerProfileDto,
   FavoriteResult,
+  FollowResult,
+  ContributorStatsDto,
   CollectionDto,
   CollectionDetailDto,
   CollectionMembershipDto,
@@ -142,6 +144,25 @@ export const api = {
     return request<PhotographerProfileDto>(`/api/photographers/${encodeURIComponent(handle)}${query ? `?${query}` : ''}`)
   },
 
+  toggleFollow: (handle: string) =>
+    request<FollowResult>(`/api/photographers/${encodeURIComponent(handle)}/follow`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
+  following: (params?: Record<string, string | number | undefined>) => {
+    const qs = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined) qs.set(k, String(v))
+      })
+    }
+    const query = qs.toString()
+    return request<{ items: PhotographerDto[]; page: number; limit: number; total: number; hasMore: boolean }>(
+      `/api/following${query ? `?${query}` : ''}`,
+    )
+  },
+
   collections: () => request<{ items: CollectionDto[] }>('/api/collections'),
 
   createCollection: (body: CreateCollectionInput) =>
@@ -251,6 +272,8 @@ export const api = {
 
   completeDevPayment: (id: string) =>
     request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/complete-dev`, { method: 'POST', body: JSON.stringify({}) }),
+
+  contributorStats: () => request<ContributorStatsDto>('/api/contributor/stats'),
 
   contributorEarnings: () => request<EarningsSummaryDto>('/api/contributor/earnings'),
 

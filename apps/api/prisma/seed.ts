@@ -43,6 +43,7 @@ async function main() {
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
   await prisma.photoFavorite.deleteMany()
+  await prisma.photographerFollow.deleteMany()
   await prisma.collectionPhoto.deleteMany()
   await prisma.collection.deleteMany()
   await prisma.photoTag.deleteMany()
@@ -378,6 +379,24 @@ async function main() {
       },
     },
   })
+
+  const amaraUserId = contributorUsers.get('amara-okafor')
+  const thandiweUserId = contributorUsers.get('thandiwe-nkosi')
+  const kofiUserId = contributorUsers.get('kofi-mensah')
+  if (amaraUserId && thandiweUserId) {
+    await prisma.photographerFollow.createMany({
+      data: [
+        { followerId: member.id, photographerId: amaraUserId },
+        { followerId: member.id, photographerId: thandiweUserId },
+        { followerId: agencyOwner.id, photographerId: amaraUserId },
+        ...(kofiUserId ? [{ followerId: kofiUserId, photographerId: amaraUserId }] : []),
+      ],
+    })
+    await prisma.contributorProfile.update({
+      where: { userId: amaraUserId },
+      data: { profileViews: 128 },
+    })
+  }
 
   console.log('Seed complete.')
   console.log('Admin: admin@vuekumi.com / Admin123!')

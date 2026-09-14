@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
 import { PhotoMasonry, SiteHeader } from '../components/shared'
+import { FollowButton } from '../components/FollowButton'
+import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
 import { fmt } from '../data/content'
 
 export default function Photographer() {
   const { handle } = useParams()
+  const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const [profile, setProfile] = useState<PhotographerDto | null>(null)
   const [items, setItems] = useState<PhotoDto[]>([])
@@ -79,15 +82,27 @@ export default function Photographer() {
               </p>
               {profile.bio && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{profile.bio}</p>}
               <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
-                {profile.photosCount} live photographs · {fmt(profile.downloads)} downloads
+                {profile.photosCount} live photographs · {fmt(profile.downloads)} downloads · {fmt(profile.followers)} followers
+                {profile.profileViews != null ? ` · ${fmt(profile.profileViews)} profile views` : ''}
               </p>
             </div>
-            <Link
-              to={`/search?photographer=${encodeURIComponent(profile.handle)}`}
-              className="border border-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
-            >
-              Open in search
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <FollowButton
+                handle={profile.handle}
+                following={profile.following}
+                mine={user?.contributorHandle === profile.handle}
+                redirectTo={`/p/${profile.handle}`}
+                onChange={(result) => {
+                  setProfile((p) => p ? { ...p, following: result.following, followers: result.followers } : p)
+                }}
+              />
+              <Link
+                to={`/search?photographer=${encodeURIComponent(profile.handle)}`}
+                className="border border-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
+              >
+                Open in search
+              </Link>
+            </div>
           </div>
         )}
 

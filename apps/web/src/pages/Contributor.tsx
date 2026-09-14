@@ -4,15 +4,11 @@ import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { toast } from 'sonner';
-import type { EarningsSummaryDto, PayoutKind, PhotoDto } from '@vuekumi/shared';
+import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PhotoDto } from '@vuekumi/shared';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
-import {
-  contributorStats, earningsSeries, fmt, money, photoById, photographerOf, photos,
-} from '../data/content';
+import { fmt, money, photoById } from '../data/content';
 import { api, ApiError } from '../api/client';
 import { AiSuggestPanel } from '../components/AiSuggestPanel';
-
-const ME = 'amara-okafor';
 
 const icons = {
   dash: (
@@ -57,38 +53,45 @@ function Shell({ children }: { children: React.ReactNode }) {
 /* ---------------- dashboard ---------------- */
 
 export function ContributorDashboard() {
-  const mine = photos.filter((p) => p.photographer === ME);
-  const top = [...mine].sort((a, b) => b.downloads - a.downloads).slice(0, 4);
-  const me = photographerOf(ME);
-  const [ledger, setLedger] = useState<{ availableUsd: number; thisMonthUsd: number; allTimeUsd: number } | null>(null)
+  const [stats, setStats] = useState<ContributorStatsDto | null>(null)
   useEffect(() => {
-    api.contributorEarnings()
-      .then((d) => setLedger({ availableUsd: d.availableUsd, thisMonthUsd: d.thisMonthUsd, allTimeUsd: d.allTimeUsd }))
-      .catch(() => setLedger(null))
+    api.contributorStats().then(setStats).catch(() => setStats(null))
   }, [])
+  const firstName = (stats?.name ?? 'there').split(' ')[0]
+  const chartData = stats?.series?.length ? stats.series : [{ month: '—', earnings: 0 }]
   return (
     <Shell>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Dashboard</p>
           <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">
-            Habari, {me.name.split(' ')[0]}.
+            Habari, {firstName}.
           </h1>
           <p className="mt-1 text-sm text-ink-soft">Here's how your work is performing.</p>
         </div>
-        <Link
-          to="/contributor/upload"
-          className="rounded-full bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper transition-colors hover:bg-terra"
-        >
-          + Upload images
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {stats?.handle && (
+            <Link
+              to={`/p/${stats.handle}`}
+              className="rounded-full border border-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
+            >
+              Public profile
+            </Link>
+          )}
+          <Link
+            to="/contributor/upload"
+            className="rounded-full bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper transition-colors hover:bg-terra"
+          >
+            + Upload images
+          </Link>
+        </div>
       </div>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Available balance" value={money(ledger?.availableUsd ?? 0)} sub={`${money(ledger?.thisMonthUsd ?? 0)} earned this month`} />
-        <StatCard label="Downloads" value={fmt(contributorStats.downloads)} sub="+8.2% vs last month" />
-        <StatCard label="Profile views" value={fmt(contributorStats.views)} sub={`${fmt(contributorStats.followers)} followers`} />
-        <StatCard label="Approval rate" value={`${contributorStats.approvalRate}%`} sub="last 90 days" />
+        <StatCard label="Available balance" value={money(stats?.availableUsd ?? 0)} sub={`${money(stats?.thisMonthUsd ?? 0)} earned this month`} />
+        <StatCard label="Downloads" value={fmt(stats?.downloads ?? 0)} sub={`${stats?.photosCount ?? 0} live photographs`} />
+        <StatCard label="Profile views" value={fmt(stats?.profileViews ?? 0)} sub={`${fmt(stats?.followers ?? 0)} followers`} />
+        <StatCard label="Approval rate" value={`${stats?.approvalRate ?? 0}%`} sub={`${fmt(stats?.views ?? 0)} photo views`} />
       </div>
 
       <div className="mt-10">
@@ -96,7 +99,7 @@ export function ContributorDashboard() {
         <div className="rounded-2xl border border-sand-soft bg-white p-5">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={earningsSeries} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                 <defs>
                   <linearGradient id="eg" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#bc773f" stopOpacity={0.35} />
@@ -123,24 +126,28 @@ export function ContributorDashboard() {
           title="Best performers"
           right={<Link to="/contributor/portfolio" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra hover:text-ink">View all →</Link>}
         />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {top.map((p) => (
-            <Link key={p.id} to={`/photo/${p.id}`} className="group overflow-hidden rounded-2xl border border-sand-soft bg-white">
-              <div className="aspect-[4/3] overflow-hidden">
-                <img src={p.src} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-              </div>
-              <div className="p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-medium">{p.title}</p>
-                  <StatusPill status={p.license} />
+        {(stats?.topPhotos ?? []).length === 0 ? (
+          <p className="mt-4 text-sm text-ink-soft">No live photographs yet. Upload work to see it here.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(stats?.topPhotos ?? []).map((p) => (
+              <Link key={p.id} to={`/photo/${p.id}`} className="group overflow-hidden rounded-2xl border border-sand-soft bg-white">
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img src={p.thumbSrc ?? p.src} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 </div>
-                <p className="mt-1.5 font-mono-tech text-[10px] text-ink-faint">
-                  {fmt(p.downloads)} downloads · {fmt(p.views)} views
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+                <div className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-medium">{p.title}</p>
+                    <StatusPill status={p.license} />
+                  </div>
+                  <p className="mt-1.5 font-mono-tech text-[10px] text-ink-faint">
+                    {fmt(p.downloads)} downloads · {fmt(p.views)} views
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </Shell>
   );

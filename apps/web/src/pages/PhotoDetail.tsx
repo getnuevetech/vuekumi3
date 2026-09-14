@@ -6,6 +6,7 @@ import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
 import { BlurImage, PhotoMasonry, SectionHead, SiteHeader } from '../components/shared'
 import { CollectionPicker } from '../components/CollectionPicker'
+import { FollowButton } from '../components/FollowButton'
 import { api, ApiError } from '../api/client'
 import { toast } from 'sonner'
 
@@ -182,6 +183,15 @@ export default function PhotoDetail() {
                   <p className="font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-soft">{photographer.location}</p>
                 </div>
               </Link>
+              <FollowButton
+                handle={photographer.handle}
+                following={view.photographerFollowed}
+                mine={user?.contributorHandle === photographer.handle}
+                redirectTo={`/photo/${view.id}`}
+                onChange={(result) => {
+                  setPhoto((p) => p ? { ...p, photographerFollowed: result.following } : p)
+                }}
+              />
               <button
                 type="button"
                 disabled={favBusy}

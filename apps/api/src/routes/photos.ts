@@ -157,9 +157,20 @@ export async function photoRoutes(app: FastifyInstance) {
           where: { userId_photoId: { userId: request.userId, photoId: id } },
         }))
       : undefined
+    const photographerFollowed = request.userId
+      ? Boolean(await prisma.photographerFollow.findUnique({
+          where: {
+            followerId_photographerId: {
+              followerId: request.userId,
+              photographerId: photo.contributorId,
+            },
+          },
+        }))
+      : undefined
 
     const dto = serializeCatalogPhoto(photo, favorited)
     dto.views += 1
+    dto.photographerFollowed = photographerFollowed
     return dto
   })
 }

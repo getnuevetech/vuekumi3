@@ -142,6 +142,7 @@ export function SiteHeader() {
             <Link to="/search" className="link-slide hover:text-terra">Library</Link>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
             {user && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
+            {user && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
             {user && <Link to="/collections" className="link-slide hover:text-terra">Collections</Link>}
             {user && <Link to="/licenses" className="link-slide hover:text-terra">Licences</Link>}
             {(user?.accountType === 'agency' || user?.agencyId) && (
@@ -203,6 +204,7 @@ export function SiteHeader() {
             { label: 'Library', href: '/search' },
             { label: 'License & Pricing', href: '/pricing' },
             ...(user ? [{ label: 'Favorites', href: '/favorites' }] : []),
+            ...(user ? [{ label: 'Following', href: '/following' }] : []),
             ...(user ? [{ label: 'Collections', href: '/collections' }] : []),
             { label: 'Contributor Portal', href: '/contributor' },
             { label: 'Admin Portal', href: '/admin' },

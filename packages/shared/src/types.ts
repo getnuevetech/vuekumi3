@@ -60,6 +60,7 @@ export interface PhotoDto {
   views: number
   likes: number
   favorited?: boolean
+  photographerFollowed?: boolean
   tags: string[]
   status: PhotoStatus
   exclusiveAvailable?: boolean
@@ -211,6 +212,31 @@ export interface PhotographerDto {
   bio: string | null
   photosCount: number
   downloads: number
+  followers: number
+  profileViews?: number
+  following?: boolean
+}
+
+export interface FollowResult {
+  following: boolean
+  followers: number
+}
+
+export interface ContributorStatsDto {
+  name: string
+  handle: string
+  avatarUrl: string | null
+  location: string | null
+  downloads: number
+  views: number
+  followers: number
+  profileViews: number
+  photosCount: number
+  approvalRate: number
+  availableUsd: number
+  thisMonthUsd: number
+  series: { month: string; earnings: number }[]
+  topPhotos: PhotoDto[]
 }
 
 export interface PhotographerProfileDto extends PaginatedPhotos {

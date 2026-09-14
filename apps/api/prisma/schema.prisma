@@ -112,6 +112,8 @@ model User {
   payouts             Payout[]         @relation("ContributorPayouts")
   payoutsProcessed    Payout[]         @relation("PayoutProcessor")
   photoFavorites      PhotoFavorite[]
+  following           PhotographerFollow[] @relation("UserFollowing")
+  followers           PhotographerFollow[] @relation("UserFollowers")
   collections         Collection[]        @relation("CollectionOwner")
   collectionAdds      CollectionPhoto[]   @relation("CollectionAdder")
 
@@ -144,6 +146,7 @@ model ContributorProfile {
   downloads     Int      @default(0)
   earnings      Float    @default(0)
   approvalRate  Int      @default(0)
+  profileViews  Int      @default(0)
   payoutMethod  String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -341,6 +344,20 @@ model PhotoFavorite {
   @@unique([userId, photoId])
   @@index([photoId])
   @@index([userId])
+}
+
+model PhotographerFollow {
+  id             String   @id @default(cuid())
+  followerId     String
+  photographerId String
+  createdAt      DateTime @default(now())
+
+  follower     User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  photographer User @relation("UserFollowers", fields: [photographerId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, photographerId])
+  @@index([photographerId])
+  @@index([followerId])
 }
 
 model Collection {
