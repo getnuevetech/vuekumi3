@@ -28,3 +28,7 @@ export function verifyEmail(name: string, link: string): string {
 export function adminPasswordResetEmail(name: string, link: string): string {
   return `<p>Hi ${name},</p><p>A Vuekumi administrator has requested a password reset for your account.</p><p><a href="${link}">${link}</a></p>`
 }
+
+export function agencyInviteEmail(agencyName: string, role: string, link: string): string {
+  return `<p>You have been invited to join <strong>${agencyName}</strong> on Vuekumi as ${role}.</p><p>Accept the invite:</p><p><a href="${link}">${link}</a></p><p>This link expires in 14 days. Vuekumi sells usage permission, not ownership.</p>`
+}

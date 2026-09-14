@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import type { AccountType } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
-import { serializeUser } from './serialize.js'
+import { authUserInclude, serializeUser } from './serialize.js'
 
 export interface JwtPayload {
   sub: string
@@ -31,11 +31,7 @@ export async function authenticate(
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      include: {
-        contributorProfile: true,
-        adminProfile: true,
-        agencyMembers: { where: { status: 'active' }, take: 1 },
-      },
+      include: authUserInclude,
     })
 
     if (!user || user.status === 'suspended') {
@@ -59,6 +55,16 @@ export function requireAccountTypes(fastify: FastifyInstance, ...types: AccountT
   }
 }
 
+export function requireAgency(fastify: FastifyInstance) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    await authenticate(fastify, request, reply)
+    if (reply.sent) return
+    if (!request.authUser?.agencyId || !request.authUser.agencyRole) {
+      return reply.code(403).send({ error: 'Agency workspace required' })
+    }
+  }
+}
+
 /** Attach the user when a valid cookie/bearer token is present; never 401. */
 export async function optionalAuthenticate(
   fastify: FastifyInstance,
@@ -78,11 +84,7 @@ export async function optionalAuthenticate(
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      include: {
-        contributorProfile: true,
-        adminProfile: true,
-        agencyMembers: { where: { status: 'active' }, take: 1 },
-      },
+      include: authUserInclude,
     })
     if (!user || user.status === 'suspended') return
 

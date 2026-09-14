@@ -1,4 +1,5 @@
 import type {
+  Agency,
   ContributorProfile,
   LicenseGrant,
   LicenseProduct,
@@ -23,10 +24,20 @@ import type {
 } from '@vuekumi/shared'
 import { isLicenseOffered, priceForProduct, rightsReadyForLive } from './rights.js'
 
+export const authUserInclude = {
+  contributorProfile: true,
+  adminProfile: true,
+  agencyMembers: {
+    where: { status: 'active' },
+    take: 1,
+    include: { agency: true },
+  },
+} as const
+
 type UserWithRelations = User & {
   contributorProfile?: ContributorProfile | null
   adminProfile?: AdminProfile | null
-  agencyMembers?: AgencyMember[]
+  agencyMembers?: (AgencyMember & { agency?: Pick<Agency, 'name' | 'status'> })[]
 }
 
 export function serializeUser(user: UserWithRelations): AuthUser {
@@ -44,6 +55,8 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     adminRole: user.adminProfile?.adminRole ?? null,
     agencyId: agencyMember?.agencyId ?? null,
     agencyRole: agencyMember?.agencyRole ?? null,
+    agencyName: agencyMember?.agency?.name ?? null,
+    agencyStatus: agencyMember?.agency?.status ?? null,
   }
 }
 
@@ -143,6 +156,7 @@ export function serializeGrant(
   grant: LicenseGrant & {
     photo: Pick<Photo, 'id' | 'title' | 'src' | 'storageKey' | 'processingStatus'>
     product: Pick<LicenseProduct, 'name'>
+    buyer?: Pick<User, 'name' | 'email'>
   },
 ): LicenseGrantDto {
   return {
@@ -162,6 +176,8 @@ export function serializeGrant(
     certificateCode: grant.certificateCode,
     createdAt: grant.createdAt.toISOString(),
     scope: (grant.scopeJson ?? {}) as Record<string, unknown>,
+    buyerName: grant.buyer?.name,
+    buyerEmail: grant.buyer?.email,
   }
 }
 

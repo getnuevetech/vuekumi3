@@ -98,6 +98,9 @@ export function SiteHeader() {
             <a href="/#explore" className="link-slide hover:text-terra">Explore</a>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
             {user && <Link to="/licenses" className="link-slide hover:text-terra">Licences</Link>}
+            {(user?.accountType === 'agency' || user?.agencyId) && (
+              <Link to="/agency" className="link-slide hover:text-terra">Agency</Link>
+            )}
             <Link to="/contributor" className="link-slide hover:text-terra">Contributor</Link>
             <Link to="/admin" className="link-slide hover:text-terra">Admin</Link>
           </nav>
@@ -304,7 +307,8 @@ export function PortalShell({
         </div>
         <nav className="flex gap-1 overflow-x-auto px-4 pb-4 no-scrollbar lg:flex-1 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-3 lg:pb-0 lg:pt-4">
           {links.map((l, i) => {
-            const active = pathname === l.to || (l.to !== '/contributor' && l.to !== '/admin' && pathname.startsWith(l.to))
+            const isPortalRoot = l.to === '/contributor' || l.to === '/admin' || l.to === '/agency'
+            const active = pathname === l.to || (!isPortalRoot && pathname.startsWith(`${l.to}/`))
             return (
               <Link
                 key={l.to}
@@ -394,6 +398,11 @@ export function StatusPill({ status }: { status: string }) {
     accepted: 'bg-[#e7f2e9] text-[#2e6b3e]',
     declined: 'bg-[#fbe7e4] text-[#b3382e]',
     not_required: 'bg-cream text-ink',
+    owner: 'bg-ink text-paper',
+    admin: 'bg-[#f3e9f5] text-[#7a4a8f]',
+    manager: 'bg-[#e8eef7] text-[#33588f]',
+    member: 'bg-cream text-ink',
+    viewer: 'bg-cream text-ink-soft',
     override: 'bg-[#f5ece5] text-[#bc773f]',
     auto: 'bg-[#e7f2e9] text-[#2e6b3e]',
     default: 'bg-cream text-ink',

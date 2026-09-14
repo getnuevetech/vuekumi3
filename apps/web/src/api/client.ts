@@ -1,6 +1,10 @@
 import type {
   AgreementDto,
   AuthUser,
+  AgencyDto,
+  AgencyInviteDto,
+  AgencyInvitePreviewDto,
+  AgencyMemberDto,
   LicenseGrantDto,
   LicenseProductDto,
   LicenseQuoteDto,
@@ -12,7 +16,7 @@ import type {
   AiSuggestionDto,
   AiStatusDto,
 } from '@vuekumi/shared'
-import type { AccountType, LoginInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
+import type { AccountType, AgencyRole, LoginInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -104,6 +108,46 @@ export const api = {
     request<PurchaseLicenseResult>(`/api/licenses/quotes/${id}/accept`, {
       method: 'POST',
       body: JSON.stringify({ provider }),
+    }),
+
+  agency: () =>
+    request<{ agency: AgencyDto; recentGrants: LicenseGrantDto[]; recentQuotes: LicenseQuoteDto[] }>('/api/agency'),
+
+  agencyMembers: () =>
+    request<{ items: AgencyMemberDto[]; invites: AgencyInviteDto[]; seatLimit: number; seatsUsed: number }>(
+      '/api/agency/members',
+    ),
+
+  inviteAgencyMember: (email: string, role: Exclude<AgencyRole, 'owner'>) =>
+    request<{
+      member?: AgencyMemberDto
+      invite?: AgencyInviteDto
+      joinUrl?: string
+      immediate: boolean
+    }>('/api/agency/members', {
+      method: 'POST',
+      body: JSON.stringify({ email, role }),
+    }),
+
+  updateAgencyMemberRole: (userId: string, role: Exclude<AgencyRole, 'owner'>) =>
+    request<{ member: AgencyMemberDto }>(`/api/agency/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  removeAgencyMember: (userId: string) =>
+    request<{ ok: boolean }>(`/api/agency/members/${userId}`, { method: 'DELETE' }),
+
+  revokeAgencyInvite: (id: string) =>
+    request<{ ok: boolean }>(`/api/agency/invites/${id}`, { method: 'DELETE' }),
+
+  agencyInvitePreview: (token: string) =>
+    request<{ invite: AgencyInvitePreviewDto }>(`/api/agency/join/${token}`),
+
+  acceptAgencyInvite: (token: string, body?: { name?: string; password?: string; country?: string }) =>
+    request<{ user: AuthUser; member: AgencyMemberDto }>(`/api/agency/join/${token}`, {
+      method: 'POST',
+      body: JSON.stringify(body ?? {}),
     }),
 
   paymentMethods: () => request<PaymentMethodsDto>('/api/payments/methods'),
@@ -440,4 +484,9 @@ export function homeForAccountType(accountType: AccountType): string {
     default:
       return '/'
   }
+}
+
+export function homeForUser(user: Pick<AuthUser, 'accountType' | 'agencyId'>): string {
+  if (user.agencyId) return '/agency'
+  return homeForAccountType(user.accountType)
 }

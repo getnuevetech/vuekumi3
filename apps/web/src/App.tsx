@@ -7,7 +7,8 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import VerifyEmail from './pages/VerifyEmail'
-import AgencyDashboard from './pages/Agency'
+import AgencyDashboard, { AgencyLicenses, AgencyQuotes, AgencyTeam } from './pages/Agency'
+import JoinAgency from './pages/JoinAgency'
 import {
   ContributorDashboard, ContributorEarnings, ContributorPortfolio, ContributorUpload,
 } from './pages/Contributor'
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/join/:token" element={<JoinAgency />} />
         <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />
         <Route path="/checkout/:paymentId" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Checkout /></ProtectedRoute>} />
 
@@ -52,6 +54,9 @@ export default function App() {
         <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorEarnings /></ProtectedRoute>} />
 
         <Route path="/agency" element={<ProtectedRoute allowed={['agency']}><AgencyDashboard /></ProtectedRoute>} />
+        <Route path="/agency/team" element={<ProtectedRoute allowed={['agency']}><AgencyTeam /></ProtectedRoute>} />
+        <Route path="/agency/licenses" element={<ProtectedRoute allowed={['agency']}><AgencyLicenses /></ProtectedRoute>} />
+        <Route path="/agency/quotes" element={<ProtectedRoute allowed={['agency']}><AgencyQuotes /></ProtectedRoute>} />
 
         <Route path="/admin" element={<ProtectedRoute allowed={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']}><AdminUsers /></ProtectedRoute>} />

@@ -106,6 +106,7 @@ model User {
   payments            Payment[]
   earningsLedgers     EarningsLedger[] @relation("ContributorEarnings")
   aiSuggestions       AiSuggestion[]   @relation("AiSuggestionRequester")
+  agencyInvitesSent   AgencyInvite[]   @relation("AgencyInviteSender")
 
   @@index([accountType])
   @@index([status])
@@ -164,8 +165,27 @@ model Agency {
 
   owner         User           @relation("AgencyOwner", fields: [ownerUserId], references: [id])
   members       AgencyMember[]
+  invites       AgencyInvite[]
   licenseGrants LicenseGrant[]
   licenseQuotes LicenseQuote[]
+}
+
+model AgencyInvite {
+  id          String     @id @default(cuid())
+  agencyId    String
+  email       String
+  agencyRole  AgencyRole @default(member)
+  tokenHash   String     @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  agency    Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  invitedBy User   @relation("AgencyInviteSender", fields: [invitedById], references: [id])
+
+  @@index([agencyId])
+  @@index([email])
 }
 
 model AgencyMember {
@@ -365,6 +385,7 @@ model LicenseQuote {
 
   @@index([photoId])
   @@index([requesterId])
+  @@index([agencyId])
   @@index([status])
 }
 
@@ -392,6 +413,7 @@ model LicenseGrant {
 
   @@index([buyerId])
   @@index([photoId])
+  @@index([agencyId])
 }
 
 model Payment {

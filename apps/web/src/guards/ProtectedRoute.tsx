@@ -23,13 +23,13 @@ export function ProtectedRoute({ children, allowed }: ProtectedRouteProps) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
   }
 
-  if (!allowed.includes(user.accountType)) {
+  if (!allowed.includes(user.accountType) && !(allowed.includes('agency') && user.agencyId)) {
     const fallback =
       user.accountType === 'admin'
         ? '/admin'
         : user.accountType === 'contributor'
           ? '/contributor'
-          : user.accountType === 'agency'
+          : user.accountType === 'agency' || user.agencyId
             ? '/agency'
             : '/'
     return <Navigate to={fallback} replace />

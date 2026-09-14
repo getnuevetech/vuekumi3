@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
-import { api, ApiError, homeForAccountType, type GeoCountry } from '../api/client'
+import { api, ApiError, homeForUser, type GeoCountry } from '../api/client'
 
 type Mode = 'signin' | 'signup'
 type Role = 'member' | 'contributor' | 'agency'
@@ -109,7 +109,7 @@ export default function Login() {
                         country: country || undefined,
                         acceptAgreement: accountType === 'contributor' ? acceptAgreement : undefined,
                       })
-                const dest = redirect && redirect.startsWith('/') ? redirect : homeForAccountType(user.accountType)
+                const dest = redirect && redirect.startsWith('/') ? redirect : homeForUser(user)
                 navigate(dest)
               } catch (err) {
                 setError(err instanceof ApiError ? err.message : 'Something went wrong')

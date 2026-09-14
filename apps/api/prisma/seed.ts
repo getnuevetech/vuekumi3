@@ -34,6 +34,7 @@ async function main() {
   await prisma.auditLog.deleteMany()
   await prisma.licenseGrant.deleteMany()
   await prisma.licenseQuote.deleteMany()
+  await prisma.agencyInvite.deleteMany()
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
   await prisma.photoTag.deleteMany()
@@ -127,6 +128,21 @@ async function main() {
         create: { userId: agencyOwner.id, agencyRole: 'owner' },
       },
     },
+  })
+
+  const agencyManager = await prisma.user.create({
+    data: {
+      email: 'kemi@vuekumi.demo',
+      passwordHash: userPassword,
+      name: 'Kemi Adeyemi',
+      accountType: 'agency',
+      country: 'NG',
+      emailVerifiedAt: new Date(),
+      status: 'active',
+    },
+  })
+  await prisma.agencyMember.create({
+    data: { agencyId: agency.id, userId: agencyManager.id, agencyRole: 'manager' },
   })
 
   const peopleCategories = new Set(['People', 'Fashion'])
@@ -291,6 +307,7 @@ async function main() {
   console.log('Contributor: amara-okafor@vuekumi.demo / User12345!')
   console.log('Member: member@vuekumi.demo / User12345!')
   console.log('Agency: agency@vuekumi.demo / User12345!')
+  console.log('Agency manager: kemi@vuekumi.demo / User12345!')
   console.log('Agency ID:', agency.id)
   console.log('Admin ID:', admin.id)
 }

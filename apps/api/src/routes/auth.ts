@@ -15,7 +15,7 @@ import {
 } from '../lib/email.js'
 import { hashPassword, createToken, hashToken, verifyPassword } from '../lib/password.js'
 import { prisma } from '../lib/prisma.js'
-import { serializeUser } from '../lib/serialize.js'
+import { serializeUser, authUserInclude } from '../lib/serialize.js'
 import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
 
@@ -161,11 +161,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const full = await prisma.user.findUnique({
       where: { id: user.id },
-      include: {
-        contributorProfile: true,
-        adminProfile: true,
-        agencyMembers: { take: 1 },
-      },
+      include: authUserInclude,
     })
 
     return {
@@ -178,11 +174,7 @@ export async function authRoutes(app: FastifyInstance) {
     const body = loginSchema.parse(request.body)
     const user = await prisma.user.findUnique({
       where: { email: body.email.toLowerCase() },
-      include: {
-        contributorProfile: true,
-        adminProfile: true,
-        agencyMembers: { take: 1 },
-      },
+      include: authUserInclude,
     })
 
     if (!user?.passwordHash || !(await verifyPassword(body.password, user.passwordHash))) {

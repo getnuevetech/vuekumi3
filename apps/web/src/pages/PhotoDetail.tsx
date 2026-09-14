@@ -230,9 +230,28 @@ export default function PhotoDetail() {
               </div>
             )}
 
+            {user?.agencyId && user.agencyStatus && user.agencyStatus !== 'active' && (
+              <p className="mt-4 rounded-xl border border-sand-soft bg-cream px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra">
+                {user.agencyStatus === 'suspended'
+                  ? 'Agency suspended — licensing paused'
+                  : 'Agency pending approval — licensing paused'}
+              </p>
+            )}
+            {user?.agencyRole === 'viewer' && (
+              <p className="mt-4 rounded-xl border border-sand-soft bg-cream px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                Viewer role — ask an owner to change your seat to purchase
+              </p>
+            )}
+
             <button
               type="button"
-              disabled={busy || !selected || (!selected.offered && !selected.quoteOnly)}
+              disabled={
+                busy
+                || !selected
+                || (!selected.offered && !selected.quoteOnly)
+                || (Boolean(user?.agencyId) && user?.agencyStatus !== 'active')
+                || user?.agencyRole === 'viewer'
+              }
               onClick={() => void buy()}
               className="mt-4 w-full bg-ink py-4 font-mono-tech text-[11px] uppercase tracking-[0.18em] text-paper transition-colors hover:bg-terra disabled:opacity-40"
             >

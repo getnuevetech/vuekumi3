@@ -5,8 +5,10 @@ import {
   quoteDecisionSchema,
   rightsManagedQuoteSchema,
 } from '@vuekumi/shared'
+import type { AuthUser } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { AgencyError, assertAgencyActive, canPurchase, canQuote } from '../lib/agency.js'
 import { buildCertificatePdf } from '../lib/certificate.js'
 import { convertFromUsd, pricingForCountry } from '../lib/fx.js'
 import { prisma } from '../lib/prisma.js'
@@ -17,10 +19,42 @@ import { assertCanGrant, priceForProduct, RightsError } from '../lib/rights.js'
 import { streamObject } from '../lib/storage.js'
 
 function rightsError(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, err: unknown) {
-  if (err instanceof RightsError || err instanceof PaymentError) {
+  if (err instanceof RightsError || err instanceof PaymentError || err instanceof AgencyError) {
     return reply.code(err.statusCode).send({ error: err.message })
   }
   throw err
+}
+
+async function assertAgencyAction(user: AuthUser | undefined, action: 'purchase' | 'quote') {
+  if (!user?.agencyId) return
+  const agency = await prisma.agency.findUnique({ where: { id: user.agencyId } })
+  if (!agency) throw new AgencyError('Agency workspace required', 403)
+  assertAgencyActive(agency.status)
+  const role = user.agencyRole ?? 'viewer'
+  if (action === 'purchase' && !canPurchase(role)) {
+    throw new AgencyError('Your agency role cannot purchase licences', 403)
+  }
+  if (action === 'quote' && !canQuote(role)) {
+    throw new AgencyError('Your agency role cannot request or accept quotes', 403)
+  }
+}
+
+function grantsWhere(user: AuthUser) {
+  if (user.accountType === 'admin') return {}
+  if (user.agencyId) return { OR: [{ buyerId: user.id }, { agencyId: user.agencyId }] }
+  return { buyerId: user.id }
+}
+
+function quotesWhere(user: AuthUser) {
+  if (user.accountType === 'admin') return {}
+  if (user.agencyId) return { OR: [{ requesterId: user.id }, { agencyId: user.agencyId }] }
+  return { requesterId: user.id }
+}
+
+function canAccessGrant(user: AuthUser, grant: { buyerId: string; agencyId: string | null }) {
+  if (user.accountType === 'admin') return true
+  if (grant.buyerId === user.id) return true
+  return Boolean(user.agencyId && grant.agencyId === user.agencyId)
 }
 
 async function loadPhotoForLicense(id: string) {
@@ -97,13 +131,16 @@ export async function licenseRoutes(app: FastifyInstance) {
     }
 
     try {
+      await assertAgencyAction(request.authUser, 'purchase')
       assertCanGrant(product, photo, photo.rightsRecord)
     } catch (err) {
       return rightsError(reply, err)
     }
 
     const existing = await prisma.licenseGrant.findFirst({
-      where: { buyerId: request.userId!, photoId: id, licenseType: body.type },
+      where: request.authUser?.agencyId
+        ? { agencyId: request.authUser.agencyId, photoId: id, licenseType: body.type }
+        : { buyerId: request.userId!, photoId: id, licenseType: body.type },
     })
     if (existing) {
       const full = await prisma.licenseGrant.findUnique({
@@ -184,6 +221,11 @@ export async function licenseRoutes(app: FastifyInstance) {
     if (!photo || photo.status !== 'active') {
       return reply.code(404).send({ error: 'Photo not found' })
     }
+    try {
+      await assertAgencyAction(request.authUser, 'quote')
+    } catch (err) {
+      return rightsError(reply, err)
+    }
     if (photo.exclusiveSold) {
       return reply.code(400).send({ error: 'An exclusive licence has already been sold' })
     }
@@ -221,8 +263,8 @@ export async function licenseRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request) => {
     const grants = await prisma.licenseGrant.findMany({
-      where: { buyerId: request.userId },
-      include: { photo: true, product: true },
+      where: grantsWhere(request.authUser!),
+      include: { photo: true, product: true, buyer: true },
       orderBy: { createdAt: 'desc' },
     })
     return { items: grants.map(serializeGrant) }
@@ -232,7 +274,7 @@ export async function licenseRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request) => {
     const quotes = await prisma.licenseQuote.findMany({
-      where: request.authUser?.accountType === 'admin' ? {} : { requesterId: request.userId },
+      where: quotesWhere(request.authUser!),
       include: { photo: true, requester: true },
       orderBy: { createdAt: 'desc' },
     })
@@ -248,8 +290,14 @@ export async function licenseRoutes(app: FastifyInstance) {
       include: { photo: { include: { rightsRecord: true } }, product: true },
     })
     if (!quote) return reply.code(404).send({ error: 'Quote not found' })
-    if (quote.requesterId !== request.userId && request.authUser?.accountType !== 'admin') {
+    const sameAgency = Boolean(request.authUser?.agencyId && quote.agencyId === request.authUser.agencyId)
+    if (quote.requesterId !== request.userId && request.authUser?.accountType !== 'admin' && !sameAgency) {
       return reply.code(403).send({ error: 'Forbidden' })
+    }
+    try {
+      await assertAgencyAction(request.authUser, 'quote')
+    } catch (err) {
+      return rightsError(reply, err)
     }
     if (quote.status !== 'quoted' || quote.quoteUsd == null) {
       return reply.code(400).send({ error: 'Quote has not been priced yet' })
@@ -264,8 +312,10 @@ export async function licenseRoutes(app: FastifyInstance) {
     }
 
     const existingGrant = await prisma.licenseGrant.findFirst({
-      where: { buyerId: quote.requesterId, photoId: quote.photoId, licenseType: 'rights_managed' },
-      include: { photo: true, product: true },
+      where: quote.agencyId
+        ? { agencyId: quote.agencyId, photoId: quote.photoId, licenseType: 'rights_managed' }
+        : { buyerId: quote.requesterId, photoId: quote.photoId, licenseType: 'rights_managed' },
+      include: { photo: true, product: true, buyer: true },
     })
     if (existingGrant) return { grant: serializeGrant(existingGrant), existing: true }
 
@@ -359,7 +409,7 @@ export async function licenseRoutes(app: FastifyInstance) {
       },
     })
     if (!grant) return reply.code(404).send({ error: 'Grant not found' })
-    if (grant.buyerId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (!canAccessGrant(request.authUser!, grant)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
@@ -397,7 +447,7 @@ export async function licenseRoutes(app: FastifyInstance) {
       include: { photo: { include: { assets: true } } },
     })
     if (!grant) return reply.code(404).send({ error: 'Grant not found' })
-    if (grant.buyerId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (!canAccessGrant(request.authUser!, grant)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 

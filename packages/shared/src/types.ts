@@ -26,6 +26,8 @@ export interface AuthUser {
   adminRole?: AdminRole | null
   agencyId?: string | null
   agencyRole?: AgencyRole | null
+  agencyName?: string | null
+  agencyStatus?: 'pending' | 'active' | 'suspended' | null
 }
 
 export interface RightsDto {
@@ -99,6 +101,8 @@ export interface LicenseGrantDto {
   createdAt: string
   scope: Record<string, unknown>
   hasOriginal?: boolean
+  buyerName?: string
+  buyerEmail?: string
 }
 
 export interface LicenseQuoteDto {
@@ -183,4 +187,47 @@ export interface PaginatedPhotos {
   limit: number
   total: number
   hasMore: boolean
+}
+
+export interface AgencyDto {
+  id: string
+  name: string
+  slug: string
+  status: 'pending' | 'active' | 'suspended'
+  plan: string
+  seatLimit: number
+  seatsUsed: number
+  pendingInvites: number
+  billingEmail: string | null
+  myRole: AgencyRole
+  membersCount: number
+  grantsCount: number
+  quotesCount: number
+}
+
+export interface AgencyMemberDto {
+  id: string
+  userId: string
+  name: string
+  email: string
+  role: AgencyRole
+  status: string
+  joinedAt: string
+}
+
+export interface AgencyInviteDto {
+  id: string
+  email: string
+  role: AgencyRole
+  createdAt: string
+  expiresAt: string
+  acceptedAt: string | null
+}
+
+export interface AgencyInvitePreviewDto {
+  agencyName: string
+  email: string
+  role: AgencyRole
+  expiresAt: string
+  needsAccount: boolean
 }
