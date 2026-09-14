@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Reveal } from '../components/shared';
+import { useAuth } from '../context/AuthContext';
 import { fmt, money, photoById, photographerOf, photographers, photos, type Photo } from '../data/content';
 
 /* ============================================================
@@ -18,6 +19,7 @@ const pick = (id: string): Photo => photoById(id) ?? photos[0];
 function NoirHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -28,6 +30,8 @@ function NoirHeader() {
   const links = [
     { label: 'Library', to: '#feed' },
     { label: 'License & Pricing', to: '/pricing' },
+    ...(user ? [{ label: 'Licences', to: '/licenses' }] : []),
+    ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
     { label: 'Contributor', to: '/contributor' },
     { label: 'Admin', to: '/admin' },
   ];
@@ -63,18 +67,35 @@ function NoirHeader() {
             ))}
           </nav>
           <div className="hidden items-center gap-4 lg:flex">
-            <Link
-              to="/login"
-              className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/login"
-              className="border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
-            >
-              Sell your photos
-            </Link>
+            {user ? (
+              <>
+                <span className="max-w-[160px] truncate font-condensed text-[12px] uppercase tracking-[0.18em] text-paper-soft">
+                  {user.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
+                  className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/login"
+                  className="border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
+                >
+                  Sell your photos
+                </Link>
+              </>
+            )}
           </div>
           <button
             onClick={() => setOpen(!open)}
