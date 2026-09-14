@@ -11,6 +11,10 @@
     "dev:web": "npm run dev -w @vuekumi/web",
     "dev:api": "npm run dev -w @vuekumi/api",
     "build": "npm run build -w @vuekumi/shared && npm run build -w @vuekumi/api && npm run build -w @vuekumi/web",
+    "typecheck": "npm run build -w @vuekumi/shared && npx tsc --noEmit -p apps/api && npm run typecheck -w @vuekumi/web",
+    "lint": "npm run lint -w @vuekumi/web",
+    "test": "npm test -w @vuekumi/api",
+    "ci": "npm run typecheck && npm run lint && npm test && npm exec -w @vuekumi/web -- vite build",
     "db:migrate": "npm run db:migrate -w @vuekumi/api",
     "db:seed": "npm run db:seed -w @vuekumi/api",
     "db:studio": "npm run db:studio -w @vuekumi/api"

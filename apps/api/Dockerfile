@@ -39,4 +39,11 @@ COPY --from=build /app/apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3001/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+RUN addgroup -S vuekumi && adduser -S vuekumi -G vuekumi \
+  && chown -R vuekumi:vuekumi /app
+USER vuekumi
+
 ENTRYPOINT ["./docker-entrypoint.sh"]

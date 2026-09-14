@@ -73,9 +73,23 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;
 
-    add_header X-Frame-Options SAMEORIGIN always;
-    add_header X-Content-Type-Options nosniff always;
-    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript image/svg+xml;
+
+    location = /healthz {
+        proxy_pass http://api:3001/api/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+    }
+
+    location = /readyz {
+        proxy_pass http://api:3001/api/ready;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+    }
 
     location /api/ {
         proxy_pass http://api:3001/api/;
@@ -89,10 +103,21 @@ server {
         proxy_request_buffering off;
     }
 
+    location /assets/ {
+        root /usr/share/nginx/html;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    }
+
     location / {
         root /usr/share/nginx/html;
         index index.html;
         try_files \$uri \$uri/ /index.html;
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Cache-Control "no-cache";
     }
 }
 EOF

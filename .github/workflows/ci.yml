@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @vuekumi/shared
+      - run: npx tsc --noEmit -p apps/api
+      - run: npm run typecheck -w @vuekumi/web
+      - run: npm run lint -w @vuekumi/web
+      - run: npm test -w @vuekumi/api
+      - run: npm exec -w @vuekumi/web -- vite build
+
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t vuekumi-api:${{ github.sha }} .
+      - name: Build web/nginx image
+        run: docker build -f docker/nginx/Dockerfile -t vuekumi-web:${{ github.sha }} .

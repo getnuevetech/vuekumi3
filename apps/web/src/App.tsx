@@ -22,6 +22,7 @@ import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
 import Licenses from './pages/Licenses'
 import Checkout from './pages/Checkout'
+import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './guards/ProtectedRoute'
 
 function ScrollToTop() {
@@ -72,7 +73,7 @@ export default function App() {
         <Route path="/admin/ai" element={<ProtectedRoute allowed={['admin']}><AdminAiProviders /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute allowed={['admin']}><AdminSettings /></ProtectedRoute>} />
 
-        <Route path="*" element={<Home />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   )

@@ -17,4 +17,6 @@ RUN npm exec -w @vuekumi/web -- vite build
 
 FROM nginx:alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+COPY docker/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY docker/nginx/nginx.prod.conf /etc/nginx/conf.d/default.conf
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1/healthz || exit 1

@@ -1,7 +1,9 @@
 import Fastify from 'fastify'
 import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
+import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
+import { ZodError } from 'zod'
 import { config } from './config.js'
 import { authRoutes } from './routes/auth.js'
 import { healthRoutes } from './routes/health.js'
@@ -20,15 +22,47 @@ import { aiRoutes } from './routes/ai.js'
 import { agencyRoutes } from './routes/agency.js'
 
 export async function buildApp() {
-  const app = Fastify({ logger: true, bodyLimit: 55 * 1024 * 1024, maxParamLength: 2048 })
+  const app = Fastify({
+    logger: true,
+    bodyLimit: 55 * 1024 * 1024,
+    trustProxy: true,
+    routerOptions: { maxParamLength: 2048 },
+  })
+
+  await app.register(helmet, {
+    global: true,
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  })
 
   await app.register(cors, {
-    origin: true,
+    origin: config.isDev ? true : [config.webUrl],
     credentials: true,
   })
 
   await app.register(cookie, { secret: config.cookieSecret })
   await app.register(jwt, { secret: config.jwtSecret })
+
+  app.setErrorHandler((err: unknown, request, reply) => {
+    if (err instanceof ZodError) {
+      const message = err.issues[0]?.message ?? 'Invalid request'
+      return reply.code(400).send({ error: message })
+    }
+    const status =
+      err && typeof err === 'object' && 'statusCode' in err && typeof err.statusCode === 'number'
+        ? err.statusCode
+        : 500
+    const message =
+      err && typeof err === 'object' && 'message' in err && typeof err.message === 'string'
+        ? err.message
+        : 'Request failed'
+    if (status >= 500) {
+      request.log.error(err)
+      return reply.code(500).send({ error: config.isDev ? message : 'Internal server error' })
+    }
+    return reply.code(status).send({ error: message || 'Request failed' })
+  })
 
   await app.register(async (api) => {
     await api.register(healthRoutes)
@@ -47,6 +81,10 @@ export async function buildApp() {
     await api.register(aiRoutes)
     await api.register(agencyRoutes)
   }, { prefix: '/api' })
+
+  app.setNotFoundHandler((_request, reply) => {
+    return reply.code(404).send({ error: 'Not found' })
+  })
 
   return app
 }

@@ -1,5 +1,5 @@
 import { buildApp } from './app.js'
-import { config } from './config.js'
+import { assertProductionSecrets, config } from './config.js'
 import { seedCountries } from './lib/geo.js'
 import { syncExchangeRates } from './lib/fx.js'
 import { prisma } from './lib/prisma.js'
@@ -7,6 +7,7 @@ import { seedLicenseCatalog } from './lib/licenses-seed.js'
 import { startMediaWorker } from './lib/media-worker.js'
 
 const app = await buildApp()
+assertProductionSecrets()
 
 try {
   await seedCountries()

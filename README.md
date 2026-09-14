@@ -51,21 +51,34 @@ npm run dev:web   # http://localhost:3000
 | Member | member@vuekumi.demo | User12345! |
 | Agency | agency@vuekumi.demo | User12345! |
 
-## API endpoints (Phase 0–1)
+## API
 
-- `GET /api/health`
+- `GET /api/health` — liveness
+- `GET /api/ready` — Postgres readiness
 - `POST /api/auth/register` · `login` · `logout` · `refresh`
 - `GET /api/auth/me`
 - `POST /api/auth/forgot-password` · `reset-password/:token`
 - `GET /api/auth/verify-email/:token`
-- `POST /api/auth/admin/send-password-reset/:userId` (admin)
 - `GET /api/photos` · `GET /api/photos/:id`
+- Agency, licences, media, payments, and admin routes under `/api/`
 
 ## Environment
 
 Copy `.env.example` to `apps/api/.env` and adjust as needed.
 
 Payment, email, AI, and storage keys are managed in **Admin → Settings** after login.
+
+Production refuses weak `JWT_SECRET` / `COOKIE_SECRET` values. Liveness is `GET /api/health` (also `/healthz` behind nginx); readiness is `GET /api/ready` (`/readyz`).
+
+## Checks
+
+```bash
+npm run ci        # typecheck, lint, API tests, Vite build
+npm test          # API unit tests
+npm run lint      # web ESLint
+```
+
+GitHub Actions runs the same checks on every push and pull request, then builds the API and nginx images.
 
 ## Deploy on AWS Lightsail (Ubuntu)
 
