@@ -22,6 +22,9 @@ export interface AuthUser {
   country: string | null
   avatarUrl: string | null
   emailVerified: boolean
+  hasPassword: boolean
+  bio?: string | null
+  location?: string | null
   contributorHandle?: string | null
   adminRole?: AdminRole | null
   agencyId?: string | null

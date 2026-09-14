@@ -28,6 +28,7 @@ import Favorites from './pages/Favorites'
 import Following from './pages/Following'
 import Collections from './pages/Collections'
 import CollectionDetail from './pages/CollectionDetail'
+import Account from './pages/Account'
 import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './guards/ProtectedRoute'
 
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/join/:token" element={<JoinAgency />} />
+        <Route path="/account" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Account /></ProtectedRoute>} />
         <Route path="/favorites" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Favorites /></ProtectedRoute>} />
         <Route path="/following" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Following /></ProtectedRoute>} />
         <Route path="/collections" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Collections /></ProtectedRoute>} />

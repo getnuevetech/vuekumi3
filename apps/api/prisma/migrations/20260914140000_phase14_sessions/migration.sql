@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "RefreshToken" ADD COLUMN "ipAddress" TEXT;
+ALTER TABLE "RefreshToken" ADD COLUMN "userAgent" TEXT;
+ALTER TABLE "RefreshToken" ADD COLUMN "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

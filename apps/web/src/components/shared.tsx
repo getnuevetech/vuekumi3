@@ -156,9 +156,12 @@ export function SiteHeader() {
             <CurrencySelect />
             {user ? (
               <>
-                <span className="max-w-[140px] truncate font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                <Link
+                  to="/account"
+                  className="max-w-[140px] truncate font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft hover:text-terra"
+                >
                   {user.email}
-                </span>
+                </Link>
                 <button
                   type="button"
                   onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
@@ -206,6 +209,7 @@ export function SiteHeader() {
             ...(user ? [{ label: 'Favorites', href: '/favorites' }] : []),
             ...(user ? [{ label: 'Following', href: '/following' }] : []),
             ...(user ? [{ label: 'Collections', href: '/collections' }] : []),
+            ...(user ? [{ label: 'Account', href: '/account' }] : []),
             { label: 'Contributor Portal', href: '/contributor' },
             { label: 'Admin Portal', href: '/admin' },
             { label: 'Log in', href: '/login' },
@@ -430,13 +434,21 @@ export function PortalShell({
         </nav>
         <div className="hidden border-t border-paper/10 px-6 py-5 lg:block">
           {user && (
-            <button
-              type="button"
-              onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
-              className="mb-3 block font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
-            >
-              Log out · {user.accountType}
-            </button>
+            <>
+              <Link
+                to="/account"
+                className="mb-3 block font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
+              >
+                Account
+              </Link>
+              <button
+                type="button"
+                onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
+                className="mb-3 block font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
+              >
+                Log out · {user.accountType}
+              </button>
+            </>
           )}
           <Link to="/" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft transition-colors hover:text-terra">
             ← Back to marketplace

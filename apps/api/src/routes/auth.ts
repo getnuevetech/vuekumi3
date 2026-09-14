@@ -1,12 +1,20 @@
 import type { FastifyInstance } from 'fastify'
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  updateProfileSchema,
 } from '@vuekumi/shared'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
+import {
+  isCurrentRefreshToken,
+  normalizeHandle,
+  passwordChangeBlocked,
+  summarizeUserAgent,
+} from '../lib/account.js'
 import {
   adminPasswordResetEmail,
   passwordResetEmail,
@@ -19,7 +27,7 @@ import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 import { serializeUser, authUserInclude } from '../lib/serialize.js'
 import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
-import { clearAuthCookies, issueTokens } from '../lib/session.js'
+import { clearAuthCookies, issueTokens, requestTokenMeta } from '../lib/session.js'
 
 const PLATFORM_AGREEMENT_VERSION = '1.0'
 
@@ -117,7 +125,7 @@ export async function authRoutes(app: FastifyInstance) {
     })
 
     const verifyToken = await createEmailVerification(user.id, user.email, user.name)
-    await issueTokens(app, user.id, reply)
+    await issueTokens(app, user.id, reply, requestTokenMeta(request))
 
     const full = await prisma.user.findUnique({
       where: { id: user.id },
@@ -146,7 +154,7 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: 'Account suspended' })
     }
 
-    await issueTokens(app, user.id, reply)
+    await issueTokens(app, user.id, reply, requestTokenMeta(request))
     return { user: serializeUser(user) }
   })
 
@@ -170,7 +178,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     await prisma.refreshToken.delete({ where: { id: stored.id } })
-    await issueTokens(app, stored.userId, reply)
+    await issueTokens(app, stored.userId, reply, requestTokenMeta(request))
     return { ok: true }
   })
 
@@ -178,6 +186,195 @@ export async function authRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request) => {
     return { user: request.authUser }
+  })
+
+  app.patch('/auth/me', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const body = updateProfileSchema.parse(request.body)
+    const userId = request.userId!
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { contributorProfile: true },
+    })
+    if (!existing) return reply.code(401).send({ error: 'Unauthorized' })
+
+    let country = existing.country
+    if (body.country !== undefined) {
+      country = body.country ? body.country.toUpperCase() : null
+      if (existing.accountType === 'contributor' && country) {
+        try {
+          await assertContributorCountry(country)
+        } catch (err) {
+          const e = err as Error & { statusCode?: number }
+          return reply.code(e.statusCode ?? 400).send({ error: e.message })
+        }
+      }
+    }
+
+    let handle = existing.contributorProfile?.handle
+    if (body.handle && existing.accountType === 'contributor') {
+      const normalized = normalizeHandle(body.handle)
+      if ('error' in normalized) {
+        return reply.code(400).send({ error: normalized.error })
+      }
+      const clash = await prisma.contributorProfile.findFirst({
+        where: {
+          handle: { equals: normalized.handle, mode: 'insensitive' },
+          userId: { not: userId },
+        },
+      })
+      if (clash) {
+        return reply.code(409).send({ error: 'That handle is already taken' })
+      }
+      handle = normalized.handle
+    }
+
+    const avatarUrl =
+      body.avatarUrl === undefined ? existing.avatarUrl : body.avatarUrl.trim() || null
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          ...(body.name ? { name: body.name.trim() } : {}),
+          country,
+          avatarUrl,
+        },
+      })
+      if (existing.contributorProfile) {
+        await tx.contributorProfile.update({
+          where: { userId },
+          data: {
+            ...(handle ? { handle } : {}),
+            ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
+            ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
+          },
+        })
+      }
+    })
+
+    await writeAuditLog({
+      actorId: userId,
+      action: 'account.update_profile',
+      entityType: 'user',
+      entityId: userId,
+      ipAddress: request.ip,
+    })
+
+    const full = await prisma.user.findUnique({
+      where: { id: userId },
+      include: authUserInclude,
+    })
+    return { user: serializeUser(full!) }
+  })
+
+  app.patch('/auth/me/password', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+    config: { rateLimit: AUTH_RATE_LIMIT },
+  }, async (request, reply) => {
+    const body = changePasswordSchema.parse(request.body)
+    const user = await prisma.user.findUnique({ where: { id: request.userId! } })
+    if (!user) return reply.code(401).send({ error: 'Unauthorized' })
+
+    const blocked = passwordChangeBlocked({
+      hasPassword: Boolean(user.passwordHash),
+      currentPassword: body.currentPassword,
+    })
+    if (blocked) {
+      return reply.code(blocked.status).send({ error: blocked.error })
+    }
+
+    if (user.passwordHash) {
+      const ok = await verifyPassword(body.currentPassword!, user.passwordHash)
+      if (!ok) {
+        return reply.code(401).send({ error: 'Current password is incorrect' })
+      }
+    }
+
+    const passwordHash = await hashPassword(body.password)
+    const currentHash = request.cookies.refresh_token ? hashToken(request.cookies.refresh_token) : null
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
+      prisma.refreshToken.deleteMany({
+        where: {
+          userId: user.id,
+          ...(currentHash ? { tokenHash: { not: currentHash } } : {}),
+        },
+      }),
+    ])
+
+    await writeAuditLog({
+      actorId: user.id,
+      action: 'account.change_password',
+      entityType: 'user',
+      entityId: user.id,
+      ipAddress: request.ip,
+    })
+
+    const full = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: authUserInclude,
+    })
+    return { user: serializeUser(full!) }
+  })
+
+  app.get('/auth/sessions', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request) => {
+    const rows = await prisma.refreshToken.findMany({
+      where: { userId: request.userId!, expiresAt: { gt: new Date() } },
+      orderBy: { lastUsedAt: 'desc' },
+    })
+    const cookie = request.cookies.refresh_token
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        current: isCurrentRefreshToken(cookie, row.tokenHash, hashToken),
+        ipAddress: row.ipAddress,
+        device: summarizeUserAgent(row.userAgent),
+        createdAt: row.createdAt.toISOString(),
+        lastUsedAt: row.lastUsedAt.toISOString(),
+        expiresAt: row.expiresAt.toISOString(),
+      })),
+    }
+  })
+
+  app.post('/auth/sessions/revoke-others', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request) => {
+    const cookie = request.cookies.refresh_token
+    const currentHash = cookie ? hashToken(cookie) : null
+    const result = await prisma.refreshToken.deleteMany({
+      where: {
+        userId: request.userId!,
+        ...(currentHash ? { tokenHash: { not: currentHash } } : {}),
+      },
+    })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'account.revoke_other_sessions',
+      entityType: 'user',
+      entityId: request.userId,
+      ipAddress: request.ip,
+      metadata: { count: result.count },
+    })
+    return { ok: true, revoked: result.count }
+  })
+
+  app.delete('/auth/sessions/:id', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const row = await prisma.refreshToken.findFirst({
+      where: { id, userId: request.userId! },
+    })
+    if (!row) return reply.code(404).send({ error: 'Session not found' })
+
+    const current = isCurrentRefreshToken(request.cookies.refresh_token, row.tokenHash, hashToken)
+    await prisma.refreshToken.delete({ where: { id: row.id } })
+    if (current) clearAuthCookies(reply)
+    return { ok: true, current }
   })
 
   app.post('/auth/forgot-password', {

@@ -30,8 +30,9 @@ import type {
   PayoutDto,
   PayoutMethodDto,
   PayoutMethodInput,
+  SessionDto,
 } from '@vuekumi/shared'
-import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
+import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -68,6 +69,20 @@ export const api = {
   publicConfig: () => request<PublicConfigDto>('/api/public/config'),
 
   me: () => request<{ user: AuthUser }>('/api/auth/me'),
+
+  updateMe: (body: UpdateProfileInput) =>
+    request<{ user: AuthUser }>('/api/auth/me', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  changePassword: (body: ChangePasswordInput) =>
+    request<{ user: AuthUser }>('/api/auth/me/password', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  sessions: () => request<{ items: SessionDto[] }>('/api/auth/sessions'),
+
+  revokeOtherSessions: () =>
+    request<{ ok: boolean; revoked: number }>('/api/auth/sessions/revoke-others', { method: 'POST', body: JSON.stringify({}) }),
+
+  revokeSession: (id: string) =>
+    request<{ ok: boolean; current: boolean }>(`/api/auth/sessions/${id}`, { method: 'DELETE' }),
 
   oauthDev: (body: OAuthDevInput) =>
     request<{ user: AuthUser }>('/api/auth/oauth/dev', { method: 'POST', body: JSON.stringify(body) }),

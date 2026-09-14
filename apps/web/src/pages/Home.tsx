@@ -35,6 +35,7 @@ function NoirHeader() {
     ...(user ? [{ label: 'Favorites', to: '/favorites' }] : []),
     ...(user ? [{ label: 'Following', to: '/following' }] : []),
     ...(user ? [{ label: 'Collections', to: '/collections' }] : []),
+    ...(user ? [{ label: 'Account', to: '/account' }] : []),
     ...(user ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
     { label: 'Contributor', to: '/contributor' },
@@ -75,9 +76,12 @@ function NoirHeader() {
             <SearchForm dark compact />
             {user ? (
               <>
-                <span className="max-w-[160px] truncate font-condensed text-[12px] uppercase tracking-[0.18em] text-paper-soft">
+                <Link
+                  to="/account"
+                  className="max-w-[160px] truncate font-condensed text-[12px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
+                >
                   {user.email}
-                </span>
+                </Link>
                 <button
                   type="button"
                   onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}

@@ -1,0 +1,308 @@
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router'
+import type { SessionDto } from '@vuekumi/shared'
+import { SiteHeader } from '../components/shared'
+import { useAuth } from '../context/AuthContext'
+import { api, ApiError, type GeoCountry } from '../api/client'
+import { toast } from 'sonner'
+
+export default function Account() {
+  const { user, refresh, logout, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
+
+  const [name, setName] = useState('')
+  const [country, setCountry] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [handle, setHandle] = useState('')
+  const [bio, setBio] = useState('')
+  const [location, setLocation] = useState('')
+  const [countries, setCountries] = useState<GeoCountry[]>([])
+  const [profileBusy, setProfileBusy] = useState(false)
+
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [passwordBusy, setPasswordBusy] = useState(false)
+
+  const [sessions, setSessions] = useState<SessionDto[]>([])
+  const [sessionsBusy, setSessionsBusy] = useState(false)
+
+  const contributor = user?.accountType === 'contributor'
+
+  useEffect(() => {
+    if (!user) return
+    setName(user.name)
+    setCountry(user.country ?? '')
+    setAvatarUrl(user.avatarUrl ?? '')
+    setHandle(user.contributorHandle ?? '')
+    setBio(user.bio ?? '')
+    setLocation(user.location ?? '')
+  }, [user])
+
+  useEffect(() => {
+    api.countries(contributor)
+      .then((d) => setCountries(d.countries))
+      .catch(() => setCountries([]))
+  }, [contributor])
+
+  function loadSessions() {
+    api.sessions().then((d) => setSessions(d.items)).catch(() => setSessions([]))
+  }
+
+  useEffect(() => {
+    if (user) loadSessions()
+  }, [user])
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-paper text-ink">
+        <SiteHeader />
+        <p className="pt-36 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading…</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    navigate('/login?redirect=/account')
+    return null
+  }
+
+  return (
+    <div className="min-h-screen bg-paper text-ink">
+      <SiteHeader />
+      <div className="mx-auto max-w-3xl px-5 pb-24 pt-28 md:px-8">
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Account</p>
+        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your settings.</h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          {user.email} · {user.accountType}
+          {user.emailVerified ? '' : ' · email not verified'}
+        </p>
+
+        <form
+          className="mt-10 space-y-4 border border-sand bg-white p-6"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            setProfileBusy(true)
+            try {
+              await api.updateMe({
+                name,
+                country,
+                avatarUrl,
+                ...(contributor ? { handle, bio, location } : {}),
+              })
+              await refresh()
+              toast.success('Profile saved')
+            } catch (err) {
+              toast.error(err instanceof ApiError ? err.message : 'Could not save profile')
+            } finally {
+              setProfileBusy(false)
+            }
+          }}
+        >
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Profile</p>
+          <input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Full name"
+            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
+          <select
+            required={contributor}
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="w-full border border-sand bg-white px-4 py-2.5 text-sm outline-none focus:border-terra"
+          >
+            <option value="">{contributor ? 'African country (required)' : 'Country'}</option>
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>{c.name} · {c.currency}</option>
+            ))}
+          </select>
+          {contributor && (
+            <>
+              <input
+                required
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="Public handle"
+                className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+              />
+              <p className="font-mono-tech text-[10px] text-ink-faint">
+                Shown as /p/{handle || 'your-handle'}
+              </p>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Public location (Lagos, Nigeria)"
+                className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+              />
+              <textarea
+                rows={4}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Short bio"
+                className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+              />
+            </>
+          )}
+          <input
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            placeholder="Avatar URL (optional)"
+            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
+          <button
+            type="submit"
+            disabled={profileBusy}
+            className="bg-ink px-6 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra disabled:opacity-50"
+          >
+            {profileBusy ? 'Saving…' : 'Save profile'}
+          </button>
+        </form>
+
+        <form
+          className="mt-6 space-y-4 border border-sand bg-white p-6"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (password !== confirm) {
+              toast.error('New passwords do not match')
+              return
+            }
+            setPasswordBusy(true)
+            try {
+              await api.changePassword({
+                password,
+                ...(user.hasPassword ? { currentPassword } : {}),
+              })
+              setCurrentPassword('')
+              setPassword('')
+              setConfirm('')
+              toast.success(user.hasPassword ? 'Password updated' : 'Password set')
+              await refresh()
+            } catch (err) {
+              toast.error(err instanceof ApiError ? err.message : 'Could not update password')
+            } finally {
+              setPasswordBusy(false)
+            }
+          }}
+        >
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Password</p>
+          <p className="text-sm text-ink-soft">
+            {user.hasPassword
+              ? 'Changing your password signs out other devices.'
+              : 'This account signed in with Google. Set a password to also use email login.'}
+          </p>
+          {user.hasPassword && (
+            <input
+              required
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Current password"
+              className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+            />
+          )}
+          <input
+            required
+            type="password"
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="New password (8+ characters)"
+            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
+          <input
+            required
+            type="password"
+            minLength={8}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Confirm new password"
+            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
+          <button
+            type="submit"
+            disabled={passwordBusy}
+            className="bg-ink px-6 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra disabled:opacity-50"
+          >
+            {passwordBusy ? 'Saving…' : user.hasPassword ? 'Update password' : 'Set password'}
+          </button>
+        </form>
+
+        <div className="mt-6 border border-sand bg-white p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Sessions</p>
+              <p className="mt-1 text-sm text-ink-soft">Devices signed in to this account.</p>
+            </div>
+            <button
+              type="button"
+              disabled={sessionsBusy || sessions.filter((s) => !s.current).length === 0}
+              onClick={async () => {
+                setSessionsBusy(true)
+                try {
+                  const result = await api.revokeOtherSessions()
+                  toast.success(`Signed out ${result.revoked} other session${result.revoked === 1 ? '' : 's'}`)
+                  loadSessions()
+                } catch (err) {
+                  toast.error(err instanceof ApiError ? err.message : 'Could not revoke sessions')
+                } finally {
+                  setSessionsBusy(false)
+                }
+              }}
+              className="border border-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] hover:bg-ink hover:text-paper disabled:opacity-40"
+            >
+              Sign out other devices
+            </button>
+          </div>
+          <div className="mt-4 divide-y divide-sand">
+            {sessions.length === 0 && (
+              <p className="py-4 text-sm text-ink-soft">No active sessions.</p>
+            )}
+            {sessions.map((session) => (
+              <div key={session.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div>
+                  <p className="text-sm font-medium">
+                    {session.device}
+                    {session.current && (
+                      <span className="ml-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-terra">This device</span>
+                    )}
+                  </p>
+                  <p className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+                    {session.ipAddress ?? 'IP hidden'} · last used {session.lastUsedAt.slice(0, 16).replace('T', ' ')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const result = await api.revokeSession(session.id)
+                      if (result.current) {
+                        await logout()
+                        navigate('/login')
+                        return
+                      }
+                      loadSessions()
+                    } catch (err) {
+                      toast.error(err instanceof ApiError ? err.message : 'Could not revoke session')
+                    }
+                  }}
+                  className="border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-[#b3382e]"
+                >
+                  {session.current ? 'Sign out' : 'Revoke'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {contributor && user.contributorHandle && (
+          <p className="mt-8 text-sm text-ink-soft">
+            Public photographer page:{' '}
+            <Link to={`/p/${user.contributorHandle}`} className="text-terra">/p/{user.contributorHandle}</Link>
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}

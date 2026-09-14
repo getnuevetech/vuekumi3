@@ -17,7 +17,7 @@ import {
   safeOAuthRedirect,
 } from '../lib/oauth.js'
 import { prisma } from '../lib/prisma.js'
-import { issueTokens } from '../lib/session.js'
+import { issueTokens, requestTokenMeta } from '../lib/session.js'
 import { authUserInclude, serializeUser } from '../lib/serialize.js'
 
 const STATE_COOKIE = 'oauth_state'
@@ -98,7 +98,7 @@ export async function oauthRoutes(app: FastifyInstance) {
         picture: profile.picture,
         ipAddress: request.ip,
       })
-      await issueTokens(app, user.id, reply)
+      await issueTokens(app, user.id, reply, requestTokenMeta(request))
       return reply.redirect(loginRedirect(undefined, redirect))
     } catch (err) {
       const code = err instanceof OAuthError ? err.code : 'failed'
@@ -122,7 +122,7 @@ export async function oauthRoutes(app: FastifyInstance) {
         name: body.name?.trim() || email.split('@')[0] || 'Member',
         ipAddress: request.ip,
       })
-      await issueTokens(app, user.id, reply)
+      await issueTokens(app, user.id, reply, requestTokenMeta(request))
       const full = await prisma.user.findUnique({
         where: { id: user.id },
         include: authUserInclude,
