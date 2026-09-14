@@ -3,6 +3,7 @@ import type {
   LicenseGrant,
   LicenseProduct,
   LicenseQuote,
+  Payment,
   Photo,
   PlatformAgreement,
   RightsRecord,
@@ -12,9 +13,11 @@ import type {
 } from '@prisma/client'
 import type {
   AuthUser,
+  CheckoutDto,
   LicenseGrantDto,
   LicenseProductDto,
   LicenseQuoteDto,
+  PaymentDto,
   PhotoDto,
   RightsDto,
 } from '@vuekumi/shared'
@@ -181,5 +184,29 @@ export function serializeQuote(
     quoteUsd: quote.quoteUsd,
     status: quote.status,
     createdAt: quote.createdAt.toISOString(),
+  }
+}
+
+export function serializePayment(payment: Payment): PaymentDto {
+  return {
+    id: payment.id,
+    status: payment.status,
+    provider: payment.provider as PaymentDto['provider'],
+    amountUsd: payment.amountUsd,
+    currency: payment.currency,
+    amountLocal: payment.amountLocal,
+    checkoutUrl: payment.checkoutUrl,
+    photoId: payment.photoId,
+  }
+}
+
+export function serializeCheckout(payment: Payment): CheckoutDto {
+  return {
+    paymentId: payment.id,
+    provider: payment.provider as CheckoutDto['provider'],
+    url: payment.checkoutUrl ?? `/checkout/${payment.id}`,
+    amountUsd: payment.amountUsd,
+    currency: payment.currency,
+    amountLocal: payment.amountLocal,
   }
 }

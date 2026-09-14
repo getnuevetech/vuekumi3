@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import {
+  acceptQuoteSchema,
   purchaseLicenseSchema,
   quoteDecisionSchema,
   rightsManagedQuoteSchema,
@@ -9,12 +10,14 @@ import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 import { buildCertificatePdf } from '../lib/certificate.js'
 import { convertFromUsd, pricingForCountry } from '../lib/fx.js'
 import { prisma } from '../lib/prisma.js'
-import { serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
-import { assertCanGrant, certificateCode, priceForProduct, RightsError } from '../lib/rights.js'
+import { issueGrant } from '../lib/grants.js'
+import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
+import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
+import { assertCanGrant, priceForProduct, RightsError } from '../lib/rights.js'
 import { streamObject } from '../lib/storage.js'
 
 function rightsError(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, err: unknown) {
-  if (err instanceof RightsError) {
+  if (err instanceof RightsError || err instanceof PaymentError) {
     return reply.code(err.statusCode).send({ error: err.message })
   }
   throw err
@@ -114,59 +117,62 @@ export async function licenseRoutes(app: FastifyInstance) {
     const pricing = await pricingForCountry(request.authUser?.country)
     const currency = (body.currency ?? pricing.currency).toUpperCase()
     const amountLocal = convertFromUsd(amountUsd, pricing.rateToUsd)
-    const code = certificateCode(photo.id, product.type)
+    const scopeJson = {
+      grant: 'usage_permission',
+      ownership: false,
+      layers: ['copyright', 'model', 'platform', 'buyer'],
+    }
 
-    const grant = await prisma.$transaction(async (tx) => {
-      const created = await tx.licenseGrant.create({
-        data: {
-          buyerId: request.userId!,
-          photoId: photo.id,
-          productId: product.id,
-          agencyId: request.authUser?.agencyId,
-          licenseType: product.type,
-          amountUsd,
-          currency,
-          amountLocal,
-          scopeJson: {
-            grant: 'usage_permission',
-            ownership: false,
-            layers: ['copyright', 'model', 'platform', 'buyer'],
-          },
-          certificateCode: code,
-        },
-        include: { photo: true, product: true },
+    if (amountUsd <= 0) {
+      const grant = await issueGrant({
+        buyerId: request.userId!,
+        photoId: photo.id,
+        productId: product.id,
+        agencyId: request.authUser?.agencyId,
+        licenseType: product.type,
+        amountUsd,
+        currency,
+        amountLocal,
+        scopeJson,
       })
-
-      await tx.photo.update({
-        where: { id: photo.id },
-        data: {
-          downloads: { increment: 1 },
-          ...(product.type === 'exclusive'
-            ? { exclusiveSold: true, status: 'delisted' as const }
-            : {}),
-        },
+      await writeAuditLog({
+        actorId: request.userId,
+        action: 'license.grant',
+        entityType: 'photo',
+        entityId: photo.id,
+        metadata: { licenseType: product.type, amountUsd, free: true },
+        ipAddress: request.ip,
       })
+      return { grant: serializeGrant(grant) }
+    }
 
-      if (product.type === 'exclusive') {
-        await tx.licenseQuote.updateMany({
-          where: { photoId: photo.id, status: { in: ['pending', 'quoted'] } },
-          data: { status: 'declined' },
-        })
-      }
-
-      return created
-    })
-
-    await writeAuditLog({
-      actorId: request.userId,
-      action: 'license.grant',
-      entityType: 'photo',
-      entityId: photo.id,
-      metadata: { licenseType: product.type, certificateCode: code, amountUsd },
-      ipAddress: request.ip,
-    })
-
-    return { grant: serializeGrant(grant) }
+    try {
+      const payment = await startLicenseCheckout({
+        buyerId: request.userId!,
+        buyerEmail: request.authUser!.email,
+        buyerName: request.authUser!.name,
+        buyerCountry: request.authUser?.country,
+        photoId: photo.id,
+        productId: product.id,
+        licenseType: product.type,
+        amountUsd,
+        currency,
+        agencyId: request.authUser?.agencyId,
+        scopeJson,
+        requestedProvider: body.provider,
+      })
+      await writeAuditLog({
+        actorId: request.userId,
+        action: 'license.checkout',
+        entityType: 'payment',
+        entityId: payment.id,
+        metadata: { licenseType: product.type, amountUsd, provider: payment.provider },
+        ipAddress: request.ip,
+      })
+      return { checkout: serializeCheckout(payment) }
+    } catch (err) {
+      return rightsError(reply, err)
+    }
   })
 
   app.post('/photos/:id/quotes', {
@@ -249,44 +255,65 @@ export async function licenseRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'Quote has not been priced yet' })
     }
 
+    const body = acceptQuoteSchema.parse(request.body ?? {})
+
     try {
       assertCanGrant(quote.product, quote.photo, quote.photo.rightsRecord)
     } catch (err) {
       return rightsError(reply, err)
     }
 
-    const pricing = await pricingForCountry(request.authUser?.country)
-    const code = certificateCode(quote.photoId, 'rights_managed')
-
-    const grant = await prisma.$transaction(async (tx) => {
-      const created = await tx.licenseGrant.create({
-        data: {
-          buyerId: quote.requesterId,
-          photoId: quote.photoId,
-          productId: quote.productId,
-          agencyId: quote.agencyId,
-          quoteId: quote.id,
-          licenseType: 'rights_managed',
-          amountUsd: quote.quoteUsd!,
-          currency: pricing.currency,
-          amountLocal: convertFromUsd(quote.quoteUsd!, pricing.rateToUsd),
-          scopeJson: {
-            grant: 'usage_permission',
-            ownership: false,
-            territory: quote.territory,
-            duration: quote.duration,
-            channels: quote.channels,
-          },
-          certificateCode: code,
-        },
-        include: { photo: true, product: true },
-      })
-      await tx.licenseQuote.update({ where: { id: quote.id }, data: { status: 'accepted' } })
-      await tx.photo.update({ where: { id: quote.photoId }, data: { downloads: { increment: 1 } } })
-      return created
+    const existingGrant = await prisma.licenseGrant.findFirst({
+      where: { buyerId: quote.requesterId, photoId: quote.photoId, licenseType: 'rights_managed' },
+      include: { photo: true, product: true },
     })
+    if (existingGrant) return { grant: serializeGrant(existingGrant), existing: true }
 
-    return { grant: serializeGrant(grant) }
+    const pricing = await pricingForCountry(request.authUser?.country)
+    const scopeJson = {
+      grant: 'usage_permission',
+      ownership: false,
+      territory: quote.territory,
+      duration: quote.duration,
+      channels: quote.channels,
+    }
+
+    if (quote.quoteUsd <= 0) {
+      const grant = await issueGrant({
+        buyerId: quote.requesterId,
+        photoId: quote.photoId,
+        productId: quote.productId,
+        agencyId: quote.agencyId,
+        quoteId: quote.id,
+        licenseType: 'rights_managed',
+        amountUsd: quote.quoteUsd,
+        currency: pricing.currency,
+        amountLocal: convertFromUsd(quote.quoteUsd, pricing.rateToUsd),
+        scopeJson,
+      })
+      return { grant: serializeGrant(grant) }
+    }
+
+    try {
+      const payment = await startLicenseCheckout({
+        buyerId: quote.requesterId,
+        buyerEmail: request.authUser!.email,
+        buyerName: request.authUser!.name,
+        buyerCountry: request.authUser?.country,
+        photoId: quote.photoId,
+        productId: quote.productId,
+        licenseType: 'rights_managed',
+        amountUsd: quote.quoteUsd,
+        currency: body.currency ?? pricing.currency,
+        agencyId: quote.agencyId,
+        quoteId: quote.id,
+        scopeJson,
+        requestedProvider: body.provider,
+      })
+      return { checkout: serializeCheckout(payment) }
+    } catch (err) {
+      return rightsError(reply, err)
+    }
   })
 
   app.patch('/admin/quotes/:id', {

@@ -96,7 +96,14 @@ export default function Licenses() {
                     {q.status === 'quoted' && (
                       <button
                         type="button"
-                        onClick={() => api.acceptQuote(q.id).then(() => { toast.success('Licence granted'); load() }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not accept'))}
+                        onClick={() => api.acceptQuote(q.id).then((result) => {
+                          if (result.checkout) {
+                            window.location.assign(result.checkout.url)
+                            return
+                          }
+                          toast.success('Licence granted')
+                          load()
+                        }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not accept'))}
                         className="rounded-full bg-ink px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper"
                       >
                         Accept

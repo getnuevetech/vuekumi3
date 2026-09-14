@@ -15,6 +15,7 @@ import { licenseRoutes } from './routes/licenses.js'
 import { contributorRoutes } from './routes/contributor.js'
 import { adminContentRoutes } from './routes/admin-content.js'
 import { mediaRoutes } from './routes/media.js'
+import { paymentRoutes } from './routes/payments.js'
 
 export async function buildApp() {
   const app = Fastify({ logger: true, bodyLimit: 55 * 1024 * 1024, maxParamLength: 2048 })
@@ -40,6 +41,7 @@ export async function buildApp() {
     await api.register(contributorRoutes)
     await api.register(adminContentRoutes)
     await api.register(mediaRoutes)
+    await api.register(paymentRoutes)
   }, { prefix: '/api' })
 
   return app

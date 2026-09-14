@@ -45,6 +45,8 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'payments.stripe.webhook_secret', label: 'Stripe webhook secret', group: 'Payments — Stripe', secret: true, envFallback: 'STRIPE_WEBHOOK_SECRET' },
   { key: 'payments.flutterwave.secret_key', label: 'Flutterwave secret key', group: 'Payments — Flutterwave', secret: true, envFallback: 'FLUTTERWAVE_SECRET_KEY' },
   { key: 'payments.flutterwave.public_key', label: 'Flutterwave public key', group: 'Payments — Flutterwave', secret: false },
+  { key: 'payments.flutterwave.secret_hash', label: 'Flutterwave webhook hash', group: 'Payments — Flutterwave', secret: true, envFallback: 'FLUTTERWAVE_SECRET_HASH' },
+  { key: 'payments.contributor_share', label: 'Contributor share (0–1, default 0.5)', group: 'Payments', secret: false, placeholder: '0.5' },
   { key: 'email.resend_api_key', label: 'Resend API key', group: 'Email', secret: true, envFallback: 'RESEND_API_KEY' },
   { key: 'email.from_address', label: 'From email address', group: 'Email', secret: false, placeholder: 'Vuekumi <hello@yourdomain.com>' },
   { key: 'ai.openai_api_key', label: 'OpenAI API key', group: 'AI', secret: true, envFallback: 'OPENAI_API_KEY' },

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import type { LicenseProductDto, PhotoDto } from '@vuekumi/shared'
+import type { LicenseProductDto, PaymentMethodsDto, PhotoDto } from '@vuekumi/shared'
 import { fmt, photoById, photographerOf, photos } from '../data/content'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
@@ -21,6 +21,8 @@ export default function PhotoDetail() {
   const [busy, setBusy] = useState(false)
   const [grantCode, setGrantCode] = useState<string | null>(null)
   const [quote, setQuote] = useState({ territory: '', duration: '', channels: '', notes: '' })
+  const [methods, setMethods] = useState<PaymentMethodsDto | null>(null)
+  const [provider, setProvider] = useState<'stripe' | 'flutterwave' | undefined>(undefined)
 
   useEffect(() => {
     if (!id) return
@@ -30,7 +32,15 @@ export default function PhotoDetail() {
       const first = d.items.find((i) => i.offered) ?? d.items[0]
       if (first) setLicense(first.type)
     }).catch(() => setOptions([]))
-  }, [id])
+    if (user) {
+      api.paymentMethods().then((m) => {
+        setMethods(m)
+        if (m.defaultProvider === 'stripe' || m.defaultProvider === 'flutterwave') {
+          setProvider(m.defaultProvider)
+        }
+      }).catch(() => undefined)
+    }
+  }, [id, user])
 
   const view: PhotoDto = photo ?? {
     ...mock,
@@ -71,7 +81,12 @@ export default function PhotoDetail() {
         toast.success('Quote requested. An admin will price the scope.')
         return
       }
-      const result = await api.purchaseLicense(id, selected.type)
+      const result = await api.purchaseLicense(id, selected.type, provider)
+      if (result.checkout) {
+        window.location.assign(result.checkout.url)
+        return
+      }
+      if (!result.grant) throw new Error('No grant returned')
       setGrantCode(result.grant.certificateCode)
       await api.downloadCertificate(result.grant.id)
       if (result.grant.hasOriginal || view.hasOriginal) {
@@ -198,6 +213,23 @@ export default function PhotoDetail() {
               </div>
             )}
 
+            {user && methods && (methods.stripe || methods.flutterwave) && (activePrice ?? 0) > 0 && !selected?.quoteOnly && (
+              <div className="mt-4 grid gap-2">
+                {methods.stripe && (
+                  <label className="flex cursor-pointer items-center gap-2 border border-sand bg-white px-3 py-2 text-sm has-checked:border-terra">
+                    <input type="radio" name="pay" checked={provider === 'stripe'} onChange={() => setProvider('stripe')} className="accent-[#bc773f]" />
+                    Card — Stripe
+                  </label>
+                )}
+                {methods.flutterwave && (
+                  <label className="flex cursor-pointer items-center gap-2 border border-sand bg-white px-3 py-2 text-sm has-checked:border-terra">
+                    <input type="radio" name="pay" checked={provider === 'flutterwave'} onChange={() => setProvider('flutterwave')} className="accent-[#bc773f]" />
+                    Card / mobile money — Flutterwave
+                  </label>
+                )}
+              </div>
+            )}
+
             <button
               type="button"
               disabled={busy || !selected || (!selected.offered && !selected.quoteOnly)}
@@ -213,7 +245,7 @@ export default function PhotoDetail() {
                     : activePrice === 0
                       ? 'Download free'
                       : activePrice != null
-                        ? `License & download — ${format(activePrice)}`
+                        ? `License & pay — ${format(activePrice)}`
                         : 'Select a licence'}
             </button>
             <p className="mt-3 text-center font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-faint">

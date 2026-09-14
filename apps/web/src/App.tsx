@@ -20,6 +20,7 @@ import { AdminCountries, AdminRates } from './pages/AdminGeo'
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
 import Licenses from './pages/Licenses'
+import Checkout from './pages/Checkout'
 import { ProtectedRoute } from './guards/ProtectedRoute'
 
 function ScrollToTop() {
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />
+        <Route path="/checkout/:paymentId" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Checkout /></ProtectedRoute>} />
 
         <Route path="/contributor" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorDashboard /></ProtectedRoute>} />
         <Route path="/contributor/upload" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorUpload /></ProtectedRoute>} />

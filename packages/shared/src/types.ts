@@ -116,6 +116,40 @@ export interface LicenseQuoteDto {
   createdAt: string
 }
 
+export interface CheckoutDto {
+  paymentId: string
+  provider: 'stripe' | 'flutterwave' | 'dev'
+  url: string
+  amountUsd: number
+  currency: string
+  amountLocal: number
+}
+
+export interface PaymentDto {
+  id: string
+  status: string
+  provider: 'stripe' | 'flutterwave' | 'dev'
+  amountUsd: number
+  currency: string
+  amountLocal: number
+  checkoutUrl: string | null
+  photoId: string
+}
+
+export interface PaymentMethodsDto {
+  stripe: boolean
+  flutterwave: boolean
+  dev: boolean
+  defaultProvider: 'stripe' | 'flutterwave' | 'dev'
+  contributorShare: number
+}
+
+export interface PurchaseLicenseResult {
+  grant?: LicenseGrantDto
+  existing?: boolean
+  checkout?: CheckoutDto
+}
+
 export interface AgreementDto {
   version: string
   title: string

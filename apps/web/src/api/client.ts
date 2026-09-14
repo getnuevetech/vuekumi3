@@ -5,7 +5,10 @@ import type {
   LicenseProductDto,
   LicenseQuoteDto,
   PaginatedPhotos,
+  PaymentDto,
+  PaymentMethodsDto,
   PhotoDto,
+  PurchaseLicenseResult,
 } from '@vuekumi/shared'
 import type { AccountType, LoginInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
 
@@ -81,10 +84,10 @@ export const api = {
 
   photoLicenses: (id: string) => request<{ items: LicenseProductDto[] }>(`/api/photos/${id}/licenses`),
 
-  purchaseLicense: (photoId: string, type: string) =>
-    request<{ grant: LicenseGrantDto; existing?: boolean }>(`/api/photos/${photoId}/licenses`, {
+  purchaseLicense: (photoId: string, type: string, provider?: 'stripe' | 'flutterwave') =>
+    request<PurchaseLicenseResult>(`/api/photos/${photoId}/licenses`, {
       method: 'POST',
-      body: JSON.stringify({ type }),
+      body: JSON.stringify({ type, provider }),
     }),
 
   requestQuote: (photoId: string, body: { territory: string; duration: string; channels: string; notes?: string }) =>
@@ -95,8 +98,28 @@ export const api = {
 
   myGrants: () => request<{ items: LicenseGrantDto[] }>('/api/licenses/grants'),
   myQuotes: () => request<{ items: LicenseQuoteDto[] }>('/api/licenses/quotes'),
-  acceptQuote: (id: string) =>
-    request<{ grant: LicenseGrantDto }>(`/api/licenses/quotes/${id}/accept`, { method: 'POST' }),
+  acceptQuote: (id: string, provider?: 'stripe' | 'flutterwave') =>
+    request<PurchaseLicenseResult>(`/api/licenses/quotes/${id}/accept`, {
+      method: 'POST',
+      body: JSON.stringify({ provider }),
+    }),
+
+  paymentMethods: () => request<PaymentMethodsDto>('/api/payments/methods'),
+
+  payment: (id: string) => request<{ payment: PaymentDto; grant: LicenseGrantDto | null }>(`/api/payments/${id}`),
+
+  verifyPayment: (id: string) => request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/verify`, { method: 'POST' }),
+
+  completeDevPayment: (id: string) =>
+    request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/complete-dev`, { method: 'POST' }),
+
+  contributorEarnings: () =>
+    request<{
+      availableUsd: number
+      thisMonthUsd: number
+      allTimeUsd: number
+      items: { id: string; photoTitle: string; amountUsd: number; source: string; createdAt: string }[]
+    }>('/api/contributor/earnings'),
 
   async downloadCertificate(grantId: string) {
     const res = await fetch(`${API_BASE}/api/licenses/grants/${grantId}/certificate`, { credentials: 'include' })

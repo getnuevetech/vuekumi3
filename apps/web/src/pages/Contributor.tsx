@@ -433,18 +433,45 @@ export function ContributorPortfolio() {
 /* ---------------- earnings ---------------- */
 
 export function ContributorEarnings() {
+  const [ledger, setLedger] = useState<{
+    availableUsd: number
+    thisMonthUsd: number
+    allTimeUsd: number
+    items: { id: string; photoTitle: string; amountUsd: number; source: string; createdAt: string }[]
+  } | null>(null)
+  useEffect(() => {
+    api.contributorEarnings().then(setLedger).catch(() => setLedger(null))
+  }, [])
+
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Earnings</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your income.</h1>
-      <p className="mt-1 text-sm text-ink-soft">Paid monthly via mobile money or bank transfer.</p>
+      <p className="mt-1 text-sm text-ink-soft">50% of each paid licence. Payouts run monthly via mobile money or bank transfer.</p>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Available balance" value={money(612.8)} sub="payout Oct 1" />
-        <StatCard label="This month" value={money(contributorStats.thisMonth)} sub="+9.3% vs Jul" />
-        <StatCard label="All time" value={money(contributorStats.totalEarnings)} sub="since Feb 2023" />
-        <StatCard label="Next payout method" value="MTN MoMo" sub="··· 4821" />
+        <StatCard label="Available balance" value={money(ledger?.availableUsd ?? 0)} sub="from cleared sales" />
+        <StatCard label="This month" value={money(ledger?.thisMonthUsd ?? 0)} sub="licence share" />
+        <StatCard label="All time" value={money(ledger?.allTimeUsd ?? contributorStats.totalEarnings)} sub="ledger + history" />
+        <StatCard label="Your split" value="50%" sub="of paid licences" />
       </div>
+
+      {ledger && ledger.items.length > 0 && (
+        <div className="mt-10">
+          <SectionHead kicker="Ledger" title="Cleared licence sales" />
+          <div className="overflow-hidden rounded-2xl border border-sand-soft bg-white">
+            {ledger.items.map((row) => (
+              <div key={row.id} className="flex items-center justify-between border-b border-sand-soft px-4 py-3 last:border-0">
+                <div>
+                  <p className="text-sm font-medium">{row.photoTitle}</p>
+                  <p className="font-mono-tech text-[10px] text-ink-faint">{row.createdAt.slice(0, 10)} · {row.source}</p>
+                </div>
+                <p className="text-sm font-medium">{money(row.amountUsd)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-10">
         <SectionHead kicker="Trend" title="Earnings vs downloads" />

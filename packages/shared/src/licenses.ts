@@ -9,9 +9,17 @@ export const grantLicenseTypeSchema = z.enum([
   'exclusive',
 ])
 
+export const checkoutProviderSchema = z.enum(['stripe', 'flutterwave'])
+
 export const purchaseLicenseSchema = z.object({
   type: grantLicenseTypeSchema,
   currency: z.string().min(3).max(3).optional(),
+  provider: checkoutProviderSchema.optional(),
+})
+
+export const acceptQuoteSchema = z.object({
+  currency: z.string().min(3).max(3).optional(),
+  provider: checkoutProviderSchema.optional(),
 })
 
 export const rightsManagedQuoteSchema = z.object({

@@ -103,6 +103,8 @@ model User {
   licenseGrants       LicenseGrant[]
   modelReleaseReviews ModelRelease[]  @relation("ModelReleaseReviewer")
   licenseQuotes       LicenseQuote[]  @relation("QuoteRequester")
+  payments            Payment[]
+  earningsLedgers     EarningsLedger[] @relation("ContributorEarnings")
 
   @@index([accountType])
   @@index([status])
@@ -213,6 +215,8 @@ model Photo {
   licenseGrants    LicenseGrant[]
   licenseQuotes    LicenseQuote[]
   assets           PhotoAsset[]
+  payments         Payment[]
+  earningsLedgers  EarningsLedger[]
 
   @@index([status])
   @@index([category])
@@ -303,6 +307,7 @@ model LicenseProduct {
   active               Boolean          @default(true)
   grants               LicenseGrant[]
   quotes               LicenseQuote[]
+  payments             Payment[]
 }
 
 enum QuoteStatus {
@@ -358,8 +363,57 @@ model LicenseGrant {
   product LicenseProduct @relation(fields: [productId], references: [id])
   agency  Agency?        @relation(fields: [agencyId], references: [id])
   quote   LicenseQuote?  @relation(fields: [quoteId], references: [id])
+  payment Payment?
 
   @@index([buyerId])
+  @@index([photoId])
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  buyerId     String
+  photoId     String
+  productId   String
+  quoteId     String?
+  grantId     String?  @unique
+  provider    String
+  status      String   @default("pending")
+  amountUsd   Float
+  currency    String
+  amountLocal Float
+  providerRef String?  @unique
+  checkoutUrl String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  paidAt      DateTime?
+
+  buyer   User           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  photo   Photo          @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  product LicenseProduct @relation(fields: [productId], references: [id])
+  grant   LicenseGrant?  @relation(fields: [grantId], references: [id])
+  earnings EarningsLedger[]
+
+  @@index([buyerId])
+  @@index([photoId])
+  @@index([status])
+}
+
+model EarningsLedger {
+  id            String   @id @default(cuid())
+  contributorId String
+  photoId       String
+  paymentId     String?
+  grantId       String?
+  source        String
+  amountUsd     Float
+  status        String   @default("available")
+  createdAt     DateTime @default(now())
+
+  contributor User     @relation("ContributorEarnings", fields: [contributorId], references: [id], onDelete: Cascade)
+  photo       Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  payment     Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([contributorId])
   @@index([photoId])
 }
 
