@@ -16,6 +16,10 @@ import type {
   AiSuggestionDto,
   AiStatusDto,
   PublicConfigDto,
+  EarningsSummaryDto,
+  PayoutDto,
+  PayoutMethodDto,
+  PayoutMethodInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
 
@@ -166,13 +170,45 @@ export const api = {
   completeDevPayment: (id: string) =>
     request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/complete-dev`, { method: 'POST', body: JSON.stringify({}) }),
 
-  contributorEarnings: () =>
-    request<{
-      availableUsd: number
-      thisMonthUsd: number
-      allTimeUsd: number
-      items: { id: string; photoTitle: string; amountUsd: number; source: string; createdAt: string }[]
-    }>('/api/contributor/earnings'),
+  contributorEarnings: () => request<EarningsSummaryDto>('/api/contributor/earnings'),
+
+  addPayoutMethod: (body: PayoutMethodInput) =>
+    request<{ method: PayoutMethodDto }>('/api/contributor/payout-methods', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  defaultPayoutMethod: (id: string) =>
+    request<{ methods: PayoutMethodDto[] }>(`/api/contributor/payout-methods/${id}/default`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
+  deletePayoutMethod: (id: string) =>
+    request<{ ok: boolean }>(`/api/contributor/payout-methods/${id}`, { method: 'DELETE' }),
+
+  requestPayout: (methodId?: string) =>
+    request<{ payout: PayoutDto }>('/api/contributor/payouts', {
+      method: 'POST',
+      body: JSON.stringify(methodId ? { methodId } : {}),
+    }),
+
+  adminPayouts: (status?: string) =>
+    request<{ pendingCount: number; pendingTotalUsd: number; items: PayoutDto[] }>(
+      `/api/admin/payouts${status ? `?status=${status}` : ''}`,
+    ),
+
+  payPayout: (id: string, notes?: string) =>
+    request<{ payout: PayoutDto }>(`/api/admin/payouts/${id}/pay`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
+
+  rejectPayout: (id: string, notes?: string) =>
+    request<{ payout: PayoutDto }>(`/api/admin/payouts/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
 
   async downloadCertificate(grantId: string) {
     const res = await fetch(`${API_BASE}/api/licenses/grants/${grantId}/certificate`, { credentials: 'include' })

@@ -77,48 +77,6 @@ export async function paymentRoutes(app: FastifyInstance) {
     }
   })
 
-  app.get('/contributor/earnings', {
-    preHandler: (request, reply) => authenticate(app, request, reply),
-  }, async (request, reply) => {
-    if (request.authUser?.accountType !== 'contributor' && request.authUser?.accountType !== 'admin') {
-      return reply.code(403).send({ error: 'Forbidden' })
-    }
-    const contributorId = request.userId!
-    const monthStart = new Date()
-    monthStart.setUTCDate(1)
-    monthStart.setUTCHours(0, 0, 0, 0)
-
-    const [all, month, items] = await Promise.all([
-      prisma.earningsLedger.aggregate({
-        where: { contributorId, status: 'available' },
-        _sum: { amountUsd: true },
-      }),
-      prisma.earningsLedger.aggregate({
-        where: { contributorId, status: 'available', createdAt: { gte: monthStart } },
-        _sum: { amountUsd: true },
-      }),
-      prisma.earningsLedger.findMany({
-        where: { contributorId },
-        include: { photo: { select: { title: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      }),
-    ])
-
-    return {
-      availableUsd: all._sum.amountUsd ?? 0,
-      thisMonthUsd: month._sum.amountUsd ?? 0,
-      allTimeUsd: all._sum.amountUsd ?? 0,
-      items: items.map((row) => ({
-        id: row.id,
-        photoTitle: row.photo.title,
-        amountUsd: row.amountUsd,
-        source: row.source,
-        createdAt: row.createdAt.toISOString(),
-      })),
-    }
-  })
-
   await app.register(async (scope) => {
     scope.removeContentTypeParser('application/json')
     scope.addContentTypeParser('application/json', { parseAs: 'buffer' }, (_req, body, done) => {

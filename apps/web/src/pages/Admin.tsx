@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
+import type { PayoutDto } from '@vuekumi/shared';
 import { api, ApiError } from '../api/client';
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import {
-  adminStats, fmt, moderationQueue, money, pendingPayouts, photoById, revenueSeries,
+  adminStats, fmt, moderationQueue, money, photoById, revenueSeries,
 } from '../data/content';
 
 const icons = {
@@ -65,7 +66,7 @@ export const adminLinks: PortalLink[] = [
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell title="Admin portal" subtitle="Template UI — wire to your admin API & roles." links={adminLinks}>
+    <PortalShell title="Admin portal" subtitle="Moderation, accounts, and contributor payouts." links={adminLinks}>
       {children}
     </PortalShell>
   );
@@ -74,6 +75,12 @@ function Shell({ children }: { children: React.ReactNode }) {
 /* ---------------- overview ---------------- */
 
 export function AdminDashboard() {
+  const [pending, setPending] = useState<{ id: string; contributorHandle: string | null; contributorName: string; methodLabel: string; amountUsd: number }[]>([])
+  useEffect(() => {
+    api.adminPayouts('requested')
+      .then((d) => setPending(d.items.slice(0, 3)))
+      .catch(() => setPending([]))
+  }, [])
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Overview</p>
@@ -134,13 +141,14 @@ export function AdminDashboard() {
             <Link to="/admin/payouts" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra hover:text-ink">Open →</Link>
           </div>
           <div className="mt-4 space-y-3">
-            {pendingPayouts.slice(0, 3).map((p) => (
+            {pending.length === 0 && <p className="text-sm text-ink-soft">No pending payouts.</p>}
+            {pending.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-3 border-b border-sand-soft pb-3 last:border-0 last:pb-0">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">@{p.contributor}</p>
-                  <p className="font-mono-tech text-[10px] text-ink-faint">{p.method}</p>
+                  <p className="truncate text-sm font-medium">@{p.contributorHandle ?? p.contributorName}</p>
+                  <p className="font-mono-tech text-[10px] text-ink-faint">{p.methodLabel}</p>
                 </div>
-                <span className="font-mono-tech text-xs font-medium">{money(p.amount)}</span>
+                <span className="font-mono-tech text-xs font-medium">{money(p.amountUsd)}</span>
               </div>
             ))}
           </div>
@@ -235,15 +243,28 @@ export function AdminModeration() {
 /* ---------------- payouts ---------------- */
 
 export function AdminPayouts() {
-  const [processed, setProcessed] = useState<Record<string, boolean>>({});
-  const total = pendingPayouts.reduce((s, p) => s + p.amount, 0);
+  const [items, setItems] = useState<PayoutDto[]>([])
+  const [pendingCount, setPendingCount] = useState(0)
+  const [pendingTotal, setPendingTotal] = useState(0)
+  const [busy, setBusy] = useState<string | null>(null)
+
+  const load = () => {
+    api.adminPayouts()
+      .then((d) => {
+        setItems(d.items)
+        setPendingCount(d.pendingCount)
+        setPendingTotal(d.pendingTotalUsd)
+      })
+      .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load payouts'))
+  }
+  useEffect(() => { load() }, [])
 
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Payouts</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Contributor payouts.</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        {pendingPayouts.length} requests · {money(total)} total · next batch Oct 1
+        {pendingCount} pending · {money(pendingTotal)} to send. Mark paid after you transfer over mobile money or bank rails.
       </p>
 
       <div className="mt-8 overflow-hidden rounded-2xl border border-sand-soft bg-white">
@@ -259,32 +280,65 @@ export function AdminPayouts() {
             </tr>
           </thead>
           <tbody>
-            {pendingPayouts.map((p) => (
+            {items.map((p) => (
               <tr key={p.id} className="border-b border-sand-soft last:border-0 hover:bg-cream/50">
-                <td className="px-4 py-3 font-mono-tech text-xs">{p.id}</td>
-                <td className="px-4 py-3 font-medium">@{p.contributor}</td>
-                <td className="hidden px-4 py-3 sm:table-cell">{p.method}</td>
-                <td className="hidden px-4 py-3 md:table-cell">{p.requested}</td>
-                <td className="px-4 py-3 text-right font-medium">{money(p.amount)}</td>
+                <td className="px-4 py-3 font-mono-tech text-xs">{p.id.slice(-8)}</td>
+                <td className="px-4 py-3 font-medium">@{p.contributorHandle ?? p.contributorName}</td>
+                <td className="hidden px-4 py-3 sm:table-cell">{p.methodLabel}<span className="block font-mono-tech text-[10px] text-ink-faint">{p.accountRefMasked}</span></td>
+                <td className="hidden px-4 py-3 md:table-cell">{p.requestedAt.slice(0, 10)}</td>
+                <td className="px-4 py-3 text-right font-medium">{money(p.amountUsd)}</td>
                 <td className="px-4 py-3 text-right">
-                  {processed[p.id] ? (
-                    <StatusPill status="paid" />
+                  {p.status === 'requested' ? (
+                    <div className="flex justify-end gap-2">
+                      <button
+                        disabled={busy === p.id}
+                        onClick={async () => {
+                          setBusy(p.id)
+                          try {
+                            await api.payPayout(p.id)
+                            toast.success('Marked paid')
+                            load()
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : 'Pay failed')
+                          } finally {
+                            setBusy(null)
+                          }
+                        }}
+                        className="rounded-full bg-ink px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-[#2e6b3e]"
+                      >
+                        Mark paid
+                      </button>
+                      <button
+                        disabled={busy === p.id}
+                        onClick={async () => {
+                          setBusy(p.id)
+                          try {
+                            await api.rejectPayout(p.id, 'Rejected by admin')
+                            toast.success('Returned to available balance')
+                            load()
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : 'Reject failed')
+                          } finally {
+                            setBusy(null)
+                          }
+                        }}
+                        className="rounded-full border border-sand px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-soft hover:border-[#b3382e] hover:text-[#b3382e]"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   ) : (
-                    <button
-                      onClick={() => setProcessed((s) => ({ ...s, [p.id]: true }))}
-                      className="rounded-full bg-ink px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-[#2e6b3e]"
-                    >
-                      Mark paid
-                    </button>
+                    <StatusPill status={p.status} />
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {items.length === 0 && <p className="px-4 py-6 text-sm text-ink-soft">No payout requests yet.</p>}
       </div>
       <p className="mt-4 font-mono-tech text-[10px] text-ink-faint">
-        Template UI — connect to your payout provider (Flutterwave, Paystack, M-Pesa, bank rails).
+        Manual payouts for now — record the transfer, then mark paid. Earnings return to the contributor if you reject.
       </p>
     </Shell>
   );

@@ -4,10 +4,10 @@ import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { toast } from 'sonner';
-import type { PhotoDto } from '@vuekumi/shared';
+import type { EarningsSummaryDto, PayoutKind, PhotoDto } from '@vuekumi/shared';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import {
-  contributorStats, earningsSeries, fmt, money, payoutHistory, photoById, photographerOf, photos,
+  contributorStats, earningsSeries, fmt, money, photoById, photographerOf, photos,
 } from '../data/content';
 import { api, ApiError } from '../api/client';
 import { AiSuggestPanel } from '../components/AiSuggestPanel';
@@ -48,7 +48,7 @@ export const contributorLinks: PortalLink[] = [
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell title="Contributor portal" subtitle="Template UI — wire to your API, auth & storage." links={contributorLinks}>
+    <PortalShell title="Contributor portal" subtitle="Upload, rights, and 50% of every paid licence." links={contributorLinks}>
       {children}
     </PortalShell>
   );
@@ -60,6 +60,12 @@ export function ContributorDashboard() {
   const mine = photos.filter((p) => p.photographer === ME);
   const top = [...mine].sort((a, b) => b.downloads - a.downloads).slice(0, 4);
   const me = photographerOf(ME);
+  const [ledger, setLedger] = useState<{ availableUsd: number; thisMonthUsd: number; allTimeUsd: number } | null>(null)
+  useEffect(() => {
+    api.contributorEarnings()
+      .then((d) => setLedger({ availableUsd: d.availableUsd, thisMonthUsd: d.thisMonthUsd, allTimeUsd: d.allTimeUsd }))
+      .catch(() => setLedger(null))
+  }, [])
   return (
     <Shell>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -79,7 +85,7 @@ export function ContributorDashboard() {
       </div>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Total earnings" value={money(contributorStats.totalEarnings)} sub={`${money(contributorStats.thisMonth)} this month`} />
+        <StatCard label="Available balance" value={money(ledger?.availableUsd ?? 0)} sub={`${money(ledger?.thisMonthUsd ?? 0)} earned this month`} />
         <StatCard label="Downloads" value={fmt(contributorStats.downloads)} sub="+8.2% vs last month" />
         <StatCard label="Profile views" value={fmt(contributorStats.views)} sub={`${fmt(contributorStats.followers)} followers`} />
         <StatCard label="Approval rate" value={`${contributorStats.approvalRate}%`} sub="last 90 days" />
@@ -468,32 +474,64 @@ export function ContributorPortfolio() {
 /* ---------------- earnings ---------------- */
 
 export function ContributorEarnings() {
-  const [ledger, setLedger] = useState<{
-    availableUsd: number
-    thisMonthUsd: number
-    allTimeUsd: number
-    items: { id: string; photoTitle: string; amountUsd: number; source: string; createdAt: string }[]
-  } | null>(null)
-  useEffect(() => {
+  const [ledger, setLedger] = useState<EarningsSummaryDto | null>(null)
+  const [kind, setKind] = useState<PayoutKind>('mobile_money')
+  const [label, setLabel] = useState('MTN MoMo')
+  const [accountName, setAccountName] = useState('')
+  const [accountRef, setAccountRef] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const load = () => {
     api.contributorEarnings().then(setLedger).catch(() => setLedger(null))
-  }, [])
+  }
+  useEffect(() => { load() }, [])
+
+  const chartData = ledger?.series?.length ? ledger.series : [{ month: '—', earnings: 0 }]
 
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Earnings</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your income.</h1>
-      <p className="mt-1 text-sm text-ink-soft">50% of each paid licence. Payouts run monthly via mobile money or bank transfer.</p>
+      <p className="mt-1 text-sm text-ink-soft">
+        50% of each paid licence. Request a payout when your available balance is at least {money(ledger?.minPayoutUsd ?? 10)}.
+        Vuekumi sends it over mobile money or bank transfer.
+      </p>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Available balance" value={money(ledger?.availableUsd ?? 0)} sub="from cleared sales" />
-        <StatCard label="This month" value={money(ledger?.thisMonthUsd ?? 0)} sub="licence share" />
-        <StatCard label="All time" value={money(ledger?.allTimeUsd ?? contributorStats.totalEarnings)} sub="ledger + history" />
-        <StatCard label="Your split" value="50%" sub="of paid licences" />
+        <StatCard label="Available balance" value={money(ledger?.availableUsd ?? 0)} sub="cleared and unpaid" />
+        <StatCard label="In payout" value={money(ledger?.pendingUsd ?? 0)} sub="requested, not yet sent" />
+        <StatCard label="Paid out" value={money(ledger?.paidUsd ?? 0)} sub="already transferred" />
+        <StatCard label="All time" value={money(ledger?.allTimeUsd ?? 0)} sub={`${money(ledger?.thisMonthUsd ?? 0)} this month`} />
+      </div>
+
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={busy || !ledger?.canRequest}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              const { payout } = await api.requestPayout()
+              toast.success(`Requested ${money(payout.amountUsd)}`)
+              load()
+            } catch (err) {
+              toast.error(err instanceof ApiError ? err.message : 'Payout request failed')
+            } finally {
+              setBusy(false)
+            }
+          }}
+          className="rounded-full bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra disabled:opacity-40"
+        >
+          Request payout
+        </button>
+        {ledger?.requestBlocker && (
+          <p className="text-sm text-ink-soft">{ledger.requestBlocker}</p>
+        )}
       </div>
 
       {ledger && ledger.items.length > 0 && (
         <div className="mt-10">
-          <SectionHead kicker="Ledger" title="Cleared licence sales" />
+          <SectionHead kicker="Ledger" title="Licence sales" />
           <div className="overflow-hidden rounded-2xl border border-sand-soft bg-white">
             {ledger.items.map((row) => (
               <div key={row.id} className="flex items-center justify-between border-b border-sand-soft px-4 py-3 last:border-0">
@@ -501,7 +539,10 @@ export function ContributorEarnings() {
                   <p className="text-sm font-medium">{row.photoTitle}</p>
                   <p className="font-mono-tech text-[10px] text-ink-faint">{row.createdAt.slice(0, 10)} · {row.source}</p>
                 </div>
-                <p className="text-sm font-medium">{money(row.amountUsd)}</p>
+                <div className="text-right">
+                  <p className="text-sm font-medium">{money(row.amountUsd)}</p>
+                  <StatusPill status={row.status} />
+                </div>
               </div>
             ))}
           </div>
@@ -509,34 +550,116 @@ export function ContributorEarnings() {
       )}
 
       <div className="mt-10">
-        <SectionHead kicker="Trend" title="Earnings vs downloads" />
+        <SectionHead kicker="Trend" title="Earnings, last 6 months" />
         <div className="rounded-2xl border border-sand-soft bg-white p-5">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={earningsSeries} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                 <defs>
                   <linearGradient id="eg2" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#bc773f" stopOpacity={0.35} />
                     <stop offset="100%" stopColor="#bc773f" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="dg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3c3835" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#3c3835" stopOpacity={0} />
-                  </linearGradient>
                 </defs>
                 <CartesianGrid stroke="#efe4da" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="l" tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 11, fill: '#c2b4a6' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => fmt(v)} />
+                <YAxis tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ border: '1px solid #dec9b8', borderRadius: 12, fontSize: 12, background: '#faf6f3' }}
-                  formatter={(v: number, name: string) => [name === 'earnings' ? money(v) : fmt(v), name === 'earnings' ? 'Earnings' : 'Downloads']}
+                  formatter={(v: number) => [money(v), 'Earnings']}
                 />
-                <Area yAxisId="l" type="monotone" dataKey="earnings" stroke="#bc773f" strokeWidth={2} fill="url(#eg2)" />
-                <Area yAxisId="r" type="monotone" dataKey="downloads" stroke="#3c3835" strokeWidth={1.5} strokeDasharray="4 4" fill="url(#dg)" />
+                <Area type="monotone" dataKey="earnings" stroke="#bc773f" strokeWidth={2} fill="url(#eg2)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <SectionHead kicker="Destination" title="Payout methods" />
+        <form
+          className="mb-4 grid gap-3 rounded-2xl border border-sand-soft bg-white p-5 md:grid-cols-2"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            setBusy(true)
+            try {
+              await api.addPayoutMethod({
+                kind,
+                label,
+                accountName,
+                accountRef,
+                isDefault: true,
+              })
+              toast.success('Payout method saved')
+              setAccountName('')
+              setAccountRef('')
+              load()
+            } catch (err) {
+              toast.error(err instanceof ApiError ? err.message : 'Could not save method')
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          <select
+            value={kind}
+            onChange={(e) => {
+              const next = e.target.value as PayoutKind
+              setKind(next)
+              setLabel(next === 'mobile_money' ? 'MTN MoMo' : 'Bank transfer')
+            }}
+            className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra"
+          >
+            <option value="mobile_money">Mobile money</option>
+            <option value="bank">Bank transfer</option>
+          </select>
+          <input required value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Network or bank (MTN MoMo, GTBank)" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
+          <input required value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Account name" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
+          <input required value={accountRef} onChange={(e) => setAccountRef(e.target.value)} placeholder={kind === 'mobile_money' ? 'Phone number' : 'Account number'} className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
+          <button type="submit" disabled={busy} className="rounded-full bg-ink px-6 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra disabled:opacity-50 md:col-span-2">
+            Save method
+          </button>
+        </form>
+        <div className="overflow-hidden rounded-2xl border border-sand-soft bg-white">
+          {(ledger?.methods ?? []).length === 0 && (
+            <p className="px-4 py-6 text-sm text-ink-soft">Add a mobile money or bank destination before requesting a payout.</p>
+          )}
+          {(ledger?.methods ?? []).map((m) => (
+            <div key={m.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-sand-soft px-4 py-3 last:border-0">
+              <div>
+                <p className="text-sm font-medium">{m.label} · {m.accountName}</p>
+                <p className="font-mono-tech text-[10px] text-ink-faint">{m.kind === 'mobile_money' ? 'Mobile money' : 'Bank'} · {m.accountRefMasked}{m.isDefault ? ' · default' : ''}</p>
+              </div>
+              <div className="flex gap-2">
+                {!m.isDefault && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await api.defaultPayoutMethod(m.id)
+                      load()
+                    }}
+                    className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
+                  >
+                    Default
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await api.deletePayoutMethod(m.id)
+                      load()
+                    } catch (err) {
+                      toast.error(err instanceof ApiError ? err.message : 'Could not delete')
+                    }
+                  }}
+                  className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-[#b3382e]"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -554,17 +677,20 @@ export function ContributorEarnings() {
               </tr>
             </thead>
             <tbody>
-              {payoutHistory.map((p) => (
+              {(ledger?.payouts ?? []).map((p) => (
                 <tr key={p.id} className="border-b border-sand-soft last:border-0 hover:bg-cream/50">
-                  <td className="px-4 py-3 font-mono-tech text-xs">{p.id}</td>
-                  <td className="px-4 py-3">{p.date}</td>
-                  <td className="hidden px-4 py-3 sm:table-cell">{p.method}</td>
-                  <td className="px-4 py-3 text-right font-medium">{money(p.amount)}</td>
+                  <td className="px-4 py-3 font-mono-tech text-xs">{p.id.slice(-8)}</td>
+                  <td className="px-4 py-3">{p.requestedAt.slice(0, 10)}</td>
+                  <td className="hidden px-4 py-3 sm:table-cell">{p.methodLabel}</td>
+                  <td className="px-4 py-3 text-right font-medium">{money(p.amountUsd)}</td>
                   <td className="px-4 py-3 text-right"><StatusPill status={p.status} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {(ledger?.payouts ?? []).length === 0 && (
+            <p className="px-4 py-6 text-sm text-ink-soft">No payouts yet. Request one when you hit the minimum.</p>
+          )}
         </div>
       </div>
     </Shell>

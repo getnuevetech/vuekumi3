@@ -32,6 +32,10 @@ async function main() {
   const userPassword = await hashPassword('User12345!')
 
   await prisma.auditLog.deleteMany()
+  await prisma.payout.deleteMany()
+  await prisma.payoutMethod.deleteMany()
+  await prisma.earningsLedger.deleteMany()
+  await prisma.payment.deleteMany()
   await prisma.licenseGrant.deleteMany()
   await prisma.licenseQuote.deleteMany()
   await prisma.agencyInvite.deleteMany()
@@ -300,6 +304,32 @@ async function main() {
       where: { currency: 'USD' },
       create: { currency: 'USD', rateToUsd: 1, source: 'auto', fetchedAt: new Date() },
       update: { rateToUsd: 1 },
+    })
+  }
+
+  const amaraId = contributorUsers.get('amara-okafor')
+  if (amaraId) {
+    await prisma.payoutMethod.create({
+      data: {
+        userId: amaraId,
+        kind: 'mobile_money',
+        label: 'MTN MoMo',
+        accountName: 'Amara Okafor',
+        accountRef: '08031234567',
+        country: 'NG',
+        isDefault: true,
+      },
+    })
+    await prisma.earningsLedger.createMany({
+      data: [
+        { contributorId: amaraId, photoId: 'afr-011', source: 'licence_sale', amountUsd: 48, status: 'available' },
+        { contributorId: amaraId, photoId: 'afr-009', source: 'licence_sale', amountUsd: 24, status: 'available' },
+        { contributorId: amaraId, photoId: 'afr-023', source: 'licence_sale', amountUsd: 18, status: 'available' },
+      ],
+    })
+    await prisma.contributorProfile.update({
+      where: { userId: amaraId },
+      data: { payoutMethod: 'Mobile money (MTN MoMo)', earnings: 90 },
     })
   }
 

@@ -385,6 +385,8 @@ export function StatusPill({ status }: { status: string }) {
     premium: 'bg-terra text-paper',
     free: 'bg-cream text-ink',
     pending: 'bg-[#f5ece5] text-[#bc773f]',
+    requested: 'bg-[#f5ece5] text-[#bc773f]',
+    reserved: 'bg-[#f5ece5] text-[#bc773f]',
     verified: 'bg-[#e7f2e9] text-[#2e6b3e]',
     rejected: 'bg-[#fbe7e4] text-[#b3382e]',
     delisted: 'bg-[#fbe7e4] text-[#b3382e]',
