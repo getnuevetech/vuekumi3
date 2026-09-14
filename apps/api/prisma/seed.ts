@@ -49,6 +49,7 @@ async function main() {
   await prisma.refreshToken.deleteMany()
   await prisma.passwordResetToken.deleteMany()
   await prisma.emailVerificationToken.deleteMany()
+  await prisma.oAuthAccount.deleteMany()
   await prisma.user.deleteMany()
 
   const admin = await prisma.user.create({

@@ -15,8 +15,9 @@ import type {
   PurchaseLicenseResult,
   AiSuggestionDto,
   AiStatusDto,
+  PublicConfigDto,
 } from '@vuekumi/shared'
-import type { AccountType, AgencyRole, LoginInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
+import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput } from '@vuekumi/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -50,7 +51,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<{ status: string }>('/api/health'),
 
+  publicConfig: () => request<PublicConfigDto>('/api/public/config'),
+
   me: () => request<{ user: AuthUser }>('/api/auth/me'),
+
+  oauthDev: (body: OAuthDevInput) =>
+    request<{ user: AuthUser }>('/api/auth/oauth/dev', { method: 'POST', body: JSON.stringify(body) }),
 
   login: (body: LoginInput) =>
     request<{ user: AuthUser }>('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),

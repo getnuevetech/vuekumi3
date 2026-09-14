@@ -57,18 +57,33 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'storage.s3_bucket', label: 'Bucket name', group: 'Storage', secret: false, envFallback: 'S3_BUCKET' },
   { key: 'storage.s3_access_key', label: 'Access key', group: 'Storage', secret: true, envFallback: 'S3_ACCESS_KEY' },
   { key: 'storage.s3_secret_key', label: 'Secret key', group: 'Storage', secret: true, envFallback: 'S3_SECRET_KEY' },
+  { key: 'auth.google_client_id', label: 'Google OAuth client ID', group: 'Auth — Google', secret: false, envFallback: 'GOOGLE_CLIENT_ID', placeholder: 'xxxx.apps.googleusercontent.com' },
+  { key: 'auth.google_client_secret', label: 'Google OAuth client secret', group: 'Auth — Google', secret: true, envFallback: 'GOOGLE_CLIENT_SECRET' },
+  { key: 'ops.sentry_dsn', label: 'Sentry DSN', group: 'Observability', secret: false, envFallback: 'SENTRY_DSN', placeholder: 'https://...@....ingest.sentry.io/...' },
 ]
+
+export function envSetting(key: string): string | null {
+  const def = SETTING_DEFINITIONS.find((d) => d.key === key)
+  if (def?.envFallback && process.env[def.envFallback]) {
+    return process.env[def.envFallback] ?? null
+  }
+  return null
+}
 
 export async function getSetting(key: string): Promise<string | null> {
   const row = await prisma.platformSetting.findUnique({ where: { key } })
   if (row?.value) {
     return row.secret ? decryptSecret(row.value) : row.value
   }
-  const def = SETTING_DEFINITIONS.find((d) => d.key === key)
-  if (def?.envFallback && process.env[def.envFallback]) {
-    return process.env[def.envFallback] ?? null
+  return envSetting(key)
+}
+
+export async function getSettingSafe(key: string): Promise<string | null> {
+  try {
+    return await getSetting(key)
+  } catch {
+    return envSetting(key)
   }
-  return null
 }
 
 export async function listSettingsForAdmin() {

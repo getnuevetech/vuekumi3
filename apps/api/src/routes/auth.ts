@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -15,55 +15,13 @@ import {
 } from '../lib/email.js'
 import { hashPassword, createToken, hashToken, verifyPassword } from '../lib/password.js'
 import { prisma } from '../lib/prisma.js'
+import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 import { serializeUser, authUserInclude } from '../lib/serialize.js'
 import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
+import { clearAuthCookies, issueTokens } from '../lib/session.js'
 
 const PLATFORM_AGREEMENT_VERSION = '1.0'
-
-function setAuthCookies(reply: FastifyReply, accessToken: string, refreshToken: string) {
-  const secure = config.cookieSecure
-  reply.setCookie('access_token', accessToken, {
-    httpOnly: true,
-    secure,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 15 * 60,
-  })
-  reply.setCookie('refresh_token', refreshToken, {
-    httpOnly: true,
-    secure,
-    sameSite: 'lax',
-    path: '/api/auth',
-    maxAge: config.refreshTokenDays * 24 * 60 * 60,
-  })
-}
-
-function clearAuthCookies(reply: FastifyReply) {
-  reply.clearCookie('access_token', { path: '/' })
-  reply.clearCookie('refresh_token', { path: '/api/auth' })
-}
-
-async function issueTokens(
-  app: FastifyInstance,
-  userId: string,
-  reply: FastifyReply,
-) {
-  const accessToken = app.jwt.sign({ sub: userId, type: 'access' }, { expiresIn: config.accessTokenTtl })
-  const refreshRaw = createToken()
-  const refreshHash = hashToken(refreshRaw)
-
-  await prisma.refreshToken.create({
-    data: {
-      userId,
-      tokenHash: refreshHash,
-      expiresAt: new Date(Date.now() + config.refreshTokenDays * 24 * 60 * 60 * 1000),
-    },
-  })
-
-  setAuthCookies(reply, accessToken, refreshRaw)
-  return { accessToken }
-}
 
 async function createEmailVerification(userId: string, email: string, name: string) {
   const raw = createToken()
@@ -84,7 +42,9 @@ async function createEmailVerification(userId: string, email: string, name: stri
 }
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post('/auth/register', async (request, reply) => {
+  app.post('/auth/register', {
+    config: { rateLimit: AUTH_RATE_LIMIT },
+  }, async (request, reply) => {
     const body = registerSchema.parse(request.body)
 
     const existing = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } })
@@ -170,7 +130,9 @@ export async function authRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/auth/login', async (request, reply) => {
+  app.post('/auth/login', {
+    config: { rateLimit: AUTH_RATE_LIMIT },
+  }, async (request, reply) => {
     const body = loginSchema.parse(request.body)
     const user = await prisma.user.findUnique({
       where: { email: body.email.toLowerCase() },
@@ -218,7 +180,9 @@ export async function authRoutes(app: FastifyInstance) {
     return { user: request.authUser }
   })
 
-  app.post('/auth/forgot-password', async (request, reply) => {
+  app.post('/auth/forgot-password', {
+    config: { rateLimit: AUTH_RATE_LIMIT },
+  }, async (request, reply) => {
     const { email } = forgotPasswordSchema.parse(request.body)
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
     if (!user) return { ok: true }
@@ -253,7 +217,9 @@ export async function authRoutes(app: FastifyInstance) {
     return { ok: true, ...(config.isDev ? { devResetToken: raw } : {}) }
   })
 
-  app.post('/auth/reset-password/:token', async (request, reply) => {
+  app.post('/auth/reset-password/:token', {
+    config: { rateLimit: AUTH_RATE_LIMIT },
+  }, async (request, reply) => {
     const { token } = request.params as { token: string }
     const body = resetPasswordSchema.parse(request.body)
 

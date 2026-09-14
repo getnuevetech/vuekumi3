@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { reportError } from '../lib/sentry'
 import { LogoMark } from './shared'
 
 interface Props {
@@ -19,6 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Vuekumi UI error', error, info.componentStack)
+    reportError(error, info)
   }
 
   render() {

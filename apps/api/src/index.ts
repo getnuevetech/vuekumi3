@@ -5,9 +5,11 @@ import { syncExchangeRates } from './lib/fx.js'
 import { prisma } from './lib/prisma.js'
 import { seedLicenseCatalog } from './lib/licenses-seed.js'
 import { startMediaWorker } from './lib/media-worker.js'
+import { initSentry } from './lib/sentry.js'
 
 const app = await buildApp()
 assertProductionSecrets()
+await initSentry()
 
 try {
   await seedCountries()

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
+import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { prisma } from '../lib/prisma.js'
 import { streamObject } from '../lib/storage.js'
 
@@ -77,6 +78,7 @@ export async function mediaRoutes(app: FastifyInstance) {
 
   app.get('/media/:id/original', {
     preHandler: (request, reply) => authenticate(app, request, reply),
+    config: { rateLimit: DOWNLOAD_RATE_LIMIT },
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const photo = await prisma.photo.findUnique({

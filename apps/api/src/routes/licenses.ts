@@ -16,6 +16,7 @@ import { issueGrant } from '../lib/grants.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
 import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
 import { assertCanGrant, priceForProduct, RightsError } from '../lib/rights.js'
+import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { streamObject } from '../lib/storage.js'
 
 function rightsError(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, err: unknown) {
@@ -398,6 +399,7 @@ export async function licenseRoutes(app: FastifyInstance) {
 
   app.get('/licenses/grants/:id/certificate', {
     preHandler: (request, reply) => authenticate(app, request, reply),
+    config: { rateLimit: DOWNLOAD_RATE_LIMIT },
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const grant = await prisma.licenseGrant.findUnique({
@@ -440,6 +442,7 @@ export async function licenseRoutes(app: FastifyInstance) {
 
   app.get('/licenses/grants/:id/file', {
     preHandler: (request, reply) => authenticate(app, request, reply),
+    config: { rateLimit: DOWNLOAD_RATE_LIMIT },
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const grant = await prisma.licenseGrant.findUnique({

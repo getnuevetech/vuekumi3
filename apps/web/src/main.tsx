@@ -8,12 +8,15 @@ import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import { CurrencyProvider } from './context/CurrencyContext'
+import { initWebSentry } from './lib/sentry'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 30_000, retry: 1 },
   },
 })
+
+await initWebSentry()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

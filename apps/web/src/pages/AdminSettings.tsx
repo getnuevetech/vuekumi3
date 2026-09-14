@@ -62,8 +62,9 @@ export function AdminSettings() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Settings</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Integrations.</h1>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
-        Payment, email, AI, and storage keys are stored encrypted in the database.
-        Leave a secret field blank to keep the current value.
+        Payment, email, AI, storage, Google sign-in, and Sentry keys live here — not in server env files.
+        Leave a secret field blank to keep the current value. Google redirect URI is
+        <code className="font-mono-tech text-[11px]">{`${window.location.origin}/api/auth/oauth/google/callback`}</code>.
       </p>
 
       {loading ? (

@@ -3,6 +3,20 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError, homeForUser, type GeoCountry } from '../api/client'
+import type { PublicConfigDto } from '@vuekumi/shared'
+
+function oauthErrorMessage(code: string): string {
+  if (code === 'denied') return 'Google sign-in was cancelled.'
+  if (code === 'unverified') return 'Google must verify that email before we can sign you in.'
+  if (code === 'suspended') return 'This account is suspended.'
+  if (code === 'not_configured') return 'Google sign-in is not configured yet.'
+  return 'Google sign-in failed. Try email instead.'
+}
+
+function safeRedirect(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return null
+  return value
+}
 
 type Mode = 'signin' | 'signup'
 type Role = 'member' | 'contributor' | 'agency'
@@ -19,11 +33,37 @@ export default function Login() {
   const [countries, setCountries] = useState<GeoCountry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [oauth, setOauth] = useState<PublicConfigDto['oauth']>({ google: false, dev: false })
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { login, register } = useAuth()
+  const { login, register, completeSession } = useAuth()
 
-  const redirect = searchParams.get('redirect')
+  const redirect = safeRedirect(searchParams.get('redirect'))
+  const showOauth = oauth.google || oauth.dev
+  const oauthAllowed = mode === 'signin' || role === 'member'
+
+  useEffect(() => {
+    api.publicConfig()
+      .then((cfg) => setOauth(cfg.oauth))
+      .catch(() => undefined)
+  }, [])
+
+  useEffect(() => {
+    const err = searchParams.get('oauth_error')
+    if (err) setError(oauthErrorMessage(err))
+  }, [searchParams])
+
+  useEffect(() => {
+    if (searchParams.get('oauth') !== 'ok') return
+    setLoading(true)
+    completeSession()
+      .then((user) => {
+        const dest = redirect ?? homeForUser(user)
+        navigate(dest)
+      })
+      .catch(() => setError('Signed in with Google, but the session could not be loaded.'))
+      .finally(() => setLoading(false))
+  }, [completeSession, navigate, redirect, searchParams])
 
   useEffect(() => {
     if (mode !== 'signup') return
@@ -109,7 +149,7 @@ export default function Login() {
                         country: country || undefined,
                         acceptAgreement: accountType === 'contributor' ? acceptAgreement : undefined,
                       })
-                const dest = redirect && redirect.startsWith('/') ? redirect : homeForUser(user)
+                const dest = redirect ?? homeForUser(user)
                 navigate(dest)
               } catch (err) {
                 setError(err instanceof ApiError ? err.message : 'Something went wrong')
@@ -187,6 +227,53 @@ export default function Login() {
                   : 'Create account'}
             </button>
           </form>
+
+          {showOauth && oauthAllowed && (
+            <div className="mt-5">
+              <p className="mb-3 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-faint">or</p>
+              {oauth.google && (
+                <a
+                  href={`/api/auth/oauth/google/start${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
+                  className="flex w-full items-center justify-center rounded-full border border-sand-soft bg-white py-3.5 font-mono-tech text-[11px] uppercase tracking-[0.2em] text-ink transition-colors hover:border-terra"
+                >
+                  Continue with Google
+                </a>
+              )}
+              {oauth.dev && (
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={async () => {
+                    const nextEmail = email || window.prompt('Dev Google email') || ''
+                    if (!nextEmail) return
+                    setLoading(true)
+                    setError(null)
+                    try {
+                      const { user } = await api.oauthDev({
+                        email: nextEmail,
+                        name: name || nextEmail.split('@')[0],
+                      })
+                      const signedIn = await completeSession().catch(() => user)
+                      navigate(redirect ?? homeForUser(signedIn))
+                    } catch (err) {
+                      setError(err instanceof ApiError ? err.message : 'Dev Google sign-in failed')
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  className="flex w-full items-center justify-center rounded-full border border-sand-soft bg-white py-3.5 font-mono-tech text-[11px] uppercase tracking-[0.2em] text-ink transition-colors hover:border-terra disabled:opacity-50"
+                >
+                  Continue with Google (dev)
+                </button>
+              )}
+            </div>
+          )}
+
+          {mode === 'signup' && role !== 'member' && (
+            <p className="mt-4 text-center text-[12px] text-ink-faint">
+              Contributors and agencies register with email so we can collect country and the platform agreement.
+            </p>
+          )}
 
           {mode === 'signin' && (
             <p className="mt-4 text-center font-mono-tech text-[10px] text-ink-faint">

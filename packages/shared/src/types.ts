@@ -231,3 +231,11 @@ export interface AgencyInvitePreviewDto {
   expiresAt: string
   needsAccount: boolean
 }
+
+export interface PublicConfigDto {
+  oauth: {
+    google: boolean
+    dev: boolean
+  }
+  sentryDsn: string | null
+}
