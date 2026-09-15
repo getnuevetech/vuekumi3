@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
-import type { PayoutDto, LicenseQuoteDto } from '@vuekumi/shared';
-import { api, ApiError } from '../api/client';
+import type { AdminOverviewDto, PayoutDto, LicenseQuoteDto } from '@vuekumi/shared';
+import { api, ApiError, type AdminModerationRow } from '../api/client';
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
-import {
-  adminStats, fmt, moderationQueue, money, photoById, revenueSeries,
-} from '../data/content';
+import { fmt, formatAxisUsd, money, relativeAge } from '../lib/format';
 
 const icons = {
   dash: (
@@ -76,9 +74,17 @@ function Shell({ children }: { children: React.ReactNode }) {
 /* ---------------- overview ---------------- */
 
 export function AdminDashboard() {
+  const [overview, setOverview] = useState<AdminOverviewDto | null>(null)
+  const [queue, setQueue] = useState<AdminModerationRow[]>([])
   const [pending, setPending] = useState<{ id: string; contributorHandle: string | null; contributorName: string; methodLabel: string; amountUsd: number }[]>([])
   const [quotes, setQuotes] = useState<LicenseQuoteDto[]>([])
   useEffect(() => {
+    api.adminOverview()
+      .then(setOverview)
+      .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load overview'))
+    api.adminModeration()
+      .then((d) => setQueue(d.items.slice(0, 3)))
+      .catch(() => setQueue([]))
     api.adminPayouts('requested')
       .then((d) => setPending(d.items.slice(0, 3)))
       .catch(() => setPending([]))
@@ -86,16 +92,30 @@ export function AdminDashboard() {
       .then((d) => setQuotes(d.items.slice(0, 3)))
       .catch(() => setQuotes([]))
   }, [])
+  const stats = overview?.stats
+  const series = overview?.series ?? []
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Overview</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Platform health.</h1>
-      <p className="mt-1 text-sm text-ink-soft">Vuekumi at a glance — September 2026.</p>
+      <p className="mt-1 text-sm text-ink-soft">Live counts from the catalog, payments, and payouts.</p>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <StatCard label="Total users" value={fmt(adminStats.users)} sub={`${fmt(adminStats.contributors)} contributors`} />
-        <StatCard label="Photos live" value={fmt(adminStats.photos)} sub={`${adminStats.pendingReview} pending review`} />
-        <StatCard label="Revenue (Aug)" value={money(adminStats.revenueMonth)} sub={`${fmt(adminStats.downloadsMonth)} downloads`} />
+        <StatCard
+          label="Total users"
+          value={stats ? fmt(stats.users) : '—'}
+          sub={stats ? `${fmt(stats.contributors)} contributors` : 'Loading'}
+        />
+        <StatCard
+          label="Photos live"
+          value={stats ? fmt(stats.photosLive) : '—'}
+          sub={stats ? `${stats.pendingReview} pending review` : 'Loading'}
+        />
+        <StatCard
+          label={stats ? `Revenue (${stats.monthLabel})` : 'Revenue'}
+          value={stats ? money(stats.revenueMonthUsd) : '—'}
+          sub={stats ? `${fmt(stats.downloads)} lifetime downloads` : 'Loading'}
+        />
       </div>
 
       <div className="mt-10">
@@ -103,10 +123,10 @@ export function AdminDashboard() {
         <div className="rounded-2xl border border-sand-soft bg-white p-5">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueSeries} margin={{ top: 8, right: 8, left: -4, bottom: 0 }} barGap={4}>
+              <BarChart data={series} margin={{ top: 8, right: 8, left: -4, bottom: 0 }} barGap={4}>
                 <CartesianGrid stroke="#efe4da" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v / 1000}k`} />
+                <YAxis tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} tickFormatter={formatAxisUsd} />
                 <Tooltip
                   formatter={(v: number, name: string) => [money(v), name === 'revenue' ? 'Revenue' : 'Payouts']}
                   contentStyle={{ border: '1px solid #dec9b8', borderRadius: 12, fontSize: 12, background: '#faf6f3' }}
@@ -126,13 +146,14 @@ export function AdminDashboard() {
             <Link to="/admin/moderation" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra hover:text-ink">Open →</Link>
           </div>
           <div className="mt-4 space-y-3">
-            {moderationQueue.slice(0, 3).map((m) => (
+            {queue.length === 0 && <p className="text-sm text-ink-soft">Queue is clear.</p>}
+            {queue.map((m) => (
               <div key={m.id} className="flex items-center justify-between gap-3 border-b border-sand-soft pb-3 last:border-0 last:pb-0">
                 <div className="flex min-w-0 items-center gap-3">
-                  <img src={photoById(m.photoId)?.src} alt="" className="h-10 w-13 rounded-lg object-cover" />
+                  <img src={m.photo.src} alt="" className="h-10 w-13 rounded-lg object-cover" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{photoById(m.photoId)?.title}</p>
-                    <p className="font-mono-tech text-[10px] text-ink-faint">{m.id} · {m.age} ago</p>
+                    <p className="truncate text-sm font-medium">{m.photo.title}</p>
+                    <p className="font-mono-tech text-[10px] text-ink-faint">{m.id.slice(-8)} · {relativeAge(m.createdAt)}</p>
                   </div>
                 </div>
                 <StatusPill status={m.flag} />

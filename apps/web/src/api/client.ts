@@ -27,6 +27,7 @@ import type {
   AiStatusDto,
   PublicConfigDto,
   HomePageDto,
+  AdminOverviewDto,
   EarningsSummaryDto,
   PayoutDto,
   PayoutMethodDto,
@@ -73,6 +74,8 @@ export const api = {
   publicConfig: () => request<PublicConfigDto>('/api/public/config'),
 
   home: () => request<HomePageDto>('/api/public/home'),
+
+  adminOverview: () => request<AdminOverviewDto>('/api/admin/metrics/overview'),
 
   me: () => request<{ user: AuthUser }>('/api/auth/me'),
 
