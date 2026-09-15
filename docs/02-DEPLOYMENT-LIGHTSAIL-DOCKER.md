@@ -1,8 +1,12 @@
 # Vuekumi — Development & Deployment Plan (Docker on AWS Lightsail)
 
+> **Archive (September 2026).** This sketch assumed NestJS, MSW, and an unbuilt stack.
+> Production deploy instructions: [`deploy/lightsail/README.md`](../deploy/lightsail/README.md).
+> Product and remaining phases: [`01-IMPLEMENTATION-PLAN.md`](./01-IMPLEMENTATION-PLAN.md).
+
 Companion documents: `00-CODE-REVIEW.md` and `01-IMPLEMENTATION-PLAN.md`.
 
-**Status: plan only. Nothing here is provisioned or committed until approved.**
+**Original status line (kept for history): plan only. The live path is the deploy README.**
 
 Everything runs in Docker — local development, CI, staging, and production — so the same
 image that passes CI is the image that serves traffic. AWS Lightsail is the target host, in

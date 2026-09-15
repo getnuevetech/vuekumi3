@@ -1,12 +1,15 @@
 # Vuekumi — Static Template Review (pre-backend)
 
+> **Archive (September 2026).** This review describes the client-only Noir template at
+> commit `824e893`. Production is a Fastify + Prisma marketplace (Phases 0–19). For current
+> product doctrine see [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md); for remaining
+> work see [`01-IMPLEMENTATION-PLAN.md`](./01-IMPLEMENTATION-PLAN.md).
+
 Reviewed commit: `824e893` — "Vuekumi — African stock image platform template (Noir design)".
 
-Scope of this document: what exists today, what every screen contains (with a full inventory
-of the **user** and **admin** sections), and what has to change before a real frontend +
-backend can be built on top of it. No code changes are proposed here — see
-`01-IMPLEMENTATION-PLAN.md` for the work plan and `02-DEPLOYMENT-LIGHTSAIL-DOCKER.md` for
-the deployment plan.
+Scope of this document: what existed on the template, what every screen contained (with a
+full inventory of the **user** and **admin** sections), and what had to change before a real
+frontend + backend could be built on top of it. No code changes are proposed here.
 
 ---
 
