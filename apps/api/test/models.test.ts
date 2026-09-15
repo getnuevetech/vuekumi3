@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { registerSchema } from '@vuekumi/shared'
+import {
+  CONSENT_VERSION,
+  registerSchema,
+  twoPartyBlocksLicense,
+  twoPartyCommercialCleared,
+} from '@vuekumi/shared'
 import { buildApp } from '../src/app.js'
 import {
   appearanceUnclaimed,
@@ -78,7 +83,72 @@ test('model invite copy states likeness, consent, and that models do not earn', 
   assert.match(html, /do not earn/)
 })
 
-test('commercial licences stay offered on people photos — model approval is not a lock yet', () => {
+test('two-party helper blocks commercial people photos until every appearance is commercially approved', () => {
+  assert.equal(
+    twoPartyBlocksLicense({
+      hasRecognizablePeople: false,
+      appearances: [],
+      licenseType: 'commercial',
+      requiresModelRelease: true,
+    }),
+    undefined,
+  )
+  assert.equal(
+    twoPartyBlocksLicense({
+      hasRecognizablePeople: true,
+      appearances: [],
+      licenseType: 'editorial',
+      requiresModelRelease: false,
+    }),
+    undefined,
+  )
+  assert.match(
+    twoPartyBlocksLicense({
+      hasRecognizablePeople: true,
+      appearances: [],
+      licenseType: 'commercial',
+      requiresModelRelease: true,
+    }) ?? '',
+    /Identify every depicted person/,
+  )
+  assert.match(
+    twoPartyBlocksLicense({
+      hasRecognizablePeople: true,
+      appearances: [{ status: 'invited', usage: 'none', confirmedLikeness: false }],
+      licenseType: 'exclusive',
+      requiresModelRelease: true,
+    }) ?? '',
+    /confirm likeness/,
+  )
+  assert.match(
+    twoPartyBlocksLicense({
+      hasRecognizablePeople: true,
+      appearances: [{ status: 'approved', usage: 'editorial', confirmedLikeness: true }],
+      licenseType: 'commercial',
+      requiresModelRelease: true,
+    }) ?? '',
+    /commercial usage/,
+  )
+  assert.equal(
+    twoPartyBlocksLicense({
+      hasRecognizablePeople: true,
+      appearances: [{ status: 'approved', usage: 'commercial', confirmedLikeness: true }],
+      licenseType: 'exclusive',
+      requiresModelRelease: true,
+    }),
+    undefined,
+  )
+  assert.equal(CONSENT_VERSION, '1.0')
+  assert.equal(
+    twoPartyCommercialCleared({
+      hasRecognizablePeople: true,
+      appearances: [{ status: 'approved', usage: 'editorial', confirmedLikeness: true }],
+    }),
+    false,
+  )
+})
+
+test('commercial licences are not offered from permission state alone on people photographs', () => {
   const product = {
     id: 'commercial',
     type: 'commercial' as const,
@@ -102,6 +172,7 @@ test('commercial licences stay offered on people photos — model approval is no
       status: 'active',
       commercialLocked: false,
       permissionState: 'commercial',
+      hasRecognizablePeople: true,
     }).offered,
     true,
   )
@@ -141,8 +212,24 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   assert.equal(JSON.stringify(publicPhoto.json()).includes(email), false)
 
   const licenses = await app.inject({ method: 'GET', url: '/api/photos/afr-007/licenses' })
-  const items = (licenses.json() as { items: { type: string; offered: boolean }[] }).items
-  assert.equal(items.find((i) => i.type === 'commercial')?.offered, true)
+  const items = (licenses.json() as { items: { type: string; offered: boolean; blockedReason?: string }[] }).items
+  assert.equal(items.find((i) => i.type === 'editorial')?.offered, true)
+  assert.equal(items.find((i) => i.type === 'commercial')?.offered, false)
+  assert.match(items.find((i) => i.type === 'commercial')?.blockedReason ?? '', /editorial|Identify every depicted person/i)
+
+  const exclusiveLicenses = await app.inject({ method: 'GET', url: '/api/photos/afr-011/licenses' })
+  const exclusiveItems = (exclusiveLicenses.json() as { items: { type: string; offered: boolean; blockedReason?: string }[] }).items
+  assert.equal(exclusiveItems.find((i) => i.type === 'exclusive')?.offered, false)
+  assert.match(exclusiveItems.find((i) => i.type === 'exclusive')?.blockedReason ?? '', /likeness|approve/)
+
+  const editorial = await app.inject({ method: 'GET', url: '/api/photos/afr-001/licenses' })
+  const editorialItems = (editorial.json() as { items: { type: string; offered: boolean }[] }).items
+  assert.equal(editorialItems.find((i) => i.type === 'editorial')?.offered, true)
+  assert.equal(editorialItems.find((i) => i.type === 'commercial')?.offered, false)
+
+  const landscape = await app.inject({ method: 'GET', url: '/api/photos/afr-002/licenses' })
+  const landscapeItems = (landscape.json() as { items: { type: string; offered: boolean }[] }).items
+  assert.equal(landscapeItems.find((i) => i.type === 'commercial')?.offered, true)
 
   const preview = await app.inject({ method: 'GET', url: `/api/model/invite/${token}` })
   assert.equal(preview.statusCode, 200)
@@ -268,6 +355,77 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   assert.equal(models.statusCode, 200)
   const adminItems = (models.json() as { items: { email: string }[] }).items
   assert.ok(adminItems.some((row) => row.email === 'ada@vuekumi.demo'))
+
+  const adminCookie = cookies(adminLogin)
+  const prematureProcess = await app.inject({
+    method: 'POST',
+    url: '/api/admin/content/afr-007/verify-process',
+    headers: { cookie: adminCookie },
+    payload: {},
+  })
+  assert.equal(prematureProcess.statusCode, 400)
+  assert.match((prematureProcess.json() as { error: string }).error, /photographer and model/)
+
+  const pendDetail = await app.inject({
+    method: 'GET',
+    url: '/api/admin/content/afr-pend-1',
+    headers: { cookie: adminCookie },
+  })
+  assert.equal(pendDetail.statusCode, 200)
+  const release = (pendDetail.json() as { modelReleases: { id: string }[] }).modelReleases[0]
+  assert.ok(release)
+  const pdfOk = await app.inject({
+    method: 'POST',
+    url: `/api/admin/model-releases/${release.id}/review`,
+    headers: { cookie: adminCookie },
+    payload: { status: 'verified' },
+  })
+  assert.equal(pdfOk.statusCode, 200)
+  const stillBlocked = await app.inject({
+    method: 'PATCH',
+    url: '/api/contributor/photos/afr-pend-1',
+    headers: { cookie },
+    payload: { permissionState: 'commercial' },
+  })
+  assert.equal(stillBlocked.statusCode, 400)
+  assert.match((stillBlocked.json() as { error: string }).error, /photographer and model approval/i)
+
+  const nomsaClaim = await app.inject({
+    method: 'POST',
+    url: '/api/model/invite/seed-nomsa-model-invite',
+    payload: { name: 'Nomsa Dlamini', password: 'User12345!' },
+  })
+  assert.equal(nomsaClaim.statusCode, 200)
+  const nomsaCookie = cookies(nomsaClaim)
+  const nomsaList = await app.inject({
+    method: 'GET',
+    url: '/api/model/appearances',
+    headers: { cookie: nomsaCookie },
+  })
+  const nomsaRow = (nomsaList.json() as { items: { id: string; photoId: string; consentVersion?: string | null }[] }).items
+    .find((row) => row.photoId === 'afr-011')
+  assert.ok(nomsaRow)
+  const nomsaApprove = await app.inject({
+    method: 'POST',
+    url: `/api/model/appearances/${nomsaRow.id}/decide`,
+    headers: { cookie: nomsaCookie },
+    payload: { confirmedLikeness: true, status: 'approved', usage: 'commercial' },
+  })
+  assert.equal(nomsaApprove.statusCode, 200)
+  assert.equal((nomsaApprove.json() as { appearance: { consentVersion?: string | null } }).appearance.consentVersion, '1.0')
+
+  const unlocked = await app.inject({ method: 'GET', url: '/api/photos/afr-011/licenses' })
+  const unlockedItems = (unlocked.json() as { items: { type: string; offered: boolean }[] }).items
+  assert.equal(unlockedItems.find((i) => i.type === 'exclusive')?.offered, true)
+
+  const processOk = await app.inject({
+    method: 'POST',
+    url: '/api/admin/content/afr-011/verify-process',
+    headers: { cookie: adminCookie },
+    payload: {},
+  })
+  assert.equal(processOk.statusCode, 200)
+  assert.equal((processOk.json() as { consentVersion: string }).consentVersion, '1.0')
 
   await app.close()
 })

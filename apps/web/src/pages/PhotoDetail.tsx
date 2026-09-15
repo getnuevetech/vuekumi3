@@ -261,6 +261,12 @@ export default function PhotoDetail() {
               </p>
             )}
 
+            {view.hasRecognizablePeople && view.rights?.twoPartyBlocker && !(view.commercialLocked || view.rights?.commercialLocked) && (
+              <p className="mt-4 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
+                {view.rights.twoPartyBlocker}. A supporting PDF is not enough for commercial licences.
+              </p>
+            )}
+
             <div className="mt-6 space-y-2">
               {(options.length ? options : []).map((opt) => {
                 const active = license === opt.type

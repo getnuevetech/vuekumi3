@@ -54,6 +54,10 @@ export interface RightsDto {
   liveReady: boolean
   liveBlockers: string[]
   commercialLocked: boolean
+  twoPartyCleared: boolean
+  twoPartyBlocker: string | null
+  processVerifiedAt: string | null
+  consentVersion: string | null
 }
 
 export interface PhotoDto {

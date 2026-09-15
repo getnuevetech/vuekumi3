@@ -5,6 +5,7 @@ import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 import { AiError, loadPhotoImage, resolveVisionProvider, suggestFromContext } from '../lib/ai.js'
 import { prisma } from '../lib/prisma.js'
 import { serializePhoto } from '../lib/serialize.js'
+import { syncPermissionToTwoParty } from '../lib/models.js'
 
 function aiError(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, err: unknown) {
   if (err instanceof AiError) return reply.code(err.statusCode).send({ error: err.message })
@@ -99,6 +100,18 @@ async function applyFieldsToPhoto(
     }
     return updated
   })
+  if (fields.includes('hasRecognizablePeople') && suggestion.hasRecognizablePeople) {
+    await syncPermissionToTwoParty(photoId)
+    const reloaded = await prisma.photo.findUnique({
+      where: { id: photoId },
+      include: {
+        tags: true,
+        rightsRecord: true,
+        contributor: { include: { contributorProfile: true } },
+      },
+    })
+    if (reloaded) return reloaded
+  }
   return photo
 }
 

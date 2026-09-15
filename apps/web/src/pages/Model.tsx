@@ -45,7 +45,7 @@ export default function ModelPortal() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Appearances</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your likeness.</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        {handle ? `@${handle}` : 'Claimed model account'}. Usage permission, not ownership. A checkbox is not consent — confirm each photograph.
+        {handle ? `@${handle}` : 'Claimed model account'}. Usage permission, not ownership. A checkbox is not consent — confirm each photograph. Commercial sale of your likeness needs your commercial approval.
       </p>
       <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
         Models do not earn yet. The photographer/model split is undecided.

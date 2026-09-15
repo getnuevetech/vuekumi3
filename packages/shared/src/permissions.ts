@@ -53,7 +53,7 @@ export const PERMISSION_STATE_HELP: Record<PermissionState, string> = {
   portfolio: 'Visible on your profile. Not offered as stock.',
   editorial: 'News, commentary and education. Not advertising.',
   restricted: 'Editorial or a rights-managed quote only.',
-  commercial: 'Cleared for commercial stock licences.',
+  commercial: 'Cleared for commercial stock licences once every depicted person has approved commercial usage.',
   exclusive: 'Sole licensed use. Delisted after one sale.',
   agency_protected: 'VueQuatro representation — not self-serve stock.',
 }

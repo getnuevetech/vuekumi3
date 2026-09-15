@@ -148,6 +148,7 @@ model User {
   commercialLocks       Photo[]        @relation("CommercialLockActor")
   modelAppearances      PhotoAppearance[] @relation("ModelAppearances")
   appearancesInvited    PhotoAppearance[] @relation("AppearanceInviter")
+  rightsProcessVerified RightsRecord[] @relation("RightsProcessVerifier")
 
   @@index([accountType])
   @@index([status])
@@ -483,10 +484,14 @@ model RightsRecord {
   modelReleaseStatus   ModelReleaseStatus @default(not_required)
   modelReleaseFileKey  String?
   platformRightsOk     Boolean            @default(false)
+  processVerifiedAt    DateTime?
+  processVerifiedById  String?
+  consentVersion       String?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
-  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photo             Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  processVerifiedBy User? @relation("RightsProcessVerifier", fields: [processVerifiedById], references: [id], onDelete: SetNull)
 }
 
 model ModelRelease {
@@ -521,6 +526,7 @@ model PhotoAppearance {
   invitedAt         DateTime?
   claimedAt         DateTime?
   decidedAt         DateTime?
+  consentVersion    String?
   notes             String?
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt

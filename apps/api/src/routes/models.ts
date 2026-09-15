@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import {
+  CONSENT_VERSION,
   acceptModelInviteSchema,
   decideAppearanceSchema,
 } from '@vuekumi/shared'
@@ -15,6 +16,7 @@ import {
   modelAccountBlocked,
   serializeAppearance,
   uniqueModelHandle,
+  syncPermissionToTwoParty,
 } from '../lib/models.js'
 import { createToken, hashPassword, hashToken } from '../lib/password.js'
 import { prisma } from '../lib/prisma.js'
@@ -153,9 +155,11 @@ export async function modelRoutes(app: FastifyInstance) {
           usage,
           notes: body.notes ?? row.notes,
           decidedAt: new Date(),
+          consentVersion: body.status === 'approved' ? CONSENT_VERSION : null,
         },
         include: appearanceInclude,
       })
+      await syncPermissionToTwoParty(row.photoId)
       await writeAuditLog({
         actorId: request.userId,
         action: body.status === 'approved' ? 'model.photo_approve' : 'model.photo_reject',
@@ -165,6 +169,7 @@ export async function modelRoutes(app: FastifyInstance) {
           photoId: row.photoId,
           confirmedLikeness: body.confirmedLikeness,
           usage,
+          consentVersion: body.status === 'approved' ? CONSENT_VERSION : null,
         },
         ipAddress: request.ip,
       })

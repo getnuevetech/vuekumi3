@@ -1,6 +1,6 @@
 import type { GrantLicenseType, LicenseGrant, LicenseProduct, Photo, Prisma } from '@prisma/client'
 import { prisma } from './prisma.js'
-import { certificateCode } from './rights.js'
+import { assertCanGrant, certificateCode } from './rights.js'
 import { getContributorShare } from './payments-config.js'
 
 type Tx = Prisma.TransactionClient
@@ -22,14 +22,20 @@ export async function issueGrant(
   },
   client: Tx | typeof prisma = prisma,
 ): Promise<GrantWithRelations> {
-  const photo = await client.photo.findUnique({ where: { id: input.photoId } })
-  if (!photo) throw new Error('Photo not found')
-
   const existing = await client.licenseGrant.findFirst({
     where: { buyerId: input.buyerId, photoId: input.photoId, licenseType: input.licenseType },
     include: { photo: true, product: true },
   })
   if (existing) return existing
+
+  const photo = await client.photo.findUnique({
+    where: { id: input.photoId },
+    include: { rightsRecord: true, appearances: true },
+  })
+  if (!photo) throw new Error('Photo not found')
+  const product = await client.licenseProduct.findUnique({ where: { id: input.productId } })
+  if (!product) throw new Error('Licence type not found')
+  assertCanGrant(product, photo, photo.rightsRecord, photo.appearances)
 
   const created = await client.licenseGrant.create({
     data: {

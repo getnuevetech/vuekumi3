@@ -1,11 +1,14 @@
 import type {
+  AccountType,
   ModelAppearanceStatus,
   ModelUsagePreference,
+  PermissionState,
   PhotoAppearanceDto,
 } from '@vuekumi/shared'
-import type { AccountType } from '@vuekumi/shared'
+import { twoPartyCommercialCleared } from '@vuekumi/shared'
 import type { PhotoAppearance, User } from '@prisma/client'
 import { prisma } from './prisma.js'
+import { permissionAfterTwoParty, permissionWriteData } from './permissions.js'
 
 export class ModelError extends Error {
   statusCode: number
@@ -114,6 +117,7 @@ export function serializeAppearance(
     claimedAt: row.claimedAt ? row.claimedAt.toISOString() : null,
     decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,
     inviteExpiresAt: row.inviteExpiresAt ? row.inviteExpiresAt.toISOString() : null,
+    consentVersion: row.consentVersion,
     notes: row.notes,
   }
 }
@@ -124,4 +128,33 @@ export function publicAppearances(
   return rows
     .filter((row) => row.status === 'approved')
     .map((row) => serializeAppearance(row, { includeEmail: false }))
+}
+
+export async function syncPermissionToTwoParty(photoId: string) {
+  const photo = await prisma.photo.findUnique({
+    where: { id: photoId },
+    include: { appearances: true, rightsRecord: true },
+  })
+  if (!photo) return
+  const twoPartyCleared = twoPartyCommercialCleared({
+    hasRecognizablePeople: photo.hasRecognizablePeople,
+    appearances: photo.appearances,
+  })
+  const next = permissionAfterTwoParty({
+    current: photo.permissionState as PermissionState,
+    exclusiveSold: photo.exclusiveSold,
+    twoPartyCleared,
+    hasRecognizablePeople: photo.hasRecognizablePeople,
+  })
+  if (next === photo.permissionState) return
+  await prisma.photo.update({
+    where: { id: photoId },
+    data: permissionWriteData(next, photo.exclusiveSold),
+  })
+  if (photo.rightsRecord?.processVerifiedAt) {
+    await prisma.rightsRecord.update({
+      where: { photoId },
+      data: { processVerifiedAt: null, processVerifiedById: null, consentVersion: null },
+    })
+  }
 }

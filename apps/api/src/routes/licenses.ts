@@ -19,7 +19,7 @@ import { getSettingSafe } from '../lib/settings.js'
 import { issueGrant } from '../lib/grants.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
 import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
-import { assertCanGrant, COMMERCIAL_LOCK_REASON, priceForProduct, RightsError } from '../lib/rights.js'
+import { assertCanGrant, COMMERCIAL_LOCK_REASON, priceForProduct, RightsError, twoPartyLicenseBlock } from '../lib/rights.js'
 import { consumeRfQuota, QuotaError } from '../lib/subscriptions.js'
 import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { streamObject } from '../lib/storage.js'
@@ -71,6 +71,7 @@ async function loadPhotoForLicense(id: string) {
     where: { id },
     include: {
       rightsRecord: true,
+      appearances: true,
       contributor: { include: { contributorProfile: true, platformAgreements: true } },
       tags: true,
     },
@@ -121,7 +122,7 @@ export async function licenseRoutes(app: FastifyInstance) {
       orderBy: { sortOrder: 'asc' },
     })
     return {
-      items: products.map((p) => serializeLicenseProduct(p, photo, photo.rightsRecord)),
+      items: products.map((p) => serializeLicenseProduct(p, photo, photo.rightsRecord, photo.appearances)),
     }
   })
 
@@ -141,7 +142,7 @@ export async function licenseRoutes(app: FastifyInstance) {
 
     try {
       await assertAgencyAction(request.authUser, 'purchase')
-      assertCanGrant(product, photo, photo.rightsRecord)
+      assertCanGrant(product, photo, photo.rightsRecord, photo.appearances)
     } catch (err) {
       return rightsError(reply, err)
     }
@@ -250,6 +251,12 @@ export async function licenseRoutes(app: FastifyInstance) {
     if (photo.commercialLocked) {
       return reply.code(400).send({ error: COMMERCIAL_LOCK_REASON })
     }
+    const rmBlock = twoPartyLicenseBlock(
+      { type: 'rights_managed', requiresModelRelease: true },
+      photo,
+      photo.appearances,
+    )
+    if (rmBlock) return reply.code(400).send({ error: rmBlock })
 
     const product = await prisma.licenseProduct.findUnique({ where: { type: 'rights_managed' } })
     if (!product) return reply.code(500).send({ error: 'Rights-managed product missing' })
@@ -324,7 +331,7 @@ export async function licenseRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const quote = await prisma.licenseQuote.findUnique({
       where: { id },
-      include: { photo: { include: { rightsRecord: true } }, product: true },
+      include: { photo: { include: { rightsRecord: true, appearances: true } }, product: true },
     })
     if (!quote) return reply.code(404).send({ error: 'Quote not found' })
     const sameAgency = Boolean(request.authUser?.agencyId && quote.agencyId === request.authUser.agencyId)
@@ -343,7 +350,7 @@ export async function licenseRoutes(app: FastifyInstance) {
     const body = acceptQuoteSchema.parse(request.body ?? {})
 
     try {
-      assertCanGrant(quote.product, quote.photo, quote.photo.rightsRecord)
+      assertCanGrant(quote.product, quote.photo, quote.photo.rightsRecord, quote.photo.appearances)
     } catch (err) {
       return rightsError(reply, err)
     }

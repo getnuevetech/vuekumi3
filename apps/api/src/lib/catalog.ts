@@ -3,10 +3,12 @@ import type { CatalogFacets, PhotoListQuery } from '@vuekumi/shared'
 import { PROFILE_PERMISSION_STATES, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { serializePhoto } from './serialize.js'
+import { publicAppearances } from './models.js'
 
 export const catalogPhotoInclude = {
   tags: true,
   rightsRecord: true,
+  appearances: true,
   contributor: { include: { contributorProfile: true, platformAgreements: true } },
 } as const
 
@@ -117,7 +119,7 @@ export function serializeCatalogPhoto(photo: CatalogPhoto, favorited?: boolean) 
     photo,
     photo.contributor.contributorProfile?.handle ?? photo.contributorId,
     photo.contributor.platformAgreements.some((a) => a.status === 'accepted'),
-    { favorited },
+    { favorited, appearances: publicAppearances(photo.appearances) },
   )
 }
 

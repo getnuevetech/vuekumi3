@@ -193,7 +193,7 @@ export function ContributorUpload() {
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Add new work.</h1>
       <p className="mt-1 max-w-xl text-sm text-ink-soft">
         You keep full copyright — Vuekumi only licenses usage rights. Photos go live after moderation
-        and required rights (copyright, model release, platform agreement).
+        and required rights (copyright, platform agreement). Commercial licences of people also need two-party approval.
       </p>
 
       <div
@@ -355,7 +355,7 @@ export function ContributorUpload() {
               }}
               className="mt-0.5 accent-[#bc773f]"
             />
-            This photograph shows a recognisable person (model release required for commercial licences)
+            This photograph shows a recognisable person. Commercial licences need their approval — a PDF is not enough.
           </label>
           {people && (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -383,7 +383,7 @@ export function ContributorUpload() {
           <ul className="mt-4 space-y-3">
             {[
               'Photographer copyright (you keep it)',
-              'Model rights for recognisable people',
+              'Model approval for recognisable people — not a PDF alone',
               'VueKumi platform agreement — not ownership',
               'Buyer licence grant + certificate',
             ].map((t) => (
@@ -442,7 +442,7 @@ export function ContributorPortfolio() {
               <th className="px-4 py-3 font-medium">Image</th>
               <th className="hidden px-4 py-3 font-medium md:table-cell">Licence</th>
               <th className="hidden px-4 py-3 font-medium sm:table-cell">Downloads</th>
-              <th className="hidden px-4 py-3 font-medium lg:table-cell">Model</th>
+              <th className="hidden px-4 py-3 font-medium lg:table-cell">Two-party</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3" />
             </tr>
@@ -461,7 +461,17 @@ export function ContributorPortfolio() {
                 </td>
                 <td className="hidden px-4 py-3 md:table-cell"><StatusPill status={p.license} /></td>
                 <td className="hidden px-4 py-3 sm:table-cell">{fmt(p.downloads)}</td>
-                <td className="hidden px-4 py-3 lg:table-cell"><StatusPill status={p.rights?.modelReleaseStatus ?? 'not_required'} /></td>
+                <td className="hidden px-4 py-3 lg:table-cell">
+                  <StatusPill
+                    status={
+                      !p.hasRecognizablePeople
+                        ? 'not_required'
+                        : p.rights?.twoPartyCleared
+                          ? 'cleared'
+                          : 'waiting'
+                    }
+                  />
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     <StatusPill status={p.status} />

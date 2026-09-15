@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { PermissionState } from '@vuekumi/shared'
+import { CONSENT_VERSION, twoPartyCommercialCleared } from '@vuekumi/shared'
 import { decideModerationSchema, patchRightsSchema, reviewModelReleaseSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
@@ -42,6 +43,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
         include: {
           tags: true,
           rightsRecord: true,
+          appearances: true,
           contributor: { include: { contributorProfile: true, platformAgreements: true } },
           modelReleases: { orderBy: { createdAt: 'desc' }, take: 3 },
           licenseGrants: { select: { id: true }, take: 1 },
@@ -118,11 +120,17 @@ export async function adminContentRoutes(app: FastifyInstance) {
   app.patch('/admin/content/:id/rights', admin, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = patchRightsSchema.parse(request.body)
-    const photo = await prisma.photo.findUnique({ where: { id }, include: { rightsRecord: true } })
+    const photo = await prisma.photo.findUnique({
+      where: { id },
+      include: { rightsRecord: true, appearances: true },
+    })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
 
     const people = body.modelReleaseRequired ?? photo.hasRecognizablePeople
-    const verified = photo.rightsRecord?.modelReleaseStatus === 'verified'
+    const twoPartyCleared = twoPartyCommercialCleared({
+      hasRecognizablePeople: people,
+      appearances: photo.appearances,
+    })
     let permissionState = resolvePermissionState({
       requested: body.permissionState,
       exclusiveAvailable: body.exclusiveAvailable,
@@ -132,7 +140,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
     if (
       !body.permissionState
       && people
-      && !verified
+      && !twoPartyCleared
       && (permissionState === 'commercial' || permissionState === 'exclusive')
       && !photo.exclusiveSold
     ) {
@@ -146,7 +154,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
         exclusiveSold: photo.exclusiveSold,
         commercialLocked: photo.commercialLocked,
         hasRecognizablePeople: people,
-        modelReleaseVerified: verified,
+        twoPartyCleared,
         actor: 'admin',
       })
     } catch (err) {
@@ -257,6 +265,55 @@ export async function adminContentRoutes(app: FastifyInstance) {
     return { ok: true }
   })
 
+  app.post('/admin/content/:id/verify-process', admin, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const photo = await prisma.photo.findUnique({
+      where: { id },
+      include: { appearances: true, rightsRecord: true },
+    })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    const cleared = twoPartyCommercialCleared({
+      hasRecognizablePeople: photo.hasRecognizablePeople,
+      appearances: photo.appearances,
+    })
+    if (!cleared) {
+      return reply.code(400).send({
+        error: 'Staff can verify the process only after photographer and model commercial approval',
+      })
+    }
+
+    await prisma.rightsRecord.upsert({
+      where: { photoId: id },
+      create: {
+        photoId: id,
+        copyrightVerified: photo.rightsRecord?.copyrightVerified ?? false,
+        copyrightHolder: photo.rightsRecord?.copyrightHolder,
+        platformRightsOk: photo.rightsRecord?.platformRightsOk ?? false,
+        modelReleaseRequired: photo.hasRecognizablePeople,
+        modelReleaseStatus: photo.rightsRecord?.modelReleaseStatus ?? 'pending',
+        processVerifiedAt: new Date(),
+        processVerifiedById: request.userId,
+        consentVersion: CONSENT_VERSION,
+      },
+      update: {
+        processVerifiedAt: new Date(),
+        processVerifiedById: request.userId,
+        consentVersion: CONSENT_VERSION,
+      },
+    })
+
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.verify_two_party_process',
+      entityType: 'photo',
+      entityId: id,
+      metadata: { consentVersion: CONSENT_VERSION, appearances: photo.appearances.length },
+      ipAddress: request.ip,
+    })
+
+    return { ok: true, consentVersion: CONSENT_VERSION }
+  })
+
   app.get('/admin/moderation', admin, async () => {
     const items = await prisma.moderationItem.findMany({
       where: { status: 'pending' },
@@ -265,6 +322,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
           include: {
             tags: true,
             rightsRecord: true,
+            appearances: true,
             contributor: { include: { contributorProfile: true, platformAgreements: true } },
           },
         },

@@ -172,7 +172,15 @@ async function main() {
     const photographer = photographers.find((ph) => ph.handle === p.photographer)
     const exclusive = p.id === 'afr-011'
     const permissionState =
-      p.id === 'afr-008' ? 'portfolio' : p.id === 'afr-001' ? 'editorial' : exclusive ? 'exclusive' : 'commercial'
+      p.id === 'afr-008'
+        ? 'portfolio'
+        : p.id === 'afr-001'
+          ? 'editorial'
+          : exclusive
+            ? 'exclusive'
+            : hasPeople
+              ? 'editorial'
+              : 'commercial'
 
     await prisma.photo.create({
       data: {
@@ -200,7 +208,11 @@ async function main() {
             copyrightHolder: photographer?.name ?? 'Contributor',
             platformRightsOk: true,
             modelReleaseRequired: hasPeople,
-            modelReleaseStatus: hasPeople ? 'verified' : 'not_required',
+            modelReleaseStatus: hasPeople
+              ? p.id === 'afr-007'
+                ? 'verified'
+                : 'pending'
+              : 'not_required',
           },
         },
         ...(hasPeople
@@ -208,10 +220,13 @@ async function main() {
               modelReleases: {
                 create: {
                   fileName: `${p.id}-model-release.pdf`,
-                  notes: 'Seeded verified release',
-                  status: 'verified',
-                  verifiedById: admin.id,
-                  verifiedAt: new Date(),
+                  notes:
+                    p.id === 'afr-007'
+                      ? 'Seeded supporting PDF — verifying a file does not grant commercial rights'
+                      : 'Supporting PDF on file — two-party approval is the commercial path',
+                  status: p.id === 'afr-007' ? 'verified' : 'pending',
+                  verifiedById: p.id === 'afr-007' ? admin.id : undefined,
+                  verifiedAt: p.id === 'afr-007' ? new Date() : undefined,
                 },
               },
             }
@@ -375,6 +390,7 @@ async function main() {
         status: 'approved',
         usage: 'editorial',
         confirmedLikeness: true,
+        consentVersion: '1.0',
         invitedAt: new Date(),
         claimedAt: new Date(),
         decidedAt: new Date(),

@@ -58,7 +58,7 @@ export function AdminContent() {
         <table className="w-full min-w-[920px] text-left text-sm">
           <thead>
             <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-              {['Image', 'Licence', 'Permission', 'People', 'Model', 'Copyright', 'Platform', 'Status'].map((c) => (
+              {['Image', 'Licence', 'Permission', 'People', 'Two-party', 'Copyright', 'Platform', 'Status'].map((c) => (
                 <th key={c} className="px-4 py-3 font-medium">{c}</th>
               ))}
             </tr>
@@ -78,7 +78,17 @@ export function AdminContent() {
                 <td className="px-4 py-3"><StatusPill status={p.license} /></td>
                 <td className="px-4 py-3"><StatusPill status={p.permissionState ?? (p.exclusiveAvailable ? 'exclusive' : 'commercial')} /></td>
                 <td className="px-4 py-3">{p.hasRecognizablePeople ? 'Yes' : 'No'}</td>
-                <td className="px-4 py-3"><StatusPill status={p.rights?.modelReleaseStatus ?? 'not_required'} /></td>
+                <td className="px-4 py-3">
+                  <StatusPill
+                    status={
+                      !p.hasRecognizablePeople
+                        ? 'not_required'
+                        : p.rights?.twoPartyCleared
+                          ? 'cleared'
+                          : 'waiting'
+                    }
+                  />
+                </td>
                 <td className="px-4 py-3">{p.rights?.copyrightVerified ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3">{p.rights?.platformRightsOk ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3">
@@ -114,6 +124,13 @@ export function AdminContent() {
               <div className="mt-4 space-y-2 text-sm">
                 <p><span className="text-ink-soft">Copyright holder</span> · {detail.photo.rights?.copyrightHolder ?? '—'}</p>
                 <p><span className="text-ink-soft">Live ready</span> · {detail.photo.rights?.liveReady ? 'Yes' : (detail.photo.rights?.liveBlockers ?? []).join('; ') || 'No'}</p>
+                <p>
+                  <span className="text-ink-soft">Two-party commercial</span>
+                  {' · '}
+                  {detail.photo.rights?.twoPartyCleared
+                    ? `Cleared${detail.photo.rights.processVerifiedAt ? ' · process verified' : ''}`
+                    : detail.photo.rights?.twoPartyBlocker ?? 'Waiting on photographer and model approval'}
+                </p>
               </div>
 
               <div className="mt-4">
@@ -181,9 +198,27 @@ export function AdminContent() {
                 >
                   {detail.photo.commercialLocked ? 'Unlock licensing' : 'Freeze licensing'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    api.verifyTwoPartyProcess(detail.photo.id)
+                      .then(() => {
+                        toast.success('Two-party process verified')
+                        open(detail.photo.id)
+                        load()
+                      })
+                      .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not verify process'))
+                  }}
+                  className="rounded-full border border-sand px-4 py-1.5 font-mono-tech text-[10px] uppercase"
+                >
+                  Verify two-party process
+                </button>
               </div>
 
               <h3 className="mt-6 font-serif-display text-lg">People identified</h3>
+              <p className="mt-1 text-sm text-ink-soft">
+                Staff verify that photographer and model approval happened. A PDF is supporting evidence, not a commercial unlock.
+              </p>
               <div className="mt-2 space-y-2">
                 {(detail.photo.appearances ?? []).length === 0 && (
                   <p className="text-sm text-ink-soft">No model invites on this photograph yet.</p>
@@ -203,7 +238,10 @@ export function AdminContent() {
                 ))}
               </div>
 
-              <h3 className="mt-6 font-serif-display text-lg">Model releases</h3>
+              <h3 className="mt-6 font-serif-display text-lg">Supporting PDFs</h3>
+              <p className="mt-1 text-sm text-ink-soft">
+                Verifying a filename does not grant commercial rights. Two-party approval does.
+              </p>
               <div className="mt-2 space-y-2">
                 {detail.modelReleases.length === 0 && <p className="text-sm text-ink-soft">None on file.</p>}
                 {detail.modelReleases.map((r) => (

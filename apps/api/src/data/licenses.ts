@@ -11,9 +11,9 @@ export const VUEKUMI_AGREEMENT = {
 
 2. Platform license. By accepting this agreement you grant Vuekumi a non-exclusive licence to host, display, market and sublicense the work to buyers under the licence types you enable. Vuekumi does not take ownership of your photographs.
 
-3. Model and property rights. If a photograph shows a recognisable person, you must supply a model release before commercial, royalty-free, extended or exclusive licences can be sold. Editorial use may proceed without a release.
+3. Model and property rights. If a photograph shows a recognisable person, commercial, royalty-free, extended, exclusive and rights-managed licences require two-party approval: the photographer's listing plus the depicted person's confirmed likeness and commercial usage choice. A PDF filename is supporting evidence only. Editorial use may proceed without commercial approval.
 
-4. Four rights layers. Every sale checks (1) your copyright, (2) model rights where required, (3) this VueKumi agreement, and (4) a buyer licence grant. A live listing requires layers 1–3. A download requires layer 4.
+4. Four rights layers. Every sale checks (1) your copyright, (2) model rights where required, (3) this VueKumi agreement, and (4) a buyer licence grant. A live listing requires layers 1 and 3. Commercial licensing of recognisable people also requires layer 2 as two-party consent. A download requires layer 4.
 
 5. Exclusive. Exclusive sale is opt-in per photograph. Once an exclusive licence is granted, Vuekumi delists the image from further sale.
 

@@ -23,7 +23,9 @@ import type {
   PhotoDto,
   RightsDto,
 } from '@vuekumi/shared'
-import { isLicenseOffered, priceForProduct, rightsReadyForLive } from './rights.js'
+import type { TwoPartyAppearanceInput } from '@vuekumi/shared'
+import { twoPartyBlocksLicense, twoPartyCommercialCleared } from '@vuekumi/shared'
+import { isLicenseOffered, priceForProduct, rightsReadyForLive, twoPartyLicenseBlock } from './rights.js'
 import { displayPlan, displayQuota } from './subscriptions.js'
 
 export const authUserInclude = {
@@ -82,8 +84,17 @@ export function serializeRights(
   photo: Pick<Photo, 'exclusiveAvailable' | 'exclusiveSold' | 'hasRecognizablePeople' | 'commercialLocked'>,
   rights: RightsRecord | null,
   hasAgreement: boolean,
+  appearances: TwoPartyAppearanceInput[] = [],
 ): RightsDto {
   const live = rightsReadyForLive({ rights, hasAgreement })
+  const twoPartyBlocker = photo.hasRecognizablePeople
+    ? twoPartyBlocksLicense({
+        hasRecognizablePeople: true,
+        appearances,
+        licenseType: 'commercial',
+        requiresModelRelease: true,
+      }) ?? null
+    : null
   return {
     copyrightVerified: rights?.copyrightVerified ?? false,
     copyrightHolder: rights?.copyrightHolder ?? null,
@@ -96,6 +107,13 @@ export function serializeRights(
     liveReady: live.ok,
     liveBlockers: live.reasons,
     commercialLocked: photo.commercialLocked,
+    twoPartyCleared: twoPartyCommercialCleared({
+      hasRecognizablePeople: photo.hasRecognizablePeople,
+      appearances,
+    }),
+    twoPartyBlocker,
+    processVerifiedAt: rights?.processVerifiedAt ? rights.processVerifiedAt.toISOString() : null,
+    consentVersion: rights?.consentVersion ?? null,
   }
 }
 
@@ -104,6 +122,7 @@ type PhotoWithTags = Photo & {
   rightsRecord?: RightsRecord | null
   contributor?: User & { contributorProfile?: ContributorProfile | null }
   agreements?: Pick<PlatformAgreement, 'version' | 'status'>[]
+  appearances?: TwoPartyAppearanceInput[]
 }
 
 function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
@@ -149,7 +168,7 @@ export function serializePhoto(
     permissionState: photo.permissionState,
     restrictionNotes: photo.restrictionNotes,
     rights: photo.rightsRecord
-      ? serializeRights(photo, photo.rightsRecord, hasAgreement)
+      ? serializeRights(photo, photo.rightsRecord, hasAgreement, photo.appearances ?? extras?.appearances ?? [])
       : undefined,
     commercialLocked: photo.commercialLocked,
     appearances: extras?.appearances,
@@ -158,14 +177,23 @@ export function serializePhoto(
 
 export function serializeLicenseProduct(
   product: LicenseProduct,
-  photo: Pick<Photo, 'price' | 'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked' | 'permissionState'>,
-  rights: RightsRecord | null,
+  photo: Pick<
+    Photo,
+    | 'price'
+    | 'licenseType'
+    | 'exclusiveAvailable'
+    | 'exclusiveSold'
+    | 'status'
+    | 'commercialLocked'
+    | 'permissionState'
+    | 'hasRecognizablePeople'
+  >,
+  _rights: RightsRecord | null,
+  appearances: TwoPartyAppearanceInput[] = [],
 ): LicenseProductDto {
   const offer = isLicenseOffered(product, photo)
-  let blockedReason = offer.reason
-  if (offer.offered && product.requiresModelRelease && rights?.modelReleaseRequired && rights.modelReleaseStatus !== 'verified') {
-    blockedReason = 'A verified model release is required for this commercial licence'
-  }
+  const twoParty = offer.offered ? twoPartyLicenseBlock(product, photo, appearances) : undefined
+  const blockedReason = twoParty ?? offer.reason
   return {
     id: product.id,
     type: product.type,

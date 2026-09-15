@@ -135,7 +135,15 @@ export function ContributorPhotoEdit() {
             <StatusPill status={photo.status} />
             <StatusPill status={photo.permissionState ?? 'commercial'} />
             <StatusPill status={photo.license} />
-            <StatusPill status={photo.rights?.modelReleaseStatus ?? 'not_required'} />
+            <StatusPill
+              status={
+                !photo.hasRecognizablePeople
+                  ? 'not_required'
+                  : photo.rights?.twoPartyCleared
+                    ? 'cleared'
+                    : 'waiting'
+              }
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
@@ -211,11 +219,11 @@ export function ContributorPhotoEdit() {
               onChange={(e) => setPeople(e.target.checked)}
               className="mt-0.5 accent-[#bc773f]"
             />
-            This photograph shows a recognisable person (model release required for commercial licences)
+            This photograph shows a recognisable person. Commercial licences need their approval — a PDF is not enough.
           </label>
           {peopleLocked && (
             <p className="font-mono-tech text-[10px] text-ink-faint">
-              Clearing a model-release requirement is an admin action. You can still attach a release file name below.
+              Clearing a people flag is an admin action. Invite the depicted person below — a PDF filename is supporting evidence only.
             </p>
           )}
           {people && (

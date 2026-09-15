@@ -24,13 +24,26 @@ export function resolvePermissionState(input: {
   })
 }
 
+export function permissionAfterTwoParty(input: {
+  current: PermissionState
+  exclusiveSold: boolean
+  twoPartyCleared: boolean
+  hasRecognizablePeople: boolean
+}): PermissionState {
+  if (!input.hasRecognizablePeople || input.exclusiveSold || input.twoPartyCleared) {
+    return input.current
+  }
+  if (input.current === 'commercial' || input.current === 'exclusive') return 'editorial'
+  return input.current
+}
+
 export function assertPermissionStateChange(input: {
   next: PermissionState
   current?: PermissionState
   exclusiveSold: boolean
   commercialLocked: boolean
   hasRecognizablePeople: boolean
-  modelReleaseVerified: boolean
+  twoPartyCleared: boolean
   actor: 'contributor' | 'admin'
 }): void {
   if (input.actor === 'contributor') {
@@ -58,11 +71,11 @@ export function assertPermissionStateChange(input: {
   if (
     wantsCommercialGrant
     && input.hasRecognizablePeople
-    && !input.modelReleaseVerified
+    && !input.twoPartyCleared
     && !soldExclusiveStays
   ) {
     throw new PhotoEditError(
-      'A verified model release is required before this photograph can be commercially or exclusively licensed',
+      'Photographer and model approval is required before this photograph can be commercially or exclusively licensed',
     )
   }
 }

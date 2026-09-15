@@ -1,6 +1,12 @@
 import type { FastifyInstance } from 'fastify'
 import type { PermissionState } from '@vuekumi/shared'
-import { identifyAppearanceSchema, presignUploadSchema, submitPhotoSchema, updatePhotoSchema } from '@vuekumi/shared'
+import {
+  identifyAppearanceSchema,
+  presignUploadSchema,
+  submitPhotoSchema,
+  twoPartyCommercialCleared,
+  updatePhotoSchema,
+} from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
@@ -26,6 +32,7 @@ import {
   appearanceUnclaimed,
   ModelError,
   serializeAppearance,
+  syncPermissionToTwoParty,
 } from '../lib/models.js'
 import { issueAppearanceInvite } from './models.js'
 import {
@@ -43,6 +50,7 @@ const PLACEHOLDER_SRC = '/images/photos/fashion-portrait.jpg'
 const photoInclude = {
   tags: true,
   rightsRecord: true,
+  appearances: true,
   contributor: { include: { contributorProfile: true, platformAgreements: true } },
 } as const
 
@@ -156,6 +164,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       include: {
         tags: true,
         rightsRecord: true,
+        appearances: true,
         contributor: { include: { contributorProfile: true, platformAgreements: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -235,7 +244,7 @@ export async function contributorRoutes(app: FastifyInstance) {
         exclusiveSold: false,
         commercialLocked: false,
         hasRecognizablePeople: people,
-        modelReleaseVerified: false,
+        twoPartyCleared: false,
         actor: request.authUser?.accountType === 'admin' ? 'admin' : 'contributor',
       })
     } catch (err) {
@@ -351,7 +360,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     const body = updatePhotoSchema.parse(request.body)
     const existing = await prisma.photo.findUnique({
       where: { id },
-      include: { rightsRecord: true, contributor: { include: { contributorProfile: true } } },
+      include: { rightsRecord: true, appearances: true, contributor: { include: { contributorProfile: true } } },
     })
     if (!existing) return reply.code(404).send({ error: 'Photo not found' })
     if (request.authUser?.accountType !== 'admin' && existing.contributorId !== request.userId) {
@@ -390,7 +399,10 @@ export async function contributorRoutes(app: FastifyInstance) {
         exclusiveSold: existing.exclusiveSold,
         commercialLocked: existing.commercialLocked,
         hasRecognizablePeople: nextPeople,
-        modelReleaseVerified: existing.rightsRecord?.modelReleaseStatus === 'verified',
+        twoPartyCleared: twoPartyCommercialCleared({
+          hasRecognizablePeople: nextPeople,
+          appearances: existing.appearances,
+        }),
         actor,
       })
     } catch (err) {
@@ -526,6 +538,7 @@ export async function contributorRoutes(app: FastifyInstance) {
         photo,
         photo.contributor.contributorProfile?.handle ?? photo.contributorId,
         photo.contributor.platformAgreements.some((a) => a.status === 'accepted'),
+        { appearances: photo.appearances.map((row) => serializeAppearance(row, { includeEmail: true })) },
       ),
     }
   })
@@ -619,6 +632,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'Claimed appearances cannot be removed by the photographer' })
     }
     await prisma.photoAppearance.delete({ where: { id: row.id } })
+    await syncPermissionToTwoParty(id)
     return { ok: true }
   })
 }

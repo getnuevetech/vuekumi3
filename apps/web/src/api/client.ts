@@ -551,6 +551,9 @@ export const api = {
   patchRights: (id: string, body: Record<string, unknown>) =>
     request<{ photo: PhotoDto }>(`/api/admin/content/${id}/rights`, { method: 'PATCH', body: JSON.stringify(body) }),
 
+  verifyTwoPartyProcess: (id: string) =>
+    request<{ ok: boolean; consentVersion: string }>(`/api/admin/content/${id}/verify-process`, { method: 'POST', body: '{}' }),
+
   reviewModelRelease: (id: string, status: 'verified' | 'rejected', notes?: string) =>
     request<{ ok: boolean }>(`/api/admin/model-releases/${id}/review`, {
       method: 'POST',

@@ -45,6 +45,7 @@ const live = {
   status: 'active' as const,
   commercialLocked: false,
   permissionState: 'commercial' as const,
+  hasRecognizablePeople: false,
 }
 
 test('new people photographs default to editorial, exclusive opt-in stays exclusive', () => {
@@ -76,7 +77,7 @@ test('licence offer respects permission state and rights-managed still requires 
   assert.equal(rmProduct.requiresModelRelease, true)
 })
 
-test('people without a verified release cannot move to commercial or exclusive', () => {
+test('people without two-party commercial clearance cannot move to commercial or exclusive', () => {
   assert.throws(
     () =>
       assertPermissionStateChange({
@@ -85,7 +86,7 @@ test('people without a verified release cannot move to commercial or exclusive',
         exclusiveSold: false,
         commercialLocked: false,
         hasRecognizablePeople: true,
-        modelReleaseVerified: false,
+        twoPartyCleared: false,
         actor: 'contributor',
       }),
     PhotoEditError,
@@ -97,7 +98,7 @@ test('people without a verified release cannot move to commercial or exclusive',
       exclusiveSold: false,
       commercialLocked: false,
       hasRecognizablePeople: true,
-      modelReleaseVerified: false,
+      twoPartyCleared: false,
       actor: 'contributor',
     }),
   )
@@ -111,7 +112,7 @@ test('contributors cannot set or leave agency-protected; exclusive sold cannot l
         exclusiveSold: false,
         commercialLocked: false,
         hasRecognizablePeople: false,
-        modelReleaseVerified: true,
+        twoPartyCleared: true,
         actor: 'contributor',
       }),
     /staff/,
@@ -124,7 +125,7 @@ test('contributors cannot set or leave agency-protected; exclusive sold cannot l
         exclusiveSold: true,
         commercialLocked: false,
         hasRecognizablePeople: false,
-        modelReleaseVerified: true,
+        twoPartyCleared: true,
         actor: 'admin',
       }),
     /already been sold/,
@@ -188,7 +189,7 @@ test('catalog hides portfolio and private photographs; profiles still show portf
   await app.close()
 })
 
-test('contributor cannot commercially license people photos without a verified release', async () => {
+test('contributor cannot commercially license people photos without two-party approval', async () => {
   const app = await buildApp()
   const login = await app.inject({
     method: 'POST',
@@ -209,7 +210,7 @@ test('contributor cannot commercially license people photos without a verified r
     payload: { permissionState: 'commercial' },
   })
   assert.equal(blocked.statusCode, 400)
-  assert.match((blocked.json() as { error: string }).error, /model release/i)
+  assert.match((blocked.json() as { error: string }).error, /photographer and model approval/i)
 
   const privateOk = await app.inject({
     method: 'GET',

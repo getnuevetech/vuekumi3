@@ -52,6 +52,7 @@ export interface PhotoAppearanceDto {
   claimedAt?: string | null
   decidedAt?: string | null
   inviteExpiresAt?: string | null
+  consentVersion?: string | null
   notes?: string | null
 }
 
@@ -76,4 +77,59 @@ export const MODEL_USAGE_LABEL: Record<ModelUsagePreference, string> = {
   none: 'No usage',
   editorial: 'Editorial only',
   commercial: 'Editorial and commercial',
+}
+
+export const CONSENT_VERSION = '1.0'
+
+export const COMMERCIAL_CLASS_LICENSES = [
+  'royalty_free',
+  'commercial',
+  'extended',
+  'exclusive',
+  'rights_managed',
+] as const
+
+export type TwoPartyAppearanceInput = {
+  status: ModelAppearanceStatus
+  usage: ModelUsagePreference
+  confirmedLikeness: boolean
+}
+
+export function isCommercialClassLicense(licenseType: string): boolean {
+  return (COMMERCIAL_CLASS_LICENSES as readonly string[]).includes(licenseType)
+}
+
+export function twoPartyBlocksLicense(input: {
+  hasRecognizablePeople: boolean
+  appearances: TwoPartyAppearanceInput[]
+  licenseType: string
+  requiresModelRelease: boolean
+}): string | undefined {
+  if (!input.hasRecognizablePeople) return undefined
+  if (!input.requiresModelRelease) return undefined
+  if (input.appearances.length === 0) {
+    return 'Identify every depicted person and wait until they approve usage'
+  }
+  if (input.appearances.some((row) => row.status !== 'approved' || !row.confirmedLikeness)) {
+    return 'Every depicted person must confirm likeness and approve usage'
+  }
+  if (
+    isCommercialClassLicense(input.licenseType)
+    && input.appearances.some((row) => row.usage !== 'commercial')
+  ) {
+    return 'Commercial licensing requires commercial usage approval from every depicted person'
+  }
+  return undefined
+}
+
+export function twoPartyCommercialCleared(input: {
+  hasRecognizablePeople: boolean
+  appearances: TwoPartyAppearanceInput[]
+}): boolean {
+  return !twoPartyBlocksLicense({
+    hasRecognizablePeople: input.hasRecognizablePeople,
+    appearances: input.appearances,
+    licenseType: 'commercial',
+    requiresModelRelease: input.hasRecognizablePeople,
+  })
 }

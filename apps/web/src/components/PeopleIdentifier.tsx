@@ -30,7 +30,7 @@ export function PeopleIdentifier({
     <div className="rounded-xl border border-sand-soft p-4">
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">People in this photograph</p>
       <p className="mt-1 text-sm text-ink-soft">
-        A typed name is not identity. Vuekumi invites the person to claim a model account, confirm likeness, and approve or reject usage. Models do not earn in this phase.
+        A typed name is not identity. Invite each depicted person to confirm likeness and approve usage. Commercial licences stay locked until every person on the photograph approves commercial use. Models do not earn.
       </p>
       <ul className="mt-3 space-y-2">
         {people.length === 0 && (

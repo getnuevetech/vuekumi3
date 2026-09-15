@@ -1,6 +1,6 @@
 import type { GrantLicenseType, LicenseProduct, Photo, PlatformAgreement, RightsRecord } from '@prisma/client'
-import type { PermissionState } from '@vuekumi/shared'
-import { permissionBlocksLicense } from '@vuekumi/shared'
+import type { PermissionState, TwoPartyAppearanceInput } from '@vuekumi/shared'
+import { permissionBlocksLicense, twoPartyBlocksLicense } from '@vuekumi/shared'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 
@@ -17,11 +17,6 @@ export function hasCurrentAgreement(agreements: Pick<PlatformAgreement, 'version
   return agreements.some((a) => a.version === CURRENT_AGREEMENT_VERSION && a.status === 'accepted')
 }
 
-export function modelReleaseBlocksCommercial(rights: RightsRecord | null): boolean {
-  if (!rights?.modelReleaseRequired) return false
-  return rights.modelReleaseStatus !== 'verified'
-}
-
 export function rightsReadyForLive(input: {
   rights: RightsRecord | null
   hasAgreement: boolean
@@ -30,9 +25,6 @@ export function rightsReadyForLive(input: {
   if (!input.rights?.copyrightVerified) reasons.push('Copyright not verified')
   if (!input.rights?.platformRightsOk) reasons.push('Platform rights incomplete')
   if (!input.hasAgreement) reasons.push('Contributor has not accepted the current VueKumi agreement')
-  if (input.rights?.modelReleaseRequired && input.rights.modelReleaseStatus !== 'verified') {
-    reasons.push('Model release required and not verified')
-  }
   return { ok: reasons.length === 0, reasons }
 }
 
@@ -48,7 +40,13 @@ export const COMMERCIAL_LOCK_REASON =
 
 export type PhotoLicenseFields = Pick<
   Photo,
-  'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked' | 'permissionState'
+  | 'licenseType'
+  | 'exclusiveAvailable'
+  | 'exclusiveSold'
+  | 'status'
+  | 'commercialLocked'
+  | 'permissionState'
+  | 'hasRecognizablePeople'
 >
 
 export function isLicenseOffered(
@@ -73,18 +71,29 @@ export function isLicenseOffered(
   return { offered: true }
 }
 
+export function twoPartyLicenseBlock(
+  product: Pick<LicenseProduct, 'requiresModelRelease' | 'type'>,
+  photo: Pick<Photo, 'hasRecognizablePeople'>,
+  appearances: TwoPartyAppearanceInput[],
+): string | undefined {
+  return twoPartyBlocksLicense({
+    hasRecognizablePeople: photo.hasRecognizablePeople,
+    appearances,
+    licenseType: product.type,
+    requiresModelRelease: product.requiresModelRelease,
+  })
+}
+
 export function assertCanGrant(
   product: LicenseProduct,
   photo: PhotoLicenseFields,
-  rights: RightsRecord | null,
+  _rights: RightsRecord | null,
+  appearances: TwoPartyAppearanceInput[] = [],
 ) {
   const offer = isLicenseOffered(product, photo)
   if (!offer.offered) throw new RightsError(offer.reason ?? 'Licence not available')
-  if (product.requiresModelRelease && modelReleaseBlocksCommercial(rights)) {
-    throw new RightsError(
-      'A verified model release is required before this commercial licence can be granted',
-    )
-  }
+  const twoParty = twoPartyLicenseBlock(product, photo, appearances)
+  if (twoParty) throw new RightsError(twoParty)
 }
 
 export async function contributorHasAgreement(userId: string): Promise<boolean> {
