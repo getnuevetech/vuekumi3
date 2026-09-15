@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { paidLicenceSplit } from '@vuekumi/shared'
 import { Reveal, SectionHead, SiteHeader, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
@@ -13,11 +14,11 @@ const faqs = [
   },
   {
     q: 'What does Vuekumi+ include?',
-    a: 'Plus is $19 for 30 days of unlimited royalty-free downloads from the free collection. Premium, extended, editorial, rights-managed and exclusive licences are still billed per image. Photographers keep a 50% royalty on those sales.',
+    a: 'Plus is $19 for 30 days of unlimited royalty-free downloads from the free collection. Premium, extended, editorial, rights-managed and exclusive licences are still billed per image. Photographers keep 50% of those paid sales. Plus does not pay contributors for free-collection downloads.',
   },
   {
     q: 'How do contributors earn?',
-    a: 'Free downloads earn from the contributor pool (paid per download), and premium sales pay a 50% royalty. Payouts run monthly via bank transfer or mobile money.',
+    a: 'Paid licences (commercial, extended, editorial, rights-managed and exclusive) split 50/50 with the photographer after payment clears. Royalty-free grants from the free collection are $0 and do not credit the earnings ledger. Payouts are requested from the contributor portal once the available balance is at least $10, over mobile money or bank transfer.',
   },
   {
     q: 'Can I use images for client work?',
@@ -34,7 +35,20 @@ export default function Pricing() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [plusBusy, setPlusBusy] = useState(false)
+  const [share, setShare] = useState(0.5)
   const plusActive = user?.subscriptionPlan === 'plus'
+  const split = paidLicenceSplit(share)
+  const earnHref = user?.accountType === 'contributor' || user?.accountType === 'admin'
+    ? '/contributor'
+    : '/login?redirect=/contributor'
+
+  useEffect(() => {
+    api.publicConfig()
+      .then((c) => {
+        if (typeof c.contributorShare === 'number') setShare(c.contributorShare)
+      })
+      .catch(() => setShare(0.5))
+  }, [])
 
   async function goPlus() {
     if (!user) {
@@ -117,10 +131,9 @@ export default function Pricing() {
               <em className="text-terra">fair for everyone.</em>
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink-soft">
-              Free for the community, sustainable for the creators. Every premium
-              purchase sends 50% straight to the photographer. Vuekumi+ funds the
-              free-download pool and lifts your daily royalty-free quota.
-              Prices shown in {quote.currency}{quote.countryName ? ` · ${quote.countryName}` : ''}
+              Free for discovery, paid licences for creators. Every paid sale splits {split.photographerPct}/{split.platformPct}
+              {' '}between the photographer and Vuekumi. Vuekumi+ lifts your daily royalty-free quota — it is not a
+              contributor download pool. Prices shown in {quote.currency}{quote.countryName ? ` · ${quote.countryName}` : ''}
               {quote.source === 'default' ? ' (USD default)' : ''}.
             </p>
           </div>
@@ -188,12 +201,12 @@ export default function Pricing() {
             <SectionHead kicker="Licence types" title="Permission, not ownership." />
             <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {[
-                { name: 'Royalty-Free', note: 'Free collection. Commercial use. 50 downloads / UTC day on Free; unlimited on Vuekumi+.' },
-                { name: 'Commercial', note: 'Premium collection at the photo price. Full resolution. 50% to the photographer.' },
-                { name: 'Extended Commercial', note: '$49. Merchandise, unlimited print, broadcast.' },
-                { name: 'Editorial', note: 'News and commentary only. Model release not required.' },
-                { name: 'Rights-Managed', note: 'Quoted by territory, duration and channels. Not a fixed price.' },
-                { name: 'Exclusive', note: 'Contributor opt-in per photo. Sale delists the image.' },
+                { name: 'Royalty-Free', note: 'Free collection. $0 grant. 50 downloads / UTC day on Free; unlimited on Vuekumi+. Does not pay the photographer.' },
+                { name: 'Commercial', note: `Premium collection at the photo price. Full resolution. ${split.photographerPct}% to the photographer.` },
+                { name: 'Extended Commercial', note: `$49. Merchandise, unlimited print, broadcast. ${split.photographerPct}% to the photographer.` },
+                { name: 'Editorial', note: 'News and commentary only. Model release not required. Paid sale, same split.' },
+                { name: 'Rights-Managed', note: 'Quoted by territory, duration and channels. Not a fixed price. Paid sale, same split.' },
+                { name: 'Exclusive', note: 'Contributor opt-in per photo. Sale delists the image. Paid sale, same split.' },
               ].map((item) => (
                 <div key={item.name} className="border border-sand-soft bg-white p-5">
                   <h3 className="font-serif-display text-xl font-light">{item.name}</h3>
@@ -213,16 +226,15 @@ export default function Pricing() {
                   Where the money goes.
                 </h2>
                 <p className="mt-4 text-sm leading-relaxed text-ink-soft">
-                  Vuekumi takes a 50% platform fee on premium sales to run hosting,
-                  licensing and payouts. The rest is yours — plus a share of the
-                  free-download pool, funded by Vuekumi+ subscriptions.
+                  Paid licences split {split.photographerPct}/{split.platformPct} after payment clears — the same split
+                  written to the earnings ledger. Royalty-free downloads from the free collection are a $0 grant.
+                  Vuekumi+ only raises a buyer&apos;s daily quota; it does not fund a per-download pool.
                 </p>
               </div>
               <div className="space-y-4">
                 {[
-                  { label: 'Photographer royalty', value: 50, note: 'of every premium sale' },
-                  { label: 'Free pool share', value: 32, note: 'of + subscriptions, per download' },
-                  { label: 'Platform fee', value: 50, note: 'hosting, licensing, support' },
+                  { label: 'Photographer share', value: split.photographerPct, note: 'of every paid licence' },
+                  { label: 'Platform share', value: split.platformPct, note: 'hosting, licensing, support' },
                 ].map((row) => (
                   <div key={row.label}>
                     <div className="mb-1.5 flex items-baseline justify-between">
@@ -235,7 +247,10 @@ export default function Pricing() {
                     <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">{row.note}</p>
                   </div>
                 ))}
-                <Link to="/login?redirect=/contributor" className="mt-2 inline-flex items-center gap-2 font-mono-tech text-[11px] uppercase tracking-[0.18em] text-terra hover:gap-3 transition-all">
+                <p className="font-mono-tech text-[10px] text-ink-faint">
+                  Free collection RF · $0 · not on the ledger
+                </p>
+                <Link to={earnHref} className="mt-2 inline-flex items-center gap-2 font-mono-tech text-[11px] uppercase tracking-[0.18em] text-terra hover:gap-3 transition-all">
                   Start earning <span aria-hidden>→</span>
                 </Link>
               </div>

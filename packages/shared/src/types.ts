@@ -339,4 +339,5 @@ export interface PublicConfigDto {
     dev: boolean
   }
   sentryDsn: string | null
+  contributorShare: number
 }

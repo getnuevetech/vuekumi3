@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { config } from '../config.js'
 import { googleOAuthConfigured } from '../lib/oauth.js'
 import { getSettingSafe } from '../lib/settings.js'
+import { getContributorShare } from '../lib/payments-config.js'
 import { loadHomePage } from '../lib/home-queries.js'
 
 export async function publicRoutes(app: FastifyInstance) {
@@ -14,6 +15,7 @@ export async function publicRoutes(app: FastifyInstance) {
         dev: config.isDev && !google,
       },
       sentryDsn: sentryDsn && sentryDsn.startsWith('http') ? sentryDsn : null,
+      contributorShare: await getContributorShare(),
     }
   })
 

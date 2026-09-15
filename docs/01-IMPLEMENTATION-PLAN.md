@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 15 September 2026 against `main` after Phase 20.
+Updated 15 September 2026 against `main` after Phase 21.
 
 ---
 
@@ -89,6 +89,7 @@ Locked product rules already in the running system:
 | 18 | Admin RM quotes queue and quote emails |
 | 19 | Live admin overview metrics and chart |
 | 20 | Contributor photo editor (PATCH metadata, exclusive, unpublish/resubmit) |
+| 21 | Honest pricing economics (50/50 paid licences; no fake free pool) |
 
 Rights v1 is necessary but not the May 2026 model. It treats model clearance as an admin
 verified file, not as a second party on the platform.
@@ -119,7 +120,6 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 Marketplace leftovers that still matter for a honest live site, but are **not** the
 differentiator:
 
-- Pricing page still shows a hardcoded 32% “free pool” bar; ledger only has `licence_sale`
 - Featured homepage slots are query-driven, not admin-editable
 - RM products currently `requiresModelRelease: false` (contradicts two-approval)
 
@@ -135,8 +135,8 @@ Keep vuekumi.com truthful while the identity graph is designed.
 
 | Phase | Work | Why now |
 | --- | --- | --- |
-| **20** | Contributor photo editor (live `PATCH`, rights flags, exclusive opt-in, unpublish) | Upload without edit is an operational hole |
-| **21** | Free-pool / pricing economics: either implement a real pool or remove the 32% bar | Do not ship a ledger fiction |
+| **20** | Contributor photo editor — **shipped** | |
+| **21** | Honest pricing economics (no fake 32% pool) — **shipped** | |
 | **22** | Public rights **report** + staff takedown queue (temporary commercial lock, audit trail) | Doctrine requires this even before models have accounts |
 
 ### Arc B — Rights 2.0 (the original differentiator)
@@ -213,6 +213,6 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 21** (free-pool / pricing honesty) unless you
-   redirect to Arc B earlier. Rights 2.0 is the strategic priority; Arc A is only so the live
-   site does not lie while that lands.
+3. Default next slice when work resumes: **Phase 22** (public rights report + takedown)
+   unless you redirect to Arc B earlier. Rights 2.0 is the strategic priority; Arc A is only
+   so the live site does not lie while that lands.

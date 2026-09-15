@@ -158,7 +158,7 @@ function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsD
     {
       script: 'your next',
       title: 'STORY',
-      sub: 'License instantly. Photographers keep their copyright — and earn 50%.',
+      sub: 'License instantly. Photographers keep copyright — and 50% of paid licences.',
     },
   ];
   const slides = copy.map((item, i) => {
@@ -520,12 +520,12 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
       <div className="flex flex-1 flex-col justify-center px-6 py-14 md:px-14">
         <p className="font-script text-4xl text-terra">our promise</p>
         <h2 className="font-condensed mt-2 text-4xl font-semibold uppercase leading-[1.02] tracking-[0.05em] text-paper md:text-5xl">
-          Every image pays its maker
+          Paid licences pay their maker
         </h2>
         <p className="mt-5 max-w-md text-sm leading-relaxed text-noir-soft">
-          Vuekumi is built backwards from the contributor: 50% royalty on premium licences,
-          a subscription-funded pool for free downloads, and payouts over bank transfer,
-          M-Pesa or mobile money — monthly, on the first.
+          Vuekumi is built backwards from the contributor: 50% of every paid licence,
+          copyright stays with the photographer, and payouts over bank transfer or mobile
+          money when you request them — $10 minimum. Free-collection downloads are a $0 grant.
         </p>
         <div className="mt-8 grid grid-cols-3 gap-4 border-t border-noir pt-6">
           {[
@@ -677,7 +677,7 @@ function NoirPricing({ photos }: { photos: PhotoDto[] }) {
     },
     {
       photo: photos[1] ?? photos[0], name: 'Vuekumi+', price: '$19', per: '/30d',
-      feats: ['Unlimited free-collection RF', 'Premium still billed per image', 'Funds the contributor pool'],
+      feats: ['Unlimited free-collection RF', 'Premium still billed per image', 'Buyer quota — not a contributor pool'],
     },
     {
       photo: photos[2] ?? photos[0], name: 'Extended', price: '$49', per: '/img',

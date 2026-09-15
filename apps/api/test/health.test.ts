@@ -17,10 +17,15 @@ test('public config advertises OAuth and Sentry without auth', async () => {
   const app = await buildApp()
   const res = await app.inject({ method: 'GET', url: '/api/public/config' })
   assert.equal(res.statusCode, 200)
-  const body = res.json() as { oauth?: { google?: boolean; dev?: boolean }; sentryDsn?: string | null }
+  const body = res.json() as {
+    oauth?: { google?: boolean; dev?: boolean }
+    sentryDsn?: string | null
+    contributorShare?: number
+  }
   assert.equal(typeof body.oauth?.google, 'boolean')
   assert.equal(typeof body.oauth?.dev, 'boolean')
   assert.ok('sentryDsn' in body)
+  assert.equal(body.contributorShare, 0.5)
   await app.close()
 })
 
