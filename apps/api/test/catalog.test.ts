@@ -27,6 +27,7 @@ test('buildPhotoWhere searches title, description, tags, and photographer', () =
     category: 'All',
   })
   assert.equal(where.status, 'active')
+  assert.deepEqual(where.permissionState, { in: ['editorial', 'restricted', 'commercial', 'exclusive'] })
   assert.equal(where.category, undefined)
   assert.deepEqual(where.contributor, {
     contributorProfile: { handle: { equals: 'amara-okafor', mode: 'insensitive' } },
@@ -64,6 +65,7 @@ test('photoOrderBy maps sort keys with a createdAt tie-break', () => {
 test('related photos share category or country and exclude self', () => {
   assert.deepEqual(relatedPhotoWhere({ id: 'afr-011', category: 'Fashion', country: 'Nigeria' }), {
     status: 'active',
+    permissionState: { in: ['editorial', 'restricted', 'commercial', 'exclusive'] },
     id: { not: 'afr-011' },
     OR: [{ category: 'Fashion' }, { country: 'Nigeria' }],
   })

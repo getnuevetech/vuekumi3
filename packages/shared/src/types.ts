@@ -1,3 +1,5 @@
+import type { PermissionState } from './permissions.js'
+
 export type AccountType = 'admin' | 'contributor' | 'user' | 'agency'
 export type UserStatus = 'active' | 'suspended' | 'pending'
 export type LicenseType = 'free' | 'premium'
@@ -73,6 +75,8 @@ export interface PhotoDto {
   photographerFollowed?: boolean
   tags: string[]
   status: PhotoStatus
+  permissionState?: PermissionState
+  restrictionNotes?: string | null
   exclusiveAvailable?: boolean
   exclusiveSold?: boolean
   hasRecognizablePeople?: boolean

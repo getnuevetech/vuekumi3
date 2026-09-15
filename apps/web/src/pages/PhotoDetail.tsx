@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import type { LicenseProductDto, PaymentMethodsDto, PhotoDto, RightsReportReason } from '@vuekumi/shared'
+import { permissionPublicCopy } from '@vuekumi/shared'
 import { fmt } from '../data/content'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
@@ -244,6 +245,12 @@ export default function PhotoDetail() {
             {view.rights?.exclusiveSold && (
               <p className="mt-4 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
                 This photograph has been sold exclusively and is no longer available.
+              </p>
+            )}
+
+            {!view.rights?.exclusiveSold && view.permissionState && permissionPublicCopy(view.permissionState, view.restrictionNotes) && (
+              <p className="mt-4 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
+                {permissionPublicCopy(view.permissionState, view.restrictionNotes)}
               </p>
             )}
 

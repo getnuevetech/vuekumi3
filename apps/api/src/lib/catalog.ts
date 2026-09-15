@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import type { CatalogFacets, PhotoListQuery } from '@vuekumi/shared'
+import { PROFILE_PERMISSION_STATES, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { serializePhoto } from './serialize.js'
 
@@ -10,6 +11,16 @@ export const catalogPhotoInclude = {
 } as const
 
 export type CatalogPhoto = Prisma.PhotoGetPayload<{ include: typeof catalogPhotoInclude }>
+
+export const STOCK_PHOTO_FILTER = {
+  status: 'active' as const,
+  permissionState: { in: [...STOCK_PERMISSION_STATES] },
+}
+
+export const PROFILE_PHOTO_FILTER = {
+  status: 'active' as const,
+  permissionState: { in: [...PROFILE_PERMISSION_STATES] },
+}
 
 const QUERY_MAX = 120
 
@@ -40,7 +51,7 @@ export function buildPhotoWhere(query: PhotoListQuery): Prisma.PhotoWhereInput {
   const q = normalizeQuery(query.q)
   const tag = normalizeQuery(query.tag)
   const photographer = normalizeQuery(query.photographer)
-  const where: Prisma.PhotoWhereInput = { status: 'active' }
+  const where: Prisma.PhotoWhereInput = { ...STOCK_PHOTO_FILTER }
 
   if (query.category && query.category !== 'All') {
     where.category = query.category
@@ -76,9 +87,16 @@ export function relatedPhotoWhere(photo: {
   country: string
 }): Prisma.PhotoWhereInput {
   return {
-    status: 'active',
+    ...STOCK_PHOTO_FILTER,
     id: { not: photo.id },
     OR: [{ category: photo.category }, { country: photo.country }],
+  }
+}
+
+export function profilePhotoWhere(contributorId: string): Prisma.PhotoWhereInput {
+  return {
+    ...PROFILE_PHOTO_FILTER,
+    contributorId,
   }
 }
 

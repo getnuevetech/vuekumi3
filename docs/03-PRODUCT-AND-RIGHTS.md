@@ -180,8 +180,8 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 19, the marketplace is a **stock + licensing MVP** with photographer
-accounts, not yet the identity graph.
+Shipped through Phase 23, the marketplace is a **stock + licensing MVP** with photographer
+accounts and photo permission states, not yet the identity graph.
 
 | Doctrine | In production now |
 | --- | --- |
@@ -191,20 +191,19 @@ accounts, not yet the identity graph.
 | Model is a first-class account | **No** — account types are `admin \| contributor \| user \| agency` only |
 | Two-party approval | **No** — photographer checkbox + optional PDF file name; admin marks `ModelRelease` verified |
 | Invite-the-model | **No** |
-| Permission states (portfolio / editorial / restricted / agency-protected) | **No** — photo `draft\|pending\|active\|rejected\|delisted` plus `free\|premium` collection |
+| Permission states (portfolio / editorial / restricted / agency-protected) | **Yes** — `PermissionState` on each photo; catalog is stock states; profile can show portfolio |
 | Self-shot dual role | **No** |
 | Visual verification | **No** (AI today is metadata suggestion only) |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
-| VueQuatro product surface | **No** — company name only, not in the app |
+| VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
 | Photo influencer role | **No** |
 | Talent booking | **No** |
 | Partner/API distribution | **No** |
 | Separate AI-training consent | **No** |
 | Model share of royalties | **Undecided** — ledger pays the photographer 50% of paid licences |
 
-Known inconsistency: rights-managed products currently have `requiresModelRelease: false`
-while commercial/RF/extended/exclusive require a verified release. That contradicts the
-two-approval rule and must be fixed when Rights 2.0 lands, not papered over.
+Rights-managed products now `requiresModelRelease: true`, same as other commercial grants.
+Two-party model accounts are still Phase 24.
 
 ---
 

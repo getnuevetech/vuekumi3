@@ -1,4 +1,6 @@
 import type { GrantLicenseType, LicenseProduct, Photo, PlatformAgreement, RightsRecord } from '@prisma/client'
+import type { PermissionState } from '@vuekumi/shared'
+import { permissionBlocksLicense } from '@vuekumi/shared'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 
@@ -46,7 +48,7 @@ export const COMMERCIAL_LOCK_REASON =
 
 export type PhotoLicenseFields = Pick<
   Photo,
-  'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked'
+  'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked' | 'permissionState'
 >
 
 export function isLicenseOffered(
@@ -55,6 +57,8 @@ export function isLicenseOffered(
 ): { offered: boolean; reason?: string } {
   if (!product.active) return { offered: false, reason: 'Licence type is inactive' }
   if (photo.commercialLocked) return { offered: false, reason: COMMERCIAL_LOCK_REASON }
+  const permissionBlock = permissionBlocksLicense(photo.permissionState as PermissionState, product.type)
+  if (permissionBlock) return { offered: false, reason: permissionBlock }
   if (photo.exclusiveSold) return { offered: false, reason: 'An exclusive licence has already been sold' }
   if (photo.status !== 'active') return { offered: false, reason: 'Photo is not live' }
   if (product.exclusiveOptIn && !photo.exclusiveAvailable) {

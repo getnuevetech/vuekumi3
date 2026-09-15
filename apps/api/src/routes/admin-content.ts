@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import type { PermissionState } from '@vuekumi/shared'
 import { decideModerationSchema, patchRightsSchema, reviewModelReleaseSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
@@ -6,6 +7,12 @@ import { prisma } from '../lib/prisma.js'
 import { contributorHasAgreement, rightsReadyForLive } from '../lib/rights.js'
 import { serializePhoto, serializeQuote } from '../lib/serialize.js'
 import { serializeRightsReport } from '../lib/reports.js'
+import { PhotoEditError } from '../lib/photo-edit.js'
+import {
+  assertPermissionStateChange,
+  permissionWriteData,
+  resolvePermissionState,
+} from '../lib/permissions.js'
 
 export async function adminContentRoutes(app: FastifyInstance) {
   const admin = { preHandler: requireAccountTypes(app, 'admin') }
@@ -101,11 +108,51 @@ export async function adminContentRoutes(app: FastifyInstance) {
     const photo = await prisma.photo.findUnique({ where: { id }, include: { rightsRecord: true } })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
 
+    const people = body.modelReleaseRequired ?? photo.hasRecognizablePeople
+    const verified = photo.rightsRecord?.modelReleaseStatus === 'verified'
+    let permissionState = resolvePermissionState({
+      requested: body.permissionState,
+      exclusiveAvailable: body.exclusiveAvailable,
+      current: photo.permissionState as PermissionState,
+      hasRecognizablePeople: people,
+    })
+    if (
+      !body.permissionState
+      && people
+      && !verified
+      && (permissionState === 'commercial' || permissionState === 'exclusive')
+      && !photo.exclusiveSold
+    ) {
+      permissionState = 'editorial'
+    }
+
+    try {
+      assertPermissionStateChange({
+        next: permissionState,
+        current: photo.permissionState as PermissionState,
+        exclusiveSold: photo.exclusiveSold,
+        commercialLocked: photo.commercialLocked,
+        hasRecognizablePeople: people,
+        modelReleaseVerified: verified,
+        actor: 'admin',
+      })
+    } catch (err) {
+      if (err instanceof PhotoEditError) {
+        return reply.code(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+
+    const permission = permissionWriteData(permissionState, photo.exclusiveSold, body.restrictionNotes)
+
     await prisma.$transaction([
       prisma.photo.update({
         where: { id },
         data: {
-          ...(body.exclusiveAvailable != null ? { exclusiveAvailable: body.exclusiveAvailable } : {}),
+          ...(body.exclusiveAvailable != null || body.permissionState || permissionState !== photo.permissionState
+            ? { exclusiveAvailable: permission.exclusiveAvailable, permissionState: permission.permissionState }
+            : {}),
+          ...(body.restrictionNotes !== undefined ? { restrictionNotes: permission.restrictionNotes } : {}),
           ...(body.modelReleaseRequired != null ? { hasRecognizablePeople: body.modelReleaseRequired } : {}),
         },
       }),

@@ -34,6 +34,7 @@ const livePhoto = {
   exclusiveSold: false,
   status: 'active' as const,
   commercialLocked: false,
+  permissionState: 'commercial' as const,
 }
 
 test('guest reports need an email; signed-in reports do not', () => {

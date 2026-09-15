@@ -49,6 +49,16 @@ enum PhotoStatus {
   delisted
 }
 
+enum PermissionState {
+  private
+  portfolio
+  editorial
+  restricted
+  commercial
+  exclusive
+  agency_protected
+}
+
 enum LicenseType {
   free
   premium
@@ -285,6 +295,8 @@ model Photo {
   commercialLocked     Boolean   @default(false)
   commercialLockedAt   DateTime?
   commercialLockedById String?
+  permissionState    PermissionState @default(commercial)
+  restrictionNotes   String?
 
   contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
   tags             PhotoTag[]
@@ -307,6 +319,7 @@ model Photo {
   @@index([country])
   @@index([contributorId])
   @@index([commercialLocked])
+  @@index([permissionState])
 }
 
 model AiSuggestion {

@@ -143,6 +143,8 @@ export function serializePhoto(
     exclusiveAvailable: photo.exclusiveAvailable,
     exclusiveSold: photo.exclusiveSold,
     hasRecognizablePeople: photo.hasRecognizablePeople,
+    permissionState: photo.permissionState,
+    restrictionNotes: photo.restrictionNotes,
     rights: photo.rightsRecord
       ? serializeRights(photo, photo.rightsRecord, hasAgreement)
       : undefined,
@@ -152,7 +154,7 @@ export function serializePhoto(
 
 export function serializeLicenseProduct(
   product: LicenseProduct,
-  photo: Pick<Photo, 'price' | 'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked'>,
+  photo: Pick<Photo, 'price' | 'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked' | 'permissionState'>,
   rights: RightsRecord | null,
 ): LicenseProductDto {
   const offer = isLicenseOffered(product, photo)

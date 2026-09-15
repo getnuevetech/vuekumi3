@@ -1,4 +1,5 @@
 import type { HomePageDto } from '@vuekumi/shared'
+import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares } from './home.js'
 import {
   catalogPhotoInclude,
@@ -7,7 +8,7 @@ import {
 } from './catalog.js'
 import { prisma } from './prisma.js'
 
-const LIVE = { status: 'active' as const }
+const LIVE = { status: 'active' as const, permissionState: { in: [...STOCK_PERMISSION_STATES] } }
 
 function ranked(photo: CatalogPhoto) {
   return { id: photo.id, category: photo.category }

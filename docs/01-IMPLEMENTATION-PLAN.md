@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 15 September 2026 against `main` after Phase 22.
+Updated 15 September 2026 against `main` after Phase 23.
 
 ---
 
@@ -107,7 +107,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Model as a real, verifiable account | Missing |
 | Two-approval commercial lock | Missing (checkbox + PDF name + admin verify) |
 | Invite-the-model as acquisition | Missing |
-| Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Missing (only photo lifecycle + free/premium) |
+| Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Shipped (Phase 23) — orthogonal to moderation status; catalog is stock states only |
 | Self-shot dual role | Missing |
 | Visual verification with biometric safeguards | Missing (do not start casually) |
 | Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
@@ -122,7 +122,6 @@ Marketplace leftovers that still matter for a honest live site, but are **not** 
 differentiator:
 
 - Featured homepage slots are query-driven, not admin-editable
-- RM products currently `requiresModelRelease: false` (contradicts two-approval)
 
 ---
 
@@ -139,7 +138,6 @@ Keep vuekumi.com truthful while the identity graph is designed.
 | **20** | Contributor photo editor — **shipped** | |
 | **21** | Honest pricing economics (no fake 32% pool) — **shipped** | |
 | **22** | Public rights **report** + staff takedown queue (temporary commercial lock, audit trail) — **shipped** | |
-| **22** | Public rights **report** + staff takedown queue (temporary commercial lock, audit trail) | Doctrine requires this even before models have accounts |
 
 ### Arc B — Rights 2.0 (the original differentiator)
 
@@ -147,7 +145,7 @@ This is the work the May discussion was actually about. It replaces “upload a 
 
 | Phase | Work | Hard rules |
 | --- | --- | --- |
-| **23** | Photo **permission states** (private, portfolio, editorial, restricted, commercial, exclusive, agency-protected). Commercial/RF/extended/exclusive/RM cannot be offered unless state + rights record allow it. Align RM with model-release requirement. | An image may exist without becoming stock. Editorial ≠ delete. |
+| **23** | Photo **permission states** (private, portfolio, editorial, restricted, commercial, exclusive, agency-protected). Commercial/RF/extended/exclusive/RM cannot be offered unless state + rights record allow it. Align RM with model-release requirement. — **shipped** | An image may exist without becoming stock. Editorial ≠ delete. |
 | **24** | **Model** account type (fifth type, still one type per email). Photographer identifies people on a photo; VueKumi **invites** them. Claim profile, confirm likeness, approve/reject per image, set usage. | Typed name is not identity. Checkbox is not consent. |
 | **25** | **Two-approval commercial lock** + rights record as the asset (invites, consent version, timestamps, restrictions, grant history). Admin verifies process, not a PDF in isolation. | Photographer approval + model approval = commercially licensable. AI match cannot grant rights. |
 | **26** | **Self-shot** dual role on one account | Do not force a fake photographer/model pair |
@@ -188,7 +186,7 @@ Until Arc B exists, do **not** start:
 ## 6. Cross-cutting (still in force)
 
 - Contract-first DTOs in `packages/shared`
-- Demo stays runnable; seed remains the 29-photo African catalog plus demo accounts
+- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts
 - Vertical slices (schema → API → UI → tests)
 - Africa-only contributors; keys in Admin Settings; Docker-only Lightsail
 - PII / biometric minimisation for any future verification pipeline
@@ -215,5 +213,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 23** (photo permission states)
+3. Default next slice when work resumes: **Phase 24** (model account type)
    unless you redirect. Rights 2.0 is the strategic priority.

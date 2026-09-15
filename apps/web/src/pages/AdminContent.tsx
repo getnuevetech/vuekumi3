@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import type { PermissionState } from '@vuekumi/shared'
 import { PortalShell, StatusPill } from '../components/shared'
+import { PermissionStateField } from '../components/PermissionStateField'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { api, ApiError, type AdminContentDetail, type AdminContentRow } from '../api/client'
 import { AiSuggestPanel } from '../components/AiSuggestPanel'
@@ -20,6 +22,7 @@ export function AdminContent() {
   const [total, setTotal] = useState(0)
   const [detail, setDetail] = useState<AdminContentDetail | null>(null)
   const [quoteUsd, setQuoteUsd] = useState('')
+  const [restrictionNotes, setRestrictionNotes] = useState('')
 
   const load = () => {
     api.adminContent({ q }).then((d) => {
@@ -31,7 +34,10 @@ export function AdminContent() {
   useEffect(() => { load() }, [q])
 
   const open = (id: string) => {
-    api.adminContentDetail(id).then(setDetail).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed'))
+    api.adminContentDetail(id).then((next) => {
+      setDetail(next)
+      setRestrictionNotes(next.photo.restrictionNotes ?? '')
+    }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed'))
   }
 
   return (
@@ -51,7 +57,7 @@ export function AdminContent() {
         <table className="w-full min-w-[920px] text-left text-sm">
           <thead>
             <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-              {['Image', 'Licence', 'People', 'Model', 'Copyright', 'Platform', 'Exclusive', 'Status'].map((c) => (
+              {['Image', 'Licence', 'Permission', 'People', 'Model', 'Copyright', 'Platform', 'Status'].map((c) => (
                 <th key={c} className="px-4 py-3 font-medium">{c}</th>
               ))}
             </tr>
@@ -69,11 +75,11 @@ export function AdminContent() {
                   </div>
                 </td>
                 <td className="px-4 py-3"><StatusPill status={p.license} /></td>
+                <td className="px-4 py-3"><StatusPill status={p.permissionState ?? (p.exclusiveAvailable ? 'exclusive' : 'commercial')} /></td>
                 <td className="px-4 py-3">{p.hasRecognizablePeople ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3"><StatusPill status={p.rights?.modelReleaseStatus ?? 'not_required'} /></td>
                 <td className="px-4 py-3">{p.rights?.copyrightVerified ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3">{p.rights?.platformRightsOk ? 'Yes' : 'No'}</td>
-                <td className="px-4 py-3">{p.exclusiveSold ? 'Sold' : p.exclusiveAvailable ? 'Opt-in' : '—'}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     <StatusPill status={p.status} />
@@ -107,6 +113,40 @@ export function AdminContent() {
               <div className="mt-4 space-y-2 text-sm">
                 <p><span className="text-ink-soft">Copyright holder</span> · {detail.photo.rights?.copyrightHolder ?? '—'}</p>
                 <p><span className="text-ink-soft">Live ready</span> · {detail.photo.rights?.liveReady ? 'Yes' : (detail.photo.rights?.liveBlockers ?? []).join('; ') || 'No'}</p>
+              </div>
+
+              <div className="mt-4">
+                <PermissionStateField
+                  actor="admin"
+                  value={detail.photo.permissionState ?? 'commercial'}
+                  notes={restrictionNotes}
+                  onNotes={setRestrictionNotes}
+                  onChange={(state: PermissionState) => {
+                    api.patchRights(detail.photo.id, {
+                      permissionState: state,
+                      exclusiveAvailable: state === 'exclusive',
+                      restrictionNotes: state === 'restricted' ? restrictionNotes || null : restrictionNotes || null,
+                    }).then(() => { open(detail.photo.id); load() })
+                      .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not update permission'))
+                  }}
+                />
+                {detail.photo.permissionState === 'restricted' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      api.patchRights(detail.photo.id, { restrictionNotes: restrictionNotes || null })
+                        .then(() => {
+                          toast.success('Restriction notes saved')
+                          open(detail.photo.id)
+                          load()
+                        })
+                        .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not save notes'))
+                    }}
+                    className="mt-2 rounded-full border border-sand px-4 py-1.5 font-mono-tech text-[10px] uppercase"
+                  >
+                    Save restriction notes
+                  </button>
+                )}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">

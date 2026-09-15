@@ -3,11 +3,12 @@ import { photographerListQuerySchema, photoListQuerySchema } from '@vuekumi/shar
 import type { PhotographerDto } from '@vuekumi/shared'
 import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
 import {
-  buildPhotoWhere,
   catalogPhotoInclude,
   favoriteIdSet,
   normalizeQuery,
   photoOrderBy,
+  PROFILE_PHOTO_FILTER,
+  profilePhotoWhere,
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
 import { followBlocked } from '../lib/follows.js'
@@ -55,7 +56,7 @@ export async function photographerRoutes(app: FastifyInstance) {
     const where = {
       accountType: 'contributor' as const,
       status: 'active' as const,
-      photos: { some: { status: 'active' as const } },
+      photos: { some: PROFILE_PHOTO_FILTER },
       ...(q
         ? {
             OR: [
@@ -71,7 +72,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       where,
       include: {
         contributorProfile: true,
-        photos: { where: { status: 'active' }, select: { downloads: true } },
+        photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
         _count: { select: { followers: true } },
       },
     })
@@ -124,7 +125,7 @@ export async function photographerRoutes(app: FastifyInstance) {
           photographer: {
             include: {
               contributorProfile: true,
-              photos: { where: { status: 'active' }, select: { downloads: true } },
+              photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
               _count: { select: { followers: true } },
             },
           },
@@ -167,8 +168,10 @@ export async function photographerRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: 'Photographer not found' })
     }
 
-    const photoQuery = { ...query, photographer: profile.handle }
-    const where = buildPhotoWhere(photoQuery)
+    const where = {
+      ...profilePhotoWhere(profile.userId),
+      ...(query.category && query.category !== 'All' ? { category: query.category } : {}),
+    }
 
     const countOwnView = query.page === 1 && request.userId !== profile.userId
     if (countOwnView) {
@@ -190,7 +193,7 @@ export async function photographerRoutes(app: FastifyInstance) {
         take: query.limit,
       }),
       prisma.photo.aggregate({
-        where: { contributorId: profile.userId, status: 'active' },
+        where: { contributorId: profile.userId, ...PROFILE_PHOTO_FILTER },
         _count: { _all: true },
         _sum: { downloads: true },
       }),

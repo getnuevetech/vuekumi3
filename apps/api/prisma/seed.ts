@@ -168,6 +168,9 @@ async function main() {
 
     const hasPeople = peopleCategories.has(p.category) || p.tags.some((t) => peopleTags.has(t))
     const photographer = photographers.find((ph) => ph.handle === p.photographer)
+    const exclusive = p.id === 'afr-011'
+    const permissionState =
+      p.id === 'afr-008' ? 'portfolio' : p.id === 'afr-001' ? 'editorial' : exclusive ? 'exclusive' : 'commercial'
 
     await prisma.photo.create({
       data: {
@@ -184,7 +187,9 @@ async function main() {
         views: p.views,
         likes: p.likes,
         hasRecognizablePeople: hasPeople,
-        exclusiveAvailable: p.id === 'afr-011',
+        exclusiveAvailable: exclusive,
+        permissionState,
+        restrictionNotes: p.id === 'afr-001' ? 'Editorial demo — not for advertising.' : undefined,
         publishedAt: new Date(),
         tags: { create: p.tags.map((tag) => ({ tag })) },
         rightsRecord: {
@@ -228,7 +233,9 @@ async function main() {
         status: 'pending',
         src: '/images/photos/fashion-portrait.jpg',
         hasRecognizablePeople: true,
-        exclusiveAvailable: true,
+        exclusiveAvailable: false,
+        permissionState: 'private',
+        restrictionNotes: 'Unreleased studio sitting — private until rights clear.',
         tags: { create: [{ tag: 'portrait' }, { tag: 'studio' }] },
         rightsRecord: {
           create: {

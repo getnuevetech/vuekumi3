@@ -1,8 +1,9 @@
 import type { AdminOverviewDto, AdminRevenuePointDto } from '@vuekumi/shared'
+import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { roundUsd } from './payouts.js'
 
-const LIVE = { status: 'active' as const }
+const LIVE = { status: 'active' as const, permissionState: { in: [...STOCK_PERMISSION_STATES] } }
 
 export function monthKey(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`

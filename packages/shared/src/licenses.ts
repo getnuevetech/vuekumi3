@@ -1,3 +1,4 @@
+import { permissionStateSchema } from './permissions.js'
 import { z } from 'zod'
 
 export const grantLicenseTypeSchema = z.enum([
@@ -51,6 +52,8 @@ export const patchRightsSchema = z.object({
   platformRightsOk: z.boolean().optional(),
   modelReleaseRequired: z.boolean().optional(),
   exclusiveAvailable: z.boolean().optional(),
+  permissionState: permissionStateSchema.optional(),
+  restrictionNotes: z.string().trim().max(2000).optional().nullable(),
 })
 
 export const submitPhotoSchema = z.object({
@@ -63,6 +66,8 @@ export const submitPhotoSchema = z.object({
   price: z.number().min(0).max(10000).optional(),
   hasRecognizablePeople: z.boolean(),
   exclusiveAvailable: z.boolean().optional(),
+  permissionState: permissionStateSchema.optional(),
+  restrictionNotes: z.string().trim().max(2000).optional().nullable(),
   copyrightHolder: z.string().min(2).max(200),
   copyrightAttested: z.literal(true),
   modelReleaseFileName: z.string().max(200).optional(),

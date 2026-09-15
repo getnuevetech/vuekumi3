@@ -2,12 +2,13 @@ import type { FastifyInstance } from 'fastify'
 import {
   addCollectionPhotoSchema,
   createCollectionSchema,
+  isStockPermission,
   photoListQuerySchema,
   updateCollectionSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
-import { catalogPhotoInclude, favoriteIdSet, serializeCatalogPhoto } from '../lib/catalog.js'
+import { catalogPhotoInclude, favoriteIdSet, serializeCatalogPhoto, STOCK_PHOTO_FILTER } from '../lib/catalog.js'
 import {
   canEditCollection,
   canViewCollection,
@@ -126,10 +127,10 @@ export async function collectionRoutes(app: FastifyInstance) {
 
     const [total, rows] = await Promise.all([
       prisma.collectionPhoto.count({
-        where: { collectionId: id, photo: { status: 'active' } },
+        where: { collectionId: id, photo: STOCK_PHOTO_FILTER },
       }),
       prisma.collectionPhoto.findMany({
-        where: { collectionId: id, photo: { status: 'active' } },
+        where: { collectionId: id, photo: STOCK_PHOTO_FILTER },
         include: { photo: { include: catalogPhotoInclude } },
         orderBy: { createdAt: 'desc' },
         skip: (query.page - 1) * query.limit,
@@ -250,8 +251,17 @@ export async function collectionRoutes(app: FastifyInstance) {
       if (!collection) throw new CollectionError('Collection not found', 404)
       if (!canEditCollection(collection, viewer)) throw new CollectionError('Forbidden', 403)
 
-      const photo = await prisma.photo.findUnique({ where: { id: body.photoId }, select: { id: true, status: true } })
-      if (!photo || photo.status !== 'active') throw new CollectionError('Photo not found', 404)
+      const photo = await prisma.photo.findUnique({
+        where: { id: body.photoId },
+        select: { id: true, status: true, permissionState: true },
+      })
+      if (
+        !photo
+        || photo.status !== 'active'
+        || !isStockPermission(photo.permissionState)
+      ) {
+        throw new CollectionError('Photo not found', 404)
+      }
 
       const existing = await prisma.collectionPhoto.findUnique({
         where: { collectionId_photoId: { collectionId: id, photoId: body.photoId } },

@@ -48,7 +48,10 @@ export async function photoRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request) => {
     const query = photoListQuerySchema.parse(request.query)
-    const where = { userId: request.userId!, photo: { status: 'active' as const } }
+    const where = {
+      userId: request.userId!,
+      photo: { status: 'active' as const, permissionState: { not: 'private' as const } },
+    }
 
     const [total, rows] = await Promise.all([
       prisma.photoFavorite.count({ where }),
@@ -76,9 +79,14 @@ export async function photoRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const photo = await prisma.photo.findUnique({
       where: { id },
-      select: { id: true, category: true, country: true, status: true },
+      select: { id: true, category: true, country: true, status: true, permissionState: true, contributorId: true },
     })
+    const owner = request.userId === photo?.contributorId
+    const admin = request.authUser?.accountType === 'admin'
     if (!photo || photo.status !== 'active') {
+      return reply.code(404).send({ error: 'Photo not found' })
+    }
+    if (photo.permissionState === 'private' && !owner && !admin) {
       return reply.code(404).send({ error: 'Photo not found' })
     }
 
@@ -99,8 +107,11 @@ export async function photoRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
-    const photo = await prisma.photo.findUnique({ where: { id }, select: { id: true, status: true } })
-    if (!photo || photo.status !== 'active') {
+    const photo = await prisma.photo.findUnique({
+      where: { id },
+      select: { id: true, status: true, permissionState: true },
+    })
+    if (!photo || photo.status !== 'active' || photo.permissionState === 'private') {
       return reply.code(404).send({ error: 'Photo not found' })
     }
 
@@ -143,7 +154,16 @@ export async function photoRoutes(app: FastifyInstance) {
       include: catalogPhotoInclude,
     })
 
-    if (!photo || (photo.status !== 'active' && photo.status !== 'pending')) {
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    const owner = request.userId === photo.contributorId
+    const admin = request.authUser?.accountType === 'admin'
+    if (photo.permissionState === 'private' && !owner && !admin) {
+      return reply.code(404).send({ error: 'Photo not found' })
+    }
+    if (photo.status !== 'active' && photo.status !== 'pending' && !owner && !admin) {
+      return reply.code(404).send({ error: 'Photo not found' })
+    }
+    if (photo.status === 'pending' && !owner && !admin) {
       return reply.code(404).send({ error: 'Photo not found' })
     }
 

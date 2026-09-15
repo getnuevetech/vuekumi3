@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { permissionStateSchema } from './permissions.js'
 
 export const PHOTO_CATEGORIES = [
   'People',
@@ -38,6 +39,8 @@ export const updatePhotoSchema = z.object({
   licenseType: z.enum(['free', 'premium']).optional(),
   price: z.number().min(0).max(10000).optional(),
   exclusiveAvailable: z.boolean().optional(),
+  permissionState: permissionStateSchema.optional(),
+  restrictionNotes: z.string().trim().max(2000).optional().nullable(),
   copyrightHolder: z.string().min(2).max(200).optional(),
   status: z.enum(['delisted', 'pending']).optional(),
   modelReleaseFileName: z.string().max(200).optional(),

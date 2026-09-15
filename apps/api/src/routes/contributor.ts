@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import type { PermissionState } from '@vuekumi/shared'
 import { presignUploadSchema, submitPhotoSchema, updatePhotoSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
@@ -16,6 +17,11 @@ import {
   nextLicensePrice,
   nextModelReleaseFields,
 } from '../lib/photo-edit.js'
+import {
+  assertPermissionStateChange,
+  permissionWriteData,
+  resolvePermissionState,
+} from '../lib/permissions.js'
 import {
   ALLOWED_IMAGE_TYPES,
   assertOwnedOriginalKey,
@@ -203,6 +209,27 @@ export async function contributorRoutes(app: FastifyInstance) {
     const modelReleaseAttached = Boolean(body.modelReleaseFileName)
     const id = `sub-${Date.now().toString(36)}`
     const processingStatus = body.originalKey ? 'pending' : 'ready'
+    const permissionState = resolvePermissionState({
+      requested: body.permissionState,
+      exclusiveAvailable: body.exclusiveAvailable,
+      hasRecognizablePeople: people,
+    })
+    try {
+      assertPermissionStateChange({
+        next: permissionState,
+        exclusiveSold: false,
+        commercialLocked: false,
+        hasRecognizablePeople: people,
+        modelReleaseVerified: false,
+        actor: request.authUser?.accountType === 'admin' ? 'admin' : 'contributor',
+      })
+    } catch (err) {
+      if (err instanceof PhotoEditError) {
+        return reply.code(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+    const permission = permissionWriteData(permissionState, false, body.restrictionNotes)
 
     let photo = await prisma.$transaction(async (tx) => {
       const created = await tx.photo.create({
@@ -220,7 +247,9 @@ export async function contributorRoutes(app: FastifyInstance) {
           storageKey: body.originalKey,
           processingStatus,
           hasRecognizablePeople: people,
-          exclusiveAvailable: Boolean(body.exclusiveAvailable),
+          exclusiveAvailable: permission.exclusiveAvailable,
+          permissionState: permission.permissionState,
+          restrictionNotes: permission.restrictionNotes,
           tags: body.tags?.length ? { create: body.tags.map((tag) => ({ tag })) } : undefined,
           assets: body.originalKey
             ? {
@@ -288,7 +317,12 @@ export async function contributorRoutes(app: FastifyInstance) {
       action: 'contributor.submit_photo',
       entityType: 'photo',
       entityId: photo.id,
-      metadata: { hasRecognizablePeople: people, exclusiveAvailable: body.exclusiveAvailable, originalKey: Boolean(body.originalKey) },
+      metadata: {
+        hasRecognizablePeople: people,
+        exclusiveAvailable: permission.exclusiveAvailable,
+        permissionState: permission.permissionState,
+        originalKey: Boolean(body.originalKey),
+      },
       ipAddress: request.ip,
     })
 
@@ -309,6 +343,16 @@ export async function contributorRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
+    const people = body.hasRecognizablePeople
+    const nextPeople = people ?? existing.hasRecognizablePeople
+    const permissionState = resolvePermissionState({
+      requested: body.permissionState,
+      exclusiveAvailable: body.exclusiveAvailable,
+      current: existing.permissionState as PermissionState,
+      hasRecognizablePeople: nextPeople,
+    })
+    const actor = request.authUser?.accountType === 'admin' ? 'admin' : 'contributor'
+
     try {
       if (body.status) {
         assertContributorStatusChange({
@@ -325,6 +369,15 @@ export async function contributorRoutes(app: FastifyInstance) {
         requested: body.hasRecognizablePeople,
         currentlyRequired: existing.hasRecognizablePeople || Boolean(existing.rightsRecord?.modelReleaseRequired),
       })
+      assertPermissionStateChange({
+        next: permissionState,
+        current: existing.permissionState as PermissionState,
+        exclusiveSold: existing.exclusiveSold,
+        commercialLocked: existing.commercialLocked,
+        hasRecognizablePeople: nextPeople,
+        modelReleaseVerified: existing.rightsRecord?.modelReleaseStatus === 'verified',
+        actor,
+      })
     } catch (err) {
       if (err instanceof PhotoEditError) {
         return reply.code(err.statusCode).send({ error: err.message })
@@ -340,7 +393,6 @@ export async function contributorRoutes(app: FastifyInstance) {
           currentPrice: existing.price,
         })
       : undefined
-    const people = body.hasRecognizablePeople
     const releaseFields =
       people === undefined
         ? null
@@ -348,6 +400,11 @@ export async function contributorRoutes(app: FastifyInstance) {
             hasRecognizablePeople: people,
             current: existing.rightsRecord?.modelReleaseStatus ?? null,
           })
+    const permission = permissionWriteData(
+      permissionState,
+      existing.exclusiveSold,
+      body.restrictionNotes,
+    )
 
     const photo = await prisma.$transaction(async (tx) => {
       if (body.tags) {
@@ -367,7 +424,13 @@ export async function contributorRoutes(app: FastifyInstance) {
           ...(people !== undefined ? { hasRecognizablePeople: people } : {}),
           ...(body.licenseType ? { licenseType: body.licenseType } : {}),
           ...(price !== undefined ? { price } : {}),
-          ...(body.exclusiveAvailable !== undefined ? { exclusiveAvailable: body.exclusiveAvailable } : {}),
+          ...(body.exclusiveAvailable !== undefined || body.permissionState
+            ? { exclusiveAvailable: permission.exclusiveAvailable }
+            : {}),
+          ...(body.permissionState || body.exclusiveAvailable !== undefined
+            ? { permissionState: permission.permissionState }
+            : {}),
+          ...(body.restrictionNotes !== undefined ? { restrictionNotes: permission.restrictionNotes } : {}),
           ...(body.status ? { status: body.status } : {}),
         },
       })
@@ -436,7 +499,8 @@ export async function contributorRoutes(app: FastifyInstance) {
       metadata: {
         status: body.status ?? existing.status,
         licenseType,
-        exclusiveAvailable: body.exclusiveAvailable,
+        exclusiveAvailable: permission.exclusiveAvailable,
+        permissionState: permission.permissionState,
         hasRecognizablePeople: people,
       },
       ipAddress: request.ip,

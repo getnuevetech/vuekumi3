@@ -134,7 +134,7 @@ export const LICENSE_CATALOG: LicenseCatalogItem[] = [
       'Usage permission — not ownership',
     ],
     commercialAllowed: true,
-    requiresModelRelease: false,
+    requiresModelRelease: true,
     agencyPreferred: true,
     quoteOnly: true,
     exclusiveOptIn: false,

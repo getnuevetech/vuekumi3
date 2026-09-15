@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { PHOTO_CATEGORIES, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
+import { PHOTO_CATEGORIES, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
 import { PortalShell, StatusPill } from '../components/shared'
+import { PermissionStateField } from '../components/PermissionStateField'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { money } from '../lib/format'
 import { contributorLinks } from './Contributor'
@@ -29,7 +30,8 @@ export function ContributorPhotoEdit() {
   const [licenseType, setLicenseType] = useState<'free' | 'premium'>('free')
   const [price, setPrice] = useState('12')
   const [people, setPeople] = useState(false)
-  const [exclusive, setExclusive] = useState(false)
+  const [permissionState, setPermissionState] = useState<PermissionState>('commercial')
+  const [restrictionNotes, setRestrictionNotes] = useState('')
   const [copyrightHolder, setCopyrightHolder] = useState('')
   const [releaseName, setReleaseName] = useState('')
   const [releaseNotes, setReleaseNotes] = useState('')
@@ -45,7 +47,8 @@ export function ContributorPhotoEdit() {
     setLicenseType(row.license)
     setPrice(String(row.price > 0 ? row.price : 12))
     setPeople(Boolean(row.hasRecognizablePeople || row.rights?.modelReleaseRequired))
-    setExclusive(Boolean(row.exclusiveAvailable))
+    setPermissionState(row.permissionState ?? (row.exclusiveAvailable ? 'exclusive' : 'commercial'))
+    setRestrictionNotes(row.restrictionNotes ?? '')
     setCopyrightHolder(row.rights?.copyrightHolder ?? '')
   }
 
@@ -81,7 +84,9 @@ export function ContributorPhotoEdit() {
     tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
     licenseType,
     price: licenseType === 'premium' ? Number(price) || 12 : 0,
-    exclusiveAvailable: exclusive,
+    exclusiveAvailable: permissionState === 'exclusive',
+    permissionState,
+    restrictionNotes: permissionState === 'restricted' ? restrictionNotes : restrictionNotes || null,
     copyrightHolder: copyrightHolder || undefined,
     hasRecognizablePeople: people || undefined,
     modelReleaseFileName: people && releaseName ? releaseName : undefined,
@@ -127,6 +132,7 @@ export function ContributorPhotoEdit() {
           <img src={photo.thumbSrc ?? photo.src} alt="" className="h-48 w-full rounded-xl object-cover" />
           <div className="flex flex-wrap gap-2">
             <StatusPill status={photo.status} />
+            <StatusPill status={photo.permissionState ?? 'commercial'} />
             <StatusPill status={photo.license} />
             <StatusPill status={photo.rights?.modelReleaseStatus ?? 'not_required'} />
           </div>
@@ -217,18 +223,15 @@ export function ContributorPhotoEdit() {
               <input value={releaseNotes} onChange={(e) => setReleaseNotes(e.target.value)} placeholder="Release notes" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
             </div>
           )}
-          <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
-            <input
-              type="checkbox"
-              checked={exclusive}
-              disabled={sold}
-              onChange={(e) => setExclusive(e.target.checked)}
-              className="mt-0.5 accent-[#bc773f]"
-            />
-            Opt this photo into exclusive sale (delisted after one exclusive grant)
-          </label>
+          <PermissionStateField
+            value={permissionState}
+            onChange={setPermissionState}
+            notes={restrictionNotes}
+            onNotes={setRestrictionNotes}
+            disabled={sold}
+          />
           {sold && (
-            <p className="font-mono-tech text-[10px] text-[#b3382e]">An exclusive licence has already been sold. The listing stays delisted.</p>
+            <p className="font-mono-tech text-[10px] text-[#b3382e]">An exclusive licence has already been sold. The listing stays exclusive and delisted from further sale.</p>
           )}
           <div className="flex flex-wrap gap-2 pt-2">
             <button type="submit" disabled={busy} className="rounded-full bg-ink px-8 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper transition-colors hover:bg-terra disabled:opacity-50">
@@ -245,7 +248,11 @@ export function ContributorPhotoEdit() {
             <h3 className="font-serif-display text-lg font-light">Listing</h3>
             <p className="mt-2 text-sm text-ink-soft">
               {photo.status === 'active'
-                ? 'Live in the catalog. Unpublish to hide it from buyers without deleting the file.'
+                ? permissionState === 'private'
+                  ? 'Approved but private. Only you and staff can see it.'
+                  : permissionState === 'portfolio'
+                    ? 'On your profile. Not offered as stock until you change the permission state.'
+                    : 'Live in the catalog according to its permission state. Unpublish to hide the file from buyers without deleting it.'
                 : photo.status === 'pending'
                   ? 'Waiting on moderation. You can still edit metadata or withdraw it.'
                   : photo.status === 'delisted'

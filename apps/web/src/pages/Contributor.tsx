@@ -4,11 +4,12 @@ import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { toast } from 'sonner';
-import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PhotoDto } from '@vuekumi/shared';
+import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto } from '@vuekumi/shared';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
 import { api, ApiError } from '../api/client';
 import { AiSuggestPanel } from '../components/AiSuggestPanel';
+import { PermissionStateField } from '../components/PermissionStateField';
 
 const icons = {
   dash: (
@@ -165,7 +166,8 @@ export function ContributorUpload() {
   const [description, setDescription] = useState('');
   const [licenseType, setLicenseType] = useState<'free' | 'premium'>('free');
   const [people, setPeople] = useState(false);
-  const [exclusive, setExclusive] = useState(false);
+  const [permissionState, setPermissionState] = useState<PermissionState>('commercial');
+  const [restrictionNotes, setRestrictionNotes] = useState('');
   const [copyrightHolder, setCopyrightHolder] = useState('');
   const [releaseName, setReleaseName] = useState('');
   const [releaseNotes, setReleaseNotes] = useState('');
@@ -280,7 +282,9 @@ export function ContributorUpload() {
                   tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
                   licenseType,
                   hasRecognizablePeople: people,
-                  exclusiveAvailable: exclusive,
+                  exclusiveAvailable: permissionState === 'exclusive',
+                  permissionState,
+                  restrictionNotes: permissionState === 'restricted' ? restrictionNotes : restrictionNotes || undefined,
                   copyrightHolder,
                   copyrightAttested: true,
                   modelReleaseFileName: people ? (releaseName || file.name) : undefined,
@@ -341,7 +345,16 @@ export function ContributorUpload() {
             ))}
           </fieldset>
           <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
-            <input type="checkbox" checked={people} onChange={(e) => setPeople(e.target.checked)} className="mt-0.5 accent-[#bc773f]" />
+            <input
+              type="checkbox"
+              checked={people}
+              onChange={(e) => {
+                const next = e.target.checked
+                setPeople(next)
+                if (next && permissionState === 'commercial') setPermissionState('editorial')
+              }}
+              className="mt-0.5 accent-[#bc773f]"
+            />
             This photograph shows a recognisable person (model release required for commercial licences)
           </label>
           {people && (
@@ -350,10 +363,12 @@ export function ContributorUpload() {
               <input value={releaseNotes} onChange={(e) => setReleaseNotes(e.target.value)} placeholder="Release notes" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
             </div>
           )}
-          <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
-            <input type="checkbox" checked={exclusive} onChange={(e) => setExclusive(e.target.checked)} className="mt-0.5 accent-[#bc773f]" />
-            Opt this photo into exclusive sale (delisted after one exclusive grant)
-          </label>
+          <PermissionStateField
+            value={permissionState}
+            onChange={setPermissionState}
+            notes={restrictionNotes}
+            onNotes={setRestrictionNotes}
+          />
           <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
             <input type="checkbox" required checked={attested} onChange={(e) => setAttested(e.target.checked)} className="mt-0.5 accent-[#bc773f]" />
             I confirm I own the copyright. Vuekumi receives a platform licence to sublicense usage rights, not ownership.
@@ -447,7 +462,12 @@ export function ContributorPortfolio() {
                 <td className="hidden px-4 py-3 md:table-cell"><StatusPill status={p.license} /></td>
                 <td className="hidden px-4 py-3 sm:table-cell">{fmt(p.downloads)}</td>
                 <td className="hidden px-4 py-3 lg:table-cell"><StatusPill status={p.rights?.modelReleaseStatus ?? 'not_required'} /></td>
-                <td className="px-4 py-3"><StatusPill status={p.status} /></td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    <StatusPill status={p.status} />
+                    {p.permissionState && <StatusPill status={p.permissionState} />}
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-right space-x-3">
                   <Link
                     to={`/contributor/photos/${p.id}`}
