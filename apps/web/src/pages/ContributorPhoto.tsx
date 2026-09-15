@@ -252,6 +252,11 @@ export function ContributorPhotoEdit() {
                     ? 'Not for sale. Resubmit to send it back to the review queue.'
                     : 'Not live. Edit and resubmit after a rejection.'}
             </p>
+            {(photo.commercialLocked || photo.rights?.commercialLocked) && (
+              <p className="mt-3 text-sm text-[#b3382e]">
+                Staff paused new licensing on this photograph after a rights report. It stays visible until you unpublish it or they restore licensing.
+              </p>
+            )}
             <p className="mt-3 font-mono-tech text-[10px] text-ink-faint">
               {photo.downloads} downloads · {money(photo.price)} list
             </p>

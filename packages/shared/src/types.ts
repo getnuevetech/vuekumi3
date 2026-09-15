@@ -50,6 +50,7 @@ export interface RightsDto {
   hasRecognizablePeople: boolean
   liveReady: boolean
   liveBlockers: string[]
+  commercialLocked: boolean
 }
 
 export interface PhotoDto {
@@ -76,6 +77,7 @@ export interface PhotoDto {
   exclusiveSold?: boolean
   hasRecognizablePeople?: boolean
   rights?: RightsDto
+  commercialLocked?: boolean
   thumbSrc?: string
   hasOriginal?: boolean
   processingStatus?: string

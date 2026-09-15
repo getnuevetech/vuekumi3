@@ -161,3 +161,12 @@ export function quotePricedEmail(input: {
   const amount = input.amountUsd.toFixed(2)
   return `<p>Hi ${input.name},</p><p>Vuekumi priced your rights-managed request for <strong>${input.photoTitle}</strong> at USD ${amount}.</p><p>This is usage permission, not ownership. Review and accept:</p><p><a href="${input.licensesUrl}">${input.licensesUrl}</a></p>`
 }
+
+export function rightsReportOpsEmail(input: {
+  photoTitle: string
+  reason: string
+  reporterEmail: string
+  queueUrl: string
+}): string {
+  return `<p>A public rights report was filed.</p><p><strong>${input.photoTitle}</strong></p><p>Reason: ${input.reason}</p><p>Reporter: ${input.reporterEmail}</p><p>Staff can freeze new licensing without delisting the photograph.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
+}

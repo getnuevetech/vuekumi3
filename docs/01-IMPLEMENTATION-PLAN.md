@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 15 September 2026 against `main` after Phase 21.
+Updated 15 September 2026 against `main` after Phase 22.
 
 ---
 
@@ -90,6 +90,7 @@ Locked product rules already in the running system:
 | 19 | Live admin overview metrics and chart |
 | 20 | Contributor photo editor (PATCH metadata, exclusive, unpublish/resubmit) |
 | 21 | Honest pricing economics (50/50 paid licences; no fake free pool) |
+| 22 | Public rights report + staff commercial lock (takedown queue, audit trail) |
 
 Rights v1 is necessary but not the May 2026 model. It treats model clearance as an admin
 verified file, not as a second party on the platform.
@@ -109,7 +110,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Missing (only photo lifecycle + free/premium) |
 | Self-shot dual role | Missing |
 | Visual verification with biometric safeguards | Missing (do not start casually) |
-| Report / takedown / dispute trail | Missing |
+| Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
 | Photo influencer role | Missing |
 | Talent booking | Missing |
 | VueQuatro representation / agency-protected inventory | Missing |
@@ -137,6 +138,7 @@ Keep vuekumi.com truthful while the identity graph is designed.
 | --- | --- | --- |
 | **20** | Contributor photo editor — **shipped** | |
 | **21** | Honest pricing economics (no fake 32% pool) — **shipped** | |
+| **22** | Public rights **report** + staff takedown queue (temporary commercial lock, audit trail) — **shipped** | |
 | **22** | Public rights **report** + staff takedown queue (temporary commercial lock, audit trail) | Doctrine requires this even before models have accounts |
 
 ### Arc B — Rights 2.0 (the original differentiator)
@@ -213,6 +215,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 22** (public rights report + takedown)
-   unless you redirect to Arc B earlier. Rights 2.0 is the strategic priority; Arc A is only
-   so the live site does not lie while that lands.
+3. Default next slice when work resumes: **Phase 23** (photo permission states)
+   unless you redirect. Rights 2.0 is the strategic priority.

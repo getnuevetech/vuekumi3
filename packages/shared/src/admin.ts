@@ -3,6 +3,7 @@ export interface AdminOverviewStatsDto {
   contributors: number
   photosLive: number
   pendingReview: number
+  openRightsReports: number
   revenueMonthUsd: number
   downloads: number
   monthLabel: string

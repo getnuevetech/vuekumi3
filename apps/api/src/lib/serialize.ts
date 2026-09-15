@@ -76,7 +76,7 @@ export function serializeUser(user: UserWithRelations): AuthUser {
 }
 
 export function serializeRights(
-  photo: Pick<Photo, 'exclusiveAvailable' | 'exclusiveSold' | 'hasRecognizablePeople'>,
+  photo: Pick<Photo, 'exclusiveAvailable' | 'exclusiveSold' | 'hasRecognizablePeople' | 'commercialLocked'>,
   rights: RightsRecord | null,
   hasAgreement: boolean,
 ): RightsDto {
@@ -92,6 +92,7 @@ export function serializeRights(
     hasRecognizablePeople: photo.hasRecognizablePeople,
     liveReady: live.ok,
     liveBlockers: live.reasons,
+    commercialLocked: photo.commercialLocked,
   }
 }
 
@@ -145,12 +146,13 @@ export function serializePhoto(
     rights: photo.rightsRecord
       ? serializeRights(photo, photo.rightsRecord, hasAgreement)
       : undefined,
+    commercialLocked: photo.commercialLocked,
   }
 }
 
 export function serializeLicenseProduct(
   product: LicenseProduct,
-  photo: Pick<Photo, 'price' | 'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status'>,
+  photo: Pick<Photo, 'price' | 'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked'>,
   rights: RightsRecord | null,
 ): LicenseProductDto {
   const offer = isLicenseOffered(product, photo)

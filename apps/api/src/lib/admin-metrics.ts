@@ -60,12 +60,13 @@ export function revenuePayoutSeries(
 }
 
 export async function loadAdminOverview(now = new Date()): Promise<AdminOverviewDto> {
-  const [users, contributors, photosLive, pendingReview, downloadAgg, payments, subscriptions, payouts] =
+  const [users, contributors, photosLive, pendingReview, openRightsReports, downloadAgg, payments, subscriptions, payouts] =
     await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { accountType: 'contributor' } }),
       prisma.photo.count({ where: LIVE }),
       prisma.moderationItem.count({ where: { status: 'pending' } }),
+      prisma.rightsReport.count({ where: { status: { in: ['open', 'reviewing'] } } }),
       prisma.photo.aggregate({ where: LIVE, _sum: { downloads: true } }),
       prisma.payment.findMany({
         where: { status: 'paid' },
@@ -98,6 +99,7 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
       contributors,
       photosLive,
       pendingReview,
+      openRightsReports,
       revenueMonthUsd: current?.revenue ?? 0,
       downloads: downloadAgg._sum.downloads ?? 0,
       monthLabel: currentMonthLabel(now),

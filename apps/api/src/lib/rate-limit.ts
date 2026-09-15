@@ -4,6 +4,7 @@ import { Redis } from 'ioredis'
 
 export const AUTH_RATE_LIMIT = { max: 15, timeWindow: '1 minute' as const }
 export const DOWNLOAD_RATE_LIMIT = { max: 40, timeWindow: '1 minute' as const }
+export const REPORT_RATE_LIMIT = { max: 6, timeWindow: '1 hour' as const }
 
 const EXEMPT_PATHS = new Set(['/api/health', '/api/ready', '/api/public/config', '/api/public/home'])
 

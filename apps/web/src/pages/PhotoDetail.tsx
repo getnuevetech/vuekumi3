@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import type { LicenseProductDto, PaymentMethodsDto, PhotoDto } from '@vuekumi/shared'
+import type { LicenseProductDto, PaymentMethodsDto, PhotoDto, RightsReportReason } from '@vuekumi/shared'
 import { fmt } from '../data/content'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
@@ -27,6 +27,14 @@ export default function PhotoDetail() {
   const [methods, setMethods] = useState<PaymentMethodsDto | null>(null)
   const [provider, setProvider] = useState<'stripe' | 'flutterwave' | undefined>(undefined)
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportBusy, setReportBusy] = useState(false)
+  const [report, setReport] = useState({
+    reason: 'copyright' as RightsReportReason,
+    details: '',
+    reporterEmail: '',
+    reporterName: '',
+  })
 
   useEffect(() => {
     if (!id) return
@@ -104,6 +112,28 @@ export default function PhotoDetail() {
       toast.error(err instanceof ApiError ? err.message : 'Could not save favourite')
     } finally {
       setFavBusy(false)
+    }
+  }
+
+  async function submitReport() {
+    if (!id) return
+    setReportBusy(true)
+    try {
+      const result = await api.reportPhoto(id, {
+        reason: report.reason,
+        details: report.details,
+        reporterEmail: user ? undefined : report.reporterEmail,
+        reporterName: user ? undefined : report.reporterName,
+      })
+      toast.success(result.alreadyReported
+        ? 'This report is already with staff.'
+        : 'Report received. Staff will review.')
+      setReportOpen(false)
+      setReport((r) => ({ ...r, details: '' }))
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not send report')
+    } finally {
+      setReportBusy(false)
     }
   }
 
@@ -214,6 +244,13 @@ export default function PhotoDetail() {
             {view.rights?.exclusiveSold && (
               <p className="mt-4 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
                 This photograph has been sold exclusively and is no longer available.
+              </p>
+            )}
+
+            {(view.commercialLocked || view.rights?.commercialLocked) && (
+              <p className="mt-4 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
+                New licensing is paused while staff review a rights report. The photograph stays in the library.
+                Existing certificates are unchanged.
               </p>
             )}
 
@@ -330,6 +367,7 @@ export default function PhotoDetail() {
                 busy
                 || !selected
                 || (!selected.offered && !selected.quoteOnly)
+                || Boolean(view.commercialLocked || view.rights?.commercialLocked)
                 || (Boolean(user?.agencyId) && user?.agencyStatus !== 'active')
                 || user?.agencyRole === 'viewer'
               }
@@ -351,6 +389,72 @@ export default function PhotoDetail() {
             <p className="mt-3 text-center font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-faint">
               Vuekumi sells usage permission, not ownership. A certificate PDF is issued with every grant.
             </p>
+            <div className="mt-4 border-t border-sand pt-4">
+              <button
+                type="button"
+                onClick={() => setReportOpen((open) => !open)}
+                className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft hover:text-terra"
+              >
+                {reportOpen ? 'Close report form' : 'Report a rights issue'}
+              </button>
+              {reportOpen && (
+                <form
+                  className="mt-3 space-y-2"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    void submitReport()
+                  }}
+                >
+                  <p className="text-sm text-ink-soft">
+                    Copyright, likeness, or unauthorized use. Staff can freeze new licences without taking the image down.
+                  </p>
+                  <select
+                    value={report.reason}
+                    onChange={(e) => setReport((r) => ({ ...r, reason: e.target.value as RightsReportReason }))}
+                    className="w-full border border-sand bg-white px-3 py-2 text-sm outline-none focus:border-terra"
+                  >
+                    <option value="copyright">I own this photograph / copyright claim</option>
+                    <option value="likeness">I am depicted and did not consent</option>
+                    <option value="unauthorized_use">Unauthorized commercial use</option>
+                    <option value="other">Other rights issue</option>
+                  </select>
+                  <textarea
+                    value={report.details}
+                    onChange={(e) => setReport((r) => ({ ...r, details: e.target.value }))}
+                    placeholder="Describe the issue (at least 20 characters)"
+                    rows={3}
+                    required
+                    minLength={20}
+                    className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+                  />
+                  {!user && (
+                    <>
+                      <input
+                        type="email"
+                        required
+                        value={report.reporterEmail}
+                        onChange={(e) => setReport((r) => ({ ...r, reporterEmail: e.target.value }))}
+                        placeholder="Your email (required for follow-up)"
+                        className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+                      />
+                      <input
+                        value={report.reporterName}
+                        onChange={(e) => setReport((r) => ({ ...r, reporterName: e.target.value }))}
+                        placeholder="Your name (optional)"
+                        className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+                      />
+                    </>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={reportBusy}
+                    className="w-full border border-ink py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper disabled:opacity-40"
+                  >
+                    {reportBusy ? 'Sending…' : 'Submit report'}
+                  </button>
+                </form>
+              )}
+            </div>
             {user && (
               <p className="mt-2 text-center">
                 <Link to="/licenses" className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-terra">

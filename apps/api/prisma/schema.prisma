@@ -117,6 +117,9 @@ model User {
   collections         Collection[]        @relation("CollectionOwner")
   collectionAdds      CollectionPhoto[]   @relation("CollectionAdder")
   subscriptions       Subscription[]
+  rightsReportsFiled    RightsReport[] @relation("RightsReporter")
+  rightsReportsReviewed RightsReport[] @relation("RightsReviewer")
+  commercialLocks       Photo[]        @relation("CommercialLockActor")
 
   @@index([accountType])
   @@index([status])
@@ -279,6 +282,9 @@ model Photo {
   width              Int?
   height             Int?
   processingStatus   String            @default("ready")
+  commercialLocked     Boolean   @default(false)
+  commercialLockedAt   DateTime?
+  commercialLockedById String?
 
   contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
   tags             PhotoTag[]
@@ -293,11 +299,14 @@ model Photo {
   aiSuggestions    AiSuggestion[]
   favorites        PhotoFavorite[]
   collectionPhotos CollectionPhoto[]
+  rightsReports    RightsReport[]
+  commercialLockedBy User? @relation("CommercialLockActor", fields: [commercialLockedById], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([category])
   @@index([country])
   @@index([contributorId])
+  @@index([commercialLocked])
 }
 
 model AiSuggestion {
@@ -664,6 +673,46 @@ model ModerationItem {
   reviewer User? @relation("ModerationReviewer", fields: [reviewerId], references: [id])
 
   @@index([status])
+}
+
+enum RightsReportReason {
+  copyright
+  likeness
+  unauthorized_use
+  other
+}
+
+enum RightsReportStatus {
+  open
+  reviewing
+  dismissed
+  resolved
+}
+
+model RightsReport {
+  id             String             @id @default(cuid())
+  photoId        String
+  reason         RightsReportReason
+  details        String
+  status         RightsReportStatus @default(open)
+  reporterUserId String?
+  reporterEmail  String?
+  reporterName   String?
+  ipAddress      String?
+  userAgent      String?
+  reviewerId     String?
+  reviewedAt     DateTime?
+  staffNotes     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  photo    Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  reporter User? @relation("RightsReporter", fields: [reporterUserId], references: [id], onDelete: SetNull)
+  reviewer User? @relation("RightsReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([photoId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model RefreshToken {

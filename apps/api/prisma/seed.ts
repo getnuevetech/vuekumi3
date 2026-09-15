@@ -42,6 +42,7 @@ async function main() {
   await prisma.agencyInvite.deleteMany()
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
+  await prisma.rightsReport.deleteMany()
   await prisma.photoFavorite.deleteMany()
   await prisma.photographerFollow.deleteMany()
   await prisma.collectionPhoto.deleteMany()

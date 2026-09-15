@@ -36,6 +36,9 @@ import type {
   SubscriptionStatusDto,
   SubscriptionDto,
   SubscriptionCheckoutDto,
+  RightsReportDto,
+  PublicReportResult,
+  CreateRightsReportInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -226,6 +229,12 @@ export const api = {
   licenses: () => request<{ items: LicenseProductDto[] }>('/api/licenses'),
 
   photoLicenses: (id: string) => request<{ items: LicenseProductDto[] }>(`/api/photos/${id}/licenses`),
+
+  reportPhoto: (id: string, body: CreateRightsReportInput) =>
+    request<PublicReportResult>(`/api/photos/${id}/report`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   purchaseLicense: (photoId: string, type: string, provider?: 'stripe' | 'flutterwave') =>
     request<PurchaseLicenseResult>(`/api/photos/${photoId}/licenses`, {
@@ -476,6 +485,21 @@ export const api = {
 
   adminModeration: () => request<{ items: AdminModerationRow[] }>('/api/admin/moderation'),
 
+  adminReports: (status?: string) =>
+    request<{ items: RightsReportDto[] }>(`/api/admin/reports${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+
+  decideRightsReport: (id: string, action: 'lock' | 'unlock' | 'dismiss' | 'resolve', notes?: string) =>
+    request<{ report: RightsReportDto }>(`/api/admin/reports/${id}/decide`, {
+      method: 'POST',
+      body: JSON.stringify({ action, notes }),
+    }),
+
+  setCommercialLock: (photoId: string, locked: boolean, notes?: string) =>
+    request<{ ok: boolean; commercialLocked: boolean }>(`/api/admin/content/${photoId}/commercial-lock`, {
+      method: 'POST',
+      body: JSON.stringify({ locked, notes }),
+    }),
+
   decideModeration: (id: string, action: 'approve' | 'reject', notes?: string) =>
     request<{ ok: boolean }>(`/api/admin/moderation/${id}/decide`, {
       method: 'POST',
@@ -652,6 +676,7 @@ export interface AdminContentDetail {
   }[]
   quotes: LicenseQuoteDto[]
   moderation: { id: string; flag: string; status: string; notes: string | null }[]
+  reports: RightsReportDto[]
 }
 
 export interface AdminModerationRow {

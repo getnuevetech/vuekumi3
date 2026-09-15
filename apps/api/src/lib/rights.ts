@@ -41,11 +41,20 @@ export function priceForProduct(product: LicenseProduct, photo: Pick<Photo, 'pri
   return product.defaultUsd
 }
 
+export const COMMERCIAL_LOCK_REASON =
+  'New licensing is paused while staff review a rights report'
+
+export type PhotoLicenseFields = Pick<
+  Photo,
+  'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status' | 'commercialLocked'
+>
+
 export function isLicenseOffered(
   product: LicenseProduct,
-  photo: Pick<Photo, 'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status'>,
+  photo: PhotoLicenseFields,
 ): { offered: boolean; reason?: string } {
   if (!product.active) return { offered: false, reason: 'Licence type is inactive' }
+  if (photo.commercialLocked) return { offered: false, reason: COMMERCIAL_LOCK_REASON }
   if (photo.exclusiveSold) return { offered: false, reason: 'An exclusive licence has already been sold' }
   if (photo.status !== 'active') return { offered: false, reason: 'Photo is not live' }
   if (product.exclusiveOptIn && !photo.exclusiveAvailable) {
@@ -62,7 +71,7 @@ export function isLicenseOffered(
 
 export function assertCanGrant(
   product: LicenseProduct,
-  photo: Pick<Photo, 'licenseType' | 'exclusiveAvailable' | 'exclusiveSold' | 'status'>,
+  photo: PhotoLicenseFields,
   rights: RightsRecord | null,
 ) {
   const offer = isLicenseOffered(product, photo)

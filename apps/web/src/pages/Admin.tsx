@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
-import type { AdminOverviewDto, PayoutDto, LicenseQuoteDto } from '@vuekumi/shared';
+import type { AdminOverviewDto, LicenseQuoteDto, PayoutDto, RightsReportDto } from '@vuekumi/shared';
 import { api, ApiError, type AdminModerationRow } from '../api/client';
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -54,6 +54,7 @@ export const adminLinks: PortalLink[] = [
   { to: '/admin/admins', label: 'Admins', icon: icons.shield },
   { to: '/admin/content', label: 'Content', icon: icons.grid },
   { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
+  { to: '/admin/reports', label: 'Reports', icon: icons.shield },
   { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
   { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
   { to: '/admin/countries', label: 'Countries', icon: icons.gear },
@@ -78,6 +79,7 @@ export function AdminDashboard() {
   const [queue, setQueue] = useState<AdminModerationRow[]>([])
   const [pending, setPending] = useState<{ id: string; contributorHandle: string | null; contributorName: string; methodLabel: string; amountUsd: number }[]>([])
   const [quotes, setQuotes] = useState<LicenseQuoteDto[]>([])
+  const [reports, setReports] = useState<RightsReportDto[]>([])
   useEffect(() => {
     api.adminOverview()
       .then(setOverview)
@@ -91,6 +93,9 @@ export function AdminDashboard() {
     api.adminQuotes('pending')
       .then((d) => setQuotes(d.items.slice(0, 3)))
       .catch(() => setQuotes([]))
+    api.adminReports('queue')
+      .then((d) => setReports(d.items.slice(0, 3)))
+      .catch(() => setReports([]))
   }, [])
   const stats = overview?.stats
   const series = overview?.series ?? []
@@ -109,7 +114,7 @@ export function AdminDashboard() {
         <StatCard
           label="Photos live"
           value={stats ? fmt(stats.photosLive) : '—'}
-          sub={stats ? `${stats.pendingReview} pending review` : 'Loading'}
+          sub={stats ? `${stats.pendingReview} pending review · ${stats.openRightsReports} rights reports` : 'Loading'}
         />
         <StatCard
           label={stats ? `Revenue (${stats.monthLabel})` : 'Revenue'}
@@ -139,7 +144,28 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-4 lg:grid-cols-3">
+      <div className="mt-10 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-sand-soft bg-white p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif-display text-xl font-light">Rights reports</h3>
+            <Link to="/admin/reports" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra hover:text-ink">Open →</Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {reports.length === 0 && <p className="text-sm text-ink-soft">No open rights reports.</p>}
+            {reports.map((r) => (
+              <div key={r.id} className="flex items-center justify-between gap-3 border-b border-sand-soft pb-3 last:border-0 last:pb-0">
+                <div className="flex min-w-0 items-center gap-3">
+                  <img src={r.photoSrc} alt="" className="h-10 w-13 rounded-lg object-cover" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{r.photoTitle}</p>
+                    <p className="font-mono-tech text-[10px] text-ink-faint">{r.reason.replaceAll('_', ' ')} · {relativeAge(r.createdAt)}</p>
+                  </div>
+                </div>
+                <StatusPill status={r.commercialLocked ? 'locked' : r.status} />
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="rounded-2xl border border-sand-soft bg-white p-6">
           <div className="flex items-center justify-between">
             <h3 className="font-serif-display text-xl font-light">Moderation queue</h3>

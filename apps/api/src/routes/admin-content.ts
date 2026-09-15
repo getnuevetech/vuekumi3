@@ -5,6 +5,7 @@ import { requireAccountTypes } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
 import { contributorHasAgreement, rightsReadyForLive } from '../lib/rights.js'
 import { serializePhoto, serializeQuote } from '../lib/serialize.js'
+import { serializeRightsReport } from '../lib/reports.js'
 
 export async function adminContentRoutes(app: FastifyInstance) {
   const admin = { preHandler: requireAccountTypes(app, 'admin') }
@@ -70,6 +71,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
         licenseGrants: { include: { product: true, buyer: true }, orderBy: { createdAt: 'desc' } },
         licenseQuotes: { include: { requester: true, photo: true }, orderBy: { createdAt: 'desc' } },
         moderationItems: { orderBy: { createdAt: 'desc' } },
+        rightsReports: { orderBy: { createdAt: 'desc' } },
       },
     })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
@@ -89,6 +91,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
       })),
       quotes: photo.licenseQuotes.map((q) => serializeQuote({ ...q, photo })),
       moderation: photo.moderationItems,
+      reports: photo.rightsReports.map((report) => serializeRightsReport({ ...report, photo })),
     }
   })
 

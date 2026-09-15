@@ -194,7 +194,7 @@ accounts, not yet the identity graph.
 | Permission states (portfolio / editorial / restricted / agency-protected) | **No** — photo `draft\|pending\|active\|rejected\|delisted` plus `free\|premium` collection |
 | Self-shot dual role | **No** |
 | Visual verification | **No** (AI today is metadata suggestion only) |
-| Public report / takedown | **No** |
+| Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
 | VueQuatro product surface | **No** — company name only, not in the app |
 | Photo influencer role | **No** |
 | Talent booking | **No** |

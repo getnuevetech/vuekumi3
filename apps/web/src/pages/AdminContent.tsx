@@ -74,7 +74,12 @@ export function AdminContent() {
                 <td className="px-4 py-3">{p.rights?.copyrightVerified ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3">{p.rights?.platformRightsOk ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3">{p.exclusiveSold ? 'Sold' : p.exclusiveAvailable ? 'Opt-in' : '—'}</td>
-                <td className="px-4 py-3"><StatusPill status={p.status} /></td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    <StatusPill status={p.status} />
+                    {p.commercialLocked && <StatusPill status="locked" />}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -119,6 +124,22 @@ export function AdminContent() {
                 >
                   Toggle exclusive opt-in
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const locked = !detail.photo.commercialLocked
+                    api.setCommercialLock(detail.photo.id, locked)
+                      .then(() => {
+                        toast.success(locked ? 'Licensing frozen' : 'Licensing restored')
+                        open(detail.photo.id)
+                        load()
+                      })
+                      .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not update lock'))
+                  }}
+                  className="rounded-full border border-sand px-4 py-1.5 font-mono-tech text-[10px] uppercase"
+                >
+                  {detail.photo.commercialLocked ? 'Unlock licensing' : 'Freeze licensing'}
+                </button>
               </div>
 
               <h3 className="mt-6 font-serif-display text-lg">Model releases</h3>
@@ -149,6 +170,21 @@ export function AdminContent() {
                         </button>
                       </div>
                     )}
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="mt-6 font-serif-display text-lg">Rights reports</h3>
+              <div className="mt-2 space-y-2">
+                {detail.reports.length === 0 && <p className="text-sm text-ink-soft">None filed.</p>}
+                {detail.reports.map((report) => (
+                  <div key={report.id} className="border border-sand-soft p-3 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium">{report.reason.replaceAll('_', ' ')}</p>
+                      <StatusPill status={report.status} />
+                    </div>
+                    <p className="mt-1 text-ink-soft">{report.details}</p>
+                    <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">{report.reporterEmail} · {report.createdAt.slice(0, 10)}</p>
                   </div>
                 ))}
               </div>

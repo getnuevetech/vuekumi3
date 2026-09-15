@@ -19,7 +19,7 @@ import { getSettingSafe } from '../lib/settings.js'
 import { issueGrant } from '../lib/grants.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
 import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
-import { assertCanGrant, priceForProduct, RightsError } from '../lib/rights.js'
+import { assertCanGrant, COMMERCIAL_LOCK_REASON, priceForProduct, RightsError } from '../lib/rights.js'
 import { consumeRfQuota, QuotaError } from '../lib/subscriptions.js'
 import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { streamObject } from '../lib/storage.js'
@@ -246,6 +246,9 @@ export async function licenseRoutes(app: FastifyInstance) {
     }
     if (photo.exclusiveSold) {
       return reply.code(400).send({ error: 'An exclusive licence has already been sold' })
+    }
+    if (photo.commercialLocked) {
+      return reply.code(400).send({ error: COMMERCIAL_LOCK_REASON })
     }
 
     const product = await prisma.licenseProduct.findUnique({ where: { type: 'rights_managed' } })
