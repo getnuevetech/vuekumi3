@@ -30,11 +30,18 @@ export const suggestFileSchema = z.object({
 
 export const updatePhotoSchema = z.object({
   title: z.string().min(2).max(160).optional(),
-  description: z.string().max(2000).optional(),
+  description: z.string().max(2000).optional().nullable(),
   category: z.string().min(1).max(80).optional(),
   country: z.string().min(2).max(80).optional(),
   tags: z.array(z.string().min(1).max(40)).max(20).optional(),
   hasRecognizablePeople: z.boolean().optional(),
+  licenseType: z.enum(['free', 'premium']).optional(),
+  price: z.number().min(0).max(10000).optional(),
+  exclusiveAvailable: z.boolean().optional(),
+  copyrightHolder: z.string().min(2).max(200).optional(),
+  status: z.enum(['delisted', 'pending']).optional(),
+  modelReleaseFileName: z.string().max(200).optional(),
+  modelReleaseNotes: z.string().max(2000).optional(),
 })
 
 export type ApplyAiFieldsInput = z.infer<typeof applyAiFieldsSchema>

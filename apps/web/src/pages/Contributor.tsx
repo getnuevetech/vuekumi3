@@ -449,6 +449,12 @@ export function ContributorPortfolio() {
                 <td className="hidden px-4 py-3 lg:table-cell"><StatusPill status={p.rights?.modelReleaseStatus ?? 'not_required'} /></td>
                 <td className="px-4 py-3"><StatusPill status={p.status} /></td>
                 <td className="px-4 py-3 text-right space-x-3">
+                  <Link
+                    to={`/contributor/photos/${p.id}`}
+                    className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-terra hover:text-ink"
+                  >
+                    Edit
+                  </Link>
                   <button
                     type="button"
                     onClick={() => setSuggestId(suggestId === p.id ? null : p.id)}
@@ -464,6 +470,11 @@ export function ContributorPortfolio() {
             ))}
           </tbody>
         </table>
+        {shown.length === 0 && (
+          <p className="px-4 py-6 text-sm text-ink-soft">
+            {mine.length === 0 ? 'No photographs yet. Upload work to edit it here.' : 'No images in this tab.'}
+          </p>
+        )}
       </div>
 
       {suggestId && (

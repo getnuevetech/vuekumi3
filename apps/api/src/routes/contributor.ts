@@ -9,6 +9,14 @@ import { serializePhoto } from '../lib/serialize.js'
 import { approvalRate } from '../lib/follows.js'
 import { earningsMonthSeries } from '../lib/payouts.js'
 import {
+  PhotoEditError,
+  assertContributorStatusChange,
+  assertExclusiveEdit,
+  assertPeopleFlagEdit,
+  nextLicensePrice,
+  nextModelReleaseFields,
+} from '../lib/photo-edit.js'
+import {
   ALLOWED_IMAGE_TYPES,
   assertOwnedOriginalKey,
   extensionFor,
@@ -23,7 +31,7 @@ const PLACEHOLDER_SRC = '/images/photos/fashion-portrait.jpg'
 const photoInclude = {
   tags: true,
   rightsRecord: true,
-  contributor: { include: { contributorProfile: true } },
+  contributor: { include: { contributorProfile: true, platformAgreements: true } },
 } as const
 
 export async function contributorRoutes(app: FastifyInstance) {
@@ -152,6 +160,22 @@ export async function contributorRoutes(app: FastifyInstance) {
     }
   })
 
+  app.get('/contributor/photos/:id', gate, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const photo = await prisma.photo.findUnique({ where: { id }, include: photoInclude })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    return {
+      photo: serializePhoto(
+        photo,
+        photo.contributor.contributorProfile?.handle ?? photo.contributorId,
+        photo.contributor.platformAgreements.some((a) => a.status === 'accepted'),
+      ),
+    }
+  })
+
   app.post('/contributor/photos', gate, async (request, reply) => {
     if (request.authUser?.accountType !== 'contributor' && request.authUser?.accountType !== 'admin') {
       return reply.code(403).send({ error: 'Forbidden' })
@@ -276,11 +300,54 @@ export async function contributorRoutes(app: FastifyInstance) {
   app.patch('/contributor/photos/:id', gate, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = updatePhotoSchema.parse(request.body)
-    const existing = await prisma.photo.findUnique({ where: { id } })
+    const existing = await prisma.photo.findUnique({
+      where: { id },
+      include: { rightsRecord: true, contributor: { include: { contributorProfile: true } } },
+    })
     if (!existing) return reply.code(404).send({ error: 'Photo not found' })
     if (request.authUser?.accountType !== 'admin' && existing.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
+
+    try {
+      if (body.status) {
+        assertContributorStatusChange({
+          current: existing.status,
+          next: body.status,
+          exclusiveSold: existing.exclusiveSold,
+        })
+      }
+      assertExclusiveEdit({
+        exclusiveSold: existing.exclusiveSold,
+        exclusiveAvailable: body.exclusiveAvailable,
+      })
+      assertPeopleFlagEdit({
+        requested: body.hasRecognizablePeople,
+        currentlyRequired: existing.hasRecognizablePeople || Boolean(existing.rightsRecord?.modelReleaseRequired),
+      })
+    } catch (err) {
+      if (err instanceof PhotoEditError) {
+        return reply.code(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+
+    const licenseType = body.licenseType ?? existing.licenseType
+    const price = body.licenseType || body.price != null
+      ? nextLicensePrice({
+          licenseType,
+          price: body.price,
+          currentPrice: existing.price,
+        })
+      : undefined
+    const people = body.hasRecognizablePeople
+    const releaseFields =
+      people === undefined
+        ? null
+        : nextModelReleaseFields({
+            hasRecognizablePeople: people,
+            current: existing.rightsRecord?.modelReleaseStatus ?? null,
+          })
 
     const photo = await prisma.$transaction(async (tx) => {
       if (body.tags) {
@@ -289,32 +356,98 @@ export async function contributorRoutes(app: FastifyInstance) {
           await tx.photoTag.createMany({ data: body.tags.map((tag) => ({ photoId: id, tag })) })
         }
       }
-      const updated = await tx.photo.update({
+
+      await tx.photo.update({
         where: { id },
         data: {
           ...(body.title ? { title: body.title } : {}),
           ...(body.description !== undefined ? { description: body.description } : {}),
           ...(body.category ? { category: body.category } : {}),
           ...(body.country ? { country: body.country } : {}),
-          ...(body.hasRecognizablePeople !== undefined ? { hasRecognizablePeople: body.hasRecognizablePeople } : {}),
-        },
-        include: {
-          tags: true,
-          rightsRecord: true,
-          contributor: { include: { contributorProfile: true } },
+          ...(people !== undefined ? { hasRecognizablePeople: people } : {}),
+          ...(body.licenseType ? { licenseType: body.licenseType } : {}),
+          ...(price !== undefined ? { price } : {}),
+          ...(body.exclusiveAvailable !== undefined ? { exclusiveAvailable: body.exclusiveAvailable } : {}),
+          ...(body.status ? { status: body.status } : {}),
         },
       })
-      if (body.hasRecognizablePeople) {
-        await tx.rightsRecord.updateMany({
+
+      if (releaseFields || body.copyrightHolder) {
+        await tx.rightsRecord.upsert({
           where: { photoId: id },
-          data: { modelReleaseRequired: true, modelReleaseStatus: 'pending' },
+          create: {
+            photoId: id,
+            copyrightVerified: true,
+            copyrightHolder: body.copyrightHolder ?? existing.rightsRecord?.copyrightHolder,
+            platformRightsOk: true,
+            modelReleaseRequired: releaseFields?.modelReleaseRequired ?? false,
+            modelReleaseStatus: releaseFields?.modelReleaseStatus ?? 'not_required',
+          },
+          update: {
+            ...(body.copyrightHolder ? { copyrightHolder: body.copyrightHolder } : {}),
+            ...(releaseFields
+              ? {
+                  modelReleaseRequired: releaseFields.modelReleaseRequired,
+                  modelReleaseStatus: releaseFields.modelReleaseStatus,
+                }
+              : {}),
+          },
         })
       }
-      return updated
+
+      if (people && body.modelReleaseFileName) {
+        await tx.modelRelease.create({
+          data: {
+            photoId: id,
+            fileName: body.modelReleaseFileName,
+            notes: body.modelReleaseNotes,
+            status: 'pending',
+          },
+        })
+      }
+
+      if (body.status === 'delisted' && existing.status === 'pending') {
+        await tx.moderationItem.updateMany({
+          where: { photoId: id, status: 'pending' },
+          data: { status: 'withdrawn', notes: 'Withdrawn by contributor', decidedAt: new Date() },
+        })
+      }
+
+      if (body.status === 'pending' && existing.status !== 'pending') {
+        await tx.moderationItem.create({
+          data: {
+            photoId: id,
+            flag: (people ?? existing.hasRecognizablePeople) ? 'copyright check' : 'new submission',
+            submittedBy:
+              request.authUser?.contributorHandle ?? request.authUser?.email ?? existing.contributorId,
+            status: 'pending',
+          },
+        })
+      }
+
+      return tx.photo.findUniqueOrThrow({ where: { id }, include: photoInclude })
+    })
+
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'contributor.update_photo',
+      entityType: 'photo',
+      entityId: id,
+      metadata: {
+        status: body.status ?? existing.status,
+        licenseType,
+        exclusiveAvailable: body.exclusiveAvailable,
+        hasRecognizablePeople: people,
+      },
+      ipAddress: request.ip,
     })
 
     return {
-      photo: serializePhoto(photo, photo.contributor.contributorProfile?.handle ?? photo.contributorId, true),
+      photo: serializePhoto(
+        photo,
+        photo.contributor.contributorProfile?.handle ?? photo.contributorId,
+        photo.contributor.platformAgreements.some((a) => a.status === 'accepted'),
+      ),
     }
   })
 }

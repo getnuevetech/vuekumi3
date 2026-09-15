@@ -37,7 +37,7 @@ import type {
   SubscriptionDto,
   SubscriptionCheckoutDto,
 } from '@vuekumi/shared'
-import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
+import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -403,7 +403,9 @@ export const api = {
   submitPhoto: (body: SubmitPhotoInput) =>
     request<{ photo: PhotoDto }>('/api/contributor/photos', { method: 'POST', body: JSON.stringify(body) }),
 
-  updatePhoto: (id: string, body: Record<string, unknown>) =>
+  contributorPhoto: (id: string) => request<{ photo: PhotoDto }>(`/api/contributor/photos/${id}`),
+
+  updatePhoto: (id: string, body: UpdatePhotoInput) =>
     request<{ photo: PhotoDto }>(`/api/contributor/photos/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   aiStatus: () => request<AiStatusDto>('/api/ai/status'),

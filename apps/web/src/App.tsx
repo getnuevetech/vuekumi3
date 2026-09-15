@@ -12,6 +12,7 @@ import JoinAgency from './pages/JoinAgency'
 import {
   ContributorDashboard, ContributorEarnings, ContributorPortfolio, ContributorUpload,
 } from './pages/Contributor'
+import { ContributorPhotoEdit } from './pages/ContributorPhoto'
 import {
   AdminDashboard, AdminModeration, AdminPayouts,
 } from './pages/Admin'
@@ -69,6 +70,7 @@ export default function App() {
         <Route path="/contributor" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorDashboard /></ProtectedRoute>} />
         <Route path="/contributor/upload" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorUpload /></ProtectedRoute>} />
         <Route path="/contributor/portfolio" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorPortfolio /></ProtectedRoute>} />
+        <Route path="/contributor/photos/:id" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorPhotoEdit /></ProtectedRoute>} />
         <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorEarnings /></ProtectedRoute>} />
 
         <Route path="/agency" element={<ProtectedRoute allowed={['agency']}><AgencyDashboard /></ProtectedRoute>} />

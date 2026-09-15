@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 15 September 2026 against `main` at Phase 19 (`98a1bb8`).
+Updated 15 September 2026 against `main` after Phase 20.
 
 ---
 
@@ -88,6 +88,7 @@ Locked product rules already in the running system:
 | 17 | Resend for auth and invites |
 | 18 | Admin RM quotes queue and quote emails |
 | 19 | Live admin overview metrics and chart |
+| 20 | Contributor photo editor (PATCH metadata, exclusive, unpublish/resubmit) |
 
 Rights v1 is necessary but not the May 2026 model. It treats model clearance as an admin
 verified file, not as a second party on the platform.
@@ -118,7 +119,6 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 Marketplace leftovers that still matter for a honest live site, but are **not** the
 differentiator:
 
-- Contributor photo editor (`PATCH /contributor/photos/:id` exists; UI does not)
 - Pricing page still shows a hardcoded 32% “free pool” bar; ledger only has `licence_sale`
 - Featured homepage slots are query-driven, not admin-editable
 - RM products currently `requiresModelRelease: false` (contradicts two-approval)
@@ -213,6 +213,6 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 20** (editor) unless you redirect to Arc B
-   earlier. Rights 2.0 is the strategic priority; Arc A is only so the live site does not
-   lie while that land.
+3. Default next slice when work resumes: **Phase 21** (free-pool / pricing honesty) unless you
+   redirect to Arc B earlier. Rights 2.0 is the strategic priority; Arc A is only so the live
+   site does not lie while that lands.
