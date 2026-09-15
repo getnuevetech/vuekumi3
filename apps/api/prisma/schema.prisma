@@ -12,6 +12,7 @@ enum AccountType {
   contributor
   user
   agency
+  model
 }
 
 enum UserStatus {
@@ -80,6 +81,20 @@ enum ModelReleaseStatus {
   rejected
 }
 
+enum ModelAppearanceStatus {
+  identified
+  invited
+  claimed
+  approved
+  rejected
+}
+
+enum ModelUsagePreference {
+  none
+  editorial
+  commercial
+}
+
 enum PlatformAgreementStatus {
   accepted
   revoked
@@ -99,6 +114,7 @@ model User {
   updatedAt       DateTime     @updatedAt
 
   contributorProfile ContributorProfile?
+  modelProfile       ModelProfile?
   userProfile        UserProfile?
   adminProfile       AdminProfile?
   agencyMembers      AgencyMember[]
@@ -130,6 +146,8 @@ model User {
   rightsReportsFiled    RightsReport[] @relation("RightsReporter")
   rightsReportsReviewed RightsReport[] @relation("RightsReviewer")
   commercialLocks       Photo[]        @relation("CommercialLockActor")
+  modelAppearances      PhotoAppearance[] @relation("ModelAppearances")
+  appearancesInvited    PhotoAppearance[] @relation("AppearanceInviter")
 
   @@index([accountType])
   @@index([status])
@@ -164,6 +182,18 @@ model ContributorProfile {
   payoutMethod  String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ModelProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  handle    String   @unique
+  location  String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -313,6 +343,7 @@ model Photo {
   collectionPhotos CollectionPhoto[]
   rightsReports    RightsReport[]
   commercialLockedBy User? @relation("CommercialLockActor", fields: [commercialLockedById], references: [id], onDelete: SetNull)
+  appearances      PhotoAppearance[]
 
   @@index([status])
   @@index([category])
@@ -472,6 +503,36 @@ model ModelRelease {
   verifiedBy User? @relation("ModelReleaseReviewer", fields: [verifiedById], references: [id])
 
   @@index([photoId])
+  @@index([status])
+}
+
+model PhotoAppearance {
+  id                String                 @id @default(cuid())
+  photoId           String
+  displayName       String
+  inviteEmail       String
+  modelUserId       String?
+  invitedById       String
+  status            ModelAppearanceStatus  @default(identified)
+  usage             ModelUsagePreference   @default(none)
+  confirmedLikeness Boolean                @default(false)
+  inviteTokenHash   String?                @unique
+  inviteExpiresAt   DateTime?
+  invitedAt         DateTime?
+  claimedAt         DateTime?
+  decidedAt         DateTime?
+  notes             String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  photo     Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  modelUser User? @relation("ModelAppearances", fields: [modelUserId], references: [id], onDelete: SetNull)
+  invitedBy User  @relation("AppearanceInviter", fields: [invitedById], references: [id])
+
+  @@unique([photoId, inviteEmail])
+  @@index([photoId])
+  @@index([modelUserId])
+  @@index([inviteEmail])
   @@index([status])
 }
 

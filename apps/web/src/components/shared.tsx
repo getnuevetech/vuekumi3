@@ -141,12 +141,15 @@ export function SiteHeader() {
           <nav className="hidden items-center gap-7 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:flex">
             <Link to="/search" className="link-slide hover:text-terra">Library</Link>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
-            {user && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
-            {user && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
-            {user && <Link to="/collections" className="link-slide hover:text-terra">Collections</Link>}
-            {user && <Link to="/licenses" className="link-slide hover:text-terra">Licences</Link>}
+            {user && user.accountType !== 'model' && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
+            {user && user.accountType !== 'model' && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
+            {user && user.accountType !== 'model' && <Link to="/collections" className="link-slide hover:text-terra">Collections</Link>}
+            {user && user.accountType !== 'model' && <Link to="/licenses" className="link-slide hover:text-terra">Licences</Link>}
             {(user?.accountType === 'agency' || user?.agencyId) && (
               <Link to="/agency" className="link-slide hover:text-terra">Agency</Link>
+            )}
+            {user?.accountType === 'model' && (
+              <Link to="/model" className="link-slide hover:text-terra">Model</Link>
             )}
             <Link to="/contributor" className="link-slide hover:text-terra">Contributor</Link>
             <Link to="/admin" className="link-slide hover:text-terra">Admin</Link>
@@ -206,10 +209,11 @@ export function SiteHeader() {
           {[
             { label: 'Library', href: '/search' },
             { label: 'License & Pricing', href: '/pricing' },
-            ...(user ? [{ label: 'Favorites', href: '/favorites' }] : []),
-            ...(user ? [{ label: 'Following', href: '/following' }] : []),
-            ...(user ? [{ label: 'Collections', href: '/collections' }] : []),
+            ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', href: '/favorites' }] : []),
+            ...(user && user.accountType !== 'model' ? [{ label: 'Following', href: '/following' }] : []),
+            ...(user && user.accountType !== 'model' ? [{ label: 'Collections', href: '/collections' }] : []),
             ...(user ? [{ label: 'Account', href: '/account' }] : []),
+            ...(user?.accountType === 'model' ? [{ label: 'Model portal', href: '/model' }] : []),
             { label: 'Contributor Portal', href: '/contributor' },
             { label: 'Admin Portal', href: '/admin' },
             { label: 'Log in', href: '/login' },

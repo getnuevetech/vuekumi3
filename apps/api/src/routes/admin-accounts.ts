@@ -28,9 +28,11 @@ function serializeAccount(user: {
   createdAt: Date
   emailVerifiedAt: Date | null
   contributorProfile: { handle: string; photosCount: number; earnings: number; downloads: number } | null
+  modelProfile: { handle: string } | null
   userProfile: { subscriptionPlan: string; downloadQuotaUsed: number } | null
   adminProfile: { adminRole: string } | null
   ownedAgencies: { id: string; name: string; status: string }[]
+  _count?: { modelAppearances: number }
 }) {
   return {
     id: user.id,
@@ -41,7 +43,7 @@ function serializeAccount(user: {
     country: user.country,
     joined: user.createdAt.toISOString().slice(0, 10),
     emailVerified: Boolean(user.emailVerifiedAt),
-    handle: user.contributorProfile?.handle ?? null,
+    handle: user.contributorProfile?.handle ?? user.modelProfile?.handle ?? null,
     photos: user.contributorProfile?.photosCount ?? 0,
     earnings: user.contributorProfile?.earnings ?? 0,
     downloads: user.contributorProfile?.downloads ?? user.userProfile?.downloadQuotaUsed ?? 0,
@@ -49,20 +51,23 @@ function serializeAccount(user: {
     adminRole: user.adminProfile?.adminRole ?? null,
     agencyName: user.ownedAgencies[0]?.name ?? null,
     agencyStatus: user.ownedAgencies[0]?.status ?? null,
+    appearances: user._count?.modelAppearances ?? 0,
   }
 }
 
 const include = {
   contributorProfile: true,
+  modelProfile: true,
   userProfile: true,
   adminProfile: true,
   ownedAgencies: true,
+  _count: { select: { modelAppearances: true } },
 } as const
 
 export async function adminAccountRoutes(app: FastifyInstance) {
   const admin = { preHandler: requireAccountTypes(app, 'admin') }
 
-  async function list(accountType: 'user' | 'contributor' | 'agency' | 'admin', request: { query: unknown }) {
+  async function list(accountType: 'user' | 'contributor' | 'agency' | 'admin' | 'model', request: { query: unknown }) {
     const query = listQuery.parse(request.query)
     const where = {
       accountType,
@@ -94,6 +99,7 @@ export async function adminAccountRoutes(app: FastifyInstance) {
   app.get('/admin/contributors', admin, async (request) => list('contributor', request))
   app.get('/admin/agencies', admin, async (request) => list('agency', request))
   app.get('/admin/admins', admin, async (request) => list('admin', request))
+  app.get('/admin/models', admin, async (request) => list('model', request))
 
   app.get('/admin/accounts/:id', admin, async (request, reply) => {
     const { id } = request.params as { id: string }

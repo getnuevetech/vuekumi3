@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { PermissionState } from '@vuekumi/shared'
+import { MODEL_APPEARANCE_LABEL } from '@vuekumi/shared'
 import { PortalShell, StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
@@ -180,6 +181,26 @@ export function AdminContent() {
                 >
                   {detail.photo.commercialLocked ? 'Unlock licensing' : 'Freeze licensing'}
                 </button>
+              </div>
+
+              <h3 className="mt-6 font-serif-display text-lg">People identified</h3>
+              <div className="mt-2 space-y-2">
+                {(detail.photo.appearances ?? []).length === 0 && (
+                  <p className="text-sm text-ink-soft">No model invites on this photograph yet.</p>
+                )}
+                {(detail.photo.appearances ?? []).map((row) => (
+                  <div key={row.id} className="border border-sand-soft p-3 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium">{row.displayName}</p>
+                      <StatusPill status={MODEL_APPEARANCE_LABEL[row.status]} />
+                    </div>
+                    <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
+                      {row.inviteEmail ?? 'email hidden'}
+                      {row.modelHandle ? ` · @${row.modelHandle}` : ''}
+                      {row.usage !== 'none' ? ` · ${row.usage}` : ''}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               <h3 className="mt-6 font-serif-display text-lg">Model releases</h3>

@@ -45,6 +45,7 @@ export function inviteAccountBlocked(accountType: AccountType | undefined): stri
   if (!accountType) return null
   if (accountType === 'contributor') return 'Contributors cannot join an agency'
   if (accountType === 'admin') return 'Administrators cannot join an agency'
+  if (accountType === 'model') return 'Models cannot join an agency'
   return null
 }
 

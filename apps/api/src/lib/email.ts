@@ -133,6 +133,15 @@ export function agencyInviteEmail(agencyName: string, role: string, link: string
   return `<p>You have been invited to join <strong>${agencyName}</strong> on Vuekumi as ${role}.</p><p>Accept the invite:</p><p><a href="${link}">${link}</a></p><p>This link expires in 14 days. Vuekumi sells usage permission, not ownership.</p>`
 }
 
+export function modelInviteEmail(input: {
+  displayName: string
+  photographerName: string
+  photoTitle: string
+  link: string
+}): string {
+  return `<p>Hi ${input.displayName},</p><p><strong>${input.photographerName}</strong> identified you in <strong>${input.photoTitle}</strong> on Vuekumi.</p><p>A typed name is not identity, and a checkbox is not consent. Claim this invite, confirm whether the likeness is yours, then approve or reject usage of that photograph.</p><p>Vuekumi sells usage permission, not ownership. Models do not earn from licences in this phase.</p><p><a href="${input.link}">${input.link}</a></p><p>This link expires in 14 days.</p>`
+}
+
 export function testEmailHtml(): string {
   return `<p>Resend is configured on Vuekumi.</p><p>Verification, password reset, and agency invites will send through this key.</p>`
 }

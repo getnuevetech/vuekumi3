@@ -30,6 +30,7 @@ import { collectionRoutes } from './routes/collections.js'
 import { subscriptionRoutes } from './routes/subscriptions.js'
 import { adminMetricsRoutes } from './routes/admin-metrics.js'
 import { reportRoutes } from './routes/reports.js'
+import { modelRoutes } from './routes/models.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -103,6 +104,7 @@ export async function buildApp() {
     await api.register(subscriptionRoutes)
     await api.register(adminMetricsRoutes)
     await api.register(reportRoutes)
+    await api.register(modelRoutes)
   }, { prefix: '/api' })
 
   app.setNotFoundHandler((_request, reply) => {

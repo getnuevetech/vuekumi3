@@ -1,6 +1,6 @@
 import type { PermissionState } from './permissions.js'
 
-export type AccountType = 'admin' | 'contributor' | 'user' | 'agency'
+export type AccountType = 'admin' | 'contributor' | 'user' | 'agency' | 'model'
 export type UserStatus = 'active' | 'suspended' | 'pending'
 export type LicenseType = 'free' | 'premium'
 export type GrantLicenseType =
@@ -28,6 +28,7 @@ export interface AuthUser {
   bio?: string | null
   location?: string | null
   contributorHandle?: string | null
+  modelHandle?: string | null
   adminRole?: AdminRole | null
   agencyId?: string | null
   agencyRole?: AgencyRole | null
@@ -77,6 +78,7 @@ export interface PhotoDto {
   status: PhotoStatus
   permissionState?: PermissionState
   restrictionNotes?: string | null
+  appearances?: import('./models.js').PhotoAppearanceDto[]
   exclusiveAvailable?: boolean
   exclusiveSold?: boolean
   hasRecognizablePeople?: boolean

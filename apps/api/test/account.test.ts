@@ -14,6 +14,8 @@ test('handles are slugged, length-checked, and reserved names are blocked', () =
   assert.equal('error' in normalizeHandle('login'), true)
   assert.equal('error' in normalizeHandle('account'), true)
   assert.equal('error' in normalizeHandle('admin'), true)
+  assert.equal('error' in normalizeHandle('model'), true)
+  assert.equal('error' in normalizeHandle('invite'), true)
 })
 
 test('password change requires the current password when one is already set', () => {

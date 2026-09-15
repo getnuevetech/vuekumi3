@@ -30,6 +30,8 @@ export default function Account() {
   const [planBusy, setPlanBusy] = useState(false)
 
   const contributor = user?.accountType === 'contributor'
+  const model = user?.accountType === 'model'
+  const publicProfile = contributor || model
   const canSubscribe = user?.accountType === 'user' || user?.accountType === 'agency' || user?.accountType === 'contributor'
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function Account() {
     setName(user.name)
     setCountry(user.country ?? '')
     setAvatarUrl(user.avatarUrl ?? '')
-    setHandle(user.contributorHandle ?? '')
+    setHandle(user.contributorHandle ?? user.modelHandle ?? '')
     setBio(user.bio ?? '')
     setLocation(user.location ?? '')
   }, [user])
@@ -174,7 +176,7 @@ export default function Account() {
                 name,
                 country,
                 avatarUrl,
-                ...(contributor ? { handle, bio, location } : {}),
+                ...(publicProfile ? { handle, bio, location } : {}),
               })
               await refresh()
               toast.success('Profile saved')
@@ -204,7 +206,7 @@ export default function Account() {
               <option key={c.code} value={c.code}>{c.name} · {c.currency}</option>
             ))}
           </select>
-          {contributor && (
+          {publicProfile && (
             <>
               <input
                 required
@@ -214,7 +216,9 @@ export default function Account() {
                 className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
               />
               <p className="font-mono-tech text-[10px] text-ink-faint">
-                Shown as /p/{handle || 'your-handle'}
+                {contributor
+                  ? `Shown as /p/${handle || 'your-handle'}`
+                  : 'Handle is reserved for a future public model portfolio. It is not public yet.'}
               </p>
               <input
                 value={location}

@@ -28,6 +28,7 @@ import { displayPlan, displayQuota } from './subscriptions.js'
 
 export const authUserInclude = {
   contributorProfile: true,
+  modelProfile: true,
   adminProfile: true,
   userProfile: true,
   agencyMembers: {
@@ -39,6 +40,7 @@ export const authUserInclude = {
 
 type UserWithRelations = User & {
   contributorProfile?: ContributorProfile | null
+  modelProfile?: { handle: string; bio: string | null; location: string | null } | null
   adminProfile?: AdminProfile | null
   userProfile?: UserProfile | null
   agencyMembers?: (AgencyMember & { agency?: Pick<Agency, 'name' | 'status'> })[]
@@ -58,9 +60,10 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     avatarUrl: user.avatarUrl,
     emailVerified: Boolean(user.emailVerifiedAt),
     hasPassword: Boolean(user.passwordHash),
-    bio: user.contributorProfile?.bio ?? null,
-    location: user.contributorProfile?.location ?? null,
+    bio: user.contributorProfile?.bio ?? user.modelProfile?.bio ?? null,
+    location: user.contributorProfile?.location ?? user.modelProfile?.location ?? null,
     contributorHandle: user.contributorProfile?.handle ?? null,
+    modelHandle: user.modelProfile?.handle ?? null,
     adminRole: user.adminProfile?.adminRole ?? null,
     agencyId: agencyMember?.agencyId ?? null,
     agencyRole: agencyMember?.agencyRole ?? null,
@@ -112,7 +115,7 @@ export function serializePhoto(
   photo: PhotoWithTags,
   photographerHandle: string,
   hasAgreement = true,
-  extras?: { favorited?: boolean; photographerFollowed?: boolean },
+  extras?: { favorited?: boolean; photographerFollowed?: boolean; appearances?: PhotoDto['appearances'] },
 ): PhotoDto {
   const contributor = photo.contributor
   return {
@@ -149,6 +152,7 @@ export function serializePhoto(
       ? serializeRights(photo, photo.rightsRecord, hasAgreement)
       : undefined,
     commercialLocked: photo.commercialLocked,
+    appearances: extras?.appearances,
   }
 }
 

@@ -6,6 +6,7 @@ import { requireAccountTypes } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
 import { contributorHasAgreement, rightsReadyForLive } from '../lib/rights.js'
 import { serializePhoto, serializeQuote } from '../lib/serialize.js'
+import { serializeAppearance } from '../lib/models.js'
 import { serializeRightsReport } from '../lib/reports.js'
 import { PhotoEditError } from '../lib/photo-edit.js'
 import {
@@ -79,13 +80,25 @@ export async function adminContentRoutes(app: FastifyInstance) {
         licenseQuotes: { include: { requester: true, photo: true }, orderBy: { createdAt: 'desc' } },
         moderationItems: { orderBy: { createdAt: 'desc' } },
         rightsReports: { orderBy: { createdAt: 'desc' } },
+        appearances: {
+          include: {
+            photo: { include: { contributor: true } },
+            modelUser: { include: { modelProfile: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
 
     const hasAgreement = await contributorHasAgreement(photo.contributorId)
     return {
-      photo: serializePhoto(photo, photo.contributor.contributorProfile?.handle ?? photo.contributorId, hasAgreement),
+      photo: serializePhoto(
+        photo,
+        photo.contributor.contributorProfile?.handle ?? photo.contributorId,
+        hasAgreement,
+        { appearances: photo.appearances.map((row) => serializeAppearance(row, { includeEmail: true })) },
+      ),
       modelReleases: photo.modelReleases,
       grants: photo.licenseGrants.map((g) => ({
         id: g.id,

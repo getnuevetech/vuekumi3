@@ -43,6 +43,7 @@ test('contributors and admins cannot join an agency', () => {
   assert.equal(inviteAccountBlocked('admin'), 'Administrators cannot join an agency')
   assert.equal(inviteAccountBlocked('user'), null)
   assert.equal(inviteAccountBlocked('agency'), null)
+  assert.equal(inviteAccountBlocked('model'), 'Models cannot join an agency')
   assert.equal(inviteAccountBlocked(undefined), null)
 })
 

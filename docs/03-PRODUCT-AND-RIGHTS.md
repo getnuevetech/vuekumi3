@@ -180,17 +180,18 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 23, the marketplace is a **stock + licensing MVP** with photographer
-accounts and photo permission states, not yet the identity graph.
+Shipped through Phase 24, the marketplace is a **stock + licensing MVP** with photographer
+accounts, photo permission states, and invite-only model accounts. Two-approval commercial
+lock is still Phase 25. Models do **not** earn.
 
 | Doctrine | In production now |
 | --- | --- |
 | Photographer keeps copyright; VueKumi gets a platform licence | Yes — contributor agreement + upload attestation |
 | Buyer receives a usage licence, not ownership | Yes — RF / Commercial / Extended / Editorial / RM quotes / Exclusive opt-in; certificates |
 | Four layers checked at grant time | Partially — copyright flag, model-release **status**, platform agreement, then grant |
-| Model is a first-class account | **No** — account types are `admin \| contributor \| user \| agency` only |
-| Two-party approval | **No** — photographer checkbox + optional PDF file name; admin marks `ModelRelease` verified |
-| Invite-the-model | **No** |
+| Model is a first-class account | **Yes** — fifth type `model`, invite-only, one type per email. User→model upgrade is allowed; contributor/admin/agency are not. |
+| Two-party approval | **No** — photographer checkbox + optional PDF file name; admin marks `ModelRelease` verified. `PhotoAppearance` approve/reject sits beside that path and does not lock commercial licences yet (Phase 25). |
+| Invite-the-model | **Yes** — contributor names a person; VueKumi emails a claim link. Typed name is not identity. Checkbox is not consent. |
 | Permission states (portfolio / editorial / restricted / agency-protected) | **Yes** — `PermissionState` on each photo; catalog is stock states; profile can show portfolio |
 | Self-shot dual role | **No** |
 | Visual verification | **No** (AI today is metadata suggestion only) |
@@ -200,10 +201,11 @@ accounts and photo permission states, not yet the identity graph.
 | Talent booking | **No** |
 | Partner/API distribution | **No** |
 | Separate AI-training consent | **No** |
-| Model share of royalties | **Undecided** — ledger pays the photographer 50% of paid licences |
+| Model share of royalties | **Undecided** — Phase 24 recorded that models do not earn. Ledger still pays the photographer 50% of paid licences. |
 
 Rights-managed products now `requiresModelRelease: true`, same as other commercial grants.
-Two-party model accounts are still Phase 24.
+Model accounts and per-image likeness decisions shipped in Phase 24. Two-approval commercial
+lock is still Phase 25.
 
 ---
 
@@ -212,7 +214,7 @@ Two-party model accounts are still Phase 24.
 Keep v1 of the identity graph to:
 
 1. Photographers (already live as `contributor`)
-2. Models (not built)
+2. Models (invite-only accounts; claim, confirm likeness, approve/reject usage per image)
 3. Photo influencers (social/discovery creators; not built)
 
 Stylists, MUAs, directors, production crews come later. The first network to establish is

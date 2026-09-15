@@ -29,12 +29,13 @@ function NoirHeader() {
   const links = [
     { label: 'Library', to: '/search' },
     { label: 'License & Pricing', to: '/pricing' },
-    ...(user ? [{ label: 'Favorites', to: '/favorites' }] : []),
-    ...(user ? [{ label: 'Following', to: '/following' }] : []),
-    ...(user ? [{ label: 'Collections', to: '/collections' }] : []),
+    ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', to: '/favorites' }] : []),
+    ...(user && user.accountType !== 'model' ? [{ label: 'Following', to: '/following' }] : []),
+    ...(user && user.accountType !== 'model' ? [{ label: 'Collections', to: '/collections' }] : []),
     ...(user ? [{ label: 'Account', to: '/account' }] : []),
-    ...(user ? [{ label: 'Licences', to: '/licenses' }] : []),
+    ...(user && user.accountType !== 'model' ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
+    ...(user?.accountType === 'model' ? [{ label: 'Model', to: '/model' }] : []),
     ...((user?.accountType === 'contributor' || user?.accountType === 'admin') ? [{ label: 'Contributor', to: '/contributor' }] : []),
     ...(user?.accountType === 'admin' ? [{ label: 'Admin', to: '/admin' }] : []),
   ];

@@ -39,6 +39,11 @@ import type {
   RightsReportDto,
   PublicReportResult,
   CreateRightsReportInput,
+  PhotoAppearanceDto,
+  ModelInvitePreviewDto,
+  IdentifyAppearanceInput,
+  DecideAppearanceInput,
+  AcceptModelInviteInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -442,6 +447,47 @@ export const api = {
 
   contributorPhoto: (id: string) => request<{ photo: PhotoDto }>(`/api/contributor/photos/${id}`),
 
+  identifyAppearance: (photoId: string, body: IdentifyAppearanceInput) =>
+    request<{ appearance: PhotoAppearanceDto; joinUrl: string }>(`/api/contributor/photos/${photoId}/appearances`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  resendAppearanceInvite: (photoId: string, appearanceId: string) =>
+    request<{ appearance: PhotoAppearanceDto; joinUrl: string }>(
+      `/api/contributor/photos/${photoId}/appearances/${appearanceId}/resend`,
+      { method: 'POST', body: JSON.stringify({}) },
+    ),
+
+  removeAppearance: (photoId: string, appearanceId: string) =>
+    request<{ ok: boolean }>(`/api/contributor/photos/${photoId}/appearances/${appearanceId}`, { method: 'DELETE' }),
+
+  modelInvitePreview: (token: string) =>
+    request<{ invite: ModelInvitePreviewDto }>(`/api/model/invite/${token}`),
+
+  acceptModelInvite: (token: string, body?: AcceptModelInviteInput) =>
+    request<{ user: AuthUser }>(`/api/model/invite/${token}`, {
+      method: 'POST',
+      body: JSON.stringify(body ?? {}),
+    }),
+
+  modelPortal: () =>
+    request<{
+      handle: string | null
+      location: string | null
+      bio: string | null
+      earns: false
+      counts: { invited: number; claimed: number; approved: number; rejected: number; total: number }
+    }>('/api/model'),
+
+  modelAppearances: () => request<{ items: PhotoAppearanceDto[] }>('/api/model/appearances'),
+
+  decideAppearance: (id: string, body: DecideAppearanceInput) =>
+    request<{ appearance: PhotoAppearanceDto }>(`/api/model/appearances/${id}/decide`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   updatePhoto: (id: string, body: UpdatePhotoInput) =>
     request<{ photo: PhotoDto }>(`/api/contributor/photos/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
@@ -570,7 +616,7 @@ export const api = {
   pricing: (country?: string) =>
     request<PricingQuote>(`/api/geo/pricing${country ? `?country=${country}` : ''}`),
 
-  adminAccounts: (type: 'users' | 'contributors' | 'agencies' | 'admins', params?: { q?: string; page?: number }) => {
+  adminAccounts: (type: 'users' | 'contributors' | 'agencies' | 'admins' | 'models', params?: { q?: string; page?: number }) => {
     const qs = new URLSearchParams()
     if (params?.q) qs.set('q', params.q)
     if (params?.page) qs.set('page', String(params.page))
@@ -647,6 +693,7 @@ export interface AdminAccount {
   adminRole: string | null
   agencyName: string | null
   agencyStatus: string | null
+  appearances?: number
 }
 
 export interface FxRate {
@@ -737,6 +784,8 @@ export function homeForAccountType(accountType: AccountType): string {
       return '/contributor'
     case 'agency':
       return '/agency'
+    case 'model':
+      return '/model'
     default:
       return '/'
   }

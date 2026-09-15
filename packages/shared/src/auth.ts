@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const accountTypeSchema = z.enum(['admin', 'contributor', 'user', 'agency'])
+export const accountTypeSchema = z.enum(['admin', 'contributor', 'user', 'agency', 'model'])
 
 export const registerSchema = z.object({
   email: z.string().email(),

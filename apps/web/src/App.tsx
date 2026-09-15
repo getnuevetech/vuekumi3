@@ -9,6 +9,8 @@ import ResetPassword from './pages/ResetPassword'
 import VerifyEmail from './pages/VerifyEmail'
 import AgencyDashboard, { AgencyLicenses, AgencyQuotes, AgencyTeam } from './pages/Agency'
 import JoinAgency from './pages/JoinAgency'
+import JoinModel from './pages/JoinModel'
+import ModelPortal from './pages/Model'
 import {
   ContributorDashboard, ContributorEarnings, ContributorPortfolio, ContributorUpload,
 } from './pages/Contributor'
@@ -19,7 +21,7 @@ import {
 import { AdminQuotes } from './pages/AdminQuotes'
 import { AdminReports } from './pages/AdminReports'
 import { AdminSettings } from './pages/AdminSettings'
-import { AdminAdmins, AdminAgencies, AdminContributors, AdminUsers } from './pages/AdminAccounts'
+import { AdminAdmins, AdminAgencies, AdminContributors, AdminModels, AdminUsers } from './pages/AdminAccounts'
 import { AdminCountries, AdminRates } from './pages/AdminGeo'
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
@@ -59,7 +61,8 @@ export default function App() {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/join/:token" element={<JoinAgency />} />
-        <Route path="/account" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Account /></ProtectedRoute>} />
+        <Route path="/invite/model/:token" element={<JoinModel />} />
+        <Route path="/account" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin', 'model']}><Account /></ProtectedRoute>} />
         <Route path="/favorites" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Favorites /></ProtectedRoute>} />
         <Route path="/following" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Following /></ProtectedRoute>} />
         <Route path="/collections" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Collections /></ProtectedRoute>} />
@@ -79,10 +82,13 @@ export default function App() {
         <Route path="/agency/licenses" element={<ProtectedRoute allowed={['agency']}><AgencyLicenses /></ProtectedRoute>} />
         <Route path="/agency/quotes" element={<ProtectedRoute allowed={['agency']}><AgencyQuotes /></ProtectedRoute>} />
 
+        <Route path="/model" element={<ProtectedRoute allowed={['model']}><ModelPortal /></ProtectedRoute>} />
+
         <Route path="/admin" element={<ProtectedRoute allowed={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']}><AdminUsers /></ProtectedRoute>} />
         <Route path="/admin/contributors" element={<ProtectedRoute allowed={['admin']}><AdminContributors /></ProtectedRoute>} />
         <Route path="/admin/agencies" element={<ProtectedRoute allowed={['admin']}><AdminAgencies /></ProtectedRoute>} />
+        <Route path="/admin/models" element={<ProtectedRoute allowed={['admin']}><AdminModels /></ProtectedRoute>} />
         <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']}><AdminAdmins /></ProtectedRoute>} />
         <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']}><AdminContent /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']}><AdminModeration /></ProtectedRoute>} />

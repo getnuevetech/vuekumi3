@@ -5,13 +5,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/s
 import { api, ApiError, type AdminAccount } from '../api/client'
 import { adminLinks } from './Admin'
 
-type Kind = 'users' | 'contributors' | 'agencies' | 'admins'
+type Kind = 'users' | 'contributors' | 'agencies' | 'admins' | 'models'
 
 const copy: Record<Kind, { kicker: string; title: string; blurb: string }> = {
   users: { kicker: 'Users', title: 'Members.', blurb: 'Individual buyers — one row per account.' },
   contributors: { kicker: 'Contributors', title: 'Photographers.', blurb: 'African creators only. Click a row to edit.' },
   agencies: { kicker: 'Agencies', title: 'Enterprise.', blurb: 'Corporate accounts pending or approved.' },
   admins: { kicker: 'Admins', title: 'Staff.', blurb: 'Platform administrators.' },
+  models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only. Confirm likeness per image. They do not earn in this phase.' },
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -42,7 +43,9 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
 
   const columns = kind === 'contributors'
     ? ['ID', 'Name', 'Email', 'Handle', 'Country', 'Photos', 'Earnings', 'Status']
-    : kind === 'agencies'
+    : kind === 'models'
+      ? ['ID', 'Name', 'Email', 'Handle', 'Country', 'Appearances', 'Joined', 'Status']
+      : kind === 'agencies'
       ? ['ID', 'Name', 'Email', 'Agency', 'Country', 'Joined', 'Status']
       : kind === 'admins'
         ? ['ID', 'Name', 'Email', 'Role', 'Country', 'Joined', 'Status']
@@ -84,14 +87,16 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                 <td className="px-4 py-3 font-medium">{u.name}</td>
                 <td className="px-4 py-3">{u.email}</td>
                 {kind === 'contributors' && <td className="px-4 py-3">@{u.handle}</td>}
+                {kind === 'models' && <td className="px-4 py-3">@{u.handle}</td>}
                 {kind === 'agencies' && <td className="px-4 py-3">{u.agencyName}</td>}
                 {kind === 'admins' && <td className="px-4 py-3 capitalize">{u.adminRole}</td>}
                 <td className="px-4 py-3">{u.country ?? '—'}</td>
                 {kind === 'users' && <td className="px-4 py-3 capitalize">{u.plan ?? 'free'}</td>}
                 {kind === 'contributors' && <td className="px-4 py-3">{u.photos}</td>}
                 {kind === 'contributors' && <td className="px-4 py-3">${u.earnings.toFixed(0)}</td>}
+                {kind === 'models' && <td className="px-4 py-3">{u.appearances ?? 0}</td>}
                 {kind === 'users' && <td className="px-4 py-3">{u.downloads}</td>}
-                {(kind === 'users' || kind === 'agencies' || kind === 'admins') && <td className="px-4 py-3">{u.joined}</td>}
+                {(kind === 'users' || kind === 'agencies' || kind === 'admins' || kind === 'models') && <td className="px-4 py-3">{u.joined}</td>}
                 <td className="px-4 py-3"><StatusPill status={u.status} /></td>
               </tr>
             ))}
@@ -172,3 +177,4 @@ export function AdminUsers() { return <AdminAccountList kind="users" /> }
 export function AdminContributors() { return <AdminAccountList kind="contributors" /> }
 export function AdminAgencies() { return <AdminAccountList kind="agencies" /> }
 export function AdminAdmins() { return <AdminAccountList kind="admins" /> }
+export function AdminModels() { return <AdminAccountList kind="models" /> }

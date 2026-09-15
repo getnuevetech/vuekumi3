@@ -50,6 +50,8 @@ npm run dev:web   # http://localhost:3000
 | Contributor | amara-okafor@vuekumi.demo | User12345! |
 | Member | member@vuekumi.demo | User12345! |
 | Agency | agency@vuekumi.demo | User12345! |
+| Model | ada@vuekumi.demo | User12345! |
+| Model invite | nomsa@vuekumi.demo | claim at `/invite/model/seed-nomsa-model-invite` |
 
 ## API
 

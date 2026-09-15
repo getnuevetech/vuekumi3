@@ -8,6 +8,7 @@ import { api, ApiError, type GeoCountry } from '../api/client'
 import { money } from '../lib/format'
 import { contributorLinks } from './Contributor'
 import { AiSuggestPanel } from '../components/AiSuggestPanel'
+import { PeopleIdentifier } from '../components/PeopleIdentifier'
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -223,6 +224,7 @@ export function ContributorPhotoEdit() {
               <input value={releaseNotes} onChange={(e) => setReleaseNotes(e.target.value)} placeholder="Release notes" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
             </div>
           )}
+          {people && <PeopleIdentifier photo={photo} onChange={load} />}
           <PermissionStateField
             value={permissionState}
             onChange={setPermissionState}

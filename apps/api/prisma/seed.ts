@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, createHash } from 'node:crypto'
 import { photos, photographers } from './seed-data.js'
 
 /** Production image ships `dist/`; local `tsx prisma/seed.ts` uses `src/`. */
@@ -40,6 +40,8 @@ async function main() {
   await prisma.licenseGrant.deleteMany()
   await prisma.licenseQuote.deleteMany()
   await prisma.agencyInvite.deleteMany()
+  await prisma.photoAppearance.deleteMany()
+  await prisma.modelProfile.deleteMany()
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
   await prisma.rightsReport.deleteMany()
@@ -349,6 +351,52 @@ async function main() {
     })
   }
 
+  const thandiweId = contributorUsers.get('thandiwe-nkosi')
+  const nomsaInviteToken = 'seed-nomsa-model-invite'
+  const ada = await prisma.user.create({
+    data: {
+      email: 'ada@vuekumi.demo',
+      passwordHash: userPassword,
+      name: 'Ada Molefe',
+      accountType: 'model',
+      country: 'BW',
+      emailVerifiedAt: new Date(),
+      modelProfile: { create: { handle: 'ada-molefe', location: 'Gaborone, Botswana' } },
+    },
+  })
+  if (thandiweId) {
+    await prisma.photoAppearance.create({
+      data: {
+        photoId: 'afr-001',
+        displayName: 'Ada Molefe',
+        inviteEmail: 'ada@vuekumi.demo',
+        modelUserId: ada.id,
+        invitedById: thandiweId,
+        status: 'approved',
+        usage: 'editorial',
+        confirmedLikeness: true,
+        invitedAt: new Date(),
+        claimedAt: new Date(),
+        decidedAt: new Date(),
+      },
+    })
+  }
+  if (amaraId) {
+    await prisma.photoAppearance.create({
+      data: {
+        photoId: 'afr-011',
+        displayName: 'Nomsa Dlamini',
+        inviteEmail: 'nomsa@vuekumi.demo',
+        invitedById: amaraId,
+        status: 'invited',
+        usage: 'none',
+        inviteTokenHash: createHash('sha256').update(nomsaInviteToken).digest('hex'),
+        inviteExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        invitedAt: new Date(),
+      },
+    })
+  }
+
   const favoriteIds = ['afr-011', 'afr-008', 'afr-020']
   await prisma.photoFavorite.createMany({
     data: favoriteIds.map((photoId) => ({ userId: member.id, photoId })),
@@ -413,6 +461,8 @@ async function main() {
   console.log('Admin: admin@vuekumi.com / Admin123!')
   console.log('Contributor: amara-okafor@vuekumi.demo / User12345!')
   console.log('Member: member@vuekumi.demo / User12345!')
+  console.log('Model (claimed): ada@vuekumi.demo / User12345!')
+  console.log('Model invite: nomsa@vuekumi.demo → /invite/model/seed-nomsa-model-invite')
   console.log('Agency: agency@vuekumi.demo / User12345!')
   console.log('Agency manager: kemi@vuekumi.demo / User12345!')
   console.log('Agency ID:', agency.id)

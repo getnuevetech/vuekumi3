@@ -6,7 +6,7 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–23, gaps vs the concept, remaining Phases 24–34 in three arcs
+   shipped Phases 0–24, gaps vs the concept, remaining Phases 25–34 in three arcs
    (honest marketplace → Rights 2.0 → talent / VueQuatro / distribution).
 3. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
    actually deployed (Docker on AWS Lightsail).

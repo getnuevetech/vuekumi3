@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 15 September 2026 against `main` after Phase 23.
+Updated 15 September 2026 against `main` after Phase 24.
 
 ---
 
@@ -104,9 +104,9 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Concept | Status |
 | --- | --- |
 | Photographer copyright + platform licence + buyer usage licence | Shipped (agreement + grants) |
-| Model as a real, verifiable account | Missing |
-| Two-approval commercial lock | Missing (checkbox + PDF name + admin verify) |
-| Invite-the-model as acquisition | Missing |
+| Model as a real, verifiable account | Shipped (Phase 24) — invite-only fifth type; one type per email |
+| Two-approval commercial lock | Missing (checkbox + PDF name + admin verify). Appearances sit beside the PDF path and do **not** lock commercial yet. |
+| Invite-the-model as acquisition | Shipped (Phase 24) — photographer names a person; VueKumi emails the invite |
 | Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Shipped (Phase 23) — orthogonal to moderation status; catalog is stock states only |
 | Self-shot dual role | Missing |
 | Visual verification with biometric safeguards | Missing (do not start casually) |
@@ -146,15 +146,15 @@ This is the work the May discussion was actually about. It replaces “upload a 
 | Phase | Work | Hard rules |
 | --- | --- | --- |
 | **23** | Photo **permission states** (private, portfolio, editorial, restricted, commercial, exclusive, agency-protected). Commercial/RF/extended/exclusive/RM cannot be offered unless state + rights record allow it. Align RM with model-release requirement. — **shipped** | An image may exist without becoming stock. Editorial ≠ delete. |
-| **24** | **Model** account type (fifth type, still one type per email). Photographer identifies people on a photo; VueKumi **invites** them. Claim profile, confirm likeness, approve/reject per image, set usage. | Typed name is not identity. Checkbox is not consent. |
+| **24** | **Model** account type (fifth type, still one type per email). Photographer identifies people on a photo; VueKumi **invites** them. Claim profile, confirm likeness, approve/reject per image, set usage. Models do **not** earn. — **shipped** | Typed name is not identity. Checkbox is not consent. |
 | **25** | **Two-approval commercial lock** + rights record as the asset (invites, consent version, timestamps, restrictions, grant history). Admin verifies process, not a PDF in isolation. | Photographer approval + model approval = commercially licensable. AI match cannot grant rights. |
 | **26** | **Self-shot** dual role on one account | Do not force a fake photographer/model pair |
 | **27** | Model **portfolio** assembled from images they approved (feeds talent search later) | Model does not gain copyright |
 | **28** | Visual verification (opt-in likeness check) | Last in this arc. Voluntary, minimised retention, not a public face database. Skip until 24–25 are live. |
 
-**Gate before 24–25:** decide whether models can earn, and if so the photographer/model/
-platform split. Record the decision in this file. Do not code a silent 50/50 that ignores
-the depicted person.
+**Gate recorded with Phase 24 (15 September 2026):** models do **not** earn. The photographer 50% of paid licences is unchanged. The photographer/model/platform split remains **undecided** — do not invent a silent model share. Revisit before any payout work.
+
+**Gate before 25:** two-approval commercial lock is the next Rights 2.0 slice. Do not start it until approved.
 
 ### Arc C — Talent, VueQuatro, distribution
 
@@ -179,14 +179,14 @@ Until Arc B exists, do **not** start:
 - Selling training data
 - A public VueQuatro app
 - Stylists / MUA / production-crew account types
-- Changing the 50/50 photographer split without a written model-share decision
+- Changing the 50/50 photographer split without a written model-share decision (Phase 24 recorded: models do not earn; split still undecided)
 
 ---
 
 ## 6. Cross-cutting (still in force)
 
 - Contract-first DTOs in `packages/shared`
-- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts
+- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved on afr-001) and pending invite `nomsa@vuekumi.demo` (afr-011)
 - Vertical slices (schema → API → UI → tests)
 - Africa-only contributors; keys in Admin Settings; Docker-only Lightsail
 - PII / biometric minimisation for any future verification pipeline
@@ -203,7 +203,7 @@ Until Arc B exists, do **not** start:
 | Building booking on uncleared people photos | Brand liability. Arc C waits on Arc B. |
 | Silent AI-training rights | Forbidden. Separate consent (Phase 34). |
 | Biometrics | Phase 28 only, with counsel-level privacy design. Similarity ≠ release. |
-| Model payouts | Undecided economics. Gate on Phase 24. |
+| Model payouts | **Recorded with Phase 24:** models do not earn. Split still undecided. Photographer 50% unchanged. |
 
 The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
@@ -213,5 +213,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 24** (model account type)
-   unless you redirect. Rights 2.0 is the strategic priority.
+3. Default next slice when work resumes: **Phase 25** (two-approval commercial lock)
+   unless you redirect. Rights 2.0 is the strategic priority. Do not start 26–28 from this slice.

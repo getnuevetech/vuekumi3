@@ -31,7 +31,9 @@ export function ProtectedRoute({ children, allowed }: ProtectedRouteProps) {
           ? '/contributor'
           : user.accountType === 'agency' || user.agencyId
             ? '/agency'
-            : '/'
+            : user.accountType === 'model'
+              ? '/model'
+              : '/'
     return <Navigate to={fallback} replace />
   }
 

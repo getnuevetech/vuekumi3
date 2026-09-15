@@ -15,6 +15,7 @@ import {
   passwordChangeBlocked,
   summarizeUserAgent,
 } from '../lib/account.js'
+import { handleTaken } from '../lib/models.js'
 import {
   adminPasswordResetEmail,
   passwordResetEmail,
@@ -195,7 +196,7 @@ export async function authRoutes(app: FastifyInstance) {
     const userId = request.userId!
     const existing = await prisma.user.findUnique({
       where: { id: userId },
-      include: { contributorProfile: true },
+      include: { contributorProfile: true, modelProfile: true },
     })
     if (!existing) return reply.code(401).send({ error: 'Unauthorized' })
 
@@ -212,19 +213,13 @@ export async function authRoutes(app: FastifyInstance) {
       }
     }
 
-    let handle = existing.contributorProfile?.handle
-    if (body.handle && existing.accountType === 'contributor') {
+    let handle = existing.contributorProfile?.handle ?? existing.modelProfile?.handle
+    if (body.handle && (existing.accountType === 'contributor' || existing.accountType === 'model')) {
       const normalized = normalizeHandle(body.handle)
       if ('error' in normalized) {
         return reply.code(400).send({ error: normalized.error })
       }
-      const clash = await prisma.contributorProfile.findFirst({
-        where: {
-          handle: { equals: normalized.handle, mode: 'insensitive' },
-          userId: { not: userId },
-        },
-      })
-      if (clash) {
+      if (await handleTaken(normalized.handle, userId)) {
         return reply.code(409).send({ error: 'That handle is already taken' })
       }
       handle = normalized.handle
@@ -244,6 +239,16 @@ export async function authRoutes(app: FastifyInstance) {
       })
       if (existing.contributorProfile) {
         await tx.contributorProfile.update({
+          where: { userId },
+          data: {
+            ...(handle ? { handle } : {}),
+            ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
+            ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
+          },
+        })
+      }
+      if (existing.modelProfile) {
+        await tx.modelProfile.update({
           where: { userId },
           data: {
             ...(handle ? { handle } : {}),
