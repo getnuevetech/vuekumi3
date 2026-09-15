@@ -74,6 +74,13 @@ test('auth rate limit returns the 429 envelope', async () => {
   await app.close()
 })
 
+test('admin quotes require a session', async () => {
+  const app = await buildApp()
+  const res = await app.inject({ method: 'GET', url: '/api/licenses/quotes' })
+  assert.equal(res.statusCode, 401)
+  await app.close()
+})
+
 test('admin test email requires an admin session', async () => {
   const app = await buildApp()
   const res = await app.inject({ method: 'POST', url: '/api/admin/email/test' })

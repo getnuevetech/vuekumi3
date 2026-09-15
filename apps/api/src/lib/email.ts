@@ -136,3 +136,28 @@ export function agencyInviteEmail(agencyName: string, role: string, link: string
 export function testEmailHtml(): string {
   return `<p>Resend is configured on Vuekumi.</p><p>Verification, password reset, and agency invites will send through this key.</p>`
 }
+
+export const DEFAULT_OPS_ADDRESS = 'admin@vuekumi.com'
+
+export function quoteRequestOpsEmail(input: {
+  photoTitle: string
+  requesterEmail: string
+  territory: string
+  duration: string
+  channels: string
+  notes?: string | null
+  queueUrl: string
+}): string {
+  const notes = input.notes ? `<p>Notes: ${input.notes}</p>` : ''
+  return `<p>A rights-managed quote was requested.</p><p><strong>${input.photoTitle}</strong></p><p>${input.territory} · ${input.duration} · ${input.channels}</p><p>Requester: ${input.requesterEmail}</p>${notes}<p>Vuekumi sells usage permission, not ownership.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
+}
+
+export function quotePricedEmail(input: {
+  name: string
+  photoTitle: string
+  amountUsd: number
+  licensesUrl: string
+}): string {
+  const amount = input.amountUsd.toFixed(2)
+  return `<p>Hi ${input.name},</p><p>Vuekumi priced your rights-managed request for <strong>${input.photoTitle}</strong> at USD ${amount}.</p><p>This is usage permission, not ownership. Review and accept:</p><p><a href="${input.licensesUrl}">${input.licensesUrl}</a></p>`
+}

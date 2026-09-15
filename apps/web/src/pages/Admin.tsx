@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
-import type { PayoutDto } from '@vuekumi/shared';
+import type { PayoutDto, LicenseQuoteDto } from '@vuekumi/shared';
 import { api, ApiError } from '../api/client';
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -56,6 +56,7 @@ export const adminLinks: PortalLink[] = [
   { to: '/admin/admins', label: 'Admins', icon: icons.shield },
   { to: '/admin/content', label: 'Content', icon: icons.grid },
   { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
+  { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
   { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
   { to: '/admin/countries', label: 'Countries', icon: icons.gear },
   { to: '/admin/rates', label: 'FX rates', icon: icons.money },
@@ -76,10 +77,14 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export function AdminDashboard() {
   const [pending, setPending] = useState<{ id: string; contributorHandle: string | null; contributorName: string; methodLabel: string; amountUsd: number }[]>([])
+  const [quotes, setQuotes] = useState<LicenseQuoteDto[]>([])
   useEffect(() => {
     api.adminPayouts('requested')
       .then((d) => setPending(d.items.slice(0, 3)))
       .catch(() => setPending([]))
+    api.adminQuotes('pending')
+      .then((d) => setQuotes(d.items.slice(0, 3)))
+      .catch(() => setQuotes([]))
   }, [])
   return (
     <Shell>
@@ -114,7 +119,7 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-4 lg:grid-cols-2">
+      <div className="mt-10 grid gap-4 lg:grid-cols-3">
         <div className="rounded-2xl border border-sand-soft bg-white p-6">
           <div className="flex items-center justify-between">
             <h3 className="font-serif-display text-xl font-light">Moderation queue</h3>
@@ -149,6 +154,24 @@ export function AdminDashboard() {
                   <p className="font-mono-tech text-[10px] text-ink-faint">{p.methodLabel}</p>
                 </div>
                 <span className="font-mono-tech text-xs font-medium">{money(p.amountUsd)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-sand-soft bg-white p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif-display text-xl font-light">RM quotes</h3>
+            <Link to="/admin/quotes" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra hover:text-ink">Open →</Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {quotes.length === 0 && <p className="text-sm text-ink-soft">No pending rights-managed quotes.</p>}
+            {quotes.map((q) => (
+              <div key={q.id} className="flex items-center justify-between gap-3 border-b border-sand-soft pb-3 last:border-0 last:pb-0">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{q.photoTitle}</p>
+                  <p className="font-mono-tech text-[10px] text-ink-faint">{q.territory} · {q.requesterEmail}</p>
+                </div>
+                <StatusPill status={q.status} />
               </div>
             ))}
           </div>

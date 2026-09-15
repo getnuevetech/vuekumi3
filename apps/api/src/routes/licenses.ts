@@ -11,7 +11,11 @@ import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 import { AgencyError, assertAgencyActive, canPurchase, canQuote } from '../lib/agency.js'
 import { buildCertificatePdf } from '../lib/certificate.js'
 import { convertFromUsd, pricingForCountry } from '../lib/fx.js'
+import { config } from '../config.js'
+import { DEFAULT_OPS_ADDRESS, quotePricedEmail, quoteRequestOpsEmail, sendEmail } from '../lib/email.js'
 import { prisma } from '../lib/prisma.js'
+import { parseQuoteStatus, sortQuotesForQueue } from '../lib/quotes.js'
+import { getSettingSafe } from '../lib/settings.js'
 import { issueGrant } from '../lib/grants.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
 import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
@@ -270,6 +274,21 @@ export async function licenseRoutes(app: FastifyInstance) {
       ipAddress: request.ip,
     })
 
+    const ops = (await getSettingSafe('email.ops_address'))?.trim() || DEFAULT_OPS_ADDRESS
+    await sendEmail({
+      to: ops,
+      subject: `RM quote request: ${photo.title}`,
+      html: quoteRequestOpsEmail({
+        photoTitle: photo.title,
+        requesterEmail: quote.requester.email,
+        territory: quote.territory,
+        duration: quote.duration,
+        channels: quote.channels,
+        notes: quote.notes,
+        queueUrl: `${config.webUrl}/admin/quotes`,
+      }),
+    })
+
     return { quote: serializeQuote(quote) }
   })
 
@@ -287,12 +306,13 @@ export async function licenseRoutes(app: FastifyInstance) {
   app.get('/licenses/quotes', {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request) => {
+    const status = parseQuoteStatus((request.query as { status?: string }).status)
     const quotes = await prisma.licenseQuote.findMany({
-      where: quotesWhere(request.authUser!),
+      where: { ...quotesWhere(request.authUser!), ...(status ? { status } : {}) },
       include: { photo: true, requester: true },
       orderBy: { createdAt: 'desc' },
     })
-    return { items: quotes.map(serializeQuote) }
+    return { items: sortQuotesForQueue(quotes.map(serializeQuote)) }
   })
 
   app.post('/licenses/quotes/:id/accept', {
@@ -406,6 +426,19 @@ export async function licenseRoutes(app: FastifyInstance) {
       metadata: body,
       ipAddress: request.ip,
     })
+
+    if (updated.status === 'quoted' && updated.quoteUsd != null && updated.requester?.email) {
+      await sendEmail({
+        to: updated.requester.email,
+        subject: `Your Vuekumi quote for ${updated.photo.title}`,
+        html: quotePricedEmail({
+          name: updated.requester.name,
+          photoTitle: updated.photo.title,
+          amountUsd: updated.quoteUsd,
+          licensesUrl: `${config.webUrl}/licenses`,
+        }),
+      })
+    }
 
     return { quote: serializeQuote(updated) }
   })

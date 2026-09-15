@@ -122,6 +122,7 @@ export interface LicenseQuoteDto {
   photoTitle: string
   photoSrc?: string
   requesterEmail?: string
+  requesterName?: string
   territory: string
   duration: string
   channels: string

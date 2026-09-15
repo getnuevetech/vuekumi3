@@ -15,6 +15,7 @@ import {
 import {
   AdminDashboard, AdminModeration, AdminPayouts,
 } from './pages/Admin'
+import { AdminQuotes } from './pages/AdminQuotes'
 import { AdminSettings } from './pages/AdminSettings'
 import { AdminAdmins, AdminAgencies, AdminContributors, AdminUsers } from './pages/AdminAccounts'
 import { AdminCountries, AdminRates } from './pages/AdminGeo'
@@ -82,6 +83,7 @@ export default function App() {
         <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']}><AdminAdmins /></ProtectedRoute>} />
         <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']}><AdminContent /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']}><AdminModeration /></ProtectedRoute>} />
+        <Route path="/admin/quotes" element={<ProtectedRoute allowed={['admin']}><AdminQuotes /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']}><AdminPayouts /></ProtectedRoute>} />
         <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']}><AdminCountries /></ProtectedRoute>} />
         <Route path="/admin/rates" element={<ProtectedRoute allowed={['admin']}><AdminRates /></ProtectedRoute>} />

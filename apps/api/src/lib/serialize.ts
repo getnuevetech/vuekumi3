@@ -206,7 +206,7 @@ export function serializeGrant(
 export function serializeQuote(
   quote: LicenseQuote & {
     photo: Pick<Photo, 'id' | 'title' | 'src'>
-    requester?: Pick<User, 'email'>
+    requester?: Pick<User, 'email' | 'name'>
   },
 ): LicenseQuoteDto {
   return {
@@ -215,6 +215,7 @@ export function serializeQuote(
     photoTitle: quote.photo.title,
     photoSrc: quote.photo.src,
     requesterEmail: quote.requester?.email,
+    requesterName: quote.requester?.name,
     territory: quote.territory,
     duration: quote.duration,
     channels: quote.channels,

@@ -477,12 +477,19 @@ export const api = {
       body: JSON.stringify({ action, notes }),
     }),
 
-  adminQuotes: () => request<{ items: LicenseQuoteDto[] }>('/api/licenses/quotes'),
+  adminQuotes: (status?: string) =>
+    request<{ items: LicenseQuoteDto[] }>(`/api/licenses/quotes${status ? `?status=${encodeURIComponent(status)}` : ''}`),
 
   priceQuote: (id: string, quoteUsd: number) =>
     request<{ quote: LicenseQuoteDto }>(`/api/admin/quotes/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ quoteUsd, status: 'quoted' }),
+    }),
+
+  declineQuote: (id: string) =>
+    request<{ quote: LicenseQuoteDto }>(`/api/admin/quotes/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'declined' }),
     }),
 
   sendPasswordReset: (userId: string) =>

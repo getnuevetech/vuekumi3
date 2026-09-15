@@ -49,6 +49,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'payments.contributor_share', label: 'Contributor share (0–1, default 0.5)', group: 'Payments', secret: false, placeholder: '0.5' },
   { key: 'email.resend_api_key', label: 'Resend API key', group: 'Email', secret: true, envFallback: 'RESEND_API_KEY' },
   { key: 'email.from_address', label: 'From email address', group: 'Email', secret: false, placeholder: 'Vuekumi <hello@yourdomain.com>' },
+  { key: 'email.ops_address', label: 'Ops inbox for quote alerts', group: 'Email', secret: false, placeholder: 'ops@vuekumi.com' },
   { key: 'ai.openai_api_key', label: 'OpenAI API key', group: 'AI', secret: true, envFallback: 'OPENAI_API_KEY' },
   { key: 'ai.openai_model', label: 'OpenAI vision model', group: 'AI', secret: false, placeholder: 'gpt-4o-mini' },
   { key: 'ai.replicate_api_token', label: 'Replicate API token', group: 'AI', secret: true, envFallback: 'REPLICATE_API_TOKEN' },
