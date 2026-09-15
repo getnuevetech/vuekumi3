@@ -96,7 +96,7 @@ function NoirHeader() {
                   Log in
                 </Link>
                 <Link
-                  to={contributorPortalHref(user?.accountType)}
+                  to={contributorPortalHref()}
                   className="border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
                 >
                   Sell your photos

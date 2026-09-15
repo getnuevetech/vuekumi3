@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import type { FollowResult } from '@vuekumi/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
@@ -18,7 +18,6 @@ export function FollowButton({
   redirectTo: string
 }) {
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   if (mine) return null
 

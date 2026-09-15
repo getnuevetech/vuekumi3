@@ -13,7 +13,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
-    "test": "tsx --test test/images.test.ts test/storage.test.ts test/payments.test.ts test/ai.test.ts test/agency.test.ts test/health.test.ts test/config.test.ts test/oauth.test.ts test/rate-limit.test.ts test/sentry.test.ts test/payouts.test.ts test/catalog.test.ts test/collections.test.ts test/follows.test.ts test/account.test.ts test/subscriptions.test.ts test/home.test.ts"
+    "test": "tsx --test test/images.test.ts test/storage.test.ts test/payments.test.ts test/ai.test.ts test/agency.test.ts test/health.test.ts test/config.test.ts test/oauth.test.ts test/rate-limit.test.ts test/sentry.test.ts test/payouts.test.ts test/catalog.test.ts test/collections.test.ts test/follows.test.ts test/account.test.ts test/subscriptions.test.ts test/home.test.ts test/email.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1131.0",

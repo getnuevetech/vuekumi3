@@ -497,6 +497,9 @@ export const api = {
       body: JSON.stringify({ settings }),
     }),
 
+  testEmail: () =>
+    request<{ ok: boolean; delivered: boolean; id?: string }>('/api/admin/email/test', { method: 'POST' }),
+
   countries: (contributorsOnly?: boolean) =>
     request<{ countries: GeoCountry[] }>(`/api/geo/countries${contributorsOnly ? '?contributors=1' : ''}`),
 

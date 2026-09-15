@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
+import { sendEmail, testEmailHtml } from '../lib/email.js'
 import { listSettingsForAdmin, upsertSetting } from '../lib/settings.js'
 
 const updateSchema = z.object({
@@ -35,5 +36,31 @@ export async function settingsRoutes(app: FastifyInstance) {
       ipAddress: request.ip,
     })
     return { settings: await listSettingsForAdmin() }
+  })
+
+  app.post('/admin/email/test', {
+    preHandler: requireAccountTypes(app, 'admin'),
+  }, async (request, reply) => {
+    const to = request.authUser?.email
+    if (!to) return reply.code(400).send({ error: 'Admin email is missing' })
+    const result = await sendEmail({
+      to,
+      subject: 'Vuekumi test email',
+      html: testEmailHtml(),
+    })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.test_email',
+      entityType: 'platform_settings',
+      metadata: { status: result.status },
+      ipAddress: request.ip,
+    })
+    if (result.status === 'skipped') {
+      return reply.code(400).send({ error: 'Add a Resend API key in Email settings before sending a test.' })
+    }
+    if (result.status === 'failed') {
+      return reply.code(502).send({ error: result.error })
+    }
+    return { ok: true, delivered: true, id: result.id }
   })
 }

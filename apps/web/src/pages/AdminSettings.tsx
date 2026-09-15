@@ -32,6 +32,7 @@ export function AdminSettings() {
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
 
   useEffect(() => {
     api.adminSettings()
@@ -99,6 +100,12 @@ export function AdminSettings() {
           {groups.map(([group, items]) => (
             <section key={group} className="rounded-2xl border border-sand-soft bg-white p-6">
               <h2 className="font-serif-display text-xl font-light">{group}</h2>
+              {group === 'Email' && (
+                <p className="mt-2 text-sm text-ink-soft">
+                  Verification, password reset, and agency invites send through Resend once the API key is saved.
+                  Leave the key blank to keep the current value. Env <code className="font-mono-tech text-[11px]">RESEND_API_KEY</code> is fallback only.
+                </p>
+              )}
               <div className="mt-4 grid gap-4">
                 {items.map((item) => (
                   <label key={item.key} className="block">
@@ -121,6 +128,26 @@ export function AdminSettings() {
                   </label>
                 ))}
               </div>
+              {group === 'Email' && (
+                <button
+                  type="button"
+                  disabled={testing}
+                  onClick={async () => {
+                    setTesting(true)
+                    try {
+                      await api.testEmail()
+                      toast.success('Test email sent to your admin address')
+                    } catch (err) {
+                      toast.error(err instanceof ApiError ? err.message : 'Test email failed')
+                    } finally {
+                      setTesting(false)
+                    }
+                  }}
+                  className="mt-5 rounded-full border border-ink px-6 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper disabled:opacity-50"
+                >
+                  {testing ? 'Sending…' : 'Send test email'}
+                </button>
+              )}
             </section>
           ))}
 
