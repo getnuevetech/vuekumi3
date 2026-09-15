@@ -3,8 +3,18 @@ import { config } from '../config.js'
 import { createToken, hashToken } from './password.js'
 import { prisma } from './prisma.js'
 
-export function setAuthCookies(reply: FastifyReply, accessToken: string, refreshToken: string) {
-  const secure = config.cookieSecure
+/** Secure cookies only when this request is actually HTTPS. WEB_URL=https on an HTTP-only host drops the session. */
+export function cookieSecureFromRequest(request: { protocol?: string }): boolean {
+  return request.protocol === 'https'
+}
+
+export function setAuthCookies(
+  reply: FastifyReply,
+  accessToken: string,
+  refreshToken: string,
+  request: { protocol?: string },
+) {
+  const secure = cookieSecureFromRequest(request)
   reply.setCookie('access_token', accessToken, {
     httpOnly: true,
     secure,
@@ -38,8 +48,9 @@ export async function issueTokens(
   app: FastifyInstance,
   userId: string,
   reply: FastifyReply,
-  meta?: { ip?: string; userAgent?: string },
+  request: { ip?: string; protocol?: string; headers: { 'user-agent'?: string | string[] } },
 ) {
+  const meta = requestTokenMeta(request)
   const accessToken = app.jwt.sign({ sub: userId, type: 'access' }, { expiresIn: config.accessTokenTtl })
   const refreshRaw = createToken()
   const refreshHash = hashToken(refreshRaw)
@@ -50,12 +61,12 @@ export async function issueTokens(
       userId,
       tokenHash: refreshHash,
       expiresAt: new Date(Date.now() + config.refreshTokenDays * 24 * 60 * 60 * 1000),
-      ipAddress: meta?.ip?.slice(0, 64) || null,
-      userAgent: meta?.userAgent?.slice(0, 400) || null,
+      ipAddress: meta.ip?.slice(0, 64) || null,
+      userAgent: meta.userAgent?.slice(0, 400) || null,
       lastUsedAt: now,
     },
   })
 
-  setAuthCookies(reply, accessToken, refreshRaw)
+  setAuthCookies(reply, accessToken, refreshRaw, request)
   return { accessToken }
 }

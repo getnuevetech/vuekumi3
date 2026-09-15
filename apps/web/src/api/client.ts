@@ -54,7 +54,30 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+function shouldRefreshOn401(path: string): boolean {
+  return !path.startsWith('/api/auth/login')
+    && !path.startsWith('/api/auth/register')
+    && !path.startsWith('/api/auth/refresh')
+    && !path.startsWith('/api/auth/logout')
+}
+
+let refreshInFlight: Promise<boolean> | null = null
+
+function refreshAccessCookie(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(`${API_BASE}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then((res) => res.ok)
+      .finally(() => {
+        refreshInFlight = null
+      })
+  }
+  return refreshInFlight
+}
+
+async function request<T>(path: string, init?: RequestInit, retried = false): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
@@ -64,9 +87,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   })
 
+  if (res.status === 401 && !retried && shouldRefreshOn401(path)) {
+    const refreshed = await refreshAccessCookie()
+    if (refreshed) return request<T>(path, init, true)
+  }
+
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    throw new ApiError(data.error ?? res.statusText, res.status)
+    throw new ApiError((data as { error?: string }).error ?? res.statusText, res.status)
   }
   return data as T
 }

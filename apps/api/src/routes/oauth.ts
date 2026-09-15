@@ -17,16 +17,16 @@ import {
   safeOAuthRedirect,
 } from '../lib/oauth.js'
 import { prisma } from '../lib/prisma.js'
-import { issueTokens, requestTokenMeta } from '../lib/session.js'
+import { cookieSecureFromRequest, issueTokens } from '../lib/session.js'
 import { authUserInclude, serializeUser } from '../lib/serialize.js'
 
 const STATE_COOKIE = 'oauth_state'
 const REDIRECT_COOKIE = 'oauth_redirect'
 
-function setOAuthCookies(reply: FastifyReply, state: string, redirect: string) {
+function setOAuthCookies(reply: FastifyReply, state: string, redirect: string, request: { protocol?: string }) {
   const opts = {
     httpOnly: true,
-    secure: config.cookieSecure,
+    secure: cookieSecureFromRequest(request),
     sameSite: 'lax' as const,
     path: '/api/auth/oauth',
     maxAge: 10 * 60,
@@ -60,7 +60,7 @@ export async function oauthRoutes(app: FastifyInstance) {
     }
 
     const state = createToken()
-    setOAuthCookies(reply, state, redirect)
+    setOAuthCookies(reply, state, redirect, request)
     return reply.redirect(buildGoogleAuthorizeUrl({
       clientId: creds.clientId,
       redirectUri: googleCallbackRedirectUri(),
@@ -98,7 +98,7 @@ export async function oauthRoutes(app: FastifyInstance) {
         picture: profile.picture,
         ipAddress: request.ip,
       })
-      await issueTokens(app, user.id, reply, requestTokenMeta(request))
+      await issueTokens(app, user.id, reply, request)
       return reply.redirect(loginRedirect(undefined, redirect))
     } catch (err) {
       const code = err instanceof OAuthError ? err.code : 'failed'
@@ -122,7 +122,7 @@ export async function oauthRoutes(app: FastifyInstance) {
         name: body.name?.trim() || email.split('@')[0] || 'Member',
         ipAddress: request.ip,
       })
-      await issueTokens(app, user.id, reply, requestTokenMeta(request))
+      await issueTokens(app, user.id, reply, request)
       const full = await prisma.user.findUnique({
         where: { id: user.id },
         include: authUserInclude,

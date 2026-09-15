@@ -19,6 +19,7 @@ import { optionalAuthenticate, requireAgency } from '../lib/auth-middleware.js'
 import { agencyInviteEmail, sendEmail } from '../lib/email.js'
 import { createToken, hashPassword, hashToken } from '../lib/password.js'
 import { prisma } from '../lib/prisma.js'
+import { issueTokens } from '../lib/session.js'
 import { authUserInclude, serializeGrant, serializeQuote, serializeUser } from '../lib/serialize.js'
 
 const INVITE_DAYS = 14
@@ -133,33 +134,6 @@ async function addMember(input: {
     })
   })
   return membership
-}
-
-async function issueSession(app: FastifyInstance, userId: string, reply: FastifyReply) {
-  const accessToken = app.jwt.sign({ sub: userId, type: 'access' }, { expiresIn: config.accessTokenTtl })
-  const refreshRaw = createToken()
-  await prisma.refreshToken.create({
-    data: {
-      userId,
-      tokenHash: hashToken(refreshRaw),
-      expiresAt: new Date(Date.now() + config.refreshTokenDays * 24 * 60 * 60 * 1000),
-    },
-  })
-  const secure = config.cookieSecure
-  reply.setCookie('access_token', accessToken, {
-    httpOnly: true,
-    secure,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 15 * 60,
-  })
-  reply.setCookie('refresh_token', refreshRaw, {
-    httpOnly: true,
-    secure,
-    sameSite: 'lax',
-    path: '/api/auth',
-    maxAge: config.refreshTokenDays * 24 * 60 * 60,
-  })
 }
 
 export async function agencyRoutes(app: FastifyInstance) {
@@ -458,7 +432,7 @@ export async function agencyRoutes(app: FastifyInstance) {
         where: { id: invite.id },
         data: { acceptedAt: new Date() },
       })
-      await issueSession(app, user.id, reply)
+      await issueTokens(app, user.id, reply, request)
       const full = await prisma.user.findUnique({
         where: { id: user.id },
         include: authUserInclude,

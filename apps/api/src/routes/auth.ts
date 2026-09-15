@@ -27,7 +27,7 @@ import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 import { serializeUser, authUserInclude } from '../lib/serialize.js'
 import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
-import { clearAuthCookies, issueTokens, requestTokenMeta } from '../lib/session.js'
+import { clearAuthCookies, issueTokens } from '../lib/session.js'
 
 const PLATFORM_AGREEMENT_VERSION = '1.0'
 
@@ -125,7 +125,7 @@ export async function authRoutes(app: FastifyInstance) {
     })
 
     const verifyToken = await createEmailVerification(user.id, user.email, user.name)
-    await issueTokens(app, user.id, reply, requestTokenMeta(request))
+    await issueTokens(app, user.id, reply, request)
 
     const full = await prisma.user.findUnique({
       where: { id: user.id },
@@ -154,7 +154,7 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: 'Account suspended' })
     }
 
-    await issueTokens(app, user.id, reply, requestTokenMeta(request))
+    await issueTokens(app, user.id, reply, request)
     return { user: serializeUser(user) }
   })
 
@@ -178,7 +178,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     await prisma.refreshToken.delete({ where: { id: stored.id } })
-    await issueTokens(app, stored.userId, reply, requestTokenMeta(request))
+    await issueTokens(app, stored.userId, reply, request)
     return { ok: true }
   })
 
