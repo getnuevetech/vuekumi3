@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import type { SessionDto } from '@vuekumi/shared'
+import type { SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError, type GeoCountry } from '../api/client'
@@ -26,8 +26,11 @@ export default function Account() {
 
   const [sessions, setSessions] = useState<SessionDto[]>([])
   const [sessionsBusy, setSessionsBusy] = useState(false)
+  const [plan, setPlan] = useState<SubscriptionStatusDto | null>(null)
+  const [planBusy, setPlanBusy] = useState(false)
 
   const contributor = user?.accountType === 'contributor'
+  const canSubscribe = user?.accountType === 'user' || user?.accountType === 'agency' || user?.accountType === 'contributor'
 
   useEffect(() => {
     if (!user) return
@@ -49,8 +52,16 @@ export default function Account() {
     api.sessions().then((d) => setSessions(d.items)).catch(() => setSessions([]))
   }
 
+  function loadPlan() {
+    if (!canSubscribe) return
+    api.subscription().then(setPlan).catch(() => setPlan(null))
+  }
+
   useEffect(() => {
-    if (user) loadSessions()
+    if (user) {
+      loadSessions()
+      loadPlan()
+    }
   }, [user])
 
   if (authLoading) {
@@ -77,6 +88,81 @@ export default function Account() {
           {user.email} · {user.accountType}
           {user.emailVerified ? '' : ' · email not verified'}
         </p>
+
+        {canSubscribe && (
+          <div className="mt-10 border border-sand bg-white p-6">
+            <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Vuekumi+</p>
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="font-serif-display text-2xl font-light">
+                  {plan?.plan === 'plus' ? 'Plus' : 'Free'} plan
+                </h2>
+                <p className="mt-1 text-sm text-ink-soft">
+                  {plan?.quota.unlimited
+                    ? `Unlimited royalty-free downloads${plan.plusUntil ? ` through ${plan.plusUntil.slice(0, 10)}` : ''}. Premium images are still billed per licence.`
+                    : `${plan?.quota.used ?? user.downloadQuotaUsed ?? 0} of ${plan?.quota.limit ?? 50} royalty-free downloads used today (UTC).`}
+                </p>
+                {plan?.status === 'cancelled' && plan.plusUntil && (
+                  <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra">
+                    Cancels at period end · {plan.plusUntil.slice(0, 10)}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {plan?.plan !== 'plus' && (
+                  <button
+                    type="button"
+                    disabled={planBusy}
+                    onClick={async () => {
+                      setPlanBusy(true)
+                      try {
+                        const { checkout } = await api.startPlusCheckout()
+                        window.location.assign(checkout.url)
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Could not start Vuekumi+')
+                        setPlanBusy(false)
+                      }
+                    }}
+                    className="bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50"
+                  >
+                    {planBusy ? 'Starting…' : 'Go Vuekumi+ · $19'}
+                  </button>
+                )}
+                {plan?.plan === 'plus' && plan.current && plan.status !== 'cancelled' && (
+                  <button
+                    type="button"
+                    disabled={planBusy}
+                    onClick={async () => {
+                      if (!plan.current) return
+                      setPlanBusy(true)
+                      try {
+                        await api.cancelSubscription(plan.current.id)
+                        toast.success('Vuekumi+ will end after this period')
+                        await refresh()
+                        loadPlan()
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Could not cancel')
+                      } finally {
+                        setPlanBusy(false)
+                      }
+                    }}
+                    className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-[#b3382e]"
+                  >
+                    Cancel at period end
+                  </button>
+                )}
+              </div>
+            </div>
+            {!plan?.quota.unlimited && (
+              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-ink/8">
+                <div
+                  className="h-full rounded-full bg-terra"
+                  style={{ width: `${Math.min(100, ((plan?.quota.used ?? 0) / (plan?.quota.limit ?? 50)) * 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <form
           className="mt-10 space-y-4 border border-sand bg-white p-6"

@@ -116,6 +116,7 @@ model User {
   followers           PhotographerFollow[] @relation("UserFollowers")
   collections         Collection[]        @relation("CollectionOwner")
   collectionAdds      CollectionPhoto[]   @relation("CollectionAdder")
+  subscriptions       Subscription[]
 
   @@index([accountType])
   @@index([status])
@@ -155,15 +156,40 @@ model ContributorProfile {
 }
 
 model UserProfile {
-  id                  String   @id @default(cuid())
-  userId              String   @unique
-  subscriptionPlan    String   @default("free")
-  downloadQuotaUsed   Int      @default(0)
-  downloadQuotaReset  DateTime @default(now())
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  subscriptionPlan    String    @default("free")
+  plusUntil           DateTime?
+  downloadQuotaUsed   Int       @default(0)
+  downloadQuotaReset  DateTime  @default(now())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id          String    @id @default(cuid())
+  userId      String
+  plan        String    @default("plus")
+  status      String    @default("pending")
+  amountUsd   Float
+  currency    String
+  amountLocal Float
+  provider    String
+  providerRef String?   @unique
+  checkoutUrl String?
+  periodStart DateTime?
+  periodEnd   DateTime?
+  cancelledAt DateTime?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }
 
 model AdminProfile {

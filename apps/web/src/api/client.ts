@@ -31,6 +31,9 @@ import type {
   PayoutMethodDto,
   PayoutMethodInput,
   SessionDto,
+  SubscriptionStatusDto,
+  SubscriptionDto,
+  SubscriptionCheckoutDto,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -287,6 +290,26 @@ export const api = {
 
   completeDevPayment: (id: string) =>
     request<{ grant: LicenseGrantDto }>(`/api/payments/${id}/complete-dev`, { method: 'POST', body: JSON.stringify({}) }),
+
+  subscription: () => request<SubscriptionStatusDto>('/api/subscriptions'),
+
+  startPlusCheckout: (provider?: 'stripe' | 'flutterwave') =>
+    request<{ checkout: SubscriptionCheckoutDto }>('/api/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify({ provider }),
+    }),
+
+  subscriptionById: (id: string) =>
+    request<{ subscription: SubscriptionDto }>(`/api/subscriptions/${id}`),
+
+  verifySubscription: (id: string) =>
+    request<{ subscription: SubscriptionDto }>(`/api/subscriptions/${id}/verify`, { method: 'POST', body: JSON.stringify({}) }),
+
+  completeDevSubscription: (id: string) =>
+    request<{ subscription: SubscriptionDto }>(`/api/subscriptions/${id}/complete-dev`, { method: 'POST', body: JSON.stringify({}) }),
+
+  cancelSubscription: (id: string) =>
+    request<{ subscription: SubscriptionDto }>(`/api/subscriptions/${id}/cancel`, { method: 'POST', body: JSON.stringify({}) }),
 
   contributorStats: () => request<ContributorStatsDto>('/api/contributor/stats'),
 

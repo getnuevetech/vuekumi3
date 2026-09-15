@@ -22,6 +22,7 @@ import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
 import Licenses from './pages/Licenses'
 import Checkout from './pages/Checkout'
+import PlusCheckout from './pages/PlusCheckout'
 import Search from './pages/Search'
 import Photographer from './pages/Photographer'
 import Favorites from './pages/Favorites'
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/collections" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Collections /></ProtectedRoute>} />
         <Route path="/c/:id" element={<CollectionDetail />} />
         <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />
+        <Route path="/checkout/plus/:subscriptionId" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><PlusCheckout /></ProtectedRoute>} />
         <Route path="/checkout/:paymentId" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Checkout /></ProtectedRoute>} />
 
         <Route path="/contributor" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorDashboard /></ProtectedRoute>} />

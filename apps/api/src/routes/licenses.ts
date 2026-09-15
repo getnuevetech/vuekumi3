@@ -16,10 +16,14 @@ import { issueGrant } from '../lib/grants.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
 import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
 import { assertCanGrant, priceForProduct, RightsError } from '../lib/rights.js'
+import { consumeRfQuota, QuotaError } from '../lib/subscriptions.js'
 import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { streamObject } from '../lib/storage.js'
 
 function rightsError(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, err: unknown) {
+  if (err instanceof QuotaError) {
+    return reply.code(err.statusCode).send({ error: err.message, quota: err.quota })
+  }
   if (err instanceof RightsError || err instanceof PaymentError || err instanceof AgencyError) {
     return reply.code(err.statusCode).send({ error: err.message })
   }
@@ -162,26 +166,35 @@ export async function licenseRoutes(app: FastifyInstance) {
     }
 
     if (amountUsd <= 0) {
-      const grant = await issueGrant({
-        buyerId: request.userId!,
-        photoId: photo.id,
-        productId: product.id,
-        agencyId: request.authUser?.agencyId,
-        licenseType: product.type,
-        amountUsd,
-        currency,
-        amountLocal,
-        scopeJson,
-      })
-      await writeAuditLog({
-        actorId: request.userId,
-        action: 'license.grant',
-        entityType: 'photo',
-        entityId: photo.id,
-        metadata: { licenseType: product.type, amountUsd, free: true },
-        ipAddress: request.ip,
-      })
-      return { grant: serializeGrant(grant) }
+      try {
+        const grant = await prisma.$transaction(async (tx) => {
+          if (product.type === 'royalty_free' && request.authUser?.accountType !== 'admin') {
+            await consumeRfQuota(request.userId!, tx)
+          }
+          return issueGrant({
+            buyerId: request.userId!,
+            photoId: photo.id,
+            productId: product.id,
+            agencyId: request.authUser?.agencyId,
+            licenseType: product.type,
+            amountUsd,
+            currency,
+            amountLocal,
+            scopeJson,
+          }, tx)
+        })
+        await writeAuditLog({
+          actorId: request.userId,
+          action: 'license.grant',
+          entityType: 'photo',
+          entityId: photo.id,
+          metadata: { licenseType: product.type, amountUsd, free: true },
+          ipAddress: request.ip,
+        })
+        return { grant: serializeGrant(grant) }
+      } catch (err) {
+        return rightsError(reply, err)
+      }
     }
 
     try {

@@ -658,16 +658,16 @@ function ContributorsRail() {
 function NoirPricing() {
   const plans = [
     {
-      photo: pick('afr-014'), name: 'Superior', price: 'Free',
-      feats: ['Full free collection', 'Standard licence', '50 downloads / day'],
+      photo: pick('afr-014'), name: 'Free', price: 'Free',
+      feats: ['Full free collection', 'Standard licence', '50 RF downloads / day'],
     },
     {
-      photo: pick('afr-013'), name: 'Premium', price: '$19', per: '/mo',
-      feats: ['Unlimited premium downloads', 'Commercial, no attribution', 'Photographers earn 50%'],
+      photo: pick('afr-013'), name: 'Vuekumi+', price: '$19', per: '/30d',
+      feats: ['Unlimited free-collection RF', 'Premium still billed per image', 'Funds the contributor pool'],
     },
     {
-      photo: pick('afr-024'), name: 'Superpro', price: '$49', per: '/img',
-      feats: ['Extended licence', 'Merchandise & resale rights', 'Legal indemnification'],
+      photo: pick('afr-024'), name: 'Extended', price: '$49', per: '/img',
+      feats: ['Extended licence', 'Merchandise & resale rights', 'Usage permission only'],
     },
   ];
   return (

@@ -53,6 +53,7 @@ async function main() {
   await prisma.agencyMember.deleteMany()
   await prisma.agency.deleteMany()
   await prisma.contributorProfile.deleteMany()
+  await prisma.subscription.deleteMany()
   await prisma.userProfile.deleteMany()
   await prisma.adminProfile.deleteMany()
   await prisma.refreshToken.deleteMany()
@@ -124,6 +125,7 @@ async function main() {
       country: 'NG',
       emailVerifiedAt: new Date(),
       status: 'active',
+      userProfile: { create: { subscriptionPlan: 'free' } },
     },
   })
 
@@ -149,6 +151,7 @@ async function main() {
       country: 'NG',
       emailVerifiedAt: new Date(),
       status: 'active',
+      userProfile: { create: { subscriptionPlan: 'free' } },
     },
   })
   await prisma.agencyMember.create({

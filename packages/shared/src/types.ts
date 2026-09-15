@@ -31,6 +31,12 @@ export interface AuthUser {
   agencyRole?: AgencyRole | null
   agencyName?: string | null
   agencyStatus?: 'pending' | 'active' | 'suspended' | null
+  subscriptionPlan?: 'free' | 'plus'
+  plusUntil?: string | null
+  downloadQuotaUsed?: number
+  downloadQuotaLimit?: number | null
+  downloadQuotaRemaining?: number | null
+  downloadQuotaUnlimited?: boolean
 }
 
 export interface RightsDto {

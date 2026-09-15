@@ -14,7 +14,7 @@ export default function PhotoDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { format } = useCurrency()
-  const { user } = useAuth()
+  const { user, refresh } = useAuth()
 
   const [photo, setPhoto] = useState<PhotoDto | null>(null)
   const [related, setRelated] = useState<PhotoDto[]>([])
@@ -135,6 +135,7 @@ export default function PhotoDetail() {
       if (result.grant.hasOriginal || view.hasOriginal) {
         await api.downloadGrantFile(result.grant.id).catch(() => undefined)
       }
+      await refresh()
       toast.success(result.existing ? 'Licence already on file — certificate downloaded' : 'Licence granted — certificate downloaded')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not complete licence')
@@ -251,6 +252,16 @@ export default function PhotoDetail() {
                 )
               })}
             </div>
+
+            {user && selected?.type === 'royalty_free' && selected.priceUsd === 0 && (
+              <p className="mt-3 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                {user.downloadQuotaUnlimited
+                  ? 'Vuekumi+ · unlimited royalty-free downloads'
+                  : `${user.downloadQuotaRemaining ?? 50} of ${user.downloadQuotaLimit ?? 50} free downloads left today`}
+                {' · '}
+                <Link to="/pricing" className="text-terra">Plans</Link>
+              </p>
+            )}
 
             {selected?.quoteOnly && (
               <div className="mt-4 space-y-2 border border-sand bg-white p-4">

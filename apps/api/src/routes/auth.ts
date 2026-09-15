@@ -101,7 +101,7 @@ export async function authRoutes(app: FastifyInstance) {
         })
       }
 
-      if (body.accountType === 'user') {
+      if (body.accountType === 'user' || body.accountType === 'agency') {
         await tx.userProfile.create({ data: { userId: created.id } })
       }
 

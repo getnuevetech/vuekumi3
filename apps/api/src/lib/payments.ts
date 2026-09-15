@@ -1,25 +1,19 @@
 import type { Prisma } from '@prisma/client'
 import Stripe from 'stripe'
 import { config } from '../config.js'
-import type { GrantWithRelations } from './grants.js'
+import { openGatewayCheckout } from './checkout.js'
 import { convertFromUsd, pricingForCountry } from './fx.js'
+import type { GrantWithRelations } from './grants.js'
 import { issueGrant } from './grants.js'
+import { PaymentError } from './payment-error.js'
 import {
   chooseProvider,
   flutterwaveCurrency,
   paymentSecrets,
-  type CheckoutProvider,
 } from './payments-config.js'
 import { prisma } from './prisma.js'
 
-export class PaymentError extends Error {
-  statusCode: number
-  constructor(message: string, statusCode = 400) {
-    super(message)
-    this.name = 'PaymentError'
-    this.statusCode = statusCode
-  }
-}
+export { PaymentError } from './payment-error.js'
 
 export async function startLicenseCheckout(input: {
   buyerId: string
@@ -91,16 +85,18 @@ export async function startLicenseCheckout(input: {
     },
   })
 
-  const checkout = await createProviderCheckout({
-    paymentId: payment.id,
+  const checkout = await openGatewayCheckout({
+    checkoutId: payment.id,
     provider,
     amountUsd: input.amountUsd,
     amountLocal,
     currency,
-    photoId: input.photoId,
     buyerEmail: input.buyerEmail,
     buyerName: input.buyerName,
     description: `Vuekumi licence — ${input.licenseType.replace('_', ' ')}`,
+    successUrl: `${config.webUrl}/checkout/${payment.id}`,
+    cancelUrl: `${config.webUrl}/photo/${input.photoId}?checkout=cancelled`,
+    metadata: { paymentId: payment.id, photoId: input.photoId },
     secrets,
   })
 
@@ -108,74 +104,6 @@ export async function startLicenseCheckout(input: {
     where: { id: payment.id },
     data: { checkoutUrl: checkout.url, providerRef: checkout.ref },
   })
-}
-
-async function createProviderCheckout(input: {
-  paymentId: string
-  provider: CheckoutProvider
-  amountUsd: number
-  amountLocal: number
-  currency: string
-  photoId: string
-  buyerEmail: string
-  buyerName: string
-  description: string
-  secrets: Awaited<ReturnType<typeof paymentSecrets>>
-}) {
-  const returnUrl = `${config.webUrl}/checkout/${input.paymentId}`
-  const cancelUrl = `${config.webUrl}/photo/${input.photoId}?checkout=cancelled`
-
-  if (input.provider === 'dev') {
-    return { url: returnUrl, ref: `dev_${input.paymentId}` }
-  }
-
-  if (input.provider === 'stripe') {
-    const stripe = new Stripe(input.secrets.stripeSecret)
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      customer_email: input.buyerEmail,
-      success_url: `${returnUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: 'usd',
-            unit_amount: Math.max(50, Math.round(input.amountUsd * 100)),
-            product_data: { name: input.description },
-          },
-        },
-      ],
-      metadata: { paymentId: input.paymentId, photoId: input.photoId },
-    })
-    if (!session.url) throw new PaymentError('Stripe did not return a checkout URL', 502)
-    return { url: session.url, ref: session.id }
-  }
-
-  const res = await fetch('https://api.flutterwave.com/v3/payments', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${input.secrets.flutterwaveSecret}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      tx_ref: input.paymentId,
-      amount: input.amountLocal,
-      currency: input.currency,
-      redirect_url: returnUrl,
-      customer: { email: input.buyerEmail, name: input.buyerName },
-      customizations: {
-        title: 'Vuekumi',
-        description: input.description,
-      },
-      meta: { paymentId: input.paymentId, photoId: input.photoId },
-    }),
-  })
-  const json = (await res.json()) as { status?: string; data?: { link?: string }; message?: string }
-  if (!res.ok || !json.data?.link) {
-    throw new PaymentError(json.message ?? 'Flutterwave checkout failed', 502)
-  }
-  return { url: json.data.link, ref: input.paymentId }
 }
 
 export async function fulfillPayment(paymentId: string, providerRef?: string): Promise<GrantWithRelations> {
@@ -293,8 +221,14 @@ export async function handleStripeWebhook(rawBody: Buffer | string, signature: s
   const event = stripe.webhooks.constructEvent(rawBody, signature, secrets.stripeWebhook)
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
+    const subscriptionId = session.metadata?.subscriptionId
     const paymentId = session.metadata?.paymentId
-    if (paymentId) await fulfillPayment(paymentId, session.id)
+    if (subscriptionId) {
+      const { fulfillSubscription } = await import('./subscriptions.js')
+      await fulfillSubscription(subscriptionId, session.id)
+    } else if (paymentId) {
+      await fulfillPayment(paymentId, session.id)
+    }
   }
   return { received: true }
 }
@@ -307,9 +241,15 @@ export async function handleFlutterwaveWebhook(payload: Record<string, unknown>,
   const data = (payload.data ?? payload) as { status?: string; tx_ref?: string; id?: number }
   const event = String(payload.event ?? payload['event.type'] ?? '')
   const ok = data.status === 'successful' || event.includes('charge.completed')
-  const paymentId = data.tx_ref
-  if (ok && paymentId) {
-    await fulfillPayment(paymentId, data.id != null ? String(data.id) : paymentId)
+  const checkoutId = data.tx_ref
+  if (ok && checkoutId) {
+    const sub = await prisma.subscription.findUnique({ where: { id: checkoutId } })
+    if (sub) {
+      const { fulfillSubscription } = await import('./subscriptions.js')
+      await fulfillSubscription(checkoutId, data.id != null ? String(data.id) : checkoutId)
+    } else {
+      await fulfillPayment(checkoutId, data.id != null ? String(data.id) : checkoutId)
+    }
   }
   return { received: true }
 }

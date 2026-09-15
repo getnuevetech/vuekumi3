@@ -9,6 +9,7 @@ import type {
   PlatformAgreement,
   RightsRecord,
   User,
+  UserProfile,
   AdminProfile,
   AgencyMember,
 } from '@prisma/client'
@@ -23,10 +24,12 @@ import type {
   RightsDto,
 } from '@vuekumi/shared'
 import { isLicenseOffered, priceForProduct, rightsReadyForLive } from './rights.js'
+import { displayPlan, displayQuota } from './subscriptions.js'
 
 export const authUserInclude = {
   contributorProfile: true,
   adminProfile: true,
+  userProfile: true,
   agencyMembers: {
     where: { status: 'active' },
     take: 1,
@@ -37,11 +40,14 @@ export const authUserInclude = {
 type UserWithRelations = User & {
   contributorProfile?: ContributorProfile | null
   adminProfile?: AdminProfile | null
+  userProfile?: UserProfile | null
   agencyMembers?: (AgencyMember & { agency?: Pick<Agency, 'name' | 'status'> })[]
 }
 
 export function serializeUser(user: UserWithRelations): AuthUser {
   const agencyMember = user.agencyMembers?.[0]
+  const quota = displayQuota(user.userProfile, new Date())
+  const plan = displayPlan(user.userProfile, new Date())
   return {
     id: user.id,
     email: user.email,
@@ -60,6 +66,12 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     agencyRole: agencyMember?.agencyRole ?? null,
     agencyName: agencyMember?.agency?.name ?? null,
     agencyStatus: agencyMember?.agency?.status ?? null,
+    subscriptionPlan: plan,
+    plusUntil: plan === 'plus' && user.userProfile?.plusUntil ? user.userProfile.plusUntil.toISOString() : null,
+    downloadQuotaUsed: quota.used,
+    downloadQuotaLimit: quota.limit,
+    downloadQuotaRemaining: quota.remaining,
+    downloadQuotaUnlimited: quota.unlimited,
   }
 }
 
