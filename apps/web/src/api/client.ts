@@ -26,6 +26,7 @@ import type {
   AiSuggestionDto,
   AiStatusDto,
   PublicConfigDto,
+  HomePageDto,
   EarningsSummaryDto,
   PayoutDto,
   PayoutMethodDto,
@@ -70,6 +71,8 @@ export const api = {
   health: () => request<{ status: string }>('/api/health'),
 
   publicConfig: () => request<PublicConfigDto>('/api/public/config'),
+
+  home: () => request<HomePageDto>('/api/public/home'),
 
   me: () => request<{ user: AuthUser }>('/api/auth/me'),
 

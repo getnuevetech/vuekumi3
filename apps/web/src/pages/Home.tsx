@@ -1,20 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import type { PhotoDto, PhotographerDto } from '@vuekumi/shared';
+import type { HomePageDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
 import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
-import { fmt, photoById, photographerOf, photos, type Photo } from '../data/content';
+import { fmt } from '../lib/format';
 
-/* ============================================================
-   NOIR — a dark, edge-to-edge, endlessly scrolling variant.
-   Sections deliberately use different arrangements:
-   hero slider → marquee → icon row → hover strip → CTA band →
-   infinite masonry feed → rotated editorial split → ring stats
-   → contributor rail → image-topped pricing → centered footer
-   ============================================================ */
+const SELL_HREF = '/login?redirect=/contributor/upload&signup=contributor';
+const MARQUEE_FALLBACK = ['People', 'Wildlife', 'Landscape', 'Urban', 'Culture', 'Food & Craft', 'Coast', 'Fashion', 'Architecture'];
 
-const pick = (id: string): Photo => photoById(id) ?? photos[0];
+function contributorPortalHref(accountType?: string) {
+  return accountType === 'contributor' || accountType === 'admin' ? '/contributor' : SELL_HREF;
+}
 
 /* ---------------- header ---------------- */
 
@@ -38,8 +35,8 @@ function NoirHeader() {
     ...(user ? [{ label: 'Account', to: '/account' }] : []),
     ...(user ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
-    { label: 'Contributor', to: '/contributor' },
-    { label: 'Admin', to: '/admin' },
+    ...((user?.accountType === 'contributor' || user?.accountType === 'admin') ? [{ label: 'Contributor', to: '/contributor' }] : []),
+    ...(user?.accountType === 'admin' ? [{ label: 'Admin', to: '/admin' }] : []),
   ];
 
   return (
@@ -99,7 +96,7 @@ function NoirHeader() {
                   Log in
                 </Link>
                 <Link
-                  to="/login"
+                  to={contributorPortalHref(user?.accountType)}
                   className="border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
                 >
                   Sell your photos
@@ -129,7 +126,7 @@ function NoirHeader() {
               {l.label}
             </Link>
           ))}
-          <Link to="/login" onClick={() => setOpen(false)} className="mt-4 border border-terra px-8 py-3 font-condensed text-sm uppercase tracking-[0.25em] text-terra">
+          <Link to={contributorPortalHref(user?.accountType)} onClick={() => setOpen(false)} className="mt-4 border border-terra px-8 py-3 font-condensed text-sm uppercase tracking-[0.25em] text-terra">
             Sell your photos
           </Link>
         </div>
@@ -140,50 +137,56 @@ function NoirHeader() {
 
 /* ---------------- full-screen hero slider ---------------- */
 
-const heroSlides = [
-  {
-    photo: pick('afr-020'),
-    script: 'the real',
-    title: 'AFRICA',
-    sub: 'Unfiltered light, colour and story — shot by the people who live it.',
-    tag: 'Baobab Reflection — Madagascar',
-  },
-  {
-    photo: pick('afr-009'),
-    script: 'in every',
-    title: 'FRAME',
-    sub: '212,400 authentic images from all 54 countries. Free and premium.',
-    tag: 'Festival Dancers — Senegal',
-  },
-  {
-    photo: pick('afr-026'),
-    script: 'your next',
-    title: 'STORY',
-    sub: 'License instantly. Photographers keep their copyright — and earn 50%.',
-    tag: 'Nairobi Electric — Kenya',
-  },
-];
-
-function HeroSlider() {
+function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsDto | null }) {
   const [active, setActive] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const photosLive = stats?.photosLive ?? 0;
+  const countries = stats?.countries ?? 0;
+  const copy = [
+    {
+      script: 'the real',
+      title: 'AFRICA',
+      sub: 'Unfiltered light, colour and story — shot by the people who live it.',
+    },
+    {
+      script: 'in every',
+      title: 'FRAME',
+      sub: photosLive > 0
+        ? `${photosLive.toLocaleString('en-US')} authentic images from ${countries} ${countries === 1 ? 'country' : 'countries'}. Free and premium.`
+        : 'Authentic images from across the continent. Free and premium.',
+    },
+    {
+      script: 'your next',
+      title: 'STORY',
+      sub: 'License instantly. Photographers keep their copyright — and earn 50%.',
+    },
+  ];
+  const slides = copy.map((item, i) => {
+    const photo = photos[i] ?? photos[0];
+    return {
+      ...item,
+      src: photo?.src,
+      alt: photo?.title ?? '',
+      tag: photo ? `${photo.title} — ${photo.country}` : 'Vuekumi library',
+    };
+  });
 
   const go = useCallback((i: number) => {
-    setActive(((i % heroSlides.length) + heroSlides.length) % heroSlides.length);
-  }, []);
+    setActive(((i % slides.length) + slides.length) % slides.length);
+  }, [slides.length]);
 
   useEffect(() => {
-    timer.current = setInterval(() => setActive((a) => (a + 1) % heroSlides.length), 5200);
+    timer.current = setInterval(() => setActive((a) => (a + 1) % slides.length), 5200);
     return () => { if (timer.current) clearInterval(timer.current); };
-  }, []);
+  }, [slides.length]);
 
-  const slide = heroSlides[active];
+  const slide = slides[active];
 
   return (
     <section className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-noir">
-      {heroSlides.map((s, i) => (
+      {slides.map((s, i) => (
         <div key={s.title} className={`noir-slide absolute inset-0 ${i === active ? 'is-active' : ''}`}>
-          <img src={s.photo.src} alt={s.photo.title} className="h-full w-full object-cover" />
+          {s.src ? <img src={s.src} alt={s.alt} className="h-full w-full object-cover" /> : <div className="h-full w-full bg-noir" />}
           <div className="absolute inset-0 bg-gradient-to-t from-noir via-noir/35 to-noir/30" />
         </div>
       ))}
@@ -235,10 +238,10 @@ function HeroSlider() {
       {/* bottom meta */}
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-6 md:px-10">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.2em] text-paper-soft">
-          {String(active + 1).padStart(2, '0')} / {String(heroSlides.length).padStart(2, '0')} — {slide.tag}
+          {String(active + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')} — {slide.tag}
         </p>
         <div className="flex gap-1.5">
-          {heroSlides.map((_, i) => (
+          {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => go(i)}
@@ -254,8 +257,8 @@ function HeroSlider() {
 
 /* ---------------- marquee ticker ---------------- */
 
-function Marquee() {
-  const items = ['Portraits', 'Wildlife', 'Landscape', 'Urban', 'Culture', 'Food & Craft', 'Coast', 'Fashion', 'Architecture'];
+function Marquee({ categories }: { categories: string[] }) {
+  const items = categories.length ? categories : MARQUEE_FALLBACK;
   const row = [...items, ...items];
   return (
     <div className="overflow-hidden border-y border-noir bg-noir py-4">
@@ -263,7 +266,7 @@ function Marquee() {
         {row.map((t, i) => (
           <span key={i} className="flex items-center gap-10 whitespace-nowrap">
             <Link
-              to={`/search?category=${encodeURIComponent(t === 'Portraits' ? 'People' : t)}`}
+              to={`/search?category=${encodeURIComponent(t)}`}
               className="font-condensed text-xl font-light uppercase tracking-[0.3em] text-paper-soft hover:text-terra"
             >
               {t}
@@ -333,16 +336,12 @@ function IconRow() {
 
 /* ---------------- edge-to-edge hover strip ---------------- */
 
-function EdgeStrip() {
-  const ids = ['afr-001', 'afr-012', 'afr-011', 'afr-008'];
+function EdgeStrip({ photos }: { photos: PhotoDto[] }) {
   return (
     <section className="grid grid-cols-2 bg-noir lg:grid-cols-4">
-      {ids.map((id, i) => {
-        const p = pick(id);
-        const ph = photographerOf(p.photographer);
-        return (
+      {photos.map((p, i) => (
           <Link
-            key={id}
+            key={p.id}
             to={`/photo/${p.id}`}
             className="strip-cell group relative block aspect-[3/4] overflow-hidden"
           >
@@ -350,12 +349,11 @@ function EdgeStrip() {
             <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
               <p className="font-condensed text-lg font-medium uppercase tracking-[0.18em] text-paper">{p.title}</p>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">
-                {p.category} — {ph.name}
+                {p.category} — {p.photographerName ?? p.photographer}
               </p>
             </div>
           </Link>
-        );
-      })}
+      ))}
     </section>
   );
 }
@@ -363,6 +361,7 @@ function EdgeStrip() {
 /* ---------------- black CTA band ---------------- */
 
 function CtaBand() {
+  const { user } = useAuth();
   return (
     <section className="border-y border-noir bg-noir-soft">
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-14 md:flex-row md:items-center md:px-10">
@@ -370,10 +369,10 @@ function CtaBand() {
           Your work deserves an audience of the whole world — <span className="text-terra">and a fair cut of it.</span>
         </h2>
         <Link
-          to="/contributor"
+          to={contributorPortalHref(user?.accountType)}
           className="shrink-0 bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
         >
-          Open contributor portal
+          {user?.accountType === 'contributor' ? 'Open contributor portal' : 'Become a contributor'}
         </Link>
       </div>
     </section>
@@ -496,22 +495,27 @@ function InfiniteFeed() {
 
 /* ---------------- editorial split with vertical text ---------------- */
 
-function EditorialSplit() {
-  const a = pick('afr-006');
-  const b = pick('afr-007');
+function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsDto | null }) {
+  const { user } = useAuth();
+  const a = photos[0];
+  const b = photos[1] ?? photos[0];
+  const uploadHref = user?.accountType === 'contributor' || user?.accountType === 'admin'
+    ? '/contributor/upload'
+    : SELL_HREF;
   return (
     <section className="relative flex flex-col bg-noir lg:flex-row">
-      {/* vertical rail */}
       <div className="hidden w-16 shrink-0 items-center justify-center border-r border-noir lg:flex">
         <span className="v-text font-condensed text-sm font-light uppercase tracking-[0.4em] text-noir-soft">
           Shot by the continent — Est. 2026
         </span>
       </div>
       <div className="relative flex-1">
-        <img src={a.src} alt={a.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px]" />
-        <p className="absolute bottom-4 left-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
-          {a.title} — {a.country}
-        </p>
+        {a ? <img src={a.src} alt={a.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px]" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+        {a && (
+          <p className="absolute bottom-4 left-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
+            {a.title} — {a.country}
+          </p>
+        )}
       </div>
       <div className="flex flex-1 flex-col justify-center px-6 py-14 md:px-14">
         <p className="font-script text-4xl text-terra">our promise</p>
@@ -526,8 +530,8 @@ function EditorialSplit() {
         <div className="mt-8 grid grid-cols-3 gap-4 border-t border-noir pt-6">
           {[
             ['50%', 'royalty on premium'],
-            ['48h', 'review turnaround'],
-            ['54', 'countries covered'],
+            [fmt(stats?.photosLive ?? 0), 'photographs live'],
+            [String(stats?.countries ?? 0), 'countries in the library'],
           ].map(([v, l]) => (
             <div key={l}>
               <p className="font-condensed text-3xl font-medium text-terra">{v}</p>
@@ -536,17 +540,19 @@ function EditorialSplit() {
           ))}
         </div>
         <Link
-          to="/contributor/upload"
+          to={uploadHref}
           className="mt-8 w-fit border border-terra px-7 py-3 font-condensed text-[12px] uppercase tracking-[0.25em] text-terra transition-colors hover:bg-terra hover:text-paper"
         >
           Start uploading
         </Link>
       </div>
       <div className="relative flex-1">
-        <img src={b.src} alt={b.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px] lg:h-full" />
-        <p className="absolute bottom-4 right-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
-          {b.title} — {b.country}
-        </p>
+        {b ? <img src={b.src} alt={b.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px] lg:h-full" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+        {b && (
+          <p className="absolute bottom-4 right-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
+            {b.title} — {b.country}
+          </p>
+        )}
       </div>
     </section>
   );
@@ -576,23 +582,31 @@ function Ring({ value, label }: { value: number; label: string }) {
   );
 }
 
-function StatsBand() {
-  const bg = pick('afr-008');
+function StatsBand({
+  categories,
+  background,
+}: {
+  categories: PublicStatsDto['categories']
+  background: PhotoDto | null
+}) {
   return (
     <section className="relative overflow-hidden">
-      <img src={bg.src} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+      {background ? (
+        <img src={background.src} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 bg-noir" />
+      )}
       <div className="absolute inset-0 bg-noir/80" />
       <div className="relative px-6 py-20 md:py-28">
         <Reveal>
           <div className="mx-auto grid max-w-5xl grid-cols-2 gap-10 md:grid-cols-4">
-            <Ring value={92} label="People" />
-            <Ring value={74} label="Wildlife" />
-            <Ring value={61} label="Landscape" />
-            <Ring value={85} label="Culture" />
+            {(categories.length ? categories : [{ value: 'Library', count: 0, sharePct: 0 }]).map((row) => (
+              <Ring key={row.value} value={row.sharePct} label={row.value} />
+            ))}
           </div>
         </Reveal>
         <p className="mt-12 text-center font-mono-tech text-[10px] uppercase tracking-[0.25em] text-paper-soft">
-          Share of library by genre — Avenue of the Baobabs, Madagascar
+          Share of the live library by genre{background ? ` — ${background.title}, ${background.country}` : ''}
         </p>
       </div>
     </section>
@@ -640,7 +654,7 @@ function ContributorsRail() {
           </Link>
         ))}
         <Link
-          to="/login"
+          to={SELL_HREF}
           className="flex w-[70vw] shrink-0 snap-start items-center justify-center border border-noir bg-noir-soft transition-colors hover:border-terra sm:w-[44vw] lg:w-[30vw]"
         >
           <span className="text-center">
@@ -655,18 +669,18 @@ function ContributorsRail() {
 
 /* ---------------- image-topped pricing cards ---------------- */
 
-function NoirPricing() {
+function NoirPricing({ photos }: { photos: PhotoDto[] }) {
   const plans = [
     {
-      photo: pick('afr-014'), name: 'Free', price: 'Free',
+      photo: photos[0], name: 'Free', price: 'Free',
       feats: ['Full free collection', 'Standard licence', '50 RF downloads / day'],
     },
     {
-      photo: pick('afr-013'), name: 'Vuekumi+', price: '$19', per: '/30d',
+      photo: photos[1] ?? photos[0], name: 'Vuekumi+', price: '$19', per: '/30d',
       feats: ['Unlimited free-collection RF', 'Premium still billed per image', 'Funds the contributor pool'],
     },
     {
-      photo: pick('afr-024'), name: 'Extended', price: '$49', per: '/img',
+      photo: photos[2] ?? photos[0], name: 'Extended', price: '$49', per: '/img',
       feats: ['Extended licence', 'Merchandise & resale rights', 'Usage permission only'],
     },
   ];
@@ -681,11 +695,15 @@ function NoirPricing() {
           <Reveal key={p.name} delay={i * 90}>
             <div className="group overflow-hidden border border-noir bg-noir-soft transition-colors hover:border-terra/60">
               <div className="relative aspect-[16/9] overflow-hidden">
+                {p.photo ? (
                 <img
                   src={p.photo.src} alt=""
                   loading="lazy"
                   className="h-full w-full object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
                 />
+                ) : (
+                  <div className="h-full w-full bg-noir" />
+                )}
                 <span className="absolute left-4 top-4 bg-noir/70 px-3 py-1 font-condensed text-[11px] uppercase tracking-[0.3em] text-paper backdrop-blur-sm">
                   {p.name}
                 </span>
@@ -728,14 +746,19 @@ function NoirFooter() {
         images, licensed directly from the continent's photographers.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-        {['Instagram', 'Behance', 'X / Twitter', 'LinkedIn', 'Pinterest'].map((s) => (
-          <a key={s} href="#" className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
-            {s}
-          </a>
+        {[
+          { label: 'Library', href: '/search' },
+          { label: 'License & Pricing', href: '/pricing' },
+          { label: 'Contribute', href: SELL_HREF },
+          { label: 'Account', href: '/account' },
+        ].map((s) => (
+          <Link key={s.label} to={s.href} className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
+            {s.label}
+          </Link>
         ))}
       </div>
       <p className="mt-10 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-        © 2026 Vuekumi — design template · all photography is demo content
+        © 2026 Vuekumi — usage permission, never ownership
       </p>
     </footer>
   );
@@ -762,19 +785,28 @@ function BackToTop() {
 /* ---------------- page ---------------- */
 
 export default function Home() {
+  const [home, setHome] = useState<HomePageDto | null>(null);
+
+  useEffect(() => {
+    api.home().then(setHome).catch(() => setHome(null));
+  }, []);
+
+  const stats = home?.stats ?? null;
+  const featured = home?.featured;
+
   return (
     <div className="min-h-screen bg-noir font-sans text-paper antialiased">
       <NoirHeader />
-      <HeroSlider />
-      <Marquee />
+      <HeroSlider photos={featured?.hero ?? []} stats={stats} />
+      <Marquee categories={stats ? stats.categories.map((c) => c.value) : MARQUEE_FALLBACK} />
       <IconRow />
-      <EdgeStrip />
+      <EdgeStrip photos={featured?.edge ?? []} />
       <CtaBand />
       <InfiniteFeed />
-      <EditorialSplit />
-      <StatsBand />
+      <EditorialSplit photos={featured?.editorial ?? []} stats={stats} />
+      <StatsBand categories={stats?.categories ?? []} background={featured?.statsBackground ?? null} />
       <ContributorsRail />
-      <NoirPricing />
+      <NoirPricing photos={featured?.pricing ?? []} />
       <NoirFooter />
       <BackToTop />
     </div>

@@ -39,6 +39,7 @@ export default function Login() {
   const { login, register, completeSession } = useAuth()
 
   const redirect = safeRedirect(searchParams.get('redirect'))
+  const wantsContributor = searchParams.get('signup') === 'contributor' || Boolean(redirect?.startsWith('/contributor'))
   const showOauth = oauth.google || oauth.dev
   const oauthAllowed = mode === 'signin' || role === 'member'
 
@@ -52,6 +53,12 @@ export default function Login() {
     const err = searchParams.get('oauth_error')
     if (err) setError(oauthErrorMessage(err))
   }, [searchParams])
+
+  useEffect(() => {
+    if (!wantsContributor) return
+    setMode('signup')
+    setRole('contributor')
+  }, [wantsContributor])
 
   useEffect(() => {
     if (searchParams.get('oauth') !== 'ok') return

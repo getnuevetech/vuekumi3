@@ -2,10 +2,11 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { rateLimitErrorBody, shouldSkipRateLimit } from '../src/lib/rate-limit.js'
 
-test('health, ready, and public config skip the global limiter', () => {
+test('health, ready, and public reads skip the global limiter', () => {
   assert.equal(shouldSkipRateLimit('/api/health'), true)
   assert.equal(shouldSkipRateLimit('/api/ready'), true)
   assert.equal(shouldSkipRateLimit('/api/public/config'), true)
+  assert.equal(shouldSkipRateLimit('/api/public/home'), true)
   assert.equal(shouldSkipRateLimit('/api/health?warm=1'), true)
 })
 

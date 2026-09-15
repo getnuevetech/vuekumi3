@@ -181,6 +181,4 @@ export const pendingPayouts = [
   { id: 'PO-2412', contributor: 'lekan-adeyemi', method: 'M-Pesa', amount: 734.1, requested: '2026-09-05' },
 ]
 
-export const fmt = (n: number) =>
-  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`
-export const money = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+export { fmt, money } from '../lib/format'

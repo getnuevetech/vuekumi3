@@ -24,6 +24,21 @@ test('public config advertises OAuth and Sentry without auth', async () => {
   await app.close()
 })
 
+test('public home returns live library stats without auth', async () => {
+  const app = await buildApp()
+  const res = await app.inject({ method: 'GET', url: '/api/public/home' })
+  assert.equal(res.statusCode, 200)
+  const body = res.json() as {
+    stats?: { photosLive?: number; countries?: number; categories?: unknown[] }
+    featured?: { hero?: unknown[]; edge?: unknown[] }
+  }
+  assert.equal(typeof body.stats?.photosLive, 'number')
+  assert.equal(typeof body.stats?.countries, 'number')
+  assert.ok(Array.isArray(body.stats?.categories))
+  assert.ok(Array.isArray(body.featured?.hero))
+  await app.close()
+})
+
 test('unknown routes return a JSON 404 envelope', async () => {
   const app = await buildApp()
   const res = await app.inject({ method: 'GET', url: '/api/this-route-does-not-exist' })
