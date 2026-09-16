@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { creatorKindSchema } from './creators.js'
 
 export const photoSortSchema = z.enum(['newest', 'downloads', 'views', 'likes'])
 
@@ -19,9 +20,10 @@ export const photographerListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   q: z.string().optional(),
+  kind: creatorKindSchema.optional(),
 })
 
-export const modelListQuerySchema = photographerListQuerySchema
+export const modelListQuerySchema = photographerListQuerySchema.omit({ kind: true })
 
 export type PhotoSort = z.infer<typeof photoSortSchema>
 export type PhotoListQuery = z.infer<typeof photoListQuerySchema>

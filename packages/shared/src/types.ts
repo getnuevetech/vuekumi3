@@ -1,4 +1,5 @@
 import type { PermissionState } from './permissions.js'
+import type { CreatorKind } from './creators.js'
 
 export type AccountType = 'admin' | 'contributor' | 'user' | 'agency' | 'model'
 export type UserStatus = 'active' | 'suspended' | 'pending'
@@ -28,6 +29,7 @@ export interface AuthUser {
   bio?: string | null
   location?: string | null
   contributorHandle?: string | null
+  creatorKind?: CreatorKind | null
   modelHandle?: string | null
   hasModelProfile?: boolean
   adminRole?: AdminRole | null
@@ -233,6 +235,7 @@ export interface PhotographerDto {
   avatarUrl: string | null
   location: string | null
   bio: string | null
+  creatorKind: CreatorKind
   photosCount: number
   downloads: number
   followers: number

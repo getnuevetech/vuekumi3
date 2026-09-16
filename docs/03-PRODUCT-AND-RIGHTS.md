@@ -181,10 +181,11 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 28, the marketplace is a **stock + licensing MVP** with photographer
+Shipped through Phase 29, the marketplace is a **stock + licensing MVP** with photographer
 accounts, photo permission states, invite-only model accounts, self-shot dual role, a
-two-approval commercial lock, public model portfolios, and an opt-in visual likeness check
-that cannot grant rights. Models do **not** earn and do **not** gain copyright.
+two-approval commercial lock, public model portfolios, an opt-in visual likeness check
+that cannot grant rights, and a creator directory that labels photographers and photo
+influencers honestly. Models do **not** earn and do **not** gain copyright.
 
 | Doctrine | In production now |
 | --- | --- |
@@ -200,7 +201,7 @@ that cannot grant rights. Models do **not** earn and do **not** gain copyright.
 | Visual verification | **Yes** — opt-in per photograph. Model uploads a selfie; Vuekumi compares it to the photograph (OpenAI vision when a key is in Admin Settings, otherwise records `unavailable`), stores a discrete result, and discards the selfie. No embedding store. Public profile does not show the check. **Similarity cannot grant commercial rights.** |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
 | VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
-| Photo influencer role | **No** |
+| Photo influencer role | **Yes** (Phase 29) — a `creatorKind` on the contributor profile (photographer / photo influencer), chosen at signup and changeable in account settings. Honest labels on profiles and the `/creators` directory with a kind filter. Same copyright, agreement, and 50% share — presentation and discovery only. |
 | Talent booking | **No** |
 | Partner/API distribution | **No** |
 | Separate AI-training consent | **No** |
@@ -209,6 +210,7 @@ that cannot grant rights. Models do **not** earn and do **not** gain copyright.
 Rights-managed products `requiresModelRelease: true`, same as other commercial grants.
 Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in Phase 26.
 Public model portfolio shipped in Phase 27. Opt-in visual verification shipped in Phase 28.
+Photo influencer creator kind shipped in Phase 29.
 
 ---
 
@@ -218,7 +220,8 @@ Keep v1 of the identity graph to:
 
 1. Photographers (already live as `contributor`)
 2. Models (invite-only accounts; claim, confirm likeness, approve/reject usage per image)
-3. Photo influencers (social/discovery creators; not built)
+3. Photo influencers (social/discovery creators; shipped in Phase 29 as a contributor
+   creator kind, not a separate account type)
 
 Stylists, MUAs, directors, production crews come later. The first network to establish is
 **photographer–model–image**.

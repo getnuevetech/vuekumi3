@@ -31,6 +31,7 @@ import PlusCheckout from './pages/PlusCheckout'
 import Search from './pages/Search'
 import Photographer from './pages/Photographer'
 import ModelProfile from './pages/ModelProfile'
+import Creators from './pages/Creators'
 import Models from './pages/Models'
 import Favorites from './pages/Favorites'
 import Following from './pages/Following'
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/p/:handle" element={<Photographer />} />
         <Route path="/m/:handle" element={<ModelProfile />} />
+        <Route path="/creators" element={<Creators />} />
         <Route path="/models" element={<Models />} />
         <Route path="/photo/:id" element={<PhotoDetail />} />
         <Route path="/pricing" element={<Pricing />} />

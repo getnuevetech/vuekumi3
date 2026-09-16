@@ -65,6 +65,7 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     bio: user.contributorProfile?.bio ?? user.modelProfile?.bio ?? null,
     location: user.contributorProfile?.location ?? user.modelProfile?.location ?? null,
     contributorHandle: user.contributorProfile?.handle ?? null,
+    creatorKind: user.contributorProfile?.creatorKind ?? null,
     modelHandle: user.modelProfile?.handle ?? null,
     hasModelProfile: Boolean(user.modelProfile),
     adminRole: user.adminProfile?.adminRole ?? null,

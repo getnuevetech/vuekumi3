@@ -107,6 +107,11 @@ enum PlatformAgreementStatus {
   revoked
 }
 
+enum CreatorKind {
+  photographer
+  photo_influencer
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -181,6 +186,7 @@ model ContributorProfile {
   id            String   @id @default(cuid())
   userId        String   @unique
   handle        String   @unique
+  creatorKind   CreatorKind @default(photographer)
   location      String?
   bio           String?
   photosCount   Int      @default(0)

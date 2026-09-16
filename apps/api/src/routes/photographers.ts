@@ -11,6 +11,7 @@ import {
   profilePhotoWhere,
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
+import { creatorKindWhere } from '../lib/creator-kind.js'
 import { followBlocked } from '../lib/follows.js'
 import { prisma } from '../lib/prisma.js'
 
@@ -23,6 +24,7 @@ function toPhotographer(
       handle: string
       location: string | null
       bio: string | null
+      creatorKind: 'photographer' | 'photo_influencer'
       profileViews?: number
     } | null
     modelProfile?: { handle: string } | null
@@ -39,6 +41,7 @@ function toPhotographer(
     avatarUrl: user.avatarUrl,
     location: user.contributorProfile.location,
     bio: user.contributorProfile.bio,
+    creatorKind: user.contributorProfile.creatorKind,
     photosCount,
     downloads,
     followers,
@@ -59,6 +62,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       accountType: 'contributor' as const,
       status: 'active' as const,
       photos: { some: PROFILE_PHOTO_FILTER },
+      ...creatorKindWhere(query.kind),
       ...(q
         ? {
             OR: [

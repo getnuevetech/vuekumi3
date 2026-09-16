@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 16 September 2026 against `main` after Phase 28.
+Updated 16 September 2026 against `main` after Phase 29.
 
 ---
 
@@ -97,6 +97,7 @@ Locked product rules already in the running system:
 | 26 | Self-shot dual role (contributor + model profile on one account; likeness + usage still required) |
 | 27 | Public model portfolio (`/m/:handle`, `/models`) from approved likeness photographs. Model does not gain copyright. |
 | 28 | Opt-in visual likeness check (result only; selfie discarded; similarity ≠ release) |
+| 29 | Creator kind on contributors (photographer / photo influencer) — honest labels, `/creators` directory with kind filter, signup + account choice. Presentation only: rights, copyright, and the 50% share are unchanged. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -118,7 +119,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Self-shot dual role | Shipped (Phase 26) — photographer identifies themselves on their own photo; `accountType` stays `contributor` |
 | Visual verification with biometric safeguards | Shipped (Phase 28) — opt-in per photograph, discrete result only, selfie discarded immediately. No embedding store or public face database. Similarity cannot grant rights. |
 | Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
-| Photo influencer role | Missing |
+| Photo influencer role | Shipped (Phase 29) — a `creatorKind` on the contributor profile, not a sixth account type. Same agreement, same earnings; only presentation and discovery change. |
 | Talent booking | Missing |
 | VueQuatro representation / agency-protected inventory | Missing |
 | Partner API | Missing |
@@ -161,7 +162,9 @@ This is the work the May discussion was actually about. It replaces “upload a 
 
 **Gate recorded with Phase 24 (15 September 2026):** models do **not** earn. The photographer 50% of paid licences is unchanged. The photographer/model/platform split remains **undecided** — do not invent a silent model share. Revisit before any payout work.
 
-**Gate before 29:** photo influencer / discovery flag is the first Arc C slice. Do not start it until approved. Booking (30) still waits on cleared people photographs.
+**Gate before 30:** booking is the next Arc C slice and still waits on cleared people
+photographs. Do not start it until approved. No booking CTA exists yet; the `/creators`
+directory licenses photographs only.
 
 ### Arc C — Talent, VueQuatro, distribution
 
@@ -169,7 +172,7 @@ Only after commercially cleared images have real people behind them.
 
 | Phase | Work |
 | --- | --- |
-| **29** | Photo influencer role *or* a contributor flag — discovery without pretending every creator is a studio photographer |
+| **29** | Photo influencer as a contributor creator kind — discovery without pretending every creator is a studio photographer — **shipped** |
 | **30** | Booking: hire photographer / book model (briefs, availability, quotes). VueKumi stays the marketplace. |
 | **31** | VueQuatro representation: agency-protected inventory, opt-in enforcement/admin of rights, staff tools. Not a second public brand required on day one. |
 | **32** | Brand production (campaign-shaped sourcing, not only single-image checkout) |
@@ -193,7 +196,8 @@ Do **not** start from this slice:
 ## 6. Cross-cutting (still in force)
 
 - Contract-first DTOs in `packages/shared`
-- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos.
+- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos. `amara-okafor@vuekumi.demo` is seeded as the demo **photo influencer** (Phase 29); the other four contributors are photographers.
+- CI seeds the database before the API test suite (the seeded demo constellation is test fixture data).
 - Vertical slices (schema → API → UI → tests)
 - Africa-only contributors; keys in Admin Settings; Docker-only Lightsail
 - PII / biometric minimisation for any future verification pipeline
@@ -220,5 +224,6 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 29** (photo influencer role or contributor flag)
-   unless you redirect. Do not start 30 from this slice.
+3. Default next slice when work resumes: **Phase 30** (booking: hire photographer / book
+   model) unless you redirect. It is gated on commercially cleared people photographs —
+   confirm the gate holds before starting.

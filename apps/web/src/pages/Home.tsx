@@ -29,6 +29,7 @@ function NoirHeader() {
 
   const links = [
     { label: 'Library', to: '/search' },
+    { label: 'Creators', to: '/creators' },
     { label: 'Models', to: '/models' },
     { label: 'License & Pricing', to: '/pricing' },
     ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', to: '/favorites' }] : []),
@@ -634,8 +635,8 @@ function ContributorsRail() {
             Contributors
           </h2>
         </div>
-        <Link to="/search" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
-          Browse the library →
+        <Link to="/creators" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
+          Browse creators →
         </Link>
       </div>
       <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
@@ -651,6 +652,7 @@ function ContributorsRail() {
                 {ph.name} <span className="mx-1 text-terra">—</span> <span className="text-sm font-light text-paper-soft">{ph.location}</span>
               </p>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
+                {ph.creatorKind === 'photo_influencer' ? 'Photo influencer · ' : ''}
                 {fmt(ph.followers)} followers · {ph.photosCount} photographs
               </p>
             </div>
@@ -799,6 +801,7 @@ function NoirFooter() {
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
         {[
           { label: 'Library', href: '/search' },
+          { label: 'Creators', href: '/creators' },
           { label: 'Models', href: '/models' },
           { label: 'License & Pricing', href: '/pricing' },
           { label: 'Contribute', href: SELL_HREF },

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { creatorKindSchema } from './creators.js'
 
 export const accountTypeSchema = z.enum(['admin', 'contributor', 'user', 'agency', 'model'])
 
@@ -9,6 +10,7 @@ export const registerSchema = z.object({
   accountType: z.enum(['contributor', 'user', 'agency']),
   country: z.string().min(2).max(2).optional(),
   acceptAgreement: z.boolean().optional(),
+  creatorKind: creatorKindSchema.optional(),
 })
 
 export const loginSchema = z.object({
@@ -36,6 +38,7 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(1000).optional().or(z.literal('')),
   location: z.string().max(120).optional().or(z.literal('')),
   handle: z.string().min(3).max(40).optional(),
+  creatorKind: creatorKindSchema.optional(),
 })
 
 export const changePasswordSchema = z.object({

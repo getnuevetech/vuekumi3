@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError, homeForUser, type GeoCountry } from '../api/client'
-import type { PublicConfigDto } from '@vuekumi/shared'
+import type { CreatorKind, PublicConfigDto } from '@vuekumi/shared'
 
 function oauthErrorMessage(code: string): string {
   if (code === 'denied') return 'Google sign-in was cancelled.'
@@ -24,6 +24,7 @@ type Role = 'member' | 'contributor' | 'agency'
 export default function Login() {
   const [mode, setMode] = useState<Mode>('signin')
   const [role, setRole] = useState<Role>('member')
+  const [creatorKind, setCreatorKind] = useState<CreatorKind>('photographer')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -136,6 +137,29 @@ export default function Login() {
             </div>
           )}
 
+          {mode === 'signup' && role === 'contributor' && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {(
+                [
+                  { id: 'photographer' as CreatorKind, label: 'Photographer', note: 'Studio & field work' },
+                  { id: 'photo_influencer' as CreatorKind, label: 'Photo influencer', note: 'Social & discovery creator' },
+                ]
+              ).map((k) => (
+                <button
+                  key={k.id}
+                  type="button"
+                  onClick={() => setCreatorKind(k.id)}
+                  className={`rounded-2xl border p-3 text-left transition-colors ${
+                    creatorKind === k.id ? 'border-terra bg-terra/5' : 'border-sand-soft hover:border-terra/50'
+                  }`}
+                >
+                  <span className="block text-sm font-medium">{k.label}</span>
+                  <span className="mt-0.5 block font-mono-tech text-[9px] text-ink-faint">{k.note}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <form
             className="mt-6 space-y-3"
             onSubmit={async (e) => {
@@ -155,6 +179,7 @@ export default function Login() {
                         accountType,
                         country: country || undefined,
                         acceptAgreement: accountType === 'contributor' ? acceptAgreement : undefined,
+                        creatorKind: accountType === 'contributor' ? creatorKind : undefined,
                       })
                 const dest = redirect ?? homeForUser(user)
                 navigate(dest)

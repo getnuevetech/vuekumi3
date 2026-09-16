@@ -729,6 +729,7 @@ export interface AdminAccount {
   joined: string
   emailVerified: boolean
   handle: string | null
+  creatorKind: 'photographer' | 'photo_influencer' | null
   photos: number
   earnings: number
   downloads: number

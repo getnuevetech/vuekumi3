@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
+import { creatorKindLabel } from '@vuekumi/shared'
 import { PhotoMasonry, SiteHeader } from '../components/shared'
 import { FollowButton } from '../components/FollowButton'
 import { useAuth } from '../context/AuthContext'
@@ -75,7 +76,9 @@ export default function Photographer() {
               <div className="h-28 w-28 rounded-full bg-cream" />
             )}
             <div className="flex-1">
-              <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Contributor</p>
+              <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">
+                {creatorKindLabel(profile.creatorKind)}
+              </p>
               <h1 className="font-serif-display mt-1 text-4xl font-light tracking-tight">{profile.name}</h1>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
                 @{profile.handle} · {profile.location ?? 'Africa'}

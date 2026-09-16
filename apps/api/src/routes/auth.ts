@@ -15,6 +15,7 @@ import {
   passwordChangeBlocked,
   summarizeUserAgent,
 } from '../lib/account.js'
+import { creatorKindChange, registrationCreatorKind } from '../lib/creator-kind.js'
 import { handleTaken } from '../lib/models.js'
 import {
   adminPasswordResetEmail,
@@ -95,6 +96,7 @@ export async function authRoutes(app: FastifyInstance) {
             userId: created.id,
             handle: `${handle}-${created.id.slice(-4)}`,
             location: body.country,
+            creatorKind: registrationCreatorKind(body.accountType, body.creatorKind) ?? 'photographer',
           },
         })
         await tx.platformAgreement.create({
@@ -238,12 +240,14 @@ export async function authRoutes(app: FastifyInstance) {
         },
       })
       if (existing.contributorProfile) {
+        const nextKind = creatorKindChange(true, body.creatorKind)
         await tx.contributorProfile.update({
           where: { userId },
           data: {
             ...(handle ? { handle } : {}),
             ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
             ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
+            ...(nextKind ? { creatorKind: nextKind } : {}),
           },
         })
       }

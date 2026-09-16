@@ -13,6 +13,8 @@ export interface Photographer {
   photos: number
   downloads: number
   earnings: number
+  /** Phase 29 — presentation only; rights and earnings are unchanged. */
+  creatorKind?: 'photographer' | 'photo_influencer'
 }
 
 export interface Photo {
@@ -44,7 +46,7 @@ export const categories = [
 ] as const
 
 export const photographers: Photographer[] = [
-  { name: 'Amara Okafor', handle: 'amara-okafor', location: 'Lagos, Nigeria', avatar: '/images/avatars/basket-vendor.jpg', photos: 148, downloads: 92400, earnings: 4820 },
+  { name: 'Amara Okafor', handle: 'amara-okafor', location: 'Lagos, Nigeria', avatar: '/images/avatars/basket-vendor.jpg', photos: 148, downloads: 92400, earnings: 4820, creatorKind: 'photo_influencer' },
   { name: 'Thandiwe Nkosi', handle: 'thandiwe-nkosi', location: 'Cape Town, South Africa', avatar: '/images/avatars/portrait-botswana.jpg', photos: 203, downloads: 131800, earnings: 7115 },
   { name: 'Kofi Mensah', handle: 'kofi-mensah', location: 'Accra, Ghana', avatar: '/images/avatars/photographer-bw.jpg', photos: 97, downloads: 64100, earnings: 3340 },
   { name: 'Selam Tesfaye', handle: 'selam-tesfaye', location: 'Addis Ababa, Ethiopia', avatar: '/images/avatars/coffee-ceremony.jpg', photos: 121, downloads: 78900, earnings: 4280 },
