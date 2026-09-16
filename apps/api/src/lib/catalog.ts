@@ -8,7 +8,11 @@ import { publicAppearances } from './models.js'
 export const catalogPhotoInclude = {
   tags: true,
   rightsRecord: true,
-  appearances: true,
+  appearances: {
+    include: {
+      modelUser: { include: { modelProfile: { select: { handle: true } } } },
+    },
+  },
   contributor: { include: { contributorProfile: true, platformAgreements: true } },
 } as const
 
@@ -99,6 +103,22 @@ export function profilePhotoWhere(contributorId: string): Prisma.PhotoWhereInput
   return {
     ...PROFILE_PHOTO_FILTER,
     contributorId,
+  }
+}
+
+export function approvedLikenessWhere(modelUserId: string): Prisma.PhotoAppearanceWhereInput {
+  return {
+    modelUserId,
+    status: 'approved',
+    confirmedLikeness: true,
+  }
+}
+
+export function modelPortfolioPhotoWhere(modelUserId: string, category?: string): Prisma.PhotoWhereInput {
+  return {
+    ...PROFILE_PHOTO_FILTER,
+    appearances: { some: approvedLikenessWhere(modelUserId) },
+    ...(category && category !== 'All' ? { category } : {}),
   }
 }
 

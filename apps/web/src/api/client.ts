@@ -14,6 +14,8 @@ import type {
   PhotoDto,
   PhotographerDto,
   PhotographerProfileDto,
+  ModelPublicDto,
+  ModelPublicProfileDto,
   FavoriteResult,
   FollowResult,
   ContributorStatsDto,
@@ -203,6 +205,30 @@ export const api = {
     }
     const query = qs.toString()
     return request<PhotographerProfileDto>(`/api/photographers/${encodeURIComponent(handle)}${query ? `?${query}` : ''}`)
+  },
+
+  models: (params?: Record<string, string | number | undefined>) => {
+    const qs = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined) qs.set(k, String(v))
+      })
+    }
+    const query = qs.toString()
+    return request<{ items: ModelPublicDto[]; page: number; limit: number; total: number; hasMore: boolean }>(
+      `/api/models${query ? `?${query}` : ''}`,
+    )
+  },
+
+  modelPublic: (handle: string, params?: Record<string, string | number | undefined>) => {
+    const qs = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined) qs.set(k, String(v))
+      })
+    }
+    const query = qs.toString()
+    return request<ModelPublicProfileDto>(`/api/models/${encodeURIComponent(handle)}${query ? `?${query}` : ''}`)
   },
 
   toggleFollow: (handle: string) =>

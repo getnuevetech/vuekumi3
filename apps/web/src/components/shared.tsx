@@ -140,6 +140,7 @@ export function SiteHeader() {
           <LogoMark />
           <nav className="hidden items-center gap-7 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:flex">
             <Link to="/search" className="link-slide hover:text-terra">Library</Link>
+            <Link to="/models" className="link-slide hover:text-terra">Models</Link>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
             {user && user.accountType !== 'model' && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
             {user && user.accountType !== 'model' && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
@@ -208,6 +209,7 @@ export function SiteHeader() {
         <div className="flex h-full flex-col justify-center gap-1 px-8">
           {[
             { label: 'Library', href: '/search' },
+            { label: 'Models', href: '/models' },
             { label: 'License & Pricing', href: '/pricing' },
             ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', href: '/favorites' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Following', href: '/following' }] : []),

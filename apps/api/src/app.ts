@@ -30,6 +30,7 @@ import { collectionRoutes } from './routes/collections.js'
 import { subscriptionRoutes } from './routes/subscriptions.js'
 import { adminMetricsRoutes } from './routes/admin-metrics.js'
 import { reportRoutes } from './routes/reports.js'
+import { modelProfileRoutes } from './routes/model-profiles.js'
 import { modelRoutes } from './routes/models.js'
 
 export async function buildApp() {
@@ -100,6 +101,7 @@ export async function buildApp() {
     await api.register(agencyRoutes)
     await api.register(payoutRoutes)
     await api.register(photographerRoutes)
+    await api.register(modelProfileRoutes)
     await api.register(collectionRoutes)
     await api.register(subscriptionRoutes)
     await api.register(adminMetricsRoutes)

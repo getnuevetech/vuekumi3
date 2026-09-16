@@ -180,9 +180,10 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 26, the marketplace is a **stock + licensing MVP** with photographer
-accounts, photo permission states, invite-only model accounts, self-shot dual role, and a
-two-approval commercial lock. Models do **not** earn.
+Shipped through Phase 27, the marketplace is a **stock + licensing MVP** with photographer
+accounts, photo permission states, invite-only model accounts, self-shot dual role, a
+two-approval commercial lock, and public model portfolios assembled from approved likeness.
+Models do **not** earn and do **not** gain copyright.
 
 | Doctrine | In production now |
 | --- | --- |
@@ -194,6 +195,7 @@ two-approval commercial lock. Models do **not** earn.
 | Invite-the-model | **Yes** — contributor names a person; VueKumi emails a claim link. Typed name is not identity. Checkbox is not consent. Photographers cannot invite their own email; they self-identify instead. |
 | Permission states (portfolio / editorial / restricted / agency-protected) | **Yes** — `PermissionState` on each photo; catalog is stock states; profile can show portfolio |
 | Self-shot dual role | **Yes** — photographer confirms likeness and usage on their own photograph. `accountType` stays `contributor`. |
+| Public model portfolio | **Yes** — `/m/:handle` and `/models` list photographs a model approved with confirmed likeness. Copyright stays with the photographer. No booking CTA. |
 | Visual verification | **No** (AI today is metadata suggestion only) |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
 | VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
@@ -205,6 +207,7 @@ two-approval commercial lock. Models do **not** earn.
 
 Rights-managed products `requiresModelRelease: true`, same as other commercial grants.
 Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in Phase 26.
+Public model portfolio shipped in Phase 27.
 
 ---
 
@@ -219,9 +222,11 @@ Keep v1 of the identity graph to:
 Stylists, MUAs, directors, production crews come later. The first network to establish is
 **photographer–model–image**.
 
-Profiles are part of the asset: a photographer portfolio, and a model portfolio assembled
-from images they approved across photographers. That is how stock becomes talent discovery
-(“license this image” → “hire this photographer” / “book this model”).
+Profiles are part of the asset: a photographer portfolio (`/p/:handle`), and a model
+portfolio (`/m/:handle`) assembled from images they approved across photographers. That is
+how stock becomes talent discovery
+(“license this image” → “hire this photographer” / “book this model”). Booking itself is
+still Phase 30 — the public model page licenses photographs, it does not book talent.
 
 ---
 

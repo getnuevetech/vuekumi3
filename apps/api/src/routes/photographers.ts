@@ -25,6 +25,7 @@ function toPhotographer(
       bio: string | null
       profileViews?: number
     } | null
+    modelProfile?: { handle: string } | null
   },
   photosCount: number,
   downloads: number,
@@ -43,6 +44,7 @@ function toPhotographer(
     followers,
     profileViews: extras?.profileViews ?? user.contributorProfile.profileViews,
     following: extras?.following,
+    modelHandle: user.modelProfile?.handle ?? null,
   }
 }
 
@@ -72,6 +74,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       where,
       include: {
         contributorProfile: true,
+        modelProfile: { select: { handle: true } },
         photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
         _count: { select: { followers: true } },
       },
@@ -125,6 +128,7 @@ export async function photographerRoutes(app: FastifyInstance) {
           photographer: {
             include: {
               contributorProfile: true,
+              modelProfile: { select: { handle: true } },
               photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
               _count: { select: { followers: true } },
             },
@@ -161,7 +165,7 @@ export async function photographerRoutes(app: FastifyInstance) {
     const query = photoListQuerySchema.parse(request.query)
     const profile = await prisma.contributorProfile.findFirst({
       where: { handle: { equals: handle, mode: 'insensitive' } },
-      include: { user: true },
+      include: { user: { include: { modelProfile: { select: { handle: true } } } } },
     })
 
     if (!profile || profile.user.accountType !== 'contributor' || profile.user.status !== 'active') {
@@ -208,7 +212,7 @@ export async function photographerRoutes(app: FastifyInstance) {
     ])
 
     const photographer = toPhotographer(
-      { ...profile.user, contributorProfile: profile },
+      { ...profile.user, contributorProfile: profile, modelProfile: profile.user.modelProfile },
       live._count._all,
       live._sum.downloads ?? 0,
       followers,

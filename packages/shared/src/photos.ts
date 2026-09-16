@@ -21,6 +21,9 @@ export const photographerListQuerySchema = z.object({
   q: z.string().optional(),
 })
 
+export const modelListQuerySchema = photographerListQuerySchema
+
 export type PhotoSort = z.infer<typeof photoSortSchema>
 export type PhotoListQuery = z.infer<typeof photoListQuerySchema>
 export type PhotographerListQuery = z.infer<typeof photographerListQuerySchema>
+export type ModelListQuery = z.infer<typeof modelListQuerySchema>

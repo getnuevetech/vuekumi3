@@ -238,6 +238,29 @@ export default function PhotoDetail() {
               </button>
             </div>
 
+            {((view.appearances ?? []).filter((a) => a.status === 'approved' && a.modelHandle)).length > 0 && (
+              <div className="mt-4 border border-sand bg-white p-4">
+                <p className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">In this photograph</p>
+                <ul className="mt-2 space-y-1">
+                  {(view.appearances ?? [])
+                    .filter((a) => a.status === 'approved' && a.modelHandle)
+                    .map((a) => (
+                      <li key={a.id}>
+                        <Link to={`/m/${a.modelHandle}`} className="text-sm hover:text-terra">
+                          {a.displayName}{' '}
+                          <span className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                            @{a.modelHandle}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+                <p className="mt-2 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-faint">
+                  Likeness permission — copyright stays with the photographer
+                </p>
+              </div>
+            )}
+
             <div className="mt-3">
               <CollectionPicker photoId={view.id} />
             </div>

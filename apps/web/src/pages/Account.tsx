@@ -225,10 +225,10 @@ export default function Account() {
               />
               <p className="font-mono-tech text-[10px] text-ink-faint">
                 {dualRole
-                  ? `Shown as /p/${handle || 'your-handle'}. The same handle is reserved for a future public model portfolio.`
+                  ? `Shown as /p/${handle || 'your-handle'} and /m/${handle || 'your-handle'}. Approving likeness does not transfer copyright.`
                   : contributor
                   ? `Shown as /p/${handle || 'your-handle'}`
-                  : 'Handle is reserved for a future public model portfolio. It is not public yet.'}
+                  : `Shown as /m/${handle || 'your-handle'}. Approving likeness does not transfer copyright.`}
               </p>
               <input
                 value={location}
@@ -400,6 +400,12 @@ export default function Account() {
           <p className="mt-8 text-sm text-ink-soft">
             Public photographer page:{' '}
             <Link to={`/p/${user.contributorHandle}`} className="text-terra">/p/{user.contributorHandle}</Link>
+          </p>
+        )}
+        {model && user.modelHandle && (
+          <p className={`${contributor && user.contributorHandle ? 'mt-2' : 'mt-8'} text-sm text-ink-soft`}>
+            Public model portfolio:{' '}
+            <Link to={`/m/${user.modelHandle}`} className="text-terra">/m/{user.modelHandle}</Link>
           </p>
         )}
       </div>

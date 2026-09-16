@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import type { HomePageDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
+import type { HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
 import { hasModelAccess } from '@vuekumi/shared';
 import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ function NoirHeader() {
 
   const links = [
     { label: 'Library', to: '/search' },
+    { label: 'Models', to: '/models' },
     { label: 'License & Pricing', to: '/pricing' },
     ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', to: '/favorites' }] : []),
     ...(user && user.accountType !== 'model' ? [{ label: 'Following', to: '/following' }] : []),
@@ -669,6 +670,54 @@ function ContributorsRail() {
   );
 }
 
+function ModelsRail() {
+  const [people, setPeople] = useState<ModelPublicDto[]>([]);
+
+  useEffect(() => {
+    api.models({ limit: 12 }).then((d) => setPeople(d.items)).catch(() => setPeople([]));
+  }, []);
+
+  if (people.length === 0) return null;
+
+  return (
+    <section className="bg-noir pb-20 md:pb-24">
+      <div className="flex items-end justify-between px-5 md:px-10">
+        <div>
+          <p className="font-script text-3xl text-terra">the people</p>
+          <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
+            In the photographs
+          </h2>
+        </div>
+        <Link to="/models" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
+          Browse models →
+        </Link>
+      </div>
+      <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
+        {people.map((model) => (
+          <Link
+            key={model.handle}
+            to={`/m/${model.handle}`}
+            className="strip-cell group relative w-[58vw] shrink-0 snap-start overflow-hidden sm:w-[36vw] lg:w-[22vw]"
+          >
+            <img src={model.avatarUrl ?? '/images/avatars/portrait-botswana.jpg'} alt={model.name} loading="lazy" className="aspect-[3/4] w-full object-cover" />
+            <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-5 pt-12">
+              <p className="font-condensed text-xl font-medium uppercase tracking-[0.15em] text-paper">
+                {model.name}
+              </p>
+              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
+                @{model.handle} · {model.photosCount} approved
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <p className="mt-6 px-5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-noir-soft md:px-10">
+        Likeness permission — copyright stays with the photographer
+      </p>
+    </section>
+  );
+}
+
 /* ---------------- image-topped pricing cards ---------------- */
 
 function NoirPricing({ photos }: { photos: PhotoDto[] }) {
@@ -750,6 +799,7 @@ function NoirFooter() {
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
         {[
           { label: 'Library', href: '/search' },
+          { label: 'Models', href: '/models' },
           { label: 'License & Pricing', href: '/pricing' },
           { label: 'Contribute', href: SELL_HREF },
           { label: 'Account', href: '/account' },
@@ -808,6 +858,7 @@ export default function Home() {
       <EditorialSplit photos={featured?.editorial ?? []} stats={stats} />
       <StatsBand categories={stats?.categories ?? []} background={featured?.statsBackground ?? null} />
       <ContributorsRail />
+      <ModelsRail />
       <NoirPricing photos={featured?.pricing ?? []} />
       <NoirFooter />
       <BackToTop />

@@ -238,6 +238,19 @@ export interface PhotographerDto {
   followers: number
   profileViews?: number
   following?: boolean
+  modelHandle?: string | null
+}
+
+export interface ModelPublicDto {
+  handle: string
+  name: string
+  avatarUrl: string | null
+  location: string | null
+  bio: string | null
+  photosCount: number
+  photographerHandle: string | null
+  earns: false
+  profileViews?: number
 }
 
 export interface FollowResult {
@@ -264,6 +277,10 @@ export interface ContributorStatsDto {
 
 export interface PhotographerProfileDto extends PaginatedPhotos {
   photographer: PhotographerDto
+}
+
+export interface ModelPublicProfileDto extends PaginatedPhotos {
+  model: ModelPublicDto
 }
 
 export interface FavoriteResult {

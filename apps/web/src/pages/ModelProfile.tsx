@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
-import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
+import type { ModelPublicDto, PhotoDto } from '@vuekumi/shared'
 import { PhotoMasonry, SiteHeader } from '../components/shared'
-import { FollowButton } from '../components/FollowButton'
-import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
 import { fmt } from '../data/content'
 
-export default function Photographer() {
+export default function ModelProfile() {
   const { handle } = useParams()
-  const { user } = useAuth()
   const [params, setParams] = useSearchParams()
-  const [profile, setProfile] = useState<PhotographerDto | null>(null)
+  const [profile, setProfile] = useState<ModelPublicDto | null>(null)
   const [items, setItems] = useState<PhotoDto[]>([])
   const [total, setTotal] = useState(0)
   const [hasMore, setHasMore] = useState(false)
@@ -23,10 +20,10 @@ export default function Photographer() {
     if (!handle) return
     let cancelled = false
     setStatus('loading')
-    api.photographer(handle, { page: 1, limit: 24, sort })
+    api.modelPublic(handle, { page: 1, limit: 24, sort })
       .then((data) => {
         if (cancelled) return
-        setProfile(data.photographer)
+        setProfile(data.model)
         setItems(data.items)
         setTotal(data.total)
         setHasMore(data.hasMore)
@@ -42,7 +39,7 @@ export default function Photographer() {
   async function loadMore() {
     if (!handle) return
     const next = page + 1
-    const data = await api.photographer(handle, { page: next, limit: 24, sort })
+    const data = await api.modelPublic(handle, { page: next, limit: 24, sort })
     setItems((prev) => [...prev, ...data.items])
     setHasMore(data.hasMore)
     setPage(next)
@@ -54,9 +51,9 @@ export default function Photographer() {
         <SiteHeader />
         <div className="mx-auto max-w-md px-6 pb-24 pt-36 text-center">
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
-          <h1 className="font-serif-display mt-2 text-4xl font-light">Photographer not found.</h1>
-          <Link to="/search" className="mt-8 inline-block bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper">
-            Back to the library
+          <h1 className="font-serif-display mt-2 text-4xl font-light">Model not found.</h1>
+          <Link to="/models" className="mt-8 inline-block bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper">
+            Browse models
           </Link>
         </div>
       </div>
@@ -75,66 +72,74 @@ export default function Photographer() {
               <div className="h-28 w-28 rounded-full bg-cream" />
             )}
             <div className="flex-1">
-              <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Contributor</p>
+              <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Model</p>
               <h1 className="font-serif-display mt-1 text-4xl font-light tracking-tight">{profile.name}</h1>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
                 @{profile.handle} · {profile.location ?? 'Africa'}
               </p>
               {profile.bio && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{profile.bio}</p>}
               <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
-                {profile.photosCount} live photographs · {fmt(profile.downloads)} downloads · {fmt(profile.followers)} followers
+                {profile.photosCount} approved photograph{profile.photosCount === 1 ? '' : 's'}
                 {profile.profileViews != null ? ` · ${fmt(profile.profileViews)} profile views` : ''}
+                {' · does not earn'}
+              </p>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
+                Photographs this model approved for use. Copyright stays with the photographer.
+                Vuekumi sells usage permission, not ownership.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <FollowButton
-                handle={profile.handle}
-                following={profile.following}
-                mine={user?.contributorHandle === profile.handle}
-                redirectTo={`/p/${profile.handle}`}
-                onChange={(result) => {
-                  setProfile((p) => p ? { ...p, following: result.following, followers: result.followers } : p)
-                }}
-              />
-              <Link
-                to={`/search?photographer=${encodeURIComponent(profile.handle)}`}
-                className="border border-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
-              >
-                Open in search
-              </Link>
-              {profile.modelHandle && (
+              {profile.photographerHandle && (
                 <Link
-                  to={`/m/${profile.modelHandle}`}
-                  className="border border-sand px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:border-ink"
+                  to={`/p/${profile.photographerHandle}`}
+                  className="border border-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
                 >
-                  Model portfolio
+                  Photographer page
                 </Link>
               )}
+              <Link
+                to="/models"
+                className="border border-sand px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:border-ink"
+              >
+                All models
+              </Link>
             </div>
           </div>
         )}
 
         <div className="mt-10 flex items-end justify-between">
           <h2 className="font-serif-display text-2xl tracking-tight">
-            {status === 'loading' ? 'Loading…' : `${total} photograph${total === 1 ? '' : 's'}`}
+            {status === 'loading'
+              ? 'Loading…'
+              : total === 0
+                ? 'No public photographs yet'
+                : `${total} photograph${total === 1 ? '' : 's'}`}
           </h2>
-          <select
-            aria-label="Sort"
-            value={sort}
-            onChange={(e) => {
-              const next = new URLSearchParams(params)
-              if (e.target.value === 'newest') next.delete('sort')
-              else next.set('sort', e.target.value)
-              setParams(next)
-            }}
-            className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none"
-          >
-            <option value="newest">Newest</option>
-            <option value="downloads">Downloads</option>
-            <option value="views">Views</option>
-            <option value="likes">Likes</option>
-          </select>
+          {total > 0 && (
+            <select
+              aria-label="Sort"
+              value={sort}
+              onChange={(e) => {
+                const next = new URLSearchParams(params)
+                if (e.target.value === 'newest') next.delete('sort')
+                else next.set('sort', e.target.value)
+                setParams(next)
+              }}
+              className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none"
+            >
+              <option value="newest">Newest</option>
+              <option value="downloads">Downloads</option>
+              <option value="views">Views</option>
+              <option value="likes">Likes</option>
+            </select>
+          )}
         </div>
+
+        {status === 'ready' && total === 0 && (
+          <p className="mt-8 max-w-xl text-sm text-ink-soft">
+            This model has a public profile, but no approved likeness photographs are visible yet.
+          </p>
+        )}
 
         <PhotoMasonry photos={items} />
 

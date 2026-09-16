@@ -68,6 +68,12 @@ export default function ModelPortal() {
       <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
         Models do not earn yet. The photographer/model split is undecided.
       </p>
+      {handle && (
+        <p className="mt-3 text-sm text-ink-soft">
+          View public portfolio:{' '}
+          <Link to={`/m/${handle}`} className="text-terra">/m/{handle}</Link>
+        </p>
+      )}
 
       <div className="mt-8 space-y-4">
         {items.length === 0 && (

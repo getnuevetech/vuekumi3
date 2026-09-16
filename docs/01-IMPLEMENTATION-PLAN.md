@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 16 September 2026 against `main` after Phase 26.
+Updated 16 September 2026 against `main` after Phase 27.
 
 ---
 
@@ -95,6 +95,7 @@ Locked product rules already in the running system:
 | 24 | Model account type, invite-the-model, likeness confirm, approve/reject per image |
 | 25 | Two-approval commercial lock (photographer + model; admin verifies process, not a PDF) |
 | 26 | Self-shot dual role (contributor + model profile on one account; likeness + usage still required) |
+| 27 | Public model portfolio (`/m/:handle`, `/models`) from approved likeness photographs. Model does not gain copyright. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -109,6 +110,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | --- | --- |
 | Photographer copyright + platform licence + buyer usage licence | Shipped (agreement + grants) |
 | Model as a real, verifiable account | Shipped (Phase 24–26) — invite-only fifth type; photographers may also hold a model profile on the same email. Admin/agency cannot. |
+| Public model portfolio | Shipped (Phase 27) — `/m/:handle` and `/models` from approved, confirmed likeness on profile-visible photographs. Model does not gain copyright. No booking CTA. |
 | Two-approval commercial lock | Shipped (Phase 25) — commercial-class licences of people photos require every appearance approved with confirmed likeness and commercial usage. PDF is supporting evidence. |
 | Invite-the-model as acquisition | Shipped (Phase 24) — photographer names a person; VueKumi emails the invite |
 | Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Shipped (Phase 23) — orthogonal to moderation status; catalog is stock states only |
@@ -153,12 +155,12 @@ This is the work the May discussion was actually about. It replaces “upload a 
 | **24** | **Model** account type (fifth type, still one type per email). Photographer identifies people on a photo; VueKumi **invites** them. Claim profile, confirm likeness, approve/reject per image, set usage. Models do **not** earn. — **shipped** | Typed name is not identity. Checkbox is not consent. |
 | **25** | **Two-approval commercial lock** + rights record as the asset (invites, consent version, timestamps, restrictions, grant history). Admin verifies process, not a PDF in isolation. — **shipped** | Photographer approval + model approval = commercially licensable. AI match cannot grant rights. |
 | **26** | **Self-shot** dual role on one account — **shipped** | Do not force a fake photographer/model pair |
-| **27** | Model **portfolio** assembled from images they approved (feeds talent search later) | Model does not gain copyright |
-| **28** | Visual verification (opt-in likeness check) | Last in this arc. Voluntary, minimised retention, not a public face database. Skip until 24–25 are live. |
+| **27** | Model **portfolio** assembled from images they approved — **shipped** | Model does not gain copyright |
+| **28** | Visual verification (opt-in likeness check) | Last in this arc. Voluntary, minimised retention, not a public face database. Skip until 24–27 are live. |
 
 **Gate recorded with Phase 24 (15 September 2026):** models do **not** earn. The photographer 50% of paid licences is unchanged. The photographer/model/platform split remains **undecided** — do not invent a silent model share. Revisit before any payout work.
 
-**Gate before 27:** public model portfolio is the next Rights 2.0 slice. Do not start it until approved.
+**Gate before 28:** visual verification is the next Rights 2.0 slice. Do not start it until approved.
 
 ### Arc C — Talent, VueQuatro, distribution
 
@@ -190,7 +192,7 @@ Until Arc B exists, do **not** start:
 ## 6. Cross-cutting (still in force)
 
 - Contract-first DTOs in `packages/shared`
-- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos.
+- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos.
 - Vertical slices (schema → API → UI → tests)
 - Africa-only contributors; keys in Admin Settings; Docker-only Lightsail
 - PII / biometric minimisation for any future verification pipeline
@@ -217,5 +219,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 27** (public model portfolio)
-   unless you redirect. Rights 2.0 is the strategic priority. Do not start 28 from this slice.
+3. Default next slice when work resumes: **Phase 28** (visual verification)
+   unless you redirect. Rights 2.0 is the strategic priority. Do not start 29 from this slice.

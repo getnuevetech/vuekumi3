@@ -30,6 +30,8 @@ import Checkout from './pages/Checkout'
 import PlusCheckout from './pages/PlusCheckout'
 import Search from './pages/Search'
 import Photographer from './pages/Photographer'
+import ModelProfile from './pages/ModelProfile'
+import Models from './pages/Models'
 import Favorites from './pages/Favorites'
 import Following from './pages/Following'
 import Collections from './pages/Collections'
@@ -54,6 +56,8 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />
         <Route path="/p/:handle" element={<Photographer />} />
+        <Route path="/m/:handle" element={<ModelProfile />} />
+        <Route path="/models" element={<Models />} />
         <Route path="/photo/:id" element={<PhotoDetail />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/login" element={<Login />} />

@@ -377,6 +377,7 @@ async function main() {
       name: 'Ada Molefe',
       accountType: 'model',
       country: 'BW',
+      avatarUrl: '/images/avatars/portrait-botswana.jpg',
       emailVerifiedAt: new Date(),
       modelProfile: { create: { handle: 'ada-molefe', location: 'Gaborone, Botswana' } },
     },
