@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import type { PhotoDto } from '@vuekumi/shared'
+import { hasModelAccess, type PhotoDto } from '@vuekumi/shared'
 import { fmt, type Photo } from '../data/content'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { useCurrency } from '../context/CurrencyContext'
@@ -148,7 +148,7 @@ export function SiteHeader() {
             {(user?.accountType === 'agency' || user?.agencyId) && (
               <Link to="/agency" className="link-slide hover:text-terra">Agency</Link>
             )}
-            {user?.accountType === 'model' && (
+            {user && hasModelAccess(user) && (
               <Link to="/model" className="link-slide hover:text-terra">Model</Link>
             )}
             <Link to="/contributor" className="link-slide hover:text-terra">Contributor</Link>
@@ -213,7 +213,7 @@ export function SiteHeader() {
             ...(user && user.accountType !== 'model' ? [{ label: 'Following', href: '/following' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Collections', href: '/collections' }] : []),
             ...(user ? [{ label: 'Account', href: '/account' }] : []),
-            ...(user?.accountType === 'model' ? [{ label: 'Model portal', href: '/model' }] : []),
+            ...(user && hasModelAccess(user) ? [{ label: 'Model portal', href: '/model' }] : []),
             { label: 'Contributor Portal', href: '/contributor' },
             { label: 'Admin Portal', href: '/admin' },
             { label: 'Log in', href: '/login' },
@@ -419,7 +419,7 @@ export function PortalShell({
         </div>
         <nav className="flex gap-1 overflow-x-auto px-4 pb-4 no-scrollbar lg:flex-1 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-3 lg:pb-0 lg:pt-4">
           {links.map((l, i) => {
-            const isPortalRoot = l.to === '/contributor' || l.to === '/admin' || l.to === '/agency'
+            const isPortalRoot = l.to === '/contributor' || l.to === '/admin' || l.to === '/agency' || l.to === '/model'
             const active = pathname === l.to || (!isPortalRoot && pathname.startsWith(`${l.to}/`))
             return (
               <Link
@@ -450,7 +450,7 @@ export function PortalShell({
                 onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
                 className="mb-3 block font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
               >
-                Log out · {user.accountType}
+                Log out · {user.accountType}{user.hasModelProfile && user.accountType !== 'model' ? ' · model' : ''}
               </button>
             </>
           )}

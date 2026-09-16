@@ -52,6 +52,7 @@ function serializeAccount(user: {
     agencyName: user.ownedAgencies[0]?.name ?? null,
     agencyStatus: user.ownedAgencies[0]?.status ?? null,
     appearances: user._count?.modelAppearances ?? 0,
+    dualRole: Boolean(user.contributorProfile && user.modelProfile),
   }
 }
 
@@ -99,7 +100,33 @@ export async function adminAccountRoutes(app: FastifyInstance) {
   app.get('/admin/contributors', admin, async (request) => list('contributor', request))
   app.get('/admin/agencies', admin, async (request) => list('agency', request))
   app.get('/admin/admins', admin, async (request) => list('admin', request))
-  app.get('/admin/models', admin, async (request) => list('model', request))
+  app.get('/admin/models', admin, async (request) => {
+    const query = listQuery.parse(request.query)
+    const where = {
+      modelProfile: { isNot: null },
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.q
+        ? {
+            OR: [
+              { name: { contains: query.q, mode: 'insensitive' as const } },
+              { email: { contains: query.q, mode: 'insensitive' as const } },
+              { country: { contains: query.q, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    }
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+    ])
+    return { items: users.map(serializeAccount), total, page: query.page, limit: query.limit }
+  })
 
   app.get('/admin/accounts/:id', admin, async (request, reply) => {
     const { id } = request.params as { id: string }

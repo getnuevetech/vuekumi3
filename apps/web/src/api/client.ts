@@ -42,6 +42,7 @@ import type {
   PhotoAppearanceDto,
   ModelInvitePreviewDto,
   IdentifyAppearanceInput,
+  SelfShotAppearanceInput,
   DecideAppearanceInput,
   AcceptModelInviteInput,
 } from '@vuekumi/shared'
@@ -453,6 +454,12 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  selfShotAppearance: (photoId: string, body: SelfShotAppearanceInput) =>
+    request<{ appearance: PhotoAppearanceDto }>(`/api/contributor/photos/${photoId}/appearances/self`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   resendAppearanceInvite: (photoId: string, appearanceId: string) =>
     request<{ appearance: PhotoAppearanceDto; joinUrl: string }>(
       `/api/contributor/photos/${photoId}/appearances/${appearanceId}/resend`,
@@ -697,6 +704,7 @@ export interface AdminAccount {
   agencyName: string | null
   agencyStatus: string | null
   appearances?: number
+  dualRole?: boolean
 }
 
 export interface FxRate {

@@ -6,13 +6,15 @@ import { PortalShell, StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { money } from '../lib/format'
-import { contributorLinks } from './Contributor'
+import { contributorPortalLinks } from './Contributor'
 import { AiSuggestPanel } from '../components/AiSuggestPanel'
 import { PeopleIdentifier } from '../components/PeopleIdentifier'
+import { useAuth } from '../context/AuthContext'
 
 function Shell({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
   return (
-    <PortalShell title="Contributor portal" subtitle="Upload, rights, and 50% of every paid licence." links={contributorLinks}>
+    <PortalShell title="Contributor portal" subtitle="Upload, rights, and 50% of every paid licence." links={contributorPortalLinks(user?.hasModelProfile)}>
       {children}
     </PortalShell>
   )

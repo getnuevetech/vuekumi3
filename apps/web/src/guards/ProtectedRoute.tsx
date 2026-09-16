@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router'
-import type { AccountType } from '@vuekumi/shared'
+import { hasModelAccess, type AccountType } from '@vuekumi/shared'
 import { useAuth } from '../context/AuthContext'
 
 interface ProtectedRouteProps {
@@ -23,7 +23,11 @@ export function ProtectedRoute({ children, allowed }: ProtectedRouteProps) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
   }
 
-  if (!allowed.includes(user.accountType) && !(allowed.includes('agency') && user.agencyId)) {
+  if (
+    !allowed.includes(user.accountType)
+    && !(allowed.includes('agency') && user.agencyId)
+    && !(allowed.includes('model') && hasModelAccess(user))
+  ) {
     const fallback =
       user.accountType === 'admin'
         ? '/admin'
@@ -31,7 +35,7 @@ export function ProtectedRoute({ children, allowed }: ProtectedRouteProps) {
           ? '/contributor'
           : user.accountType === 'agency' || user.agencyId
             ? '/agency'
-            : user.accountType === 'model'
+            : hasModelAccess(user)
               ? '/model'
               : '/'
     return <Navigate to={fallback} replace />

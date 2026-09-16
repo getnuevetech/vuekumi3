@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import {
+  hasModelAccess,
   MODEL_APPEARANCE_LABEL,
   MODEL_USAGE_LABEL,
   type ModelUsagePreference,
@@ -9,6 +10,7 @@ import {
 } from '@vuekumi/shared'
 import { PortalShell, StatusPill, type PortalLink } from '../components/shared'
 import { api, ApiError } from '../api/client'
+import { useAuth } from '../context/AuthContext'
 
 const icons = {
   dash: (
@@ -23,9 +25,24 @@ const modelLinks: PortalLink[] = [
   { to: '/model', label: 'Appearances', icon: icons.dash },
 ]
 
+const photographerLink: PortalLink = {
+  to: '/contributor',
+  label: 'Photographer',
+  icon: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="6" width="18" height="14" rx="2" />
+      <circle cx="12" cy="13" r="3.5" />
+      <path d="M8 6l1.2-2h5.6L16 6" />
+    </svg>
+  ),
+}
+
 export default function ModelPortal() {
+  const { user } = useAuth()
   const [items, setItems] = useState<PhotoAppearanceDto[]>([])
   const [handle, setHandle] = useState<string | null>(null)
+  const dualRole = Boolean(user && user.accountType === 'contributor' && hasModelAccess(user))
+  const links = dualRole ? [...modelLinks, photographerLink] : modelLinks
 
   const load = () => {
     api.modelPortal().then((d) => setHandle(d.handle)).catch(() => setHandle(null))
@@ -40,12 +57,13 @@ export default function ModelPortal() {
     <PortalShell
       title="Model portal"
       subtitle="Confirm likeness, then approve or reject usage. You do not earn from licences in this phase."
-      links={modelLinks}
+      links={links}
     >
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Appearances</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your likeness.</h1>
       <p className="mt-1 text-sm text-ink-soft">
         {handle ? `@${handle}` : 'Claimed model account'}. Usage permission, not ownership. A checkbox is not consent — confirm each photograph. Commercial sale of your likeness needs your commercial approval.
+        {dualRole ? ' You are also the photographer on this account.' : ''}
       </p>
       <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
         Models do not earn yet. The photographer/model split is undecided.
@@ -96,6 +114,7 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-serif-display text-2xl font-light">{row.photoTitle ?? 'Photograph'}</h2>
           <StatusPill status={MODEL_APPEARANCE_LABEL[row.status]} />
+          {row.selfShot && <StatusPill status="Self-shot" />}
         </div>
         <p className="mt-1 text-sm text-ink-soft">
           Photographer {row.photographerName ?? '—'} · named as {row.displayName}

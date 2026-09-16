@@ -29,6 +29,7 @@ export interface AuthUser {
   location?: string | null
   contributorHandle?: string | null
   modelHandle?: string | null
+  hasModelProfile?: boolean
   adminRole?: AdminRole | null
   agencyId?: string | null
   agencyRole?: AgencyRole | null

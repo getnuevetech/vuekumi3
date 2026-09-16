@@ -11,8 +11,10 @@ import {
   appearanceUnclaimed,
   decideAppearanceBlocked,
   modelAccountBlocked,
+  ownEmailInviteBlocked,
   slugModelHandle,
 } from '../src/lib/models.js'
+import { hasModelAccess } from '@vuekumi/shared'
 import { inviteAccountBlocked } from '../src/lib/agency.js'
 import { modelInviteEmail } from '../src/lib/email.js'
 import { isLicenseOffered } from '../src/lib/rights.js'
@@ -22,13 +24,18 @@ function cookies(res: { headers: Record<string, unknown> }) {
   return (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
 }
 
-test('one type per email: photographers, admins, and agencies cannot become models', () => {
+test('admins and agencies cannot become models; photographers may hold a model profile', () => {
   assert.equal(modelAccountBlocked('user'), null)
   assert.equal(modelAccountBlocked('model'), null)
+  assert.equal(modelAccountBlocked('contributor'), null)
   assert.equal(modelAccountBlocked(undefined), null)
-  assert.match(modelAccountBlocked('contributor') ?? '', /Photographers cannot become models/)
   assert.match(modelAccountBlocked('admin') ?? '', /Administrators/)
   assert.match(modelAccountBlocked('agency') ?? '', /Agency/)
+  assert.equal(ownEmailInviteBlocked('amara-okafor@vuekumi.demo', 'amara-okafor@vuekumi.demo'), 'Identify yourself on this photograph instead of sending an invite')
+  assert.equal(ownEmailInviteBlocked('ada@vuekumi.demo', 'amara-okafor@vuekumi.demo'), null)
+  assert.equal(hasModelAccess({ accountType: 'contributor', hasModelProfile: true }), true)
+  assert.equal(hasModelAccess({ accountType: 'contributor', hasModelProfile: false }), false)
+  assert.equal(hasModelAccess({ accountType: 'model' }), true)
 })
 
 test('models cannot join an agency', () => {
@@ -280,52 +287,174 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   })
   assert.equal(rejectedRegister.statusCode, 400)
 
-  const contributorInvite = await app.inject({
+  const kofiLogin = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'kofi-mensah@vuekumi.demo', password: 'User12345!' },
+  })
+  assert.equal(kofiLogin.statusCode, 200)
+  const kofiUser = (kofiLogin.json() as {
+    user: { accountType: string; hasModelProfile?: boolean; modelHandle: string | null; contributorHandle: string | null }
+  }).user
+  assert.equal(kofiUser.accountType, 'contributor')
+  assert.equal(kofiUser.hasModelProfile, true)
+  assert.equal(kofiUser.modelHandle, 'kofi-mensah')
+  assert.equal(kofiUser.contributorHandle, 'kofi-mensah')
+  const kofiCookie = cookies(kofiLogin)
+  const kofiPortal = await app.inject({
+    method: 'GET',
+    url: '/api/model',
+    headers: { cookie: kofiCookie },
+  })
+  assert.equal(kofiPortal.statusCode, 200)
+  assert.equal((kofiPortal.json() as { handle: string | null; earns: boolean }).handle, 'kofi-mensah')
+  assert.equal((kofiPortal.json() as { earns: boolean }).earns, false)
+  const kofiAppearances = await app.inject({
+    method: 'GET',
+    url: '/api/model/appearances',
+    headers: { cookie: kofiCookie },
+  })
+  const kofiItems = (kofiAppearances.json() as { items: { photoId: string; selfShot?: boolean; status: string }[] }).items
+  assert.ok(kofiItems.some((row) => row.photoId === 'afr-027' && row.selfShot && row.status === 'approved'))
+  const observerLicenses = await app.inject({ method: 'GET', url: '/api/photos/afr-027/licenses' })
+  const observerItems = (observerLicenses.json() as { items: { type: string; offered: boolean }[] }).items
+  assert.equal(observerItems.find((i) => i.type === 'commercial')?.offered, true)
+  const observerPublic = await app.inject({ method: 'GET', url: '/api/photos/afr-027' })
+  assert.equal(JSON.stringify(observerPublic.json()).includes('kofi-mensah@vuekumi.demo'), false)
+
+  const ownEmailInvite = await app.inject({
     method: 'POST',
     url: '/api/contributor/photos/afr-009/appearances',
     headers: { cookie },
     payload: { displayName: 'Amara', email: 'amara-okafor@vuekumi.demo' },
   })
-  let contribToken: string | undefined
-  let contribAppearanceId: string | undefined
-  if (contributorInvite.statusCode === 200) {
-    const body = contributorInvite.json() as { appearance: { id: string }; joinUrl: string }
-    contribToken = body.joinUrl.split('/invite/model/')[1]
-    contribAppearanceId = body.appearance.id
-  } else {
-    const photo = await app.inject({
-      method: 'GET',
-      url: '/api/contributor/photos/afr-009',
-      headers: { cookie },
-    })
-    const row = (photo.json() as { photo: { appearances?: { id: string; inviteEmail?: string }[] } })
-      .photo.appearances?.find((item) => item.inviteEmail === 'amara-okafor@vuekumi.demo')
-    if (row) {
-      const resend = await app.inject({
-        method: 'POST',
-        url: `/api/contributor/photos/afr-009/appearances/${row.id}/resend`,
-        headers: { cookie },
-        payload: {},
-      })
-      contribToken = (resend.json() as { joinUrl: string }).joinUrl.split('/invite/model/')[1]
-      contribAppearanceId = row.id
-    }
-  }
-  assert.ok(contribToken)
-  const blockedClaim = await app.inject({
+  assert.equal(ownEmailInvite.statusCode, 400)
+  assert.match((ownEmailInvite.json() as { error: string }).error, /Identify yourself/)
+
+  const selfShotBlocked = await app.inject({
     method: 'POST',
-    url: `/api/model/invite/${contribToken}`,
+    url: '/api/contributor/photos/afr-009/appearances/self',
+    headers: { cookie },
+    payload: { confirmedLikeness: false, status: 'approved', usage: 'commercial' },
+  })
+  assert.equal(selfShotBlocked.statusCode, 400)
+  assert.match((selfShotBlocked.json() as { error: string }).error, /likeness/)
+
+  const selfShot = await app.inject({
+    method: 'POST',
+    url: '/api/contributor/photos/afr-009/appearances/self',
+    headers: { cookie },
+    payload: { confirmedLikeness: true, status: 'approved', usage: 'commercial', displayName: 'Amara Okafor' },
+  })
+  assert.equal(selfShot.statusCode, 200)
+  const selfBody = selfShot.json() as {
+    appearance: { selfShot?: boolean; status: string; consentVersion?: string | null }
+  }
+  assert.equal(selfBody.appearance.selfShot, true)
+  assert.equal(selfBody.appearance.status, 'approved')
+  assert.equal(selfBody.appearance.consentVersion, '1.0')
+  const amaraMe = await app.inject({ method: 'GET', url: '/api/auth/me', headers: { cookie } })
+  const amaraUser = (amaraMe.json() as { user: { accountType: string; hasModelProfile?: boolean } }).user
+  assert.equal(amaraUser.accountType, 'contributor')
+  assert.equal(amaraUser.hasModelProfile, true)
+
+  const stillEditorial = await app.inject({ method: 'GET', url: '/api/photos/afr-009/licenses' })
+  assert.equal(
+    (stillEditorial.json() as { items: { type: string; offered: boolean }[] }).items.find((i) => i.type === 'commercial')?.offered,
+    false,
+  )
+  const unlockNine = await app.inject({
+    method: 'PATCH',
+    url: '/api/contributor/photos/afr-009',
+    headers: { cookie },
+    payload: { permissionState: 'commercial' },
+  })
+  assert.equal(unlockNine.statusCode, 200)
+  const nineOpen = await app.inject({ method: 'GET', url: '/api/photos/afr-009/licenses' })
+  assert.equal(
+    (nineOpen.json() as { items: { type: string; offered: boolean }[] }).items.find((i) => i.type === 'commercial')?.offered,
+    true,
+  )
+
+  const lekanLogin = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'lekan-adeyemi@vuekumi.demo', password: 'User12345!' },
+  })
+  assert.equal(lekanLogin.statusCode, 200)
+  const lekanCookie = cookies(lekanLogin)
+  const inviteAmara = await app.inject({
+    method: 'POST',
+    url: '/api/contributor/photos/afr-007/appearances',
+    headers: { cookie: lekanCookie },
+    payload: { displayName: 'Amara', email: 'amara-okafor@vuekumi.demo' },
+  })
+  assert.equal(inviteAmara.statusCode, 200)
+  const amaraInviteToken = (inviteAmara.json() as { joinUrl: string }).joinUrl.split('/invite/model/')[1]
+  const claimedAsContributor = await app.inject({
+    method: 'POST',
+    url: `/api/model/invite/${amaraInviteToken}`,
     headers: { cookie },
     payload: {},
   })
-  assert.equal(blockedClaim.statusCode, 403)
-  if (contribAppearanceId) {
-    await app.inject({
-      method: 'DELETE',
-      url: `/api/contributor/photos/afr-009/appearances/${contribAppearanceId}`,
-      headers: { cookie },
-    })
-  }
+  assert.equal(claimedAsContributor.statusCode, 200)
+  const claimedDual = (claimedAsContributor.json() as { user: { accountType: string; hasModelProfile?: boolean } }).user
+  assert.equal(claimedDual.accountType, 'contributor')
+  assert.equal(claimedDual.hasModelProfile, true)
+
+  const inviteAdmin = await app.inject({
+    method: 'POST',
+    url: '/api/contributor/photos/afr-023/appearances',
+    headers: { cookie },
+    payload: { displayName: 'Staff', email: 'admin@vuekumi.com' },
+  })
+  assert.equal(inviteAdmin.statusCode, 200)
+  const adminToken = (inviteAdmin.json() as { joinUrl: string; appearance: { id: string } }).joinUrl.split('/invite/model/')[1]
+  const adminAppearanceId = (inviteAdmin.json() as { appearance: { id: string } }).appearance.id
+  const adminClaimLogin = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'admin@vuekumi.com', password: 'Admin123!' },
+  })
+  const adminClaim = await app.inject({
+    method: 'POST',
+    url: `/api/model/invite/${adminToken}`,
+    headers: { cookie: cookies(adminClaimLogin) },
+    payload: {},
+  })
+  assert.equal(adminClaim.statusCode, 403)
+  await app.inject({
+    method: 'DELETE',
+    url: `/api/contributor/photos/afr-023/appearances/${adminAppearanceId}`,
+    headers: { cookie },
+  })
+
+  const inviteAgency = await app.inject({
+    method: 'POST',
+    url: '/api/contributor/photos/afr-023/appearances',
+    headers: { cookie },
+    payload: { displayName: 'Agency', email: 'agency@vuekumi.demo' },
+  })
+  assert.equal(inviteAgency.statusCode, 200)
+  const agencyToken = (inviteAgency.json() as { joinUrl: string; appearance: { id: string } }).joinUrl.split('/invite/model/')[1]
+  const agencyAppearanceId = (inviteAgency.json() as { appearance: { id: string } }).appearance.id
+  const agencyLogin = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'agency@vuekumi.demo', password: 'User12345!' },
+  })
+  const agencyClaim = await app.inject({
+    method: 'POST',
+    url: `/api/model/invite/${agencyToken}`,
+    headers: { cookie: cookies(agencyLogin) },
+    payload: {},
+  })
+  assert.equal(agencyClaim.statusCode, 403)
+  await app.inject({
+    method: 'DELETE',
+    url: `/api/contributor/photos/afr-023/appearances/${agencyAppearanceId}`,
+    headers: { cookie },
+  })
 
   const adaLogin = await app.inject({
     method: 'POST',
@@ -353,8 +482,10 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     headers: { cookie: cookies(adminLogin) },
   })
   assert.equal(models.statusCode, 200)
-  const adminItems = (models.json() as { items: { email: string }[] }).items
+  const adminItems = (models.json() as { items: { email: string; dualRole?: boolean }[] }).items
   assert.ok(adminItems.some((row) => row.email === 'ada@vuekumi.demo'))
+  assert.ok(adminItems.some((row) => row.email === 'kofi-mensah@vuekumi.demo' && row.dualRole))
+  assert.ok(adminItems.some((row) => row.email === 'amara-okafor@vuekumi.demo' && row.dualRole))
 
   const adminCookie = cookies(adminLogin)
   const prematureProcess = await app.inject({

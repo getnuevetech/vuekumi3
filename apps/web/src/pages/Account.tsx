@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import type { SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
+import { hasModelAccess } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError, type GeoCountry } from '../api/client'
@@ -30,7 +31,8 @@ export default function Account() {
   const [planBusy, setPlanBusy] = useState(false)
 
   const contributor = user?.accountType === 'contributor'
-  const model = user?.accountType === 'model'
+  const model = Boolean(user && hasModelAccess(user))
+  const dualRole = Boolean(contributor && user?.hasModelProfile)
   const publicProfile = contributor || model
   const canSubscribe = user?.accountType === 'user' || user?.accountType === 'agency' || user?.accountType === 'contributor'
 
@@ -88,8 +90,14 @@ export default function Account() {
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your settings.</h1>
         <p className="mt-2 text-sm text-ink-soft">
           {user.email} · {user.accountType}
+          {dualRole ? ' · photographer and model' : ''}
           {user.emailVerified ? '' : ' · email not verified'}
         </p>
+        {dualRole && (
+          <p className="mt-2 text-sm text-ink-soft">
+            One account, both roles. You keep this photographer login and a model profile on the same email. Models do not earn.
+          </p>
+        )}
 
         {canSubscribe && (
           <div className="mt-10 border border-sand bg-white p-6">
@@ -216,7 +224,9 @@ export default function Account() {
                 className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
               />
               <p className="font-mono-tech text-[10px] text-ink-faint">
-                {contributor
+                {dualRole
+                  ? `Shown as /p/${handle || 'your-handle'}. The same handle is reserved for a future public model portfolio.`
+                  : contributor
                   ? `Shown as /p/${handle || 'your-handle'}`
                   : 'Handle is reserved for a future public model portfolio. It is not public yet.'}
               </p>

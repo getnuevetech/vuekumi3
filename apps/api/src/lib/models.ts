@@ -23,13 +23,26 @@ export const MODEL_INVITE_DAYS = 14
 
 export function modelAccountBlocked(accountType: AccountType | undefined): string | null {
   if (!accountType) return null
-  if (accountType === 'contributor') {
-    return 'Photographers cannot become models on the same email. One account type per email.'
-  }
   if (accountType === 'admin') return 'Administrators cannot become models'
   if (accountType === 'agency') return 'Agency accounts cannot become models'
   return null
 }
+
+export function ownEmailInviteBlocked(
+  inviteEmail: string,
+  ownerEmail: string | undefined | null,
+): string | null {
+  if (!ownerEmail) return null
+  if (inviteEmail.trim().toLowerCase() === ownerEmail.trim().toLowerCase()) {
+    return 'Identify yourself on this photograph instead of sending an invite'
+  }
+  return null
+}
+
+export const appearanceInclude = {
+  photo: { include: { contributor: true } },
+  modelUser: { include: { modelProfile: true } },
+} as const
 
 export function decideAppearanceBlocked(input: {
   confirmedLikeness: boolean
@@ -74,12 +87,53 @@ export async function handleTaken(handle: string, excludeUserId?: string): Promi
 }
 
 export async function uniqueModelHandle(name: string, userId: string): Promise<string> {
+  const contributor = await prisma.contributorProfile.findUnique({ where: { userId } })
+  if (contributor && !(await handleTaken(contributor.handle, userId))) {
+    return contributor.handle
+  }
   for (let i = 0; i < 6; i++) {
     const suffix = userId.slice(-(4 + i))
     const handle = slugModelHandle(name, suffix)
-    if (!(await handleTaken(handle))) return handle
+    if (!(await handleTaken(handle, userId))) return handle
   }
   return slugModelHandle(name, userId.replace(/[^a-z0-9]/gi, '').slice(-8) || 'model')
+}
+
+export async function ensureModelProfile(userId: string, name: string) {
+  const existing = await prisma.modelProfile.findUnique({ where: { userId } })
+  if (existing) return existing
+  const contributor = await prisma.contributorProfile.findUnique({ where: { userId } })
+  const handle = await uniqueModelHandle(name, userId)
+  return prisma.modelProfile.create({
+    data: {
+      userId,
+      handle,
+      location: contributor?.location ?? null,
+      bio: contributor?.bio ?? null,
+    },
+  })
+}
+
+export async function claimPendingForEmail(userId: string, email: string) {
+  const now = new Date()
+  const normalized = email.toLowerCase()
+  const pending = await prisma.photoAppearance.findMany({
+    where: {
+      inviteEmail: normalized,
+      modelUserId: null,
+      status: { in: ['identified', 'invited'] },
+    },
+  })
+  if (pending.length === 0) return
+  await prisma.photoAppearance.updateMany({
+    where: { id: { in: pending.map((row) => row.id) } },
+    data: {
+      modelUserId: userId,
+      status: 'claimed',
+      claimedAt: now,
+      inviteTokenHash: null,
+    },
+  })
 }
 
 export function serializeAppearance(
@@ -118,6 +172,7 @@ export function serializeAppearance(
     decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,
     inviteExpiresAt: row.inviteExpiresAt ? row.inviteExpiresAt.toISOString() : null,
     consentVersion: row.consentVersion,
+    selfShot: row.selfShot,
     notes: row.notes,
   }
 }

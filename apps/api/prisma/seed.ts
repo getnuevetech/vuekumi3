@@ -176,6 +176,8 @@ async function main() {
         ? 'portfolio'
         : p.id === 'afr-001'
           ? 'editorial'
+          : p.id === 'afr-027'
+            ? 'commercial'
           : exclusive
             ? 'exclusive'
             : hasPeople
@@ -413,6 +415,33 @@ async function main() {
     })
   }
 
+  const kofiId = contributorUsers.get('kofi-mensah')
+  if (kofiId) {
+    await prisma.modelProfile.create({
+      data: {
+        userId: kofiId,
+        handle: 'kofi-mensah',
+        location: 'Accra, Ghana',
+      },
+    })
+    await prisma.photoAppearance.create({
+      data: {
+        photoId: 'afr-027',
+        displayName: 'Kofi Mensah',
+        inviteEmail: 'kofi-mensah@vuekumi.demo',
+        modelUserId: kofiId,
+        invitedById: kofiId,
+        status: 'approved',
+        usage: 'commercial',
+        confirmedLikeness: true,
+        selfShot: true,
+        consentVersion: '1.0',
+        claimedAt: new Date(),
+        decidedAt: new Date(),
+      },
+    })
+  }
+
   const favoriteIds = ['afr-011', 'afr-008', 'afr-020']
   await prisma.photoFavorite.createMany({
     data: favoriteIds.map((photoId) => ({ userId: member.id, photoId })),
@@ -477,6 +506,7 @@ async function main() {
   console.log('Admin: admin@vuekumi.com / Admin123!')
   console.log('Contributor: amara-okafor@vuekumi.demo / User12345!')
   console.log('Member: member@vuekumi.demo / User12345!')
+  console.log('Contributor (self-shot dual role): kofi-mensah@vuekumi.demo / User12345!')
   console.log('Model (claimed): ada@vuekumi.demo / User12345!')
   console.log('Model invite: nomsa@vuekumi.demo → /invite/model/seed-nomsa-model-invite')
   console.log('Agency: agency@vuekumi.demo / User12345!')

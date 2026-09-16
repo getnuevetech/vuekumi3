@@ -27,6 +27,10 @@ export const decideAppearanceSchema = z.object({
   notes: z.string().trim().max(2000).optional().nullable(),
 })
 
+export const selfShotAppearanceSchema = decideAppearanceSchema.extend({
+  displayName: z.string().trim().min(2).max(120).optional(),
+})
+
 export const acceptModelInviteSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   password: z.string().min(8).optional(),
@@ -34,6 +38,7 @@ export const acceptModelInviteSchema = z.object({
 
 export type IdentifyAppearanceInput = z.infer<typeof identifyAppearanceSchema>
 export type DecideAppearanceInput = z.infer<typeof decideAppearanceSchema>
+export type SelfShotAppearanceInput = z.infer<typeof selfShotAppearanceSchema>
 export type AcceptModelInviteInput = z.infer<typeof acceptModelInviteSchema>
 
 export interface PhotoAppearanceDto {
@@ -53,7 +58,15 @@ export interface PhotoAppearanceDto {
   decidedAt?: string | null
   inviteExpiresAt?: string | null
   consentVersion?: string | null
+  selfShot?: boolean
   notes?: string | null
+}
+
+export function hasModelAccess(user: {
+  accountType: string
+  hasModelProfile?: boolean | null
+}): boolean {
+  return user.accountType === 'model' || Boolean(user.hasModelProfile)
 }
 
 export interface ModelInvitePreviewDto {

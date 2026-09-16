@@ -65,6 +65,9 @@ export default function JoinModel() {
             </p>
             <p className="mt-2 text-sm text-ink-soft">
               Invited as {preview.email}. A typed name is not identity. Confirm likeness on the next screen — a checkbox is not consent.
+              {user?.accountType === 'contributor' && signedInMatch
+                ? ' You keep this photographer account and add a model profile on the same email. Models do not earn.'
+                : ''}
             </p>
             {preview.needsAccount ? (
               <form

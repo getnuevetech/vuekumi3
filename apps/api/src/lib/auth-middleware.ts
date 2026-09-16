@@ -49,7 +49,13 @@ export function requireAccountTypes(fastify: FastifyInstance, ...types: AccountT
   return async (request: FastifyRequest, reply: FastifyReply) => {
     await authenticate(fastify, request, reply)
     if (reply.sent) return
-    if (!request.authUser || !types.includes(request.authUser.accountType)) {
+    if (!request.authUser) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    const allowed =
+      types.includes(request.authUser.accountType)
+      || (types.includes('model') && Boolean(request.authUser.hasModelProfile))
+    if (!allowed) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
   }

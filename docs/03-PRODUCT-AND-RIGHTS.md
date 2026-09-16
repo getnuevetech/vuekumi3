@@ -180,20 +180,20 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 25, the marketplace is a **stock + licensing MVP** with photographer
-accounts, photo permission states, invite-only model accounts, and a two-approval commercial
-lock. Models do **not** earn.
+Shipped through Phase 26, the marketplace is a **stock + licensing MVP** with photographer
+accounts, photo permission states, invite-only model accounts, self-shot dual role, and a
+two-approval commercial lock. Models do **not** earn.
 
 | Doctrine | In production now |
 | --- | --- |
 | Photographer keeps copyright; VueKumi gets a platform licence | Yes — contributor agreement + upload attestation |
 | Buyer receives a usage licence, not ownership | Yes — RF / Commercial / Extended / Editorial / RM quotes / Exclusive opt-in; certificates |
 | Four layers checked at grant time | Yes — copyright flag, two-party model clearance where required, platform agreement, then grant. PDF status is supporting evidence. |
-| Model is a first-class account | **Yes** — fifth type `model`, invite-only, one type per email. User→model upgrade is allowed; contributor/admin/agency are not. |
+| Model is a first-class account | **Yes** — fifth type `model`, invite-only. User→model upgrade is allowed. Photographers may add a `ModelProfile` on the same email (Phase 26). Admin/agency cannot. Public registration cannot create `model`. |
 | Two-party approval | **Yes** — commercial-class licences (`requiresModelRelease`) of people photographs need every appearance approved with confirmed likeness and commercial usage. Empty appearances block commercial. Editorial products stay offered. Admin `verify-process` records that staff checked the process; it cannot invent clearance. |
-| Invite-the-model | **Yes** — contributor names a person; VueKumi emails a claim link. Typed name is not identity. Checkbox is not consent. |
+| Invite-the-model | **Yes** — contributor names a person; VueKumi emails a claim link. Typed name is not identity. Checkbox is not consent. Photographers cannot invite their own email; they self-identify instead. |
 | Permission states (portfolio / editorial / restricted / agency-protected) | **Yes** — `PermissionState` on each photo; catalog is stock states; profile can show portfolio |
-| Self-shot dual role | **No** |
+| Self-shot dual role | **Yes** — photographer confirms likeness and usage on their own photograph. `accountType` stays `contributor`. |
 | Visual verification | **No** (AI today is metadata suggestion only) |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
 | VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
@@ -204,7 +204,7 @@ lock. Models do **not** earn.
 | Model share of royalties | **Undecided** — Phase 24 recorded that models do not earn. Ledger still pays the photographer 50% of paid licences. |
 
 Rights-managed products `requiresModelRelease: true`, same as other commercial grants.
-Two-approval commercial lock shipped in Phase 25. Self-shot dual role is still Phase 26.
+Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in Phase 26.
 
 ---
 

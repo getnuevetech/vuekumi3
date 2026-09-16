@@ -12,7 +12,7 @@ const copy: Record<Kind, { kicker: string; title: string; blurb: string }> = {
   contributors: { kicker: 'Contributors', title: 'Photographers.', blurb: 'African creators only. Click a row to edit.' },
   agencies: { kicker: 'Agencies', title: 'Enterprise.', blurb: 'Corporate accounts pending or approved.' },
   admins: { kicker: 'Admins', title: 'Staff.', blurb: 'Platform administrators.' },
-  models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only. Confirm likeness per image. They do not earn in this phase.' },
+  models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only models and self-shot photographers. Confirm likeness per image. They do not earn in this phase.' },
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -84,7 +84,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                 className="cursor-pointer border-b border-sand-soft last:border-0 hover:bg-cream/50"
               >
                 <td className="px-4 py-3 font-mono-tech text-[11px]">{u.id.slice(-8)}</td>
-                <td className="px-4 py-3 font-medium">{u.name}</td>
+                <td className="px-4 py-3 font-medium">{u.name}{kind === 'models' && u.dualRole ? ' · photographer' : ''}</td>
                 <td className="px-4 py-3">{u.email}</td>
                 {kind === 'contributors' && <td className="px-4 py-3">@{u.handle}</td>}
                 {kind === 'models' && <td className="px-4 py-3">@{u.handle}</td>}

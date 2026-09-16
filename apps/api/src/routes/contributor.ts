@@ -1,8 +1,10 @@
 import type { FastifyInstance } from 'fastify'
 import type { PermissionState } from '@vuekumi/shared'
 import {
+  CONSENT_VERSION,
   identifyAppearanceSchema,
   presignUploadSchema,
+  selfShotAppearanceSchema,
   submitPhotoSchema,
   twoPartyCommercialCleared,
   updatePhotoSchema,
@@ -29,8 +31,13 @@ import {
   resolvePermissionState,
 } from '../lib/permissions.js'
 import {
+  appearanceInclude,
   appearanceUnclaimed,
+  decideAppearanceBlocked,
+  ensureModelProfile,
   ModelError,
+  modelAccountBlocked,
+  ownEmailInviteBlocked,
   serializeAppearance,
   syncPermissionToTwoParty,
 } from '../lib/models.js'
@@ -556,6 +563,10 @@ export async function contributorRoutes(app: FastifyInstance) {
     }
 
     const email = body.email.toLowerCase()
+    const selfBlocked = ownEmailInviteBlocked(email, photo.contributor.email)
+    if (selfBlocked) {
+      return reply.code(400).send({ error: selfBlocked })
+    }
     const dup = await prisma.photoAppearance.findFirst({ where: { photoId: id, inviteEmail: email } })
     if (dup) {
       return reply.code(409).send({ error: 'That person is already identified on this photograph' })
@@ -584,6 +595,86 @@ export async function contributorRoutes(app: FastifyInstance) {
         appearance: serializeAppearance(issued.appearance, { includeEmail: true }),
         joinUrl: issued.joinUrl,
       }
+    } catch (err) {
+      if (err instanceof ModelError) {
+        return reply.code(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+  })
+
+  app.post('/contributor/photos/:id/appearances/self', gate, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const body = selfShotAppearanceSchema.parse(request.body)
+    const decisionBlocked = decideAppearanceBlocked(body)
+    if (decisionBlocked) return reply.code(400).send({ error: decisionBlocked })
+
+    const photo = await prisma.photo.findUnique({
+      where: { id },
+      include: { contributor: true },
+    })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (photo.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Only the photographer can identify themselves on this photograph' })
+    }
+
+    const user = request.authUser
+    if (!user) return reply.code(401).send({ error: 'Unauthorized' })
+    const typeBlocked = modelAccountBlocked(user.accountType)
+    if (typeBlocked) return reply.code(403).send({ error: typeBlocked })
+
+    const email = user.email.toLowerCase()
+    const displayName = body.displayName?.trim() || user.name
+    const usage = body.status === 'approved' ? body.usage! : (body.usage ?? 'none')
+    const now = new Date()
+
+    try {
+      await ensureModelProfile(user.id, displayName)
+      const existing = await prisma.photoAppearance.findFirst({
+        where: { photoId: id, inviteEmail: email },
+      })
+      const data = {
+        displayName,
+        inviteEmail: email,
+        modelUserId: user.id,
+        invitedById: user.id,
+        status: body.status,
+        usage,
+        confirmedLikeness: body.confirmedLikeness,
+        selfShot: true,
+        notes: body.notes ?? existing?.notes ?? null,
+        claimedAt: existing?.claimedAt ?? now,
+        decidedAt: now,
+        consentVersion: body.status === 'approved' ? CONSENT_VERSION : null,
+        inviteTokenHash: null,
+        inviteExpiresAt: null,
+      }
+      const saved = existing
+        ? await prisma.photoAppearance.update({
+            where: { id: existing.id },
+            data,
+            include: appearanceInclude,
+          })
+        : await prisma.photoAppearance.create({
+            data: { photoId: id, ...data },
+            include: appearanceInclude,
+          })
+      await syncPermissionToTwoParty(id)
+      await writeAuditLog({
+        actorId: user.id,
+        action: 'model.self_shot',
+        entityType: 'photo_appearance',
+        entityId: saved.id,
+        metadata: {
+          photoId: id,
+          status: body.status,
+          usage,
+          confirmedLikeness: body.confirmedLikeness,
+          consentVersion: body.status === 'approved' ? CONSENT_VERSION : null,
+        },
+        ipAddress: request.ip,
+      })
+      return { appearance: serializeAppearance(saved, { includeEmail: true }) }
     } catch (err) {
       if (err instanceof ModelError) {
         return reply.code(err.statusCode).send({ error: err.message })

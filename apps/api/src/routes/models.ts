@@ -11,22 +11,19 @@ import { modelInviteEmail, sendEmail } from '../lib/email.js'
 import {
   ModelError,
   MODEL_INVITE_DAYS,
+  appearanceInclude,
   appearanceUnclaimed,
+  claimPendingForEmail,
   decideAppearanceBlocked,
+  ensureModelProfile,
   modelAccountBlocked,
   serializeAppearance,
-  uniqueModelHandle,
   syncPermissionToTwoParty,
 } from '../lib/models.js'
 import { createToken, hashPassword, hashToken } from '../lib/password.js'
 import { prisma } from '../lib/prisma.js'
 import { issueTokens } from '../lib/session.js'
 import { authUserInclude, serializeUser } from '../lib/serialize.js'
-
-const appearanceInclude = {
-  photo: { include: { contributor: true } },
-  modelUser: { include: { modelProfile: true } },
-} as const
 
 function modelError(reply: FastifyReply, err: unknown) {
   if (err instanceof ModelError) {
@@ -63,36 +60,6 @@ export async function issueAppearanceInvite(appearanceId: string) {
     })
   }
   return { appearance: updated, joinUrl, raw }
-}
-
-async function ensureModelProfile(userId: string, name: string) {
-  const existing = await prisma.modelProfile.findUnique({ where: { userId } })
-  if (existing) return existing
-  const handle = await uniqueModelHandle(name, userId)
-  return prisma.modelProfile.create({
-    data: { userId, handle },
-  })
-}
-
-async function claimPendingForEmail(userId: string, email: string) {
-  const now = new Date()
-  const pending = await prisma.photoAppearance.findMany({
-    where: {
-      inviteEmail: email,
-      modelUserId: null,
-      status: { in: ['identified', 'invited'] },
-    },
-  })
-  if (pending.length === 0) return
-  await prisma.photoAppearance.updateMany({
-    where: { id: { in: pending.map((row) => row.id) } },
-    data: {
-      modelUserId: userId,
-      status: 'claimed',
-      claimedAt: now,
-      inviteTokenHash: null,
-    },
-  })
 }
 
 export async function modelRoutes(app: FastifyInstance) {
@@ -189,7 +156,7 @@ export async function modelRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: 'Invite is invalid or has expired' })
     }
     const existing = invite.inviteEmail
-      ? await prisma.user.findUnique({ where: { email: invite.inviteEmail } })
+      ? await prisma.user.findUnique({ where: { email: invite.inviteEmail.toLowerCase() } })
       : null
     return {
       invite: {
@@ -220,9 +187,9 @@ export async function modelRoutes(app: FastifyInstance) {
 
       await optionalAuthenticate(app, request, reply)
 
-      let user = await prisma.user.findUnique({ where: { email: invite.inviteEmail } })
+      let user = await prisma.user.findUnique({ where: { email: invite.inviteEmail.toLowerCase() } })
       if (user) {
-        if (!request.authUser || request.authUser.email.toLowerCase() !== invite.inviteEmail) {
+        if (!request.authUser || request.authUser.email.toLowerCase() !== invite.inviteEmail.toLowerCase()) {
           return reply.code(401).send({ error: 'Sign in with the invited email to claim this profile' })
         }
         const blocked = modelAccountBlocked(user.accountType)
@@ -236,7 +203,7 @@ export async function modelRoutes(app: FastifyInstance) {
         }
         user = await prisma.user.create({
           data: {
-            email: invite.inviteEmail,
+            email: invite.inviteEmail.toLowerCase(),
             passwordHash: await hashPassword(body.password),
             name: body.name,
             accountType: 'model',

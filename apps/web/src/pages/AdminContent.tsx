@@ -232,6 +232,7 @@ export function AdminContent() {
                     <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
                       {row.inviteEmail ?? 'email hidden'}
                       {row.modelHandle ? ` · @${row.modelHandle}` : ''}
+                      {row.selfShot ? ' · self-shot' : ''}
                       {row.usage !== 'none' ? ` · ${row.usage}` : ''}
                     </p>
                   </div>

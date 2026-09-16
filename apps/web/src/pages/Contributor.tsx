@@ -10,6 +10,7 @@ import { fmt, money, photoById } from '../data/content';
 import { api, ApiError } from '../api/client';
 import { AiSuggestPanel } from '../components/AiSuggestPanel';
 import { PermissionStateField } from '../components/PermissionStateField';
+import { useAuth } from '../context/AuthContext';
 
 const icons = {
   dash: (
@@ -43,9 +44,25 @@ export const contributorLinks: PortalLink[] = [
   { to: '/contributor/earnings', label: 'Earnings', icon: icons.money },
 ];
 
+const modelPortalLink: PortalLink = {
+  to: '/model',
+  label: 'Model',
+  icon: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" strokeLinecap="round" />
+    </svg>
+  ),
+};
+
+export function contributorPortalLinks(hasModelProfile?: boolean): PortalLink[] {
+  return hasModelProfile ? [...contributorLinks, modelPortalLink] : contributorLinks;
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   return (
-    <PortalShell title="Contributor portal" subtitle="Upload, rights, and 50% of every paid licence." links={contributorLinks}>
+    <PortalShell title="Contributor portal" subtitle="Upload, rights, and 50% of every paid licence." links={contributorPortalLinks(user?.hasModelProfile)}>
       {children}
     </PortalShell>
   );

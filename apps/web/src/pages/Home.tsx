@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import type { HomePageDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
+import { hasModelAccess } from '@vuekumi/shared';
 import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -35,7 +36,7 @@ function NoirHeader() {
     ...(user ? [{ label: 'Account', to: '/account' }] : []),
     ...(user && user.accountType !== 'model' ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
-    ...(user?.accountType === 'model' ? [{ label: 'Model', to: '/model' }] : []),
+    ...(user && hasModelAccess(user) ? [{ label: 'Model', to: '/model' }] : []),
     ...((user?.accountType === 'contributor' || user?.accountType === 'admin') ? [{ label: 'Contributor', to: '/contributor' }] : []),
     ...(user?.accountType === 'admin' ? [{ label: 'Admin', to: '/admin' }] : []),
   ];
