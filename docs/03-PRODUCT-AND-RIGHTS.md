@@ -181,11 +181,12 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 29, the marketplace is a **stock + licensing MVP** with photographer
+Shipped through Phase 30, the marketplace is a **stock + licensing MVP** with photographer
 accounts, photo permission states, invite-only model accounts, self-shot dual role, a
 two-approval commercial lock, public model portfolios, an opt-in visual likeness check
-that cannot grant rights, and a creator directory that labels photographers and photo
-influencers honestly. Models do **not** earn and do **not** gain copyright.
+that cannot grant rights, a creator directory that labels photographers and photo
+influencers honestly, and talent booking (briefs and quotes; settlement off-platform).
+Models do **not** earn from licences and do **not** gain copyright.
 
 | Doctrine | In production now |
 | --- | --- |
@@ -202,7 +203,7 @@ influencers honestly. Models do **not** earn and do **not** gain copyright.
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
 | VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
 | Photo influencer role | **Yes** (Phase 29) — a `creatorKind` on the contributor profile (photographer / photo influencer), chosen at signup and changeable in account settings. Honest labels on profiles and the `/creators` directory with a kind filter. Same copyright, agreement, and 50% share — presentation and discovery only. |
-| Talent booking | **No** |
+| Talent booking | **Yes** (Phase 30) — hire a photographer (`/hire/:handle`) or book a model (`/book/:handle`): brief → quote → accept/decline/withdraw, with availability and an optional indicative day rate on public profiles. Vuekumi records the agreement only. **No booking payments, no commission** — the rate is undecided, and booking money never touches the earnings ledger. Booking does not license any photograph. |
 | Partner/API distribution | **No** |
 | Separate AI-training consent | **No** |
 | Model share of royalties | **Undecided** — Phase 24 recorded that models do not earn. Ledger still pays the photographer 50% of paid licences. |
@@ -210,7 +211,8 @@ influencers honestly. Models do **not** earn and do **not** gain copyright.
 Rights-managed products `requiresModelRelease: true`, same as other commercial grants.
 Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in Phase 26.
 Public model portfolio shipped in Phase 27. Opt-in visual verification shipped in Phase 28.
-Photo influencer creator kind shipped in Phase 29.
+Photo influencer creator kind shipped in Phase 29. Talent booking (no payments, no
+commission) shipped in Phase 30.
 
 ---
 
@@ -229,8 +231,10 @@ Stylists, MUAs, directors, production crews come later. The first network to est
 Profiles are part of the asset: a photographer portfolio (`/p/:handle`), and a model
 portfolio (`/m/:handle`) assembled from images they approved across photographers. That is
 how stock becomes talent discovery
-(“license this image” → “hire this photographer” / “book this model”). Booking itself is
-still Phase 30 — the public model page licenses photographs, it does not book talent.
+(“license this image” → “hire this photographer” / “book this model”). Booking shipped in
+Phase 30: public profiles carry a hire/book CTA when the creator is available. A booking is
+a recorded brief + quote + decision — it does not license photographs and it moves no money
+through the platform.
 
 ---
 
@@ -239,7 +243,8 @@ still Phase 30 — the public model page licenses photographs, it does not book 
 Do not treat these as already decided:
 
 - Photographer vs model vs platform split when a model is a party to the sale
-- Booking / production commission rates
+- Booking / production commission rates — Phase 30 shipped booking with **zero** platform
+  fee and off-platform settlement precisely because this number was never decided
 - Exclusive premiums beyond the current default exclusive list price
 - Vuekumi+ price as a long-term locked number (the live product has a Plus plan; treat
   pricing as revisable)

@@ -112,6 +112,25 @@ enum CreatorKind {
   photo_influencer
 }
 
+enum BookingKind {
+  photographer
+  model
+}
+
+enum BookingStatus {
+  pending
+  quoted
+  accepted
+  declined
+  withdrawn
+}
+
+enum BookingAvailability {
+  open
+  limited
+  unavailable
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -162,9 +181,36 @@ model User {
   appearancesInvited    PhotoAppearance[] @relation("AppearanceInviter")
   likenessChecks        LikenessCheck[]   @relation("LikenessCheckModel")
   rightsProcessVerified RightsRecord[] @relation("RightsProcessVerifier")
+  bookingsReceived      BookingRequest[] @relation("BookingTarget")
+  bookingsSent          BookingRequest[] @relation("BookingRequester")
 
   @@index([accountType])
   @@index([status])
+}
+
+model BookingRequest {
+  id          String        @id @default(cuid())
+  kind        BookingKind
+  targetId    String
+  requesterId String
+  title       String
+  brief       String
+  location    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  budgetUsd   Float?
+  quoteUsd    Float?
+  quoteNote   String?
+  status      BookingStatus @default(pending)
+  respondedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  target    User @relation("BookingTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  requester User @relation("BookingRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@index([targetId, status])
+  @@index([requesterId])
 }
 
 model OAuthAccount {
@@ -187,6 +233,8 @@ model ContributorProfile {
   userId        String   @unique
   handle        String   @unique
   creatorKind   CreatorKind @default(photographer)
+  availability  BookingAvailability @default(open)
+  dayRateUsd    Float?
   location      String?
   bio           String?
   photosCount   Int      @default(0)
@@ -205,6 +253,8 @@ model ModelProfile {
   id           String   @id @default(cuid())
   userId       String   @unique
   handle       String   @unique
+  availability BookingAvailability @default(open)
+  dayRateUsd   Float?
   location     String?
   bio          String?
   profileViews Int      @default(0)

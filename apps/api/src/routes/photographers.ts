@@ -25,6 +25,8 @@ function toPhotographer(
       location: string | null
       bio: string | null
       creatorKind: 'photographer' | 'photo_influencer'
+      availability: 'open' | 'limited' | 'unavailable'
+      dayRateUsd: number | null
       profileViews?: number
     } | null
     modelProfile?: { handle: string } | null
@@ -42,6 +44,8 @@ function toPhotographer(
     location: user.contributorProfile.location,
     bio: user.contributorProfile.bio,
     creatorKind: user.contributorProfile.creatorKind,
+    availability: user.contributorProfile.availability,
+    dayRateUsd: user.contributorProfile.dayRateUsd,
     photosCount,
     downloads,
     followers,

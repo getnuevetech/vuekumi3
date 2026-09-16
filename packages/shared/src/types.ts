@@ -1,5 +1,6 @@
 import type { PermissionState } from './permissions.js'
 import type { CreatorKind } from './creators.js'
+import type { BookingAvailability } from './bookings.js'
 
 export type AccountType = 'admin' | 'contributor' | 'user' | 'agency' | 'model'
 export type UserStatus = 'active' | 'suspended' | 'pending'
@@ -32,6 +33,8 @@ export interface AuthUser {
   creatorKind?: CreatorKind | null
   modelHandle?: string | null
   hasModelProfile?: boolean
+  availability?: BookingAvailability | null
+  dayRateUsd?: number | null
   adminRole?: AdminRole | null
   agencyId?: string | null
   agencyRole?: AgencyRole | null
@@ -236,6 +239,8 @@ export interface PhotographerDto {
   location: string | null
   bio: string | null
   creatorKind: CreatorKind
+  availability: BookingAvailability
+  dayRateUsd: number | null
   photosCount: number
   downloads: number
   followers: number
@@ -250,6 +255,8 @@ export interface ModelPublicDto {
   avatarUrl: string | null
   location: string | null
   bio: string | null
+  availability: BookingAvailability
+  dayRateUsd: number | null
   photosCount: number
   photographerHandle: string | null
   earns: false

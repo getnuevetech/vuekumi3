@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 16 September 2026 against `main` after Phase 29.
+Updated 16 September 2026 against `main` after Phase 30.
 
 ---
 
@@ -98,6 +98,7 @@ Locked product rules already in the running system:
 | 27 | Public model portfolio (`/m/:handle`, `/models`) from approved likeness photographs. Model does not gain copyright. |
 | 28 | Opt-in visual likeness check (result only; selfie discarded; similarity ≠ release) |
 | 29 | Creator kind on contributors (photographer / photo influencer) — honest labels, `/creators` directory with kind filter, signup + account choice. Presentation only: rights, copyright, and the 50% share are unchanged. |
+| 30 | Booking: hire photographer / book model — briefs, quotes, accept/decline/withdraw, availability + indicative day rate on profiles. Payment is settled off-platform; Vuekumi takes **no booking commission** (rate undecided — do not invent one). Booking money never touches the earnings ledger. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -120,7 +121,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Visual verification with biometric safeguards | Shipped (Phase 28) — opt-in per photograph, discrete result only, selfie discarded immediately. No embedding store or public face database. Similarity cannot grant rights. |
 | Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
 | Photo influencer role | Shipped (Phase 29) — a `creatorKind` on the contributor profile, not a sixth account type. Same agreement, same earnings; only presentation and discovery change. |
-| Talent booking | Missing |
+| Talent booking | Shipped (Phase 30) — briefs, quotes, accept/decline/withdraw with availability on profiles. Off-platform settlement; no commission (rate undecided). |
 | VueQuatro representation / agency-protected inventory | Missing |
 | Partner API | Missing |
 | Separate AI-training consent | Missing |
@@ -162,9 +163,10 @@ This is the work the May discussion was actually about. It replaces “upload a 
 
 **Gate recorded with Phase 24 (15 September 2026):** models do **not** earn. The photographer 50% of paid licences is unchanged. The photographer/model/platform split remains **undecided** — do not invent a silent model share. Revisit before any payout work.
 
-**Gate before 30:** booking is the next Arc C slice and still waits on cleared people
-photographs. Do not start it until approved. No booking CTA exists yet; the `/creators`
-directory licenses photographs only.
+**Gate recorded with Phase 30 (16 September 2026):** booking shipped as briefs + quotes +
+decisions only. Vuekumi does **not** process booking payments and takes **no** commission —
+the booking/production commission rate remains **undecided**. Do not add booking payment
+rails or a platform fee without an explicit decision.
 
 ### Arc C — Talent, VueQuatro, distribution
 
@@ -173,7 +175,7 @@ Only after commercially cleared images have real people behind them.
 | Phase | Work |
 | --- | --- |
 | **29** | Photo influencer as a contributor creator kind — discovery without pretending every creator is a studio photographer — **shipped** |
-| **30** | Booking: hire photographer / book model (briefs, availability, quotes). VueKumi stays the marketplace. |
+| **30** | Booking: hire photographer / book model (briefs, availability, quotes). VueKumi stays the marketplace. Off-platform settlement, no commission — **shipped** |
 | **31** | VueQuatro representation: agency-protected inventory, opt-in enforcement/admin of rights, staff tools. Not a second public brand required on day one. |
 | **32** | Brand production (campaign-shaped sourcing, not only single-image checkout) |
 | **33** | Partner / Unsplash-style **distribution API** (authenticated, licensed, rate-limited) |
@@ -224,6 +226,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 30** (booking: hire photographer / book
-   model) unless you redirect. It is gated on commercially cleared people photographs —
-   confirm the gate holds before starting.
+3. Default next slice when work resumes: **Phase 31** (VueQuatro representation:
+   agency-protected inventory, opt-in rights enforcement, staff tools) unless you redirect.

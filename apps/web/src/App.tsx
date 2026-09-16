@@ -31,6 +31,8 @@ import PlusCheckout from './pages/PlusCheckout'
 import Search from './pages/Search'
 import Photographer from './pages/Photographer'
 import ModelProfile from './pages/ModelProfile'
+import BookCreator from './pages/BookCreator'
+import Bookings from './pages/Bookings'
 import Creators from './pages/Creators'
 import Models from './pages/Models'
 import Favorites from './pages/Favorites'
@@ -60,6 +62,9 @@ export default function App() {
         <Route path="/m/:handle" element={<ModelProfile />} />
         <Route path="/creators" element={<Creators />} />
         <Route path="/models" element={<Models />} />
+        <Route path="/hire/:handle" element={<BookCreator kind="photographer" />} />
+        <Route path="/book/:handle" element={<BookCreator kind="model" />} />
+        <Route path="/bookings" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin', 'model']}><Bookings /></ProtectedRoute>} />
         <Route path="/photo/:id" element={<PhotoDetail />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/login" element={<Login />} />

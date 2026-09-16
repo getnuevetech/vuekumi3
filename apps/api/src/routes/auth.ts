@@ -239,6 +239,10 @@ export async function authRoutes(app: FastifyInstance) {
           avatarUrl,
         },
       })
+      const availabilityData = {
+        ...(body.availability ? { availability: body.availability } : {}),
+        ...(body.dayRateUsd !== undefined ? { dayRateUsd: body.dayRateUsd } : {}),
+      }
       if (existing.contributorProfile) {
         const nextKind = creatorKindChange(true, body.creatorKind)
         await tx.contributorProfile.update({
@@ -248,6 +252,7 @@ export async function authRoutes(app: FastifyInstance) {
             ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
             ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
             ...(nextKind ? { creatorKind: nextKind } : {}),
+            ...availabilityData,
           },
         })
       }
@@ -258,6 +263,7 @@ export async function authRoutes(app: FastifyInstance) {
             ...(handle ? { handle } : {}),
             ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
             ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
+            ...availabilityData,
           },
         })
       }

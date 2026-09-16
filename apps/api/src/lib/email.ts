@@ -171,6 +171,35 @@ export function quotePricedEmail(input: {
   return `<p>Hi ${input.name},</p><p>Vuekumi priced your rights-managed request for <strong>${input.photoTitle}</strong> at USD ${amount}.</p><p>This is usage permission, not ownership. Review and accept:</p><p><a href="${input.licensesUrl}">${input.licensesUrl}</a></p>`
 }
 
+export function bookingRequestEmail(input: {
+  name: string
+  requesterName: string
+  title: string
+  bookingsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.requesterName}</strong> sent you a booking request on Vuekumi: <strong>${input.title}</strong>.</p><p>Quote it or decline it from your bookings page. Vuekumi records the agreement; payment is settled directly between you, and Vuekumi charges no booking fee in this phase.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
+}
+
+export function bookingQuotedEmail(input: {
+  name: string
+  targetName: string
+  title: string
+  quoteUsd: number
+  bookingsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.targetName}</strong> quoted USD ${input.quoteUsd.toFixed(2)} for <strong>${input.title}</strong>.</p><p>Accept or withdraw from your bookings page. Payment is settled directly between you — Vuekumi charges no booking fee in this phase.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
+}
+
+export function bookingDecisionEmail(input: {
+  name: string
+  otherName: string
+  title: string
+  decision: 'accepted' | 'declined' | 'withdrawn'
+  bookingsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.otherName}</strong> ${input.decision} the booking <strong>${input.title}</strong>.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
+}
+
 export function rightsReportOpsEmail(input: {
   photoTitle: string
   reason: string

@@ -48,6 +48,9 @@ import type {
   DecideAppearanceInput,
   AcceptModelInviteInput,
   VerifyLikenessInput,
+  BookingDto,
+  CreateBookingInput,
+  BookingQuoteInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -121,6 +124,17 @@ export const api = {
 
   updateMe: (body: UpdateProfileInput) =>
     request<{ user: AuthUser }>('/api/auth/me', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  bookings: () => request<{ items: BookingDto[] }>('/api/bookings'),
+
+  createBooking: (body: CreateBookingInput) =>
+    request<{ booking: BookingDto }>('/api/bookings', { method: 'POST', body: JSON.stringify(body) }),
+
+  quoteBooking: (id: string, body: BookingQuoteInput) =>
+    request<{ booking: BookingDto }>(`/api/bookings/${id}/quote`, { method: 'POST', body: JSON.stringify(body) }),
+
+  bookingAction: (id: string, action: 'accept' | 'decline' | 'withdraw') =>
+    request<{ booking: BookingDto }>(`/api/bookings/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }),
 
   changePassword: (body: ChangePasswordInput) =>
     request<{ user: AuthUser }>('/api/auth/me/password', { method: 'PATCH', body: JSON.stringify(body) }),

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import type { CreatorKind, SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
-import { CREATOR_KIND_LABELS, hasModelAccess } from '@vuekumi/shared'
+import type { BookingAvailability, CreatorKind, SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
+import { AVAILABILITY_LABELS, CREATOR_KIND_LABELS, hasModelAccess } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError, type GeoCountry } from '../api/client'
@@ -18,6 +18,8 @@ export default function Account() {
   const [bio, setBio] = useState('')
   const [location, setLocation] = useState('')
   const [creatorKind, setCreatorKind] = useState<CreatorKind>('photographer')
+  const [availability, setAvailability] = useState<BookingAvailability>('open')
+  const [dayRate, setDayRate] = useState('')
   const [countries, setCountries] = useState<GeoCountry[]>([])
   const [profileBusy, setProfileBusy] = useState(false)
 
@@ -46,6 +48,8 @@ export default function Account() {
     setBio(user.bio ?? '')
     setLocation(user.location ?? '')
     setCreatorKind(user.creatorKind ?? 'photographer')
+    setAvailability(user.availability ?? 'open')
+    setDayRate(user.dayRateUsd != null ? String(user.dayRateUsd) : '')
   }, [user])
 
   useEffect(() => {
@@ -188,6 +192,9 @@ export default function Account() {
                 avatarUrl,
                 ...(publicProfile ? { handle, bio, location } : {}),
                 ...(contributor ? { creatorKind } : {}),
+                ...(publicProfile
+                  ? { availability, dayRateUsd: dayRate === '' ? null : Number(dayRate) }
+                  : {}),
               })
               await refresh()
               toast.success('Profile saved')
@@ -267,6 +274,35 @@ export default function Account() {
                 placeholder="Short bio"
                 className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
               />
+              <div>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(AVAILABILITY_LABELS) as BookingAvailability[]).map((a) => (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => setAvailability(a)}
+                      className={`border px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] transition-colors ${
+                        availability === a ? 'border-terra bg-terra/5 text-ink' : 'border-sand text-ink-soft hover:border-ink'
+                      }`}
+                    >
+                      {AVAILABILITY_LABELS[a]}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  step={25}
+                  value={dayRate}
+                  onChange={(e) => setDayRate(e.target.value)}
+                  placeholder="Indicative day rate (USD, optional)"
+                  className="mt-2 w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+                />
+                <p className="mt-1.5 font-mono-tech text-[10px] text-ink-faint">
+                  Booking visibility on your public profile. Payment is settled directly between
+                  the parties — Vuekumi charges no booking fee in this phase.
+                </p>
+              </div>
             </>
           )}
           <input

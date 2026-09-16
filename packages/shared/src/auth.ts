@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { bookingAvailabilitySchema } from './bookings.js'
 import { creatorKindSchema } from './creators.js'
 
 export const accountTypeSchema = z.enum(['admin', 'contributor', 'user', 'agency', 'model'])
@@ -39,6 +40,8 @@ export const updateProfileSchema = z.object({
   location: z.string().max(120).optional().or(z.literal('')),
   handle: z.string().min(3).max(40).optional(),
   creatorKind: creatorKindSchema.optional(),
+  availability: bookingAvailabilitySchema.optional(),
+  dayRateUsd: z.number().min(0).max(1_000_000).nullable().optional(),
 })
 
 export const changePasswordSchema = z.object({

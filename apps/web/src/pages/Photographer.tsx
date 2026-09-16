@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
-import { creatorKindLabel } from '@vuekumi/shared'
+import { AVAILABILITY_LABELS, creatorKindLabel } from '@vuekumi/shared'
 import { PhotoMasonry, SiteHeader } from '../components/shared'
 import { FollowButton } from '../components/FollowButton'
 import { useAuth } from '../context/AuthContext'
@@ -88,6 +88,10 @@ export default function Photographer() {
                 {profile.photosCount} live photographs · {fmt(profile.downloads)} downloads · {fmt(profile.followers)} followers
                 {profile.profileViews != null ? ` · ${fmt(profile.profileViews)} profile views` : ''}
               </p>
+              <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                {AVAILABILITY_LABELS[profile.availability]}
+                {profile.dayRateUsd != null ? ` · from $${profile.dayRateUsd.toLocaleString()} / day` : ''}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <FollowButton
@@ -99,6 +103,14 @@ export default function Photographer() {
                   setProfile((p) => p ? { ...p, following: result.following, followers: result.followers } : p)
                 }}
               />
+              {profile.availability !== 'unavailable' && user?.contributorHandle !== profile.handle && (
+                <Link
+                  to={`/hire/${profile.handle}`}
+                  className="bg-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra"
+                >
+                  Hire {profile.name.split(' ')[0]}
+                </Link>
+              )}
               <Link
                 to={`/search?photographer=${encodeURIComponent(profile.handle)}`}
                 className="border border-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"

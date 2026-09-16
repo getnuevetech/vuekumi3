@@ -22,6 +22,8 @@ function toPublicModel(
       handle: string
       location: string | null
       bio: string | null
+      availability: 'open' | 'limited' | 'unavailable'
+      dayRateUsd: number | null
       profileViews?: number
     } | null
     contributorProfile?: { handle: string } | null
@@ -36,6 +38,8 @@ function toPublicModel(
     avatarUrl: user.avatarUrl,
     location: user.modelProfile.location,
     bio: user.modelProfile.bio,
+    availability: user.modelProfile.availability,
+    dayRateUsd: user.modelProfile.dayRateUsd,
     photosCount,
     photographerHandle: user.contributorProfile?.handle ?? null,
     earns: false,

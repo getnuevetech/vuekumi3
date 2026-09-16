@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import type { ModelPublicDto, PhotoDto } from '@vuekumi/shared'
+import { AVAILABILITY_LABELS } from '@vuekumi/shared'
 import { PhotoMasonry, SiteHeader } from '../components/shared'
+import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
 import { fmt } from '../data/content'
 
 export default function ModelProfile() {
   const { handle } = useParams()
+  const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const [profile, setProfile] = useState<ModelPublicDto | null>(null)
   const [items, setItems] = useState<PhotoDto[]>([])
@@ -81,7 +84,11 @@ export default function ModelProfile() {
               <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
                 {profile.photosCount} approved photograph{profile.photosCount === 1 ? '' : 's'}
                 {profile.profileViews != null ? ` · ${fmt(profile.profileViews)} profile views` : ''}
-                {' · does not earn'}
+                {' · does not earn from licences'}
+              </p>
+              <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                {AVAILABILITY_LABELS[profile.availability]}
+                {profile.dayRateUsd != null ? ` · from $${profile.dayRateUsd.toLocaleString()} / day` : ''}
               </p>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
                 Photographs this model approved for use. Copyright stays with the photographer.
@@ -89,6 +96,14 @@ export default function ModelProfile() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {profile.availability !== 'unavailable' && user?.modelHandle !== profile.handle && (
+                <Link
+                  to={`/book/${profile.handle}`}
+                  className="bg-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra"
+                >
+                  Book {profile.name.split(' ')[0]}
+                </Link>
+              )}
               {profile.photographerHandle && (
                 <Link
                   to={`/p/${profile.photographerHandle}`}

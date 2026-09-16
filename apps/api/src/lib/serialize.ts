@@ -42,7 +42,13 @@ export const authUserInclude = {
 
 type UserWithRelations = User & {
   contributorProfile?: ContributorProfile | null
-  modelProfile?: { handle: string; bio: string | null; location: string | null } | null
+  modelProfile?: {
+    handle: string
+    bio: string | null
+    location: string | null
+    availability?: 'open' | 'limited' | 'unavailable'
+    dayRateUsd?: number | null
+  } | null
   adminProfile?: AdminProfile | null
   userProfile?: UserProfile | null
   agencyMembers?: (AgencyMember & { agency?: Pick<Agency, 'name' | 'status'> })[]
@@ -66,6 +72,8 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     location: user.contributorProfile?.location ?? user.modelProfile?.location ?? null,
     contributorHandle: user.contributorProfile?.handle ?? null,
     creatorKind: user.contributorProfile?.creatorKind ?? null,
+    availability: user.contributorProfile?.availability ?? user.modelProfile?.availability ?? null,
+    dayRateUsd: user.contributorProfile?.dayRateUsd ?? user.modelProfile?.dayRateUsd ?? null,
     modelHandle: user.modelProfile?.handle ?? null,
     hasModelProfile: Boolean(user.modelProfile),
     adminRole: user.adminProfile?.adminRole ?? null,

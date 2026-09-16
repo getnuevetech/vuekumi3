@@ -143,6 +143,7 @@ export function SiteHeader() {
             <Link to="/creators" className="link-slide hover:text-terra">Creators</Link>
             <Link to="/models" className="link-slide hover:text-terra">Models</Link>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
+            {user && <Link to="/bookings" className="link-slide hover:text-terra">Bookings</Link>}
             {user && user.accountType !== 'model' && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
             {user && user.accountType !== 'model' && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
             {user && user.accountType !== 'model' && <Link to="/collections" className="link-slide hover:text-terra">Collections</Link>}
@@ -213,6 +214,7 @@ export function SiteHeader() {
             { label: 'Creators', href: '/creators' },
             { label: 'Models', href: '/models' },
             { label: 'License & Pricing', href: '/pricing' },
+            ...(user ? [{ label: 'Bookings', href: '/bookings' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', href: '/favorites' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Following', href: '/following' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Collections', href: '/collections' }] : []),
@@ -535,6 +537,7 @@ export function StatusPill({ status }: { status: string }) {
     unauthorized_use: 'bg-[#fbe7e4] text-[#b3382e]',
     accepted: 'bg-[#e7f2e9] text-[#2e6b3e]',
     declined: 'bg-[#fbe7e4] text-[#b3382e]',
+    withdrawn: 'bg-cream text-ink-soft',
     not_required: 'bg-cream text-ink',
     owner: 'bg-ink text-paper',
     admin: 'bg-[#f3e9f5] text-[#7a4a8f]',
