@@ -30,6 +30,7 @@ function toPhotographer(
       profileViews?: number
     } | null
     modelProfile?: { handle: string } | null
+    representation?: { status: string } | null
   },
   photosCount: number,
   downloads: number,
@@ -46,6 +47,7 @@ function toPhotographer(
     creatorKind: user.contributorProfile.creatorKind,
     availability: user.contributorProfile.availability,
     dayRateUsd: user.contributorProfile.dayRateUsd,
+    represented: user.representation?.status === 'represented',
     photosCount,
     downloads,
     followers,
@@ -83,6 +85,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       include: {
         contributorProfile: true,
         modelProfile: { select: { handle: true } },
+        representation: { select: { status: true } },
         photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
         _count: { select: { followers: true } },
       },
@@ -137,6 +140,7 @@ export async function photographerRoutes(app: FastifyInstance) {
             include: {
               contributorProfile: true,
               modelProfile: { select: { handle: true } },
+              representation: { select: { status: true } },
               photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
               _count: { select: { followers: true } },
             },
@@ -173,7 +177,14 @@ export async function photographerRoutes(app: FastifyInstance) {
     const query = photoListQuerySchema.parse(request.query)
     const profile = await prisma.contributorProfile.findFirst({
       where: { handle: { equals: handle, mode: 'insensitive' } },
-      include: { user: { include: { modelProfile: { select: { handle: true } } } } },
+      include: {
+        user: {
+          include: {
+            modelProfile: { select: { handle: true } },
+            representation: { select: { status: true } },
+          },
+        },
+      },
     })
 
     if (!profile || profile.user.accountType !== 'contributor' || profile.user.status !== 'active') {

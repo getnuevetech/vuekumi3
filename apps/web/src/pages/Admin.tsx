@@ -57,6 +57,7 @@ export const adminLinks: PortalLink[] = [
   { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
   { to: '/admin/reports', label: 'Reports', icon: icons.shield },
   { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
+  { to: '/admin/representation', label: 'VueQuatro', icon: icons.shield },
   { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
   { to: '/admin/countries', label: 'Countries', icon: icons.gear },
   { to: '/admin/rates', label: 'FX rates', icon: icons.money },

@@ -91,6 +91,7 @@ export default function Photographer() {
               <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
                 {AVAILABILITY_LABELS[profile.availability]}
                 {profile.dayRateUsd != null ? ` · from $${profile.dayRateUsd.toLocaleString()} / day` : ''}
+                {profile.represented ? ' · Represented by VueQuatro' : ''}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

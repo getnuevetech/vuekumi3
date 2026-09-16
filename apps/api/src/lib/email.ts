@@ -200,6 +200,44 @@ export function bookingDecisionEmail(input: {
   return `<p>Hi ${input.name},</p><p><strong>${input.otherName}</strong> ${input.decision} the booking <strong>${input.title}</strong>.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
 }
 
+export function representationRequestOpsEmail(input: {
+  contributorName: string
+  contributorEmail: string
+  note: string | null
+  queueUrl: string
+}): string {
+  const note = input.note ? `<p>Note: ${input.note}</p>` : ''
+  return `<p><strong>${input.contributorName}</strong> (${input.contributorEmail}) requested VueQuatro representation.</p>${note}<p>Representation is opt-in and does not transfer copyright. No commission rate exists — do not invent one.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
+}
+
+export function representationDecisionEmail(input: {
+  name: string
+  decision: 'approved' | 'declined' | 'ended'
+  staffNote: string | null
+  dashboardUrl: string
+}): string {
+  const note = input.staffNote ? `<p>Staff note: ${input.staffNote}</p>` : ''
+  const body =
+    input.decision === 'approved'
+      ? '<p>VueQuatro now represents your work. Staff can mark photographs as agency-protected: they leave self-serve stock and buyers inquire through Vuekumi instead. You keep copyright, and you can end representation at any time.</p>'
+      : input.decision === 'declined'
+        ? '<p>Your VueQuatro representation request was declined. Nothing changes about your account, your photographs, or your earnings. You can request again later.</p>'
+        : '<p>Your VueQuatro representation has ended. Any agency-protected photographs have been returned to you as portfolio-only — you can re-licence them from your photo editor as usual.</p>'
+  return `<p>Hi ${input.name},</p>${body}${note}<p><a href="${input.dashboardUrl}">${input.dashboardUrl}</a></p>`
+}
+
+export function representationInquiryOpsEmail(input: {
+  photoTitle: string
+  name: string
+  email: string
+  company: string | null
+  message: string
+  queueUrl: string
+}): string {
+  const company = input.company ? ` (${input.company})` : ''
+  return `<p>An agency-protected licensing inquiry arrived.</p><p><strong>${input.photoTitle}</strong></p><p>From: ${input.name}${company} · ${input.email}</p><p>${input.message}</p><p>Agency-protected inventory is not self-serve stock. Vuekumi sells usage permission, not ownership.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
+}
+
 export function rightsReportOpsEmail(input: {
   photoTitle: string
   reason: string

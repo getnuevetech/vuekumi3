@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { PermissionState } from '@vuekumi/shared'
-import { CONSENT_VERSION, twoPartyCommercialCleared } from '@vuekumi/shared'
+import { canMarkAgencyProtected, CONSENT_VERSION, twoPartyCommercialCleared } from '@vuekumi/shared'
 import { decideModerationSchema, patchRightsSchema, reviewModelReleaseSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
@@ -163,6 +163,20 @@ export async function adminContentRoutes(app: FastifyInstance) {
         return reply.code(err.statusCode).send({ error: err.message })
       }
       throw err
+    }
+
+    // Phase 31 — agency-protected is real representation handling, not a label:
+    // it may only be applied while the contributor is represented by VueQuatro.
+    if (permissionState === 'agency_protected' && photo.permissionState !== 'agency_protected') {
+      const representation = await prisma.representation.findUnique({
+        where: { contributorId: photo.contributorId },
+        select: { status: true },
+      })
+      if (!canMarkAgencyProtected(representation?.status ?? null)) {
+        return reply.code(400).send({
+          error: 'Agency-protected requires an active VueQuatro representation — approve the contributor first',
+        })
+      }
     }
 
     const permission = permissionWriteData(permissionState, photo.exclusiveSold, body.restrictionNotes)

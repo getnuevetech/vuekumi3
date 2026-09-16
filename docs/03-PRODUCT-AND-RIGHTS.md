@@ -181,11 +181,12 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 30, the marketplace is a **stock + licensing MVP** with photographer
+Shipped through Phase 31, the marketplace is a **stock + licensing MVP** with photographer
 accounts, photo permission states, invite-only model accounts, self-shot dual role, a
 two-approval commercial lock, public model portfolios, an opt-in visual likeness check
 that cannot grant rights, a creator directory that labels photographers and photo
-influencers honestly, and talent booking (briefs and quotes; settlement off-platform).
+influencers honestly, talent booking (briefs and quotes; settlement off-platform), and
+opt-in VueQuatro representation with staff-handled agency-protected inventory.
 Models do **not** earn from licences and do **not** gain copyright.
 
 | Doctrine | In production now |
@@ -201,7 +202,7 @@ Models do **not** earn from licences and do **not** gain copyright.
 | Public model portfolio | **Yes** — `/m/:handle` and `/models` list photographs a model approved with confirmed likeness. Copyright stays with the photographer. No booking CTA. |
 | Visual verification | **Yes** — opt-in per photograph. Model uploads a selfie; Vuekumi compares it to the photograph (OpenAI vision when a key is in Admin Settings, otherwise records `unavailable`), stores a discrete result, and discards the selfie. No embedding store. Public profile does not show the check. **Similarity cannot grant commercial rights.** |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
-| VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
+| VueQuatro product surface | **Yes** (Phase 31) — a staff mode, not a second app. Contributors opt in to representation; staff approve, decline, or end it, and either side can end it. Only represented contributors can have photographs marked `agency_protected`; those photographs leave self-serve checkout and buyers send licensing inquiries that staff handle at `/admin/representation`. **No representation commission** (rate undecided) and copyright never moves. Ending representation reverts protected photographs to portfolio-only — no clearance is invented. |
 | Photo influencer role | **Yes** (Phase 29) — a `creatorKind` on the contributor profile (photographer / photo influencer), chosen at signup and changeable in account settings. Honest labels on profiles and the `/creators` directory with a kind filter. Same copyright, agreement, and 50% share — presentation and discovery only. |
 | Talent booking | **Yes** (Phase 30) — hire a photographer (`/hire/:handle`) or book a model (`/book/:handle`): brief → quote → accept/decline/withdraw, with availability and an optional indicative day rate on public profiles. Vuekumi records the agreement only. **No booking payments, no commission** — the rate is undecided, and booking money never touches the earnings ledger. Booking does not license any photograph. |
 | Partner/API distribution | **No** |
@@ -212,7 +213,8 @@ Rights-managed products `requiresModelRelease: true`, same as other commercial g
 Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in Phase 26.
 Public model portfolio shipped in Phase 27. Opt-in visual verification shipped in Phase 28.
 Photo influencer creator kind shipped in Phase 29. Talent booking (no payments, no
-commission) shipped in Phase 30.
+commission) shipped in Phase 30. VueQuatro representation (opt-in, no commission, staff
+mode only) shipped in Phase 31.
 
 ---
 
@@ -248,7 +250,10 @@ Do not treat these as already decided:
 - Exclusive premiums beyond the current default exclusive list price
 - Vuekumi+ price as a long-term locked number (the live product has a Plus plan; treat
   pricing as revisable)
-- Whether VueQuatro is a separate app, a legal entity only, or a VueKumi staff mode
+- Whether VueQuatro is a separate app, a legal entity only, or a VueKumi staff mode —
+  Phase 31 shipped it as a staff mode without closing this question
+- Representation commission — Phase 31 shipped representation with **zero** platform fee
+  for the same reason booking has none: the number was never decided
 - Biometric vendor / retention period for visual verification. Phase 28 uses the existing
   OpenAI vision key when present and does **not** keep the selfie. A dedicated vendor and a
   numbered retention window remain undecided; do not invent either.

@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 16 September 2026 against `main` after Phase 30.
+Updated 16 September 2026 against `main` after Phase 31.
 
 ---
 
@@ -99,6 +99,7 @@ Locked product rules already in the running system:
 | 28 | Opt-in visual likeness check (result only; selfie discarded; similarity ≠ release) |
 | 29 | Creator kind on contributors (photographer / photo influencer) — honest labels, `/creators` directory with kind filter, signup + account choice. Presentation only: rights, copyright, and the 50% share are unchanged. |
 | 30 | Booking: hire photographer / book model — briefs, quotes, accept/decline/withdraw, availability + indicative day rate on profiles. Payment is settled off-platform; Vuekumi takes **no booking commission** (rate undecided — do not invent one). Booking money never touches the earnings ledger. |
+| 31 | VueQuatro representation — opt-in request → staff approve/decline, revocable by either side. `agency_protected` becomes real handling: only settable while represented, licensed through staff-routed inquiries, reverts to portfolio-only when representation ends. Staff queue at `/admin/representation`. **No representation commission** (undecided) and **no second public app** — VueQuatro is a staff mode. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -122,7 +123,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
 | Photo influencer role | Shipped (Phase 29) — a `creatorKind` on the contributor profile, not a sixth account type. Same agreement, same earnings; only presentation and discovery change. |
 | Talent booking | Shipped (Phase 30) — briefs, quotes, accept/decline/withdraw with availability on profiles. Off-platform settlement; no commission (rate undecided). |
-| VueQuatro representation / agency-protected inventory | Missing |
+| VueQuatro representation / agency-protected inventory | Shipped (Phase 31) — opt-in, revocable, no commission (rate undecided), copyright unchanged. Agency-protected inventory routes to staff inquiries instead of checkout. Staff mode only, no second public brand. |
 | Partner API | Missing |
 | Separate AI-training consent | Missing |
 | Photographer/model revenue split | **Undecided — do not invent** |
@@ -168,6 +169,12 @@ decisions only. Vuekumi does **not** process booking payments and takes **no** c
 the booking/production commission rate remains **undecided**. Do not add booking payment
 rails or a platform fee without an explicit decision.
 
+**Gate recorded with Phase 31 (16 September 2026):** representation shipped opt-in and
+revocable with **no** commission — that rate is also **undecided**. VueQuatro stays a
+VueKumi staff mode: whether it becomes a separate app or legal entity is an open decision.
+Ending representation reverts agency-protected photographs to portfolio-only; it never
+invents clearance and never moves copyright.
+
 ### Arc C — Talent, VueQuatro, distribution
 
 Only after commercially cleared images have real people behind them.
@@ -176,7 +183,7 @@ Only after commercially cleared images have real people behind them.
 | --- | --- |
 | **29** | Photo influencer as a contributor creator kind — discovery without pretending every creator is a studio photographer — **shipped** |
 | **30** | Booking: hire photographer / book model (briefs, availability, quotes). VueKumi stays the marketplace. Off-platform settlement, no commission — **shipped** |
-| **31** | VueQuatro representation: agency-protected inventory, opt-in enforcement/admin of rights, staff tools. Not a second public brand required on day one. |
+| **31** | VueQuatro representation: agency-protected inventory, opt-in enforcement/admin of rights, staff tools. Not a second public brand required on day one. No representation commission (undecided) — **shipped** |
 | **32** | Brand production (campaign-shaped sourcing, not only single-image checkout) |
 | **33** | Partner / Unsplash-style **distribution API** (authenticated, licensed, rate-limited) |
 | **34** | **AI-training** licence as an explicit opt-in, separate from RF/commercial grants, payable if we sell datasets |
@@ -226,5 +233,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 31** (VueQuatro representation:
-   agency-protected inventory, opt-in rights enforcement, staff tools) unless you redirect.
+3. Default next slice when work resumes: **Phase 32** (brand production: campaign-shaped
+   sourcing, not only single-image checkout) unless you redirect.

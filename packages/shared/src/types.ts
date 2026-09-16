@@ -241,6 +241,7 @@ export interface PhotographerDto {
   creatorKind: CreatorKind
   availability: BookingAvailability
   dayRateUsd: number | null
+  represented: boolean
   photosCount: number
   downloads: number
   followers: number

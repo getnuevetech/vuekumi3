@@ -131,6 +131,20 @@ enum BookingAvailability {
   unavailable
 }
 
+enum RepresentationStatus {
+  requested
+  represented
+  declined
+  ended
+  withdrawn
+}
+
+enum InquiryStatus {
+  new
+  answered
+  closed
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -183,9 +197,49 @@ model User {
   rightsProcessVerified RightsRecord[] @relation("RightsProcessVerifier")
   bookingsReceived      BookingRequest[] @relation("BookingTarget")
   bookingsSent          BookingRequest[] @relation("BookingRequester")
+  representation        Representation?
+  representationInquiries RepresentationInquiry[]
 
   @@index([accountType])
   @@index([status])
+}
+
+model Representation {
+  id            String               @id @default(cuid())
+  contributorId String               @unique
+  status        RepresentationStatus @default(requested)
+  note          String?
+  staffNote     String?
+  requestedAt   DateTime             @default(now())
+  decidedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  contributor User @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model RepresentationInquiry {
+  id          String        @id @default(cuid())
+  photoId     String
+  requesterId String?
+  name        String
+  email       String
+  company     String?
+  message     String
+  status      InquiryStatus @default(new)
+  staffNote   String?
+  ipAddress   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  photo     Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  requester User? @relation(fields: [requesterId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([photoId])
 }
 
 model BookingRequest {
@@ -408,6 +462,7 @@ model Photo {
   favorites        PhotoFavorite[]
   collectionPhotos CollectionPhoto[]
   rightsReports    RightsReport[]
+  representationInquiries RepresentationInquiry[]
   commercialLockedBy User? @relation("CommercialLockActor", fields: [commercialLockedById], references: [id], onDelete: SetNull)
   appearances      PhotoAppearance[]
 

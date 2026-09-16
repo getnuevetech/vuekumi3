@@ -51,6 +51,13 @@ import type {
   BookingDto,
   CreateBookingInput,
   BookingQuoteInput,
+  RepresentationDto,
+  RepresentationAdminDto,
+  RepresentationInquiryDto,
+  RequestRepresentationInput,
+  DecideRepresentationInput,
+  CreateInquiryInput,
+  DecideInquiryInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -135,6 +142,29 @@ export const api = {
 
   bookingAction: (id: string, action: 'accept' | 'decline' | 'withdraw') =>
     request<{ booking: BookingDto }>(`/api/bookings/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }),
+
+  representation: () => request<{ representation: RepresentationDto | null }>('/api/representation'),
+
+  requestRepresentation: (body: RequestRepresentationInput) =>
+    request<{ representation: RepresentationDto }>('/api/representation', { method: 'POST', body: JSON.stringify(body) }),
+
+  withdrawRepresentation: () =>
+    request<{ representation: RepresentationDto }>('/api/representation/withdraw', { method: 'POST', body: JSON.stringify({}) }),
+
+  endRepresentation: () =>
+    request<{ representation: RepresentationDto; revertedPhotos: number }>('/api/representation/end', { method: 'POST', body: JSON.stringify({}) }),
+
+  photoInquiry: (photoId: string, body: CreateInquiryInput) =>
+    request<{ ok: true }>(`/api/photos/${photoId}/inquiry`, { method: 'POST', body: JSON.stringify(body) }),
+
+  adminRepresentation: () =>
+    request<{ items: RepresentationAdminDto[]; inquiries: RepresentationInquiryDto[] }>('/api/admin/representation'),
+
+  decideRepresentation: (id: string, body: DecideRepresentationInput) =>
+    request<{ representation: RepresentationDto; revertedPhotos: number }>(`/api/admin/representation/${id}/decide`, { method: 'POST', body: JSON.stringify(body) }),
+
+  decideInquiry: (id: string, body: DecideInquiryInput) =>
+    request<{ ok: true }>(`/api/admin/inquiries/${id}`, { method: 'POST', body: JSON.stringify(body) }),
 
   changePassword: (body: ChangePasswordInput) =>
     request<{ user: AuthUser }>('/api/auth/me/password', { method: 'PATCH', body: JSON.stringify(body) }),
