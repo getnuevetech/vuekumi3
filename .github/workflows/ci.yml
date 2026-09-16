@@ -40,6 +40,7 @@ jobs:
       - run: npm run typecheck -w @vuekumi/web
       - run: npm run lint -w @vuekumi/web
       - run: npm run db:migrate:deploy -w @vuekumi/api
+      - run: npm run db:seed -w @vuekumi/api
       - run: npm test -w @vuekumi/api
       - run: npm exec -w @vuekumi/web -- vite build
 
