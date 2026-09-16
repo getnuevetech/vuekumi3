@@ -320,6 +320,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   const observerItems = (observerLicenses.json() as { items: { type: string; offered: boolean }[] }).items
   assert.equal(observerItems.find((i) => i.type === 'commercial')?.offered, true)
   const observerPublic = await app.inject({ method: 'GET', url: '/api/photos/afr-027' })
+  assert.equal((observerPublic.json() as { rights?: { twoPartyCleared?: boolean } }).rights?.twoPartyCleared, true)
   assert.equal(JSON.stringify(observerPublic.json()).includes('kofi-mensah@vuekumi.demo'), false)
 
   const ownEmailInvite = await app.inject({
