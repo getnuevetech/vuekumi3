@@ -95,6 +95,7 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
   const [verifyBusy, setVerifyBusy] = useState(false)
   const [consented, setConsented] = useState(false)
   const [selfie, setSelfie] = useState<File | null>(null)
+  const [fileKey, setFileKey] = useState(0)
 
   const decide = async (status: 'approved' | 'rejected') => {
     setBusy(true)
@@ -128,6 +129,7 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
       })
       setSelfie(null)
       setConsented(false)
+      setFileKey((n) => n + 1)
       toast.success(result.appearance.verification
         ? LIKENESS_CHECK_LABEL[result.appearance.verification.status]
         : 'Check recorded')
@@ -194,6 +196,7 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
             I consent to a one-time comparison. Do not store my selfie.
           </label>
           <input
+            key={fileKey}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="mt-3 block w-full text-sm text-ink-soft"
