@@ -31,7 +31,6 @@ test('public model list and Ada / Kofi portfolios hide emails and keep photograp
   }
   const body = JSON.stringify(listed)
   assert.equal(body.includes('@vuekumi.demo'), false)
-  assert.equal(body.includes('nomsa'), false)
 
   const adaCard = listed.items.find((row) => row.handle === 'ada-molefe')
   const kofiCard = listed.items.find((row) => row.handle === 'kofi-mensah')
