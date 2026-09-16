@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { PermissionState } from '@vuekumi/shared'
-import { MODEL_APPEARANCE_LABEL } from '@vuekumi/shared'
+import { MODEL_APPEARANCE_LABEL, LIKENESS_CHECK_LABEL } from '@vuekumi/shared'
 import { PortalShell, StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
@@ -218,6 +218,7 @@ export function AdminContent() {
               <h3 className="mt-6 font-serif-display text-lg">People identified</h3>
               <p className="mt-1 text-sm text-ink-soft">
                 Staff verify that photographer and model approval happened. A PDF is supporting evidence, not a commercial unlock.
+                A visual likeness check is extra evidence only — similarity cannot grant rights.
               </p>
               <div className="mt-2 space-y-2">
                 {(detail.photo.appearances ?? []).length === 0 && (
@@ -235,6 +236,11 @@ export function AdminContent() {
                       {row.selfShot ? ' · self-shot' : ''}
                       {row.usage !== 'none' ? ` · ${row.usage}` : ''}
                     </p>
+                    {row.verification && (
+                      <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+                        Visual check: {LIKENESS_CHECK_LABEL[row.verification.status]}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

@@ -86,6 +86,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
           include: {
             photo: { include: { contributor: true } },
             modelUser: { include: { modelProfile: true } },
+            likenessChecks: { orderBy: { createdAt: 'desc' }, take: 1 },
           },
           orderBy: { createdAt: 'asc' },
         },
@@ -99,7 +100,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
         photo,
         photo.contributor.contributorProfile?.handle ?? photo.contributorId,
         hasAgreement,
-        { appearances: photo.appearances.map((row) => serializeAppearance(row, { includeEmail: true })) },
+        { appearances: photo.appearances.map((row) => serializeAppearance(row, { includeEmail: true, includeVerification: true })) },
       ),
       modelReleases: photo.modelReleases,
       grants: photo.licenseGrants.map((g) => ({

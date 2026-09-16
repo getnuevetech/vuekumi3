@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 16 September 2026 against `main` after Phase 27.
+Updated 16 September 2026 against `main` after Phase 28.
 
 ---
 
@@ -96,6 +96,7 @@ Locked product rules already in the running system:
 | 25 | Two-approval commercial lock (photographer + model; admin verifies process, not a PDF) |
 | 26 | Self-shot dual role (contributor + model profile on one account; likeness + usage still required) |
 | 27 | Public model portfolio (`/m/:handle`, `/models`) from approved likeness photographs. Model does not gain copyright. |
+| 28 | Opt-in visual likeness check (result only; selfie discarded; similarity ≠ release) |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -115,7 +116,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Invite-the-model as acquisition | Shipped (Phase 24) — photographer names a person; VueKumi emails the invite |
 | Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Shipped (Phase 23) — orthogonal to moderation status; catalog is stock states only |
 | Self-shot dual role | Shipped (Phase 26) — photographer identifies themselves on their own photo; `accountType` stays `contributor` |
-| Visual verification with biometric safeguards | Missing (do not start casually) |
+| Visual verification with biometric safeguards | Shipped (Phase 28) — opt-in per photograph, discrete result only, selfie discarded immediately. No embedding store or public face database. Similarity cannot grant rights. |
 | Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
 | Photo influencer role | Missing |
 | Talent booking | Missing |
@@ -156,11 +157,11 @@ This is the work the May discussion was actually about. It replaces “upload a 
 | **25** | **Two-approval commercial lock** + rights record as the asset (invites, consent version, timestamps, restrictions, grant history). Admin verifies process, not a PDF in isolation. — **shipped** | Photographer approval + model approval = commercially licensable. AI match cannot grant rights. |
 | **26** | **Self-shot** dual role on one account — **shipped** | Do not force a fake photographer/model pair |
 | **27** | Model **portfolio** assembled from images they approved — **shipped** | Model does not gain copyright |
-| **28** | Visual verification (opt-in likeness check) | Last in this arc. Voluntary, minimised retention, not a public face database. Skip until 24–27 are live. |
+| **28** | Visual verification (opt-in likeness check) — **shipped** | Voluntary, minimised retention, not a public face database. Similarity ≠ release. |
 
 **Gate recorded with Phase 24 (15 September 2026):** models do **not** earn. The photographer 50% of paid licences is unchanged. The photographer/model/platform split remains **undecided** — do not invent a silent model share. Revisit before any payout work.
 
-**Gate before 28:** visual verification is the next Rights 2.0 slice. Do not start it until approved.
+**Gate before 29:** photo influencer / discovery flag is the first Arc C slice. Do not start it until approved. Booking (30) still waits on cleared people photographs.
 
 ### Arc C — Talent, VueQuatro, distribution
 
@@ -179,9 +180,9 @@ Only after commercially cleared images have real people behind them.
 
 ## 5. Explicitly out of the next slice
 
-Until Arc B exists, do **not** start:
+Do **not** start from this slice:
 
-- Face scanning or embedding stores
+- A public face database or embedding store (Phase 28 stores a discrete check result only)
 - Selling training data
 - A public VueQuatro app
 - Stylists / MUA / production-crew account types
@@ -208,7 +209,7 @@ Until Arc B exists, do **not** start:
 | PDF model releases | Legal theatre. Arc B replaces them as the commercial path. |
 | Building booking on uncleared people photos | Brand liability. Arc C waits on Arc B. |
 | Silent AI-training rights | Forbidden. Separate consent (Phase 34). |
-| Biometrics | Phase 28 only, with counsel-level privacy design. Similarity ≠ release. |
+| Biometrics | Phase 28 stores an opt-in result, not embeddings. Similarity ≠ release. |
 | Model payouts | **Recorded with Phase 24:** models do not earn. Split still undecided. Photographer 50% unchanged. |
 
 The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
@@ -219,5 +220,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 28** (visual verification)
-   unless you redirect. Rights 2.0 is the strategic priority. Do not start 29 from this slice.
+3. Default next slice when work resumes: **Phase 29** (photo influencer role or contributor flag)
+   unless you redirect. Do not start 30 from this slice.

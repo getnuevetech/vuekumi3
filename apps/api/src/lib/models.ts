@@ -1,5 +1,6 @@
 import type {
   AccountType,
+  LikenessCheckDto,
   ModelAppearanceStatus,
   ModelUsagePreference,
   PermissionState,
@@ -40,8 +41,9 @@ export function ownEmailInviteBlocked(
 }
 
 export const appearanceInclude = {
-  photo: { include: { contributor: true } },
+  photo: { include: { contributor: true, assets: true } },
   modelUser: { include: { modelProfile: true } },
+  likenessChecks: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 } as const
 
 export function decideAppearanceBlocked(input: {
@@ -147,14 +149,33 @@ export function serializeAppearance(
       contributor?: { name: string } | null
     } | null
     modelUser?: (Pick<User, 'id'> & { modelProfile?: { handle: string } | null }) | null
+    likenessChecks?: {
+      status: string
+      consentedAt: Date
+      comparedAt: Date
+      provider: string
+      referenceDeletedAt: Date | null
+      notes: string | null
+    }[]
   },
-  opts?: { includeEmail?: boolean },
+  opts?: { includeEmail?: boolean; includeVerification?: boolean },
 ): PhotoAppearanceDto {
   const photo = row.photo
   const src =
     photo?.storageKey && photo.processingStatus === 'ready'
       ? `/api/media/${photo.id}/preview`
       : photo?.src
+  const latest = row.likenessChecks?.[0]
+  const verification: LikenessCheckDto | null = latest
+    ? {
+        status: latest.status as LikenessCheckDto['status'],
+        consentedAt: latest.consentedAt.toISOString(),
+        comparedAt: latest.comparedAt.toISOString(),
+        provider: latest.provider === 'openai' ? 'openai' : 'none',
+        referenceDeleted: true,
+        notes: latest.notes,
+      }
+    : null
   return {
     id: row.id,
     photoId: row.photoId,
@@ -174,6 +195,7 @@ export function serializeAppearance(
     consentVersion: row.consentVersion,
     selfShot: row.selfShot,
     notes: row.notes,
+    verification: opts?.includeVerification ? verification : undefined,
   }
 }
 

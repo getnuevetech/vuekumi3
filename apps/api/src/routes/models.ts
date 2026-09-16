@@ -3,6 +3,7 @@ import {
   CONSENT_VERSION,
   acceptModelInviteSchema,
   decideAppearanceSchema,
+  verifyLikenessSchema,
 } from '@vuekumi/shared'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
@@ -24,6 +25,12 @@ import { createToken, hashPassword, hashToken } from '../lib/password.js'
 import { prisma } from '../lib/prisma.js'
 import { issueTokens } from '../lib/session.js'
 import { authUserInclude, serializeUser } from '../lib/serialize.js'
+import {
+  compareLikeness,
+  decodeReferenceImage,
+  likenessCheckBlocked,
+  loadPhotographBytes,
+} from '../lib/likeness.js'
 
 function modelError(reply: FastifyReply, err: unknown) {
   if (err instanceof ModelError) {
@@ -97,7 +104,7 @@ export async function modelRoutes(app: FastifyInstance) {
       include: appearanceInclude,
       orderBy: { updatedAt: 'desc' },
     })
-    return { items: items.map((row) => serializeAppearance(row, { includeEmail: false })) }
+    return { items: items.map((row) => serializeAppearance(row, { includeEmail: false, includeVerification: true })) }
   })
 
   app.post('/model/appearances/:id/decide', gate, async (request, reply) => {
@@ -140,8 +147,72 @@ export async function modelRoutes(app: FastifyInstance) {
         },
         ipAddress: request.ip,
       })
-      return { appearance: serializeAppearance(updated, { includeEmail: false }) }
+      return { appearance: serializeAppearance(updated, { includeEmail: false, includeVerification: true }) }
     } catch (err) {
+      return modelError(reply, err)
+    }
+  })
+
+  app.post('/model/appearances/:id/verify', gate, async (request, reply) => {
+    let selfie: Buffer | null = null
+    try {
+      const { id } = request.params as { id: string }
+      const body = verifyLikenessSchema.parse(request.body)
+      const row = await prisma.photoAppearance.findUnique({
+        where: { id },
+        include: {
+          photo: { include: { assets: true, contributor: true } },
+        },
+      })
+      if (!row || row.modelUserId !== request.userId) {
+        throw new ModelError('Appearance not found', 404)
+      }
+      const blocked = likenessCheckBlocked({
+        consented: body.consented,
+        claimed: !appearanceUnclaimed(row.status),
+      })
+      if (blocked) throw new ModelError(blocked)
+
+      selfie = decodeReferenceImage(body.imageBase64)
+      const photograph = await loadPhotographBytes(row.photo)
+      const verdict = await compareLikeness({ photograph, selfie })
+      selfie.fill(0)
+      selfie = null
+
+      const now = new Date()
+      await prisma.likenessCheck.create({
+        data: {
+          appearanceId: row.id,
+          modelUserId: request.userId!,
+          photoId: row.photoId,
+          status: verdict.status,
+          consentedAt: now,
+          comparedAt: now,
+          provider: verdict.provider,
+          referenceDeletedAt: now,
+          notes: verdict.notes,
+        },
+      })
+      await writeAuditLog({
+        actorId: request.userId,
+        action: 'model.likeness_check',
+        entityType: 'photo_appearance',
+        entityId: id,
+        metadata: {
+          photoId: row.photoId,
+          status: verdict.status,
+          provider: verdict.provider,
+          referenceDeleted: true,
+        },
+        ipAddress: request.ip,
+      })
+      const updated = await prisma.photoAppearance.findUnique({
+        where: { id },
+        include: appearanceInclude,
+      })
+      return { appearance: serializeAppearance(updated!, { includeEmail: false, includeVerification: true }) }
+    } catch (err) {
+      if (selfie) selfie.fill(0)
       return modelError(reply, err)
     }
   })

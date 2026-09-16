@@ -36,6 +36,32 @@ export const acceptModelInviteSchema = z.object({
   password: z.string().min(8).optional(),
 })
 
+export const LIKENESS_CHECK_STATUSES = [
+  'similar',
+  'not_similar',
+  'inconclusive',
+  'unavailable',
+] as const
+export const likenessCheckStatusSchema = z.enum(LIKENESS_CHECK_STATUSES)
+export type LikenessCheckStatus = z.infer<typeof likenessCheckStatusSchema>
+
+export const verifyLikenessSchema = z.object({
+  consented: z.literal(true),
+  imageBase64: z.string().min(20).max(6_000_000),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+})
+
+export type VerifyLikenessInput = z.infer<typeof verifyLikenessSchema>
+
+export interface LikenessCheckDto {
+  status: LikenessCheckStatus
+  consentedAt: string
+  comparedAt: string
+  provider: 'openai' | 'none'
+  referenceDeleted: true
+  notes?: string | null
+}
+
 export type IdentifyAppearanceInput = z.infer<typeof identifyAppearanceSchema>
 export type DecideAppearanceInput = z.infer<typeof decideAppearanceSchema>
 export type SelfShotAppearanceInput = z.infer<typeof selfShotAppearanceSchema>
@@ -60,6 +86,7 @@ export interface PhotoAppearanceDto {
   consentVersion?: string | null
   selfShot?: boolean
   notes?: string | null
+  verification?: LikenessCheckDto | null
 }
 
 export function hasModelAccess(user: {
@@ -92,7 +119,19 @@ export const MODEL_USAGE_LABEL: Record<ModelUsagePreference, string> = {
   commercial: 'Editorial and commercial',
 }
 
+export const LIKENESS_CHECK_LABEL: Record<LikenessCheckStatus, string> = {
+  similar: 'Similar — not a release',
+  not_similar: 'Not similar — not a release',
+  inconclusive: 'Inconclusive — not a release',
+  unavailable: 'Check unavailable — not a release',
+}
+
 export const CONSENT_VERSION = '1.0'
+
+/** Visual similarity is evidence for staff. It never unlocks a licence. */
+export function likenessCheckGrantsRights(_status?: LikenessCheckStatus | null): false {
+  return false
+}
 
 export const COMMERCIAL_CLASS_LICENSES = [
   'royalty_free',

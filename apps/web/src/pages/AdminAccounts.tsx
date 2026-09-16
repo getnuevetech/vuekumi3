@@ -12,7 +12,7 @@ const copy: Record<Kind, { kicker: string; title: string; blurb: string }> = {
   contributors: { kicker: 'Contributors', title: 'Photographers.', blurb: 'African creators only. Click a row to edit.' },
   agencies: { kicker: 'Agencies', title: 'Enterprise.', blurb: 'Corporate accounts pending or approved.' },
   admins: { kicker: 'Admins', title: 'Staff.', blurb: 'Platform administrators.' },
-  models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only models and self-shot photographers. Confirm likeness per image. They do not earn in this phase.' },
+  models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only models and self-shot photographers. Confirm likeness per image. Optional visual checks do not grant rights. They do not earn in this phase.' },
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

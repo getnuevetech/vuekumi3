@@ -47,6 +47,7 @@ import type {
   SelfShotAppearanceInput,
   DecideAppearanceInput,
   AcceptModelInviteInput,
+  VerifyLikenessInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -517,6 +518,12 @@ export const api = {
 
   decideAppearance: (id: string, body: DecideAppearanceInput) =>
     request<{ appearance: PhotoAppearanceDto }>(`/api/model/appearances/${id}/decide`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  verifyLikeness: (id: string, body: VerifyLikenessInput) =>
+    request<{ appearance: PhotoAppearanceDto }>(`/api/model/appearances/${id}/verify`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),

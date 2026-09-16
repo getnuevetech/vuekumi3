@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { toast } from 'sonner'
 import {
   hasModelAccess,
+  LIKENESS_CHECK_LABEL,
   MODEL_APPEARANCE_LABEL,
   MODEL_USAGE_LABEL,
   type ModelUsagePreference,
@@ -66,7 +67,7 @@ export default function ModelPortal() {
         {dualRole ? ' You are also the photographer on this account.' : ''}
       </p>
       <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
-        Models do not earn yet. The photographer/model split is undecided.
+        Models do not earn yet. The photographer/model split is undecided. A visual check is optional and cannot grant rights.
       </p>
       {handle && (
         <p className="mt-3 text-sm text-ink-soft">
@@ -91,6 +92,9 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
   const [likeness, setLikeness] = useState(row.confirmedLikeness)
   const [usage, setUsage] = useState<ModelUsagePreference>(row.usage === 'none' ? 'editorial' : row.usage)
   const [busy, setBusy] = useState(false)
+  const [verifyBusy, setVerifyBusy] = useState(false)
+  const [consented, setConsented] = useState(false)
+  const [selfie, setSelfie] = useState<File | null>(null)
 
   const decide = async (status: 'approved' | 'rejected') => {
     setBusy(true)
@@ -106,6 +110,32 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
       toast.error(err instanceof ApiError ? err.message : 'Could not save decision')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const runCheck = async () => {
+    if (!selfie) {
+      toast.error('Choose a selfie for a one-time comparison')
+      return
+    }
+    setVerifyBusy(true)
+    try {
+      const imageBase64 = await fileToBase64(selfie)
+      const result = await api.verifyLikeness(row.id, {
+        consented: true,
+        imageBase64,
+        mimeType: selfie.type === 'image/png' || selfie.type === 'image/webp' ? selfie.type : 'image/jpeg',
+      })
+      setSelfie(null)
+      setConsented(false)
+      toast.success(result.appearance.verification
+        ? LIKENESS_CHECK_LABEL[result.appearance.verification.status]
+        : 'Check recorded')
+      onChanged()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not run likeness check')
+    } finally {
+      setVerifyBusy(false)
     }
   }
 
@@ -142,6 +172,42 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
         <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
           Untick this and reject if it is not you. Approving still requires the confirmation.
         </p>
+        <div className="mt-4 rounded-xl border border-sand-soft p-3">
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Optional visual check</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Compare a selfie to this photograph once. Vuekumi does not keep the selfie or build a face database.
+            Similarity is not a release — you still confirm likeness and approve usage yourself.
+          </p>
+          {row.verification && (
+            <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+              Last check: {LIKENESS_CHECK_LABEL[row.verification.status]}
+              {row.verification.notes ? ` · ${row.verification.notes}` : ''}
+            </p>
+          )}
+          <label className="mt-3 flex items-start gap-2 text-sm text-ink-soft">
+            <input
+              type="checkbox"
+              checked={consented}
+              onChange={(e) => setConsented(e.target.checked)}
+              className="mt-0.5 accent-[#bc773f]"
+            />
+            I consent to a one-time comparison. Do not store my selfie.
+          </label>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="mt-3 block w-full text-sm text-ink-soft"
+            onChange={(e) => setSelfie(e.target.files?.[0] ?? null)}
+          />
+          <button
+            type="button"
+            disabled={verifyBusy || !consented || !selfie}
+            onClick={() => void runCheck()}
+            className="mt-3 rounded-full border border-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] hover:bg-ink hover:text-paper disabled:opacity-50"
+          >
+            {verifyBusy ? 'Checking…' : 'Run likeness check'}
+          </button>
+        </div>
         <fieldset className="mt-3 grid gap-2 sm:grid-cols-2">
           {([
             { v: 'editorial' as const, t: 'Editorial only' },
@@ -185,4 +251,17 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
       </div>
     </article>
   )
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const value = String(reader.result ?? '')
+      const comma = value.indexOf(',')
+      resolve(comma >= 0 ? value.slice(comma + 1) : value)
+    }
+    reader.onerror = () => reject(new Error('Could not read file'))
+    reader.readAsDataURL(file)
+  })
 }

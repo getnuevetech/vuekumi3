@@ -154,7 +154,8 @@ Hard limits:
 - **AI similarity cannot grant commercial rights.** Technology verifies identity; it cannot
   manufacture permission.
 
-Until that pipeline exists, commercial licensing of recognisable people stays locked.
+Phase 28 ships that opt-in check. Commercial licensing of recognisable people is still
+gated by two-party approval. A visual result cannot manufacture permission.
 
 ---
 
@@ -180,10 +181,10 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 27, the marketplace is a **stock + licensing MVP** with photographer
+Shipped through Phase 28, the marketplace is a **stock + licensing MVP** with photographer
 accounts, photo permission states, invite-only model accounts, self-shot dual role, a
-two-approval commercial lock, and public model portfolios assembled from approved likeness.
-Models do **not** earn and do **not** gain copyright.
+two-approval commercial lock, public model portfolios, and an opt-in visual likeness check
+that cannot grant rights. Models do **not** earn and do **not** gain copyright.
 
 | Doctrine | In production now |
 | --- | --- |
@@ -196,7 +197,7 @@ Models do **not** earn and do **not** gain copyright.
 | Permission states (portfolio / editorial / restricted / agency-protected) | **Yes** — `PermissionState` on each photo; catalog is stock states; profile can show portfolio |
 | Self-shot dual role | **Yes** — photographer confirms likeness and usage on their own photograph. `accountType` stays `contributor`. |
 | Public model portfolio | **Yes** — `/m/:handle` and `/models` list photographs a model approved with confirmed likeness. Copyright stays with the photographer. No booking CTA. |
-| Visual verification | **No** (AI today is metadata suggestion only) |
+| Visual verification | **Yes** — opt-in per photograph. Model uploads a selfie; Vuekumi compares it to the photograph (OpenAI vision when a key is in Admin Settings, otherwise records `unavailable`), stores a discrete result, and discards the selfie. No embedding store. Public profile does not show the check. **Similarity cannot grant commercial rights.** |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
 | VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
 | Photo influencer role | **No** |
@@ -207,7 +208,7 @@ Models do **not** earn and do **not** gain copyright.
 
 Rights-managed products `requiresModelRelease: true`, same as other commercial grants.
 Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in Phase 26.
-Public model portfolio shipped in Phase 27.
+Public model portfolio shipped in Phase 27. Opt-in visual verification shipped in Phase 28.
 
 ---
 
@@ -240,6 +241,8 @@ Do not treat these as already decided:
 - Vuekumi+ price as a long-term locked number (the live product has a Plus plan; treat
   pricing as revisable)
 - Whether VueQuatro is a separate app, a legal entity only, or a VueKumi staff mode
-- Biometric vendor / retention period for visual verification
+- Biometric vendor / retention period for visual verification. Phase 28 uses the existing
+  OpenAI vision key when present and does **not** keep the selfie. A dedicated vendor and a
+  numbered retention window remain undecided; do not invent either.
 
 Those are Phase-gate decisions immediately before the relevant build, not this document.
