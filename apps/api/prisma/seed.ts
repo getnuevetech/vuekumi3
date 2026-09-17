@@ -94,6 +94,7 @@ async function main() {
         contributorProfile: {
           create: {
             handle: ph.handle,
+            creatorKind: ph.creatorKind ?? 'photographer',
             location: ph.location,
             photosCount: ph.photos,
             downloads: ph.downloads,

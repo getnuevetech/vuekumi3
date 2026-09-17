@@ -27,7 +27,7 @@ function serializeAccount(user: {
   country: string | null
   createdAt: Date
   emailVerifiedAt: Date | null
-  contributorProfile: { handle: string; photosCount: number; earnings: number; downloads: number } | null
+  contributorProfile: { handle: string; photosCount: number; earnings: number; downloads: number; creatorKind: 'photographer' | 'photo_influencer' } | null
   modelProfile: { handle: string } | null
   userProfile: { subscriptionPlan: string; downloadQuotaUsed: number } | null
   adminProfile: { adminRole: string } | null
@@ -44,6 +44,7 @@ function serializeAccount(user: {
     joined: user.createdAt.toISOString().slice(0, 10),
     emailVerified: Boolean(user.emailVerifiedAt),
     handle: user.contributorProfile?.handle ?? user.modelProfile?.handle ?? null,
+    creatorKind: user.contributorProfile?.creatorKind ?? null,
     photos: user.contributorProfile?.photosCount ?? 0,
     earnings: user.contributorProfile?.earnings ?? 0,
     downloads: user.contributorProfile?.downloads ?? user.userProfile?.downloadQuotaUsed ?? 0,

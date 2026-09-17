@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { accountTypeSchema, publicRegisterAccountTypeSchema } from './accounts.js'
+import { bookingAvailabilitySchema } from './bookings.js'
+import { creatorKindSchema } from './creators.js'
 
 export { accountTypeSchema, publicRegisterAccountTypeSchema }
 
@@ -10,6 +12,7 @@ export const registerSchema = z.object({
   accountType: publicRegisterAccountTypeSchema,
   country: z.string().min(2).max(2).optional(),
   acceptAgreement: z.boolean().optional(),
+  creatorKind: creatorKindSchema.optional(),
 })
 
 export const loginSchema = z.object({
@@ -37,6 +40,9 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(1000).optional().or(z.literal('')),
   location: z.string().max(120).optional().or(z.literal('')),
   handle: z.string().min(3).max(40).optional(),
+  creatorKind: creatorKindSchema.optional(),
+  availability: bookingAvailabilitySchema.optional(),
+  dayRateUsd: z.number().min(0).max(1_000_000).nullable().optional(),
 })
 
 export const changePasswordSchema = z.object({

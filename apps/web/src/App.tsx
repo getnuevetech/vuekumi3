@@ -19,6 +19,8 @@ import {
   AdminDashboard, AdminModeration, AdminPayouts,
 } from './pages/Admin'
 import { AdminQuotes } from './pages/AdminQuotes'
+import AdminRepresentation from './pages/AdminRepresentation'
+import AdminPartnerKeys from './pages/AdminPartnerKeys'
 import { AdminReports } from './pages/AdminReports'
 import { AdminSettings } from './pages/AdminSettings'
 import { AdminAdmins, AdminAgencies, AdminContributors, AdminModels, AdminUsers } from './pages/AdminAccounts'
@@ -31,6 +33,10 @@ import PlusCheckout from './pages/PlusCheckout'
 import Search from './pages/Search'
 import Photographer from './pages/Photographer'
 import ModelProfile from './pages/ModelProfile'
+import BookCreator from './pages/BookCreator'
+import Bookings from './pages/Bookings'
+import Campaigns from './pages/Campaigns'
+import Creators from './pages/Creators'
 import Models from './pages/Models'
 import Favorites from './pages/Favorites'
 import Following from './pages/Following'
@@ -57,7 +63,12 @@ export default function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/p/:handle" element={<Photographer />} />
         <Route path="/m/:handle" element={<ModelProfile />} />
+        <Route path="/creators" element={<Creators />} />
         <Route path="/models" element={<Models />} />
+        <Route path="/hire/:handle" element={<BookCreator kind="photographer" />} />
+        <Route path="/book/:handle" element={<BookCreator kind="model" />} />
+        <Route path="/bookings" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin', 'model']}><Bookings /></ProtectedRoute>} />
+        <Route path="/campaigns" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><Campaigns /></ProtectedRoute>} />
         <Route path="/photo/:id" element={<PhotoDetail />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/login" element={<Login />} />
@@ -98,6 +109,8 @@ export default function App() {
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']}><AdminModeration /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']}><AdminReports /></ProtectedRoute>} />
         <Route path="/admin/quotes" element={<ProtectedRoute allowed={['admin']}><AdminQuotes /></ProtectedRoute>} />
+        <Route path="/admin/representation" element={<ProtectedRoute allowed={['admin']}><AdminRepresentation /></ProtectedRoute>} />
+        <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']}><AdminPartnerKeys /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']}><AdminPayouts /></ProtectedRoute>} />
         <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']}><AdminCountries /></ProtectedRoute>} />
         <Route path="/admin/rates" element={<ProtectedRoute allowed={['admin']}><AdminRates /></ProtectedRoute>} />

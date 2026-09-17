@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
+import { AVAILABILITY_LABELS, creatorKindLabel } from '@vuekumi/shared'
 import { PhotoMasonry, SiteHeader } from '../components/shared'
 import { FollowButton } from '../components/FollowButton'
 import { useAuth } from '../context/AuthContext'
@@ -75,7 +76,9 @@ export default function Photographer() {
               <div className="h-28 w-28 rounded-full bg-cream" />
             )}
             <div className="flex-1">
-              <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Contributor</p>
+              <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">
+                {creatorKindLabel(profile.creatorKind)}
+              </p>
               <h1 className="font-serif-display mt-1 text-4xl font-light tracking-tight">{profile.name}</h1>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
                 @{profile.handle} · {profile.location ?? 'Africa'}
@@ -84,6 +87,11 @@ export default function Photographer() {
               <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
                 {profile.photosCount} live photographs · {fmt(profile.downloads)} downloads · {fmt(profile.followers)} followers
                 {profile.profileViews != null ? ` · ${fmt(profile.profileViews)} profile views` : ''}
+              </p>
+              <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                {AVAILABILITY_LABELS[profile.availability]}
+                {profile.dayRateUsd != null ? ` · from $${profile.dayRateUsd.toLocaleString()} / day` : ''}
+                {profile.represented ? ' · Represented by VueQuatro' : ''}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -96,6 +104,14 @@ export default function Photographer() {
                   setProfile((p) => p ? { ...p, following: result.following, followers: result.followers } : p)
                 }}
               />
+              {profile.availability !== 'unavailable' && user?.contributorHandle !== profile.handle && (
+                <Link
+                  to={`/hire/${profile.handle}`}
+                  className="bg-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra"
+                >
+                  Hire {profile.name.split(' ')[0]}
+                </Link>
+              )}
               <Link
                 to={`/search?photographer=${encodeURIComponent(profile.handle)}`}
                 className="border border-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"

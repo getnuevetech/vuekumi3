@@ -15,6 +15,7 @@ import {
   passwordChangeBlocked,
   summarizeUserAgent,
 } from '../lib/account.js'
+import { creatorKindChange, registrationCreatorKind } from '../lib/creator-kind.js'
 import { handleTaken } from '../lib/models.js'
 import {
   adminPasswordResetEmail,
@@ -99,6 +100,7 @@ export async function authRoutes(app: FastifyInstance) {
             userId: created.id,
             handle: `${handle}-${created.id.slice(-4)}`,
             location: body.country,
+            creatorKind: registrationCreatorKind(body.accountType, body.creatorKind) ?? 'photographer',
           },
         })
         await tx.platformAgreement.create({
@@ -241,13 +243,20 @@ export async function authRoutes(app: FastifyInstance) {
           avatarUrl,
         },
       })
+      const availabilityData = {
+        ...(body.availability ? { availability: body.availability } : {}),
+        ...(body.dayRateUsd !== undefined ? { dayRateUsd: body.dayRateUsd } : {}),
+      }
       if (existing.contributorProfile) {
+        const nextKind = creatorKindChange(true, body.creatorKind)
         await tx.contributorProfile.update({
           where: { userId },
           data: {
             ...(handle ? { handle } : {}),
             ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
             ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
+            ...(nextKind ? { creatorKind: nextKind } : {}),
+            ...availabilityData,
           },
         })
       }
@@ -258,6 +267,7 @@ export async function authRoutes(app: FastifyInstance) {
             ...(handle ? { handle } : {}),
             ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
             ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
+            ...availabilityData,
           },
         })
       }

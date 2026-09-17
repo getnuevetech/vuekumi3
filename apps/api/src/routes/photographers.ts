@@ -12,6 +12,7 @@ import {
   profilePhotoWhere,
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
+import { creatorKindWhere } from '../lib/creator-kind.js'
 import { followBlocked } from '../lib/follows.js'
 import { prisma } from '../lib/prisma.js'
 
@@ -19,14 +20,19 @@ function toPhotographer(
   user: {
     id: string
     name: string
+    accountType?: string
     avatarUrl: string | null
     contributorProfile: {
       handle: string
       location: string | null
       bio: string | null
+      creatorKind: 'photographer' | 'photo_influencer'
+      availability: 'open' | 'limited' | 'unavailable'
+      dayRateUsd: number | null
       profileViews?: number
     } | null
     modelProfile?: { handle: string } | null
+    representation?: { status: string } | null
   },
   photosCount: number,
   downloads: number,
@@ -34,12 +40,17 @@ function toPhotographer(
   extras?: { following?: boolean; profileViews?: number },
 ): PhotographerDto | null {
   if (!user.contributorProfile) return null
+  const hireable = user.accountType !== 'contributor'
   return {
     handle: user.contributorProfile.handle,
     name: user.name,
     avatarUrl: user.avatarUrl,
     location: user.contributorProfile.location,
     bio: user.contributorProfile.bio,
+    creatorKind: user.contributorProfile.creatorKind,
+    availability: hireable ? user.contributorProfile.availability : 'unavailable',
+    dayRateUsd: hireable ? user.contributorProfile.dayRateUsd : null,
+    represented: user.representation?.status === 'represented',
     photosCount,
     downloads,
     followers,
@@ -60,6 +71,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       accountType: 'photographer',
       status: 'active',
       photos: { some: PROFILE_PHOTO_FILTER },
+      ...creatorKindWhere(query.kind),
       ...(q
         ? {
             OR: [
@@ -76,6 +88,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       include: {
         contributorProfile: true,
         modelProfile: { select: { handle: true } },
+        representation: { select: { status: true } },
         photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
         _count: { select: { followers: true } },
       },
@@ -130,6 +143,7 @@ export async function photographerRoutes(app: FastifyInstance) {
             include: {
               contributorProfile: true,
               modelProfile: { select: { handle: true } },
+              representation: { select: { status: true } },
               photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
               _count: { select: { followers: true } },
             },
@@ -166,7 +180,14 @@ export async function photographerRoutes(app: FastifyInstance) {
     const query = photoListQuerySchema.parse(request.query)
     const profile = await prisma.contributorProfile.findFirst({
       where: { handle: { equals: handle, mode: 'insensitive' } },
-      include: { user: { include: { modelProfile: { select: { handle: true } } } } },
+      include: {
+        user: {
+          include: {
+            modelProfile: { select: { handle: true } },
+            representation: { select: { status: true } },
+          },
+        },
+      },
     })
 
     if (!profile || (profile.user.accountType !== 'photographer' && profile.user.accountType !== 'contributor') || profile.user.status !== 'active') {

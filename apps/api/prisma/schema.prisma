@@ -152,6 +152,61 @@ enum PlatformAgreementStatus {
   revoked
 }
 
+enum CreatorKind {
+  photographer
+  photo_influencer
+}
+
+enum BookingKind {
+  photographer
+  model
+}
+
+enum BookingStatus {
+  pending
+  quoted
+  accepted
+  declined
+  withdrawn
+}
+
+enum BookingAvailability {
+  open
+  limited
+  unavailable
+}
+
+enum RepresentationStatus {
+  requested
+  represented
+  declined
+  ended
+  withdrawn
+}
+
+enum InquiryStatus {
+  new
+  answered
+  closed
+}
+
+enum CampaignStatus {
+  open
+  closed
+}
+
+enum PitchStatus {
+  pending
+  accepted
+  declined
+  withdrawn
+}
+
+enum PartnerKeyStatus {
+  active
+  revoked
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -204,9 +259,137 @@ model User {
   rightsProcessVerified RightsRecord[] @relation("RightsProcessVerifier")
   photoShoots           PhotoShoot[]      @relation("PhotographerShoots")
   uploadedReleases      ModelRelease[]    @relation("ReleaseUploader")
+  bookingsReceived      BookingRequest[] @relation("BookingTarget")
+  bookingsSent          BookingRequest[] @relation("BookingRequester")
+  representation        Representation?
+  representationInquiries RepresentationInquiry[]
+  campaigns             Campaign[]
+  campaignPitches       CampaignPitch[]
+  partnerKeysCreated    PartnerApiKey[]
 
   @@index([accountType])
   @@index([status])
+}
+
+model PartnerApiKey {
+  id           String           @id @default(cuid())
+  name         String
+  note         String?
+  keyHash      String           @unique
+  keyPrefix    String
+  status       PartnerKeyStatus @default(active)
+  requestCount Int              @default(0)
+  lastUsedAt   DateTime?
+  createdById  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+}
+
+model Campaign {
+  id           String         @id @default(cuid())
+  ownerId      String
+  title        String
+  brief        String
+  deliverables String?
+  usage        String?
+  location     String?
+  startDate    DateTime?
+  endDate      DateTime?
+  budgetUsd    Float?
+  status       CampaignStatus @default(open)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  owner   User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  pitches CampaignPitch[]
+
+  @@index([status, createdAt])
+  @@index([ownerId])
+}
+
+model CampaignPitch {
+  id            String      @id @default(cuid())
+  campaignId    String
+  contributorId String
+  note          String
+  rateUsd       Float?
+  status        PitchStatus @default(pending)
+  respondedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contributor User     @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contributorId])
+  @@index([contributorId])
+}
+
+model Representation {
+  id            String               @id @default(cuid())
+  contributorId String               @unique
+  status        RepresentationStatus @default(requested)
+  note          String?
+  staffNote     String?
+  requestedAt   DateTime             @default(now())
+  decidedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  contributor User @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model RepresentationInquiry {
+  id          String        @id @default(cuid())
+  photoId     String
+  requesterId String?
+  name        String
+  email       String
+  company     String?
+  message     String
+  status      InquiryStatus @default(new)
+  staffNote   String?
+  ipAddress   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  photo     Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  requester User? @relation(fields: [requesterId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([photoId])
+}
+
+model BookingRequest {
+  id          String        @id @default(cuid())
+  kind        BookingKind
+  targetId    String
+  requesterId String
+  title       String
+  brief       String
+  location    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  budgetUsd   Float?
+  quoteUsd    Float?
+  quoteNote   String?
+  status      BookingStatus @default(pending)
+  respondedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  target    User @relation("BookingTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  requester User @relation("BookingRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@index([targetId, status])
+  @@index([requesterId])
 }
 
 model OAuthAccount {
@@ -228,6 +411,9 @@ model ContributorProfile {
   id            String   @id @default(cuid())
   userId        String   @unique
   handle        String   @unique
+  creatorKind   CreatorKind @default(photographer)
+  availability  BookingAvailability @default(open)
+  dayRateUsd    Float?
   location      String?
   bio           String?
   photosCount   Int      @default(0)
@@ -246,6 +432,8 @@ model ModelProfile {
   id           String   @id @default(cuid())
   userId       String   @unique
   handle       String   @unique
+  availability BookingAvailability @default(open)
+  dayRateUsd   Float?
   location     String?
   bio          String?
   profileViews Int      @default(0)
@@ -411,6 +599,7 @@ model Photo {
   favorites        PhotoFavorite[]
   collectionPhotos CollectionPhoto[]
   rightsReports    RightsReport[]
+  representationInquiries RepresentationInquiry[]
   commercialLockedBy User? @relation("CommercialLockActor", fields: [commercialLockedById], references: [id], onDelete: SetNull)
   appearances      PhotoAppearance[]
 

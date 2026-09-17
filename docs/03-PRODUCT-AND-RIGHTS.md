@@ -182,7 +182,7 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through the photographer / likeness-rights overhaul, the marketplace is a **stock + licensing MVP** with a distinct **photographer** account (professional commercial inventory) and a **community contributor** account (portfolio/editorial, not commercial stock). Photo copyright rights and likeness / model release rights are tracked separately. Models do **not** earn and do **not** gain copyright.
+Shipped through the photographer / likeness-rights overhaul plus Phases 29–33, the marketplace is a **stock + licensing MVP** with a distinct **photographer** account (professional commercial inventory) and a **community contributor** account (portfolio/editorial, not commercial stock). Photo copyright rights and likeness / model release rights are tracked separately. It also has invite-only model accounts, self-shot dual role, a two-approval commercial lock, public model portfolios, an opt-in visual likeness check that cannot grant rights, a creator directory that labels photographers and photo influencers honestly, talent booking (briefs and quotes; settlement off-platform), opt-in VueQuatro representation with staff-handled agency-protected inventory, brand production (campaign briefs and contributor pitches; settlement off-platform), and a read-only partner distribution API over cleared inventory. Models do **not** earn and do **not** gain copyright.
 
 | Doctrine | In production now |
 | --- | --- |
@@ -197,16 +197,22 @@ Shipped through the photographer / likeness-rights overhaul, the marketplace is 
 | Public model portfolio | **Yes** — `/m/:handle` and `/models`. Public pages may show **Model Release Verified ✓**. They never show the model's phone, email, or documents. |
 | Visual verification | **Yes** — Stage 1 is automatic person detection (no identity, no face geometry). Stage 2 is photographer/model supplied identity. Stage 3 is the opt-in likeness check. Similarity cannot grant commercial rights. |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
-| VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
-| Photo influencer role | **No** |
-| Talent booking | **No** |
-| Partner/API distribution | **No** |
+| VueQuatro product surface | **Yes** (Phase 31) — a staff mode, not a second app. Contributors opt in to representation; staff approve, decline, or end it, and either side can end it. Only represented contributors can have photographs marked `agency_protected`; those photographs leave self-serve checkout and buyers send licensing inquiries that staff handle at `/admin/representation`. **No representation commission** (rate undecided) and copyright never moves. Ending representation reverts protected photographs to portfolio-only — no clearance is invented. |
+| Photo influencer role | **Yes** (Phase 29) — a `creatorKind` on the contributor profile (photographer / photo influencer), chosen at signup and changeable in account settings. Honest labels on profiles and the `/creators` directory with a kind filter. Same copyright, agreement, and 50% share — presentation and discovery only. |
+| Talent booking | **Yes** (Phase 30) — hire a photographer (`/hire/:handle`) or book a model (`/book/:handle`): brief → quote → accept/decline/withdraw, with availability and an optional indicative day rate on public profiles. Vuekumi records the agreement only. **No booking payments, no commission** — the rate is undecided, and booking money never touches the earnings ledger. Booking does not license any photograph. |
+| Brand production | **Yes** (Phase 32) — campaign briefs at `/campaigns`: buyer/agency accounts post a brief (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts or declines, and the owner (or staff) closes the campaign. Vuekumi records everything; **no production payments, no commission** (rate undecided). Accepting a pitch licenses nothing — photographs are still licensed through checkout with every rights guard. |
+| Partner/API distribution | **Yes** (Phase 33) — read-only `GET /api/partner/v1/photos[/:id]` behind admin-issued bearer keys (hash-stored, shown once, revocable, 120 req/min per key). Serves **cleared inventory only** (active + stock permission states; never private/portfolio/agency-protected), with attribution and licence flags computed by the same guards as checkout. Licences are granted on VueKumi, not by the API. Terms explicitly **forbid AI training** — no AI-training consent exists. |
 | Separate AI-training consent | **No** |
 | Model share of royalties | **Undecided** — Phase 24 recorded that models do not earn. Ledger still pays the photographer 50% of paid licences. |
 
 Rights-managed products `requiresModelRelease: true`, same as other commercial grants.
 Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in Phase 26.
 Public model portfolio shipped in Phase 27. Opt-in visual verification shipped in Phase 28.
+Photo influencer creator kind shipped in Phase 29. Talent booking (no payments, no
+commission) shipped in Phase 30. VueQuatro representation (opt-in, no commission, staff
+mode only) shipped in Phase 31. Brand production campaigns (no payments, no commission)
+shipped in Phase 32. Partner distribution API (read-only, cleared inventory, no
+AI-training use) shipped in Phase 33.
 
 ---
 
@@ -217,7 +223,7 @@ Keep v1 of the identity graph to:
 1. Photographers (professional commercial inventory; `accountType: photographer`)
 2. Community contributors (portfolio / editorial sharing; not commercial stock)
 3. Models (invite-only accounts; claim, confirm likeness, approve/reject usage per image)
-4. Photo influencers (social/discovery creators; not built)
+4. Photo influencers (social/discovery creators; shipped in Phase 29 as a creator kind on photographer accounts, not a separate account type)
 
 Stylists, MUAs, directors, production crews come later. The first network to establish is
 **photographer–model–image**.
@@ -225,8 +231,10 @@ Stylists, MUAs, directors, production crews come later. The first network to est
 Profiles are part of the asset: a photographer portfolio (`/p/:handle`), and a model
 portfolio (`/m/:handle`) assembled from images they approved across photographers. That is
 how stock becomes talent discovery
-(“license this image” → “hire this photographer” / “book this model”). Booking itself is
-still Phase 30 — the public model page licenses photographs, it does not book talent.
+(“license this image” → “hire this photographer” / “book this model”). Booking shipped in
+Phase 30: public profiles carry a hire/book CTA when the creator is available. A booking is
+a recorded brief + quote + decision — it does not license photographs and it moves no money
+through the platform.
 
 ---
 
@@ -235,11 +243,16 @@ still Phase 30 — the public model page licenses photographs, it does not book 
 Do not treat these as already decided:
 
 - Photographer vs model vs platform split when a model is a party to the sale
-- Booking / production commission rates
+- Booking / production commission rates — Phases 30 and 32 shipped booking and campaigns
+  with **zero** platform fee and off-platform settlement precisely because this number was
+  never decided
 - Exclusive premiums beyond the current default exclusive list price
 - Vuekumi+ price as a long-term locked number (the live product has a Plus plan; treat
   pricing as revisable)
-- Whether VueQuatro is a separate app, a legal entity only, or a VueKumi staff mode
+- Whether VueQuatro is a separate app, a legal entity only, or a VueKumi staff mode —
+  Phase 31 shipped it as a staff mode without closing this question
+- Representation commission — Phase 31 shipped representation with **zero** platform fee
+  for the same reason booking has none: the number was never decided
 - Biometric vendor / retention period for visual verification. Phase 28 uses the existing
   OpenAI vision key when present and does **not** keep the selfie. A dedicated vendor and a
   numbered retention window remain undecided; do not invent either.

@@ -54,7 +54,13 @@ export const authUserInclude = {
 
 type UserWithRelations = User & {
   contributorProfile?: ContributorProfile | null
-  modelProfile?: { handle: string; bio: string | null; location: string | null } | null
+  modelProfile?: {
+    handle: string
+    bio: string | null
+    location: string | null
+    availability?: 'open' | 'limited' | 'unavailable'
+    dayRateUsd?: number | null
+  } | null
   adminProfile?: AdminProfile | null
   userProfile?: UserProfile | null
   agencyMembers?: (AgencyMember & { agency?: Pick<Agency, 'name' | 'status'> })[]
@@ -77,6 +83,9 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     bio: user.contributorProfile?.bio ?? user.modelProfile?.bio ?? null,
     location: user.contributorProfile?.location ?? user.modelProfile?.location ?? null,
     contributorHandle: user.contributorProfile?.handle ?? null,
+    creatorKind: user.contributorProfile?.creatorKind ?? null,
+    availability: user.contributorProfile?.availability ?? user.modelProfile?.availability ?? null,
+    dayRateUsd: user.contributorProfile?.dayRateUsd ?? user.modelProfile?.dayRateUsd ?? null,
     modelHandle: user.modelProfile?.handle ?? null,
     hasModelProfile: Boolean(user.modelProfile),
     adminRole: user.adminProfile?.adminRole ?? null,
@@ -182,7 +191,7 @@ type PhotoWithTags = Photo & {
   appearances?: TwoPartyAppearanceInput[]
 }
 
-function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
+export function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
   if (photo.storageKey && photo.processingStatus === 'ready') return `/api/media/${photo.id}/${kind}`
   return photo.src
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { creatorKindLabel } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { PortalShell, StatusPill } from '../components/shared'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
@@ -9,7 +10,7 @@ type Kind = 'users' | 'contributors' | 'agencies' | 'admins' | 'models'
 
 const copy: Record<Kind, { kicker: string; title: string; blurb: string }> = {
   users: { kicker: 'Users', title: 'Members.', blurb: 'Individual buyers — one row per account.' },
-  contributors: { kicker: 'Contributors', title: 'Photographers.', blurb: 'African creators only. Click a row to edit.' },
+  contributors: { kicker: 'Contributors', title: 'Creators.', blurb: 'African photographers and photo influencers. Click a row to edit.' },
   agencies: { kicker: 'Agencies', title: 'Enterprise.', blurb: 'Corporate accounts pending or approved.' },
   admins: { kicker: 'Admins', title: 'Staff.', blurb: 'Platform administrators.' },
   models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only models and self-shot photographers. Confirm likeness per image. Optional visual checks do not grant rights. They do not earn in this phase.' },
@@ -42,7 +43,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
   useEffect(() => { load() }, [kind, q])
 
   const columns = kind === 'contributors'
-    ? ['ID', 'Name', 'Email', 'Handle', 'Country', 'Photos', 'Earnings', 'Status']
+    ? ['ID', 'Name', 'Email', 'Handle', 'Kind', 'Country', 'Photos', 'Earnings', 'Status']
     : kind === 'models'
       ? ['ID', 'Name', 'Email', 'Handle', 'Country', 'Appearances', 'Joined', 'Status']
       : kind === 'agencies'
@@ -87,6 +88,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                 <td className="px-4 py-3 font-medium">{u.name}{kind === 'models' && u.dualRole ? ' · photographer' : ''}</td>
                 <td className="px-4 py-3">{u.email}</td>
                 {kind === 'contributors' && <td className="px-4 py-3">@{u.handle}</td>}
+                {kind === 'contributors' && <td className="px-4 py-3">{creatorKindLabel(u.creatorKind)}</td>}
                 {kind === 'models' && <td className="px-4 py-3">@{u.handle}</td>}
                 {kind === 'agencies' && <td className="px-4 py-3">{u.agencyName}</td>}
                 {kind === 'admins' && <td className="px-4 py-3 capitalize">{u.adminRole}</td>}

@@ -11,6 +11,87 @@ import { FollowButton } from '../components/FollowButton'
 import { api, ApiError } from '../api/client'
 import { toast } from 'sonner'
 
+function AgencyInquiryPanel({ photoId }: { photoId: string }) {
+  const { user } = useAuth()
+  const [name, setName] = useState(user?.name ?? '')
+  const [email, setEmail] = useState(user?.email ?? '')
+  const [company, setCompany] = useState('')
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  if (sent) {
+    return (
+      <p className="mt-6 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
+        Inquiry sent. VueKumi staff will contact you about licensing this photograph.
+      </p>
+    )
+  }
+
+  return (
+    <form
+      className="mt-6 space-y-2 border border-sand bg-white p-4"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        setBusy(true)
+        try {
+          await api.photoInquiry(photoId, { name, email, company: company || undefined, message })
+          setSent(true)
+        } catch (err) {
+          toast.error(err instanceof ApiError ? err.message : 'Could not send the inquiry')
+        } finally {
+          setBusy(false)
+        }
+      }}
+    >
+      <p className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+        Licensing inquiry — VueQuatro represented
+      </p>
+      <p className="text-[13px] leading-relaxed text-ink-soft">
+        This photograph is agency-protected and not self-serve stock. Tell us about your intended
+        usage and staff will respond with terms.
+      </p>
+      <input
+        required
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your name"
+        className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+      />
+      <input
+        required
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email"
+        className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+      />
+      <input
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        placeholder="Company (optional)"
+        className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+      />
+      <textarea
+        required
+        minLength={10}
+        rows={3}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Intended usage — territory, duration, channels…"
+        className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+      />
+      <button
+        type="submit"
+        disabled={busy}
+        className="w-full bg-ink py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra disabled:opacity-50"
+      >
+        {busy ? 'Sending…' : 'Send inquiry'}
+      </button>
+    </form>
+  )
+}
+
 export default function PhotoDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -98,6 +179,7 @@ export default function PhotoDetail() {
 
   const selected = options.find((o) => o.type === license)
   const activePrice = selected?.priceUsd ?? null
+  const agencyProtected = view.permissionState === 'agency_protected' && !view.rights?.exclusiveSold
 
   async function toggleFavorite() {
     if (!id) return
@@ -299,8 +381,10 @@ export default function PhotoDetail() {
               </p>
             )}
 
+            {agencyProtected && <AgencyInquiryPanel photoId={view.id} />}
+
             <div className="mt-6 space-y-2">
-              {(options.length ? options : []).map((opt) => {
+              {(agencyProtected ? [] : options).map((opt) => {
                 const active = license === opt.type
                 const priceLabel = opt.quoteOnly ? 'Quote' : opt.priceUsd === 0 ? 'Free' : opt.priceUsd != null ? format(opt.priceUsd) : '—'
                 return (
@@ -406,6 +490,7 @@ export default function PhotoDetail() {
               </p>
             )}
 
+            {!agencyProtected && (
             <button
               type="button"
               disabled={
@@ -431,6 +516,7 @@ export default function PhotoDetail() {
                         ? `License & pay — ${format(activePrice)}`
                         : 'Select a licence'}
             </button>
+            )}
             <p className="mt-3 text-center font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-faint">
               Vuekumi sells usage permission, not ownership. A certificate PDF is issued with every grant.
             </p>

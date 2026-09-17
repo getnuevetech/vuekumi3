@@ -140,8 +140,11 @@ export function SiteHeader() {
           <LogoMark />
           <nav className="hidden items-center gap-7 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:flex">
             <Link to="/search" className="link-slide hover:text-terra">Library</Link>
+            <Link to="/creators" className="link-slide hover:text-terra">Creators</Link>
             <Link to="/models" className="link-slide hover:text-terra">Models</Link>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
+            {user && <Link to="/bookings" className="link-slide hover:text-terra">Bookings</Link>}
+            {user && user.accountType !== 'model' && <Link to="/campaigns" className="link-slide hover:text-terra">Campaigns</Link>}
             {user && user.accountType !== 'model' && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
             {user && user.accountType !== 'model' && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
             {user && user.accountType !== 'model' && <Link to="/collections" className="link-slide hover:text-terra">Collections</Link>}
@@ -209,8 +212,11 @@ export function SiteHeader() {
         <div className="flex h-full flex-col justify-center gap-1 px-8">
           {[
             { label: 'Library', href: '/search' },
+            { label: 'Creators', href: '/creators' },
             { label: 'Models', href: '/models' },
             { label: 'License & Pricing', href: '/pricing' },
+            ...(user ? [{ label: 'Bookings', href: '/bookings' }] : []),
+            ...(user && user.accountType !== 'model' ? [{ label: 'Campaigns', href: '/campaigns' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', href: '/favorites' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Following', href: '/following' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Collections', href: '/collections' }] : []),
@@ -533,6 +539,12 @@ export function StatusPill({ status }: { status: string }) {
     unauthorized_use: 'bg-[#fbe7e4] text-[#b3382e]',
     accepted: 'bg-[#e7f2e9] text-[#2e6b3e]',
     declined: 'bg-[#fbe7e4] text-[#b3382e]',
+    withdrawn: 'bg-cream text-ink-soft',
+    represented: 'bg-[#f3e9f5] text-[#7a4a8f]',
+    new: 'bg-[#e8eef7] text-[#33588f]',
+    answered: 'bg-[#e7f2e9] text-[#2e6b3e]',
+    closed: 'bg-cream text-ink-soft',
+    revoked: 'bg-[#fbe7e4] text-[#b3382e]',
     not_required: 'bg-cream text-ink',
     owner: 'bg-ink text-paper',
     admin: 'bg-[#f3e9f5] text-[#7a4a8f]',

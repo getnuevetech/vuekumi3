@@ -4,8 +4,8 @@ import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { toast } from 'sonner';
-import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto } from '@vuekumi/shared';
-import { creatorPortalLabel, isCommunityContributor } from '@vuekumi/shared';
+import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto, RepresentationDto } from '@vuekumi/shared';
+import { creatorPortalLabel, isCommunityContributor, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
 import { api, ApiError } from '../api/client';
@@ -74,6 +74,98 @@ function Shell({ children }: { children: React.ReactNode }) {
       {children}
     </PortalShell>
   );
+}
+
+/* ---------------- VueQuatro representation ---------------- */
+
+function RepresentationCard() {
+  const [rep, setRep] = useState<RepresentationDto | null>(null)
+  const [loaded, setLoaded] = useState(false)
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    api.representation()
+      .then((d) => setRep(d.representation))
+      .catch(() => setRep(null))
+      .finally(() => setLoaded(true))
+  }, [])
+
+  if (!loaded) return null
+  const canRequest = !rep || rep.status === 'declined' || rep.status === 'ended' || rep.status === 'withdrawn'
+
+  const run = async (fn: () => Promise<{ representation: RepresentationDto }>, done: string) => {
+    setBusy(true)
+    try {
+      const result = await fn()
+      setRep(result.representation)
+      toast.success(done)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Something went wrong')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-10">
+      <SectionHead kicker="VueQuatro" title="Representation" />
+      <div className="rounded-2xl border border-sand-soft bg-white p-5">
+        <p className="text-sm leading-relaxed text-ink-soft">
+          VueQuatro is Vuekumi's rights and agency layer. Representation is opt-in: staff can mark
+          your photographs as agency-protected, taking them out of self-serve stock so buyers
+          inquire through Vuekumi instead. You keep copyright, your 50% licence share is unchanged,
+          no representation commission exists, and you can end it at any time — protected
+          photographs then return to you as portfolio-only.
+        </p>
+        {rep && (
+          <p className="mt-3 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-terra">
+            {REPRESENTATION_STATUS_LABELS[rep.status]}
+          </p>
+        )}
+        {rep?.staffNote && (rep.status === 'declined' || rep.status === 'represented' || rep.status === 'ended') && (
+          <p className="mt-1 text-[13px] text-ink-soft">Staff note: {rep.staffNote}</p>
+        )}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {canRequest && (
+            <>
+              <input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Anything staff should know? (optional)"
+                className="min-w-0 flex-1 border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+              />
+              <button
+                disabled={busy}
+                onClick={() => run(() => api.requestRepresentation({ note: note || undefined }), 'Representation requested')}
+                className="rounded-full bg-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra disabled:opacity-50"
+              >
+                Request representation
+              </button>
+            </>
+          )}
+          {rep?.status === 'requested' && (
+            <button
+              disabled={busy}
+              onClick={() => run(() => api.withdrawRepresentation(), 'Request withdrawn')}
+              className="rounded-full border border-sand px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft hover:border-ink"
+            >
+              Withdraw request
+            </button>
+          )}
+          {rep?.status === 'represented' && (
+            <button
+              disabled={busy}
+              onClick={() => run(() => api.endRepresentation(), 'Representation ended — protected photographs returned as portfolio-only')}
+              className="rounded-full border border-sand px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft hover:border-ink hover:text-[#b3382e]"
+            >
+              End representation
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /* ---------------- dashboard ---------------- */
@@ -175,6 +267,8 @@ export function ContributorDashboard() {
           </div>
         )}
       </div>
+
+      {!community && <RepresentationCard />}
     </Shell>
   );
 }

@@ -48,6 +48,22 @@ import type {
   DecideAppearanceInput,
   AcceptModelInviteInput,
   VerifyLikenessInput,
+  BookingDto,
+  CreateBookingInput,
+  BookingQuoteInput,
+  RepresentationDto,
+  RepresentationAdminDto,
+  RepresentationInquiryDto,
+  RequestRepresentationInput,
+  DecideRepresentationInput,
+  CreateInquiryInput,
+  DecideInquiryInput,
+  CampaignDto,
+  CampaignPitchDto,
+  CreateCampaignInput,
+  CreatePitchInput,
+  PartnerKeyDto,
+  CreatePartnerKeyInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -121,6 +137,65 @@ export const api = {
 
   updateMe: (body: UpdateProfileInput) =>
     request<{ user: AuthUser }>('/api/auth/me', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  bookings: () => request<{ items: BookingDto[] }>('/api/bookings'),
+
+  createBooking: (body: CreateBookingInput) =>
+    request<{ booking: BookingDto }>('/api/bookings', { method: 'POST', body: JSON.stringify(body) }),
+
+  quoteBooking: (id: string, body: BookingQuoteInput) =>
+    request<{ booking: BookingDto }>(`/api/bookings/${id}/quote`, { method: 'POST', body: JSON.stringify(body) }),
+
+  bookingAction: (id: string, action: 'accept' | 'decline' | 'withdraw') =>
+    request<{ booking: BookingDto }>(`/api/bookings/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }),
+
+  representation: () => request<{ representation: RepresentationDto | null }>('/api/representation'),
+
+  requestRepresentation: (body: RequestRepresentationInput) =>
+    request<{ representation: RepresentationDto }>('/api/representation', { method: 'POST', body: JSON.stringify(body) }),
+
+  withdrawRepresentation: () =>
+    request<{ representation: RepresentationDto }>('/api/representation/withdraw', { method: 'POST', body: JSON.stringify({}) }),
+
+  endRepresentation: () =>
+    request<{ representation: RepresentationDto; revertedPhotos: number }>('/api/representation/end', { method: 'POST', body: JSON.stringify({}) }),
+
+  photoInquiry: (photoId: string, body: CreateInquiryInput) =>
+    request<{ ok: true }>(`/api/photos/${photoId}/inquiry`, { method: 'POST', body: JSON.stringify(body) }),
+
+  adminRepresentation: () =>
+    request<{ items: RepresentationAdminDto[]; inquiries: RepresentationInquiryDto[] }>('/api/admin/representation'),
+
+  decideRepresentation: (id: string, body: DecideRepresentationInput) =>
+    request<{ representation: RepresentationDto; revertedPhotos: number }>(`/api/admin/representation/${id}/decide`, { method: 'POST', body: JSON.stringify(body) }),
+
+  decideInquiry: (id: string, body: DecideInquiryInput) =>
+    request<{ ok: true }>(`/api/admin/inquiries/${id}`, { method: 'POST', body: JSON.stringify(body) }),
+
+  campaigns: () => request<{ items: CampaignDto[] }>('/api/campaigns'),
+
+  createCampaign: (body: CreateCampaignInput) =>
+    request<{ campaign: CampaignDto }>('/api/campaigns', { method: 'POST', body: JSON.stringify(body) }),
+
+  closeCampaign: (id: string) =>
+    request<{ campaign: CampaignDto }>(`/api/campaigns/${id}/close`, { method: 'POST', body: JSON.stringify({}) }),
+
+  campaignPitches: (id: string) =>
+    request<{ items: CampaignPitchDto[] }>(`/api/campaigns/${id}/pitches`),
+
+  pitchCampaign: (id: string, body: CreatePitchInput) =>
+    request<{ pitch: CampaignPitchDto }>(`/api/campaigns/${id}/pitch`, { method: 'POST', body: JSON.stringify(body) }),
+
+  pitchAction: (id: string, action: 'accept' | 'decline' | 'withdraw') =>
+    request<{ pitch: CampaignPitchDto }>(`/api/campaigns/pitches/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }),
+
+  adminPartnerKeys: () => request<{ items: PartnerKeyDto[] }>('/api/admin/partner-keys'),
+
+  createPartnerKey: (body: CreatePartnerKeyInput) =>
+    request<{ key: string; partnerKey: PartnerKeyDto }>('/api/admin/partner-keys', { method: 'POST', body: JSON.stringify(body) }),
+
+  revokePartnerKey: (id: string) =>
+    request<{ partnerKey: PartnerKeyDto }>(`/api/admin/partner-keys/${id}/revoke`, { method: 'POST', body: JSON.stringify({}) }),
 
   changePassword: (body: ChangePasswordInput) =>
     request<{ user: AuthUser }>('/api/auth/me/password', { method: 'PATCH', body: JSON.stringify(body) }),
@@ -748,6 +823,7 @@ export interface AdminAccount {
   joined: string
   emailVerified: boolean
   handle: string | null
+  creatorKind: 'photographer' | 'photo_influencer' | null
   photos: number
   earnings: number
   downloads: number

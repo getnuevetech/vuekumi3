@@ -184,6 +184,96 @@ export function quotePricedEmail(input: {
   return `<p>Hi ${input.name},</p><p>Vuekumi priced your rights-managed request for <strong>${input.photoTitle}</strong> at USD ${amount}.</p><p>This is usage permission, not ownership. Review and accept:</p><p><a href="${input.licensesUrl}">${input.licensesUrl}</a></p>`
 }
 
+export function bookingRequestEmail(input: {
+  name: string
+  requesterName: string
+  title: string
+  bookingsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.requesterName}</strong> sent you a booking request on Vuekumi: <strong>${input.title}</strong>.</p><p>Quote it or decline it from your bookings page. Vuekumi records the agreement; payment is settled directly between you, and Vuekumi charges no booking fee in this phase.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
+}
+
+export function bookingQuotedEmail(input: {
+  name: string
+  targetName: string
+  title: string
+  quoteUsd: number
+  bookingsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.targetName}</strong> quoted USD ${input.quoteUsd.toFixed(2)} for <strong>${input.title}</strong>.</p><p>Accept or withdraw from your bookings page. Payment is settled directly between you — Vuekumi charges no booking fee in this phase.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
+}
+
+export function bookingDecisionEmail(input: {
+  name: string
+  otherName: string
+  title: string
+  decision: 'accepted' | 'declined' | 'withdrawn'
+  bookingsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.otherName}</strong> ${input.decision} the booking <strong>${input.title}</strong>.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
+}
+
+export function campaignPitchEmail(input: {
+  name: string
+  contributorName: string
+  campaignTitle: string
+  campaignsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.contributorName}</strong> pitched your campaign <strong>${input.campaignTitle}</strong> on Vuekumi.</p><p>Review pitches on your campaigns page. Vuekumi records the brief, the pitches, and your decision — production payment is settled directly between you, and Vuekumi charges no production fee in this phase.</p><p><a href="${input.campaignsUrl}">${input.campaignsUrl}</a></p>`
+}
+
+export function pitchDecisionEmail(input: {
+  name: string
+  ownerName: string
+  campaignTitle: string
+  decision: 'accepted' | 'declined'
+  campaignsUrl: string
+}): string {
+  const extra =
+    input.decision === 'accepted'
+      ? '<p>Settle production terms and payment directly with the brand — Vuekumi charges no production fee in this phase. Any photograph you licence afterwards still goes through normal Vuekumi checkout with all rights checks.</p>'
+      : ''
+  return `<p>Hi ${input.name},</p><p><strong>${input.ownerName}</strong> ${input.decision} your pitch for <strong>${input.campaignTitle}</strong>.</p>${extra}<p><a href="${input.campaignsUrl}">${input.campaignsUrl}</a></p>`
+}
+
+export function representationRequestOpsEmail(input: {
+  contributorName: string
+  contributorEmail: string
+  note: string | null
+  queueUrl: string
+}): string {
+  const note = input.note ? `<p>Note: ${input.note}</p>` : ''
+  return `<p><strong>${input.contributorName}</strong> (${input.contributorEmail}) requested VueQuatro representation.</p>${note}<p>Representation is opt-in and does not transfer copyright. No commission rate exists — do not invent one.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
+}
+
+export function representationDecisionEmail(input: {
+  name: string
+  decision: 'approved' | 'declined' | 'ended'
+  staffNote: string | null
+  dashboardUrl: string
+}): string {
+  const note = input.staffNote ? `<p>Staff note: ${input.staffNote}</p>` : ''
+  const body =
+    input.decision === 'approved'
+      ? '<p>VueQuatro now represents your work. Staff can mark photographs as agency-protected: they leave self-serve stock and buyers inquire through Vuekumi instead. You keep copyright, and you can end representation at any time.</p>'
+      : input.decision === 'declined'
+        ? '<p>Your VueQuatro representation request was declined. Nothing changes about your account, your photographs, or your earnings. You can request again later.</p>'
+        : '<p>Your VueQuatro representation has ended. Any agency-protected photographs have been returned to you as portfolio-only — you can re-licence them from your photo editor as usual.</p>'
+  return `<p>Hi ${input.name},</p>${body}${note}<p><a href="${input.dashboardUrl}">${input.dashboardUrl}</a></p>`
+}
+
+export function representationInquiryOpsEmail(input: {
+  photoTitle: string
+  name: string
+  email: string
+  company: string | null
+  message: string
+  queueUrl: string
+}): string {
+  const company = input.company ? ` (${input.company})` : ''
+  return `<p>An agency-protected licensing inquiry arrived.</p><p><strong>${input.photoTitle}</strong></p><p>From: ${input.name}${company} · ${input.email}</p><p>${input.message}</p><p>Agency-protected inventory is not self-serve stock. Vuekumi sells usage permission, not ownership.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
+}
+
 export function rightsReportOpsEmail(input: {
   photoTitle: string
   reason: string
