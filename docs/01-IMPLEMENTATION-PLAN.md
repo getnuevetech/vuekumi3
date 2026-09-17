@@ -203,6 +203,20 @@ Only after commercially cleared images have real people behind them.
 | **33** | Partner / Unsplash-style **distribution API** (authenticated, licensed, rate-limited). Cleared inventory only; no AI-training use — **shipped** |
 | **34** | **AI-training** licence as an explicit opt-in, separate from RF/commercial grants, payable if we sell datasets |
 
+### Arc D — Staff ACL and symmetric rights (proposed)
+
+Not started. Full procedure: [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md).
+Do not implement until that document is approved, one phase at a time.
+
+| Phase | Work |
+| --- | --- |
+| **35** | Admin user management from the portal: create/edit every account type, photographers list, agency activation |
+| **36** | Super-admin creates admins; granular capability ACL (roles are presets) |
+| **37** | Symmetric rights quality (`claimed → documented → verified`); tighten commercial eligibility; Rights Ledger; guardian write |
+| **38** | Model public registration + model upload; VueKumi contacts the photographer (mirror of Route B) |
+| **39** | DMCA notice path, repeat-infringer strikes, payout holds |
+| **40** | VueKumi Global Rights Standard hooks + country overlays (agreement copy remains counsel-gated) |
+
 ---
 
 ## 5. Explicitly out of the next slice
@@ -247,7 +261,9 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 ## 8. How to use this plan
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
-2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 34** (AI-training licence as an explicit
-   opt-in, separate from RF/commercial grants) unless you redirect. Dataset pricing is
-   **undecided** — consent plumbing can ship, but do not invent a price or sell datasets.
+2. For staff ACL + model upload + symmetric rights, read
+   [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
+   approve **one** phase at a time.
+3. Default next slice when Arc D is approved: **Phase 35** (admin user management).
+   Phase 34 (AI-training) stays parked until Arc D is done or you redirect. Dataset
+   pricing remains **undecided**.
