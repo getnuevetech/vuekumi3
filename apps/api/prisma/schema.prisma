@@ -145,6 +145,18 @@ enum InquiryStatus {
   closed
 }
 
+enum CampaignStatus {
+  open
+  closed
+}
+
+enum PitchStatus {
+  pending
+  accepted
+  declined
+  withdrawn
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -199,9 +211,51 @@ model User {
   bookingsSent          BookingRequest[] @relation("BookingRequester")
   representation        Representation?
   representationInquiries RepresentationInquiry[]
+  campaigns             Campaign[]
+  campaignPitches       CampaignPitch[]
 
   @@index([accountType])
   @@index([status])
+}
+
+model Campaign {
+  id           String         @id @default(cuid())
+  ownerId      String
+  title        String
+  brief        String
+  deliverables String?
+  usage        String?
+  location     String?
+  startDate    DateTime?
+  endDate      DateTime?
+  budgetUsd    Float?
+  status       CampaignStatus @default(open)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  owner   User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  pitches CampaignPitch[]
+
+  @@index([status, createdAt])
+  @@index([ownerId])
+}
+
+model CampaignPitch {
+  id            String      @id @default(cuid())
+  campaignId    String
+  contributorId String
+  note          String
+  rateUsd       Float?
+  status        PitchStatus @default(pending)
+  respondedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contributor User     @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contributorId])
+  @@index([contributorId])
 }
 
 model Representation {

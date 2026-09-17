@@ -6,6 +6,7 @@ const RESERVED_HANDLES = new Set([
   'book',
   'bookings',
   'c',
+  'campaigns',
   'collections',
   'contributor',
   'favorites',

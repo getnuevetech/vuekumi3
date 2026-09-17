@@ -144,6 +144,7 @@ export function SiteHeader() {
             <Link to="/models" className="link-slide hover:text-terra">Models</Link>
             <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
             {user && <Link to="/bookings" className="link-slide hover:text-terra">Bookings</Link>}
+            {user && user.accountType !== 'model' && <Link to="/campaigns" className="link-slide hover:text-terra">Campaigns</Link>}
             {user && user.accountType !== 'model' && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
             {user && user.accountType !== 'model' && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
             {user && user.accountType !== 'model' && <Link to="/collections" className="link-slide hover:text-terra">Collections</Link>}
@@ -215,6 +216,7 @@ export function SiteHeader() {
             { label: 'Models', href: '/models' },
             { label: 'License & Pricing', href: '/pricing' },
             ...(user ? [{ label: 'Bookings', href: '/bookings' }] : []),
+            ...(user && user.accountType !== 'model' ? [{ label: 'Campaigns', href: '/campaigns' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', href: '/favorites' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Following', href: '/following' }] : []),
             ...(user && user.accountType !== 'model' ? [{ label: 'Collections', href: '/collections' }] : []),
@@ -541,6 +543,7 @@ export function StatusPill({ status }: { status: string }) {
     represented: 'bg-[#f3e9f5] text-[#7a4a8f]',
     new: 'bg-[#e8eef7] text-[#33588f]',
     answered: 'bg-[#e7f2e9] text-[#2e6b3e]',
+    closed: 'bg-cream text-ink-soft',
     not_required: 'bg-cream text-ink',
     owner: 'bg-ink text-paper',
     admin: 'bg-[#f3e9f5] text-[#7a4a8f]',

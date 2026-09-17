@@ -200,6 +200,29 @@ export function bookingDecisionEmail(input: {
   return `<p>Hi ${input.name},</p><p><strong>${input.otherName}</strong> ${input.decision} the booking <strong>${input.title}</strong>.</p><p><a href="${input.bookingsUrl}">${input.bookingsUrl}</a></p>`
 }
 
+export function campaignPitchEmail(input: {
+  name: string
+  contributorName: string
+  campaignTitle: string
+  campaignsUrl: string
+}): string {
+  return `<p>Hi ${input.name},</p><p><strong>${input.contributorName}</strong> pitched your campaign <strong>${input.campaignTitle}</strong> on Vuekumi.</p><p>Review pitches on your campaigns page. Vuekumi records the brief, the pitches, and your decision — production payment is settled directly between you, and Vuekumi charges no production fee in this phase.</p><p><a href="${input.campaignsUrl}">${input.campaignsUrl}</a></p>`
+}
+
+export function pitchDecisionEmail(input: {
+  name: string
+  ownerName: string
+  campaignTitle: string
+  decision: 'accepted' | 'declined'
+  campaignsUrl: string
+}): string {
+  const extra =
+    input.decision === 'accepted'
+      ? '<p>Settle production terms and payment directly with the brand — Vuekumi charges no production fee in this phase. Any photograph you licence afterwards still goes through normal Vuekumi checkout with all rights checks.</p>'
+      : ''
+  return `<p>Hi ${input.name},</p><p><strong>${input.ownerName}</strong> ${input.decision} your pitch for <strong>${input.campaignTitle}</strong>.</p>${extra}<p><a href="${input.campaignsUrl}">${input.campaignsUrl}</a></p>`
+}
+
 export function representationRequestOpsEmail(input: {
   contributorName: string
   contributorEmail: string

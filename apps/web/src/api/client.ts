@@ -58,6 +58,10 @@ import type {
   DecideRepresentationInput,
   CreateInquiryInput,
   DecideInquiryInput,
+  CampaignDto,
+  CampaignPitchDto,
+  CreateCampaignInput,
+  CreatePitchInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -165,6 +169,23 @@ export const api = {
 
   decideInquiry: (id: string, body: DecideInquiryInput) =>
     request<{ ok: true }>(`/api/admin/inquiries/${id}`, { method: 'POST', body: JSON.stringify(body) }),
+
+  campaigns: () => request<{ items: CampaignDto[] }>('/api/campaigns'),
+
+  createCampaign: (body: CreateCampaignInput) =>
+    request<{ campaign: CampaignDto }>('/api/campaigns', { method: 'POST', body: JSON.stringify(body) }),
+
+  closeCampaign: (id: string) =>
+    request<{ campaign: CampaignDto }>(`/api/campaigns/${id}/close`, { method: 'POST', body: JSON.stringify({}) }),
+
+  campaignPitches: (id: string) =>
+    request<{ items: CampaignPitchDto[] }>(`/api/campaigns/${id}/pitches`),
+
+  pitchCampaign: (id: string, body: CreatePitchInput) =>
+    request<{ pitch: CampaignPitchDto }>(`/api/campaigns/${id}/pitch`, { method: 'POST', body: JSON.stringify(body) }),
+
+  pitchAction: (id: string, action: 'accept' | 'decline' | 'withdraw') =>
+    request<{ pitch: CampaignPitchDto }>(`/api/campaigns/pitches/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }),
 
   changePassword: (body: ChangePasswordInput) =>
     request<{ user: AuthUser }>('/api/auth/me/password', { method: 'PATCH', body: JSON.stringify(body) }),

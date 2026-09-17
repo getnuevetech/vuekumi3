@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 16 September 2026 against `main` after Phase 31.
+Updated 17 September 2026 against `main` after Phase 32.
 
 ---
 
@@ -100,6 +100,7 @@ Locked product rules already in the running system:
 | 29 | Creator kind on contributors (photographer / photo influencer) — honest labels, `/creators` directory with kind filter, signup + account choice. Presentation only: rights, copyright, and the 50% share are unchanged. |
 | 30 | Booking: hire photographer / book model — briefs, quotes, accept/decline/withdraw, availability + indicative day rate on profiles. Payment is settled off-platform; Vuekumi takes **no booking commission** (rate undecided — do not invent one). Booking money never touches the earnings ledger. |
 | 31 | VueQuatro representation — opt-in request → staff approve/decline, revocable by either side. `agency_protected` becomes real handling: only settable while represented, licensed through staff-routed inquiries, reverts to portfolio-only when representation ends. Staff queue at `/admin/representation`. **No representation commission** (undecided) and **no second public app** — VueQuatro is a staff mode. |
+| 32 | Brand production — campaign-shaped sourcing at `/campaigns`: buyer/agency accounts post campaign briefs (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts/declines, contributors withdraw pending pitches, owner or staff close campaigns. **No production commission** (undecided), settlement off-platform, campaign money never touches the earnings ledger, and accepting a pitch licenses nothing — photographs still go through checkout with all rights guards. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -175,6 +176,11 @@ VueKumi staff mode: whether it becomes a separate app or legal entity is an open
 Ending representation reverts agency-protected photographs to portfolio-only; it never
 invents clearance and never moves copyright.
 
+**Gate recorded with Phase 32 (17 September 2026):** brand production shipped as briefs +
+pitches + decisions only, same discipline as booking: **no** production commission (rate
+undecided), **no** campaign payment rails, and accepting a pitch grants **no** licence —
+image licensing still runs through checkout with the two-approval commercial lock intact.
+
 ### Arc C — Talent, VueQuatro, distribution
 
 Only after commercially cleared images have real people behind them.
@@ -184,7 +190,7 @@ Only after commercially cleared images have real people behind them.
 | **29** | Photo influencer as a contributor creator kind — discovery without pretending every creator is a studio photographer — **shipped** |
 | **30** | Booking: hire photographer / book model (briefs, availability, quotes). VueKumi stays the marketplace. Off-platform settlement, no commission — **shipped** |
 | **31** | VueQuatro representation: agency-protected inventory, opt-in enforcement/admin of rights, staff tools. Not a second public brand required on day one. No representation commission (undecided) — **shipped** |
-| **32** | Brand production (campaign-shaped sourcing, not only single-image checkout) |
+| **32** | Brand production (campaign-shaped sourcing, not only single-image checkout). Off-platform settlement, no commission — **shipped** |
 | **33** | Partner / Unsplash-style **distribution API** (authenticated, licensed, rate-limited) |
 | **34** | **AI-training** licence as an explicit opt-in, separate from RF/commercial grants, payable if we sell datasets |
 
@@ -233,5 +239,6 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
 2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 32** (brand production: campaign-shaped
-   sourcing, not only single-image checkout) unless you redirect.
+3. Default next slice when work resumes: **Phase 33** (partner / distribution API:
+   authenticated, licensed, rate-limited) unless you redirect. It depends on the rights
+   record staying trustworthy — do not expose uncleared inventory through an API.

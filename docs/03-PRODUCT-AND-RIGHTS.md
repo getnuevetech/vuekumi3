@@ -181,12 +181,13 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 31, the marketplace is a **stock + licensing MVP** with photographer
+Shipped through Phase 32, the marketplace is a **stock + licensing MVP** with photographer
 accounts, photo permission states, invite-only model accounts, self-shot dual role, a
 two-approval commercial lock, public model portfolios, an opt-in visual likeness check
 that cannot grant rights, a creator directory that labels photographers and photo
-influencers honestly, talent booking (briefs and quotes; settlement off-platform), and
-opt-in VueQuatro representation with staff-handled agency-protected inventory.
+influencers honestly, talent booking (briefs and quotes; settlement off-platform),
+opt-in VueQuatro representation with staff-handled agency-protected inventory, and
+brand production (campaign briefs and contributor pitches; settlement off-platform).
 Models do **not** earn from licences and do **not** gain copyright.
 
 | Doctrine | In production now |
@@ -205,6 +206,7 @@ Models do **not** earn from licences and do **not** gain copyright.
 | VueQuatro product surface | **Yes** (Phase 31) — a staff mode, not a second app. Contributors opt in to representation; staff approve, decline, or end it, and either side can end it. Only represented contributors can have photographs marked `agency_protected`; those photographs leave self-serve checkout and buyers send licensing inquiries that staff handle at `/admin/representation`. **No representation commission** (rate undecided) and copyright never moves. Ending representation reverts protected photographs to portfolio-only — no clearance is invented. |
 | Photo influencer role | **Yes** (Phase 29) — a `creatorKind` on the contributor profile (photographer / photo influencer), chosen at signup and changeable in account settings. Honest labels on profiles and the `/creators` directory with a kind filter. Same copyright, agreement, and 50% share — presentation and discovery only. |
 | Talent booking | **Yes** (Phase 30) — hire a photographer (`/hire/:handle`) or book a model (`/book/:handle`): brief → quote → accept/decline/withdraw, with availability and an optional indicative day rate on public profiles. Vuekumi records the agreement only. **No booking payments, no commission** — the rate is undecided, and booking money never touches the earnings ledger. Booking does not license any photograph. |
+| Brand production | **Yes** (Phase 32) — campaign briefs at `/campaigns`: buyer/agency accounts post a brief (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts or declines, and the owner (or staff) closes the campaign. Vuekumi records everything; **no production payments, no commission** (rate undecided). Accepting a pitch licenses nothing — photographs are still licensed through checkout with every rights guard. |
 | Partner/API distribution | **No** |
 | Separate AI-training consent | **No** |
 | Model share of royalties | **Undecided** — Phase 24 recorded that models do not earn. Ledger still pays the photographer 50% of paid licences. |
@@ -214,7 +216,8 @@ Two-approval commercial lock shipped in Phase 25. Self-shot dual role shipped in
 Public model portfolio shipped in Phase 27. Opt-in visual verification shipped in Phase 28.
 Photo influencer creator kind shipped in Phase 29. Talent booking (no payments, no
 commission) shipped in Phase 30. VueQuatro representation (opt-in, no commission, staff
-mode only) shipped in Phase 31.
+mode only) shipped in Phase 31. Brand production campaigns (no payments, no commission)
+shipped in Phase 32.
 
 ---
 
@@ -245,8 +248,9 @@ through the platform.
 Do not treat these as already decided:
 
 - Photographer vs model vs platform split when a model is a party to the sale
-- Booking / production commission rates — Phase 30 shipped booking with **zero** platform
-  fee and off-platform settlement precisely because this number was never decided
+- Booking / production commission rates — Phases 30 and 32 shipped booking and campaigns
+  with **zero** platform fee and off-platform settlement precisely because this number was
+  never decided
 - Exclusive premiums beyond the current default exclusive list price
 - Vuekumi+ price as a long-term locked number (the live product has a Plus plan; treat
   pricing as revisable)
