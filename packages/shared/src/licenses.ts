@@ -72,6 +72,8 @@ export const submitPhotoSchema = z.object({
   copyrightAttested: z.literal(true),
   modelReleaseFileName: z.string().max(200).optional(),
   modelReleaseNotes: z.string().max(2000).optional(),
+  shootTitle: z.string().trim().min(2).max(160).optional(),
+  shotOn: z.string().min(4).max(40).optional(),
   src: z.string().max(500).optional(),
   originalKey: z.string().min(8).max(400).optional(),
 })

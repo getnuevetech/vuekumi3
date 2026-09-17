@@ -138,8 +138,21 @@ export function modelInviteEmail(input: {
   photographerName: string
   photoTitle: string
   link: string
+  imageCount?: number
+  shootTitle?: string | null
 }): string {
-  return `<p>Hi ${input.displayName},</p><p><strong>${input.photographerName}</strong> identified you in <strong>${input.photoTitle}</strong> on Vuekumi.</p><p>A typed name is not identity, and a checkbox is not consent. Claim this invite, confirm whether the likeness is yours, then approve or reject usage of that photograph.</p><p>Vuekumi sells usage permission, not ownership. Models do not earn from licences in this phase.</p><p><a href="${input.link}">${input.link}</a></p><p>This link expires in 14 days.</p>`
+  const shoot = input.shootTitle ? ` Shoot: ${input.shootTitle}.` : ''
+  const count = input.imageCount && input.imageCount > 1 ? ` (${input.imageCount} photographs)` : ''
+  return `<p>Hi ${input.displayName},</p><p>A photographer has identified you in photographs uploaded to VueKumi.</p><p><strong>${input.photographerName}</strong> identified you in <strong>${input.photoTitle}</strong>${count}.${shoot}</p><p>Review the images and decide whether you authorize their use. You do not need a VueKumi account first. A typed name is not identity, and a checkbox is not consent.</p><p>You can approve, reject, report that this is not you, or report an unauthorized or misleading submission.</p><p>Vuekumi sells usage permission, not ownership. Models do not earn from licences. Your contact details stay private.</p><p><a href="${input.link}">${input.link}</a></p><p>This link expires in 14 days.</p>`
+}
+
+export function modelReleaseConfirmEmail(input: {
+  displayName: string
+  photographerName: string
+  photoTitle: string
+  link: string
+}): string {
+  return `<p>Hi ${input.displayName},</p><p>A model release bearing your name has been submitted for photographs uploaded to VueKumi by <strong>${input.photographerName}</strong>, including <strong>${input.photoTitle}</strong>.</p><p>A photographer-provided PDF is not automatically verified. Confirm whether the release is yours and whether you authorize those images.</p><p><a href="${input.link}">${input.link}</a></p>`
 }
 
 export function testEmailHtml(): string {

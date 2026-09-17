@@ -70,9 +70,10 @@ Photographer ownership ≠ model consent ≠ platform distribution rights ≠ bu
 This exists specifically to avoid the stock-platform mistake: “uploaded” does not mean
 “commercially cleared.”
 
-The contributor agreement already in code (`apps/api/src/data/licenses.ts`) states the same
-four layers. The **enforcement path for model rights does not yet match this doctrine**
-(see §8).
+The photographer licensing agreement already in code (`apps/api/src/data/licenses.ts`) states the same
+four layers. Photographers and community contributors are separate account types. Photo
+copyright rights and likeness / model-release rights are tracked separately; commercial
+licensing unlocks only after both required rights are cleared (see §8).
 
 ---
 
@@ -136,9 +137,9 @@ Intended flow:
 
 1. Photographer uploads the photograph and identifies the person(s) in it.
 2. VueKumi invites that person to claim or create a profile.
-3. They verify identity, confirm they are the person depicted, approve or reject the image,
-   and choose acceptable usages.
-4. They may then earn from the image (split **undecided**).
+3. They confirm they are the person depicted, approve or reject the image,
+   and choose acceptable usages. Membership is not required to decide.
+4. Models do not earn from licences. The photographer share of paid licences stays 50%.
 
 Compliance is also acquisition: photographers bring models to clear images; models claim
 portfolios; models bring other photographers.
@@ -181,23 +182,20 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 28, the marketplace is a **stock + licensing MVP** with photographer
-accounts, photo permission states, invite-only model accounts, self-shot dual role, a
-two-approval commercial lock, public model portfolios, and an opt-in visual likeness check
-that cannot grant rights. Models do **not** earn and do **not** gain copyright.
+Shipped through the photographer / likeness-rights overhaul, the marketplace is a **stock + licensing MVP** with a distinct **photographer** account (professional commercial inventory) and a **community contributor** account (portfolio/editorial, not commercial stock). Photo copyright rights and likeness / model release rights are tracked separately. Models do **not** earn and do **not** gain copyright.
 
 | Doctrine | In production now |
 | --- | --- |
-| Photographer keeps copyright; VueKumi gets a platform licence | Yes — contributor agreement + upload attestation |
+| Photographer keeps copyright; VueKumi gets a platform licence | Yes — photographer licensing agreement + copyright attestation (`COPYRIGHT_STATUS`) |
 | Buyer receives a usage licence, not ownership | Yes — RF / Commercial / Extended / Editorial / RM quotes / Exclusive opt-in; certificates |
-| Four layers checked at grant time | Yes — copyright flag, two-party model clearance where required, platform agreement, then grant. PDF status is supporting evidence. |
-| Model is a first-class account | **Yes** — fifth type `model`, invite-only. User→model upgrade is allowed. Photographers may add a `ModelProfile` on the same email (Phase 26). Admin/agency cannot. Public registration cannot create `model`. |
-| Two-party approval | **Yes** — commercial-class licences (`requiresModelRelease`) of people photographs need every appearance approved with confirmed likeness and commercial usage. Empty appearances block commercial. Editorial products stay offered. Admin `verify-process` records that staff checked the process; it cannot invent clearance. |
-| Invite-the-model | **Yes** — contributor names a person; VueKumi emails a claim link. Typed name is not identity. Checkbox is not consent. Photographers cannot invite their own email; they self-identify instead. |
+| Four layers checked at grant time | Yes — photo copyright rights, likeness / model release rights where required, platform agreement, then grant. A photographer-provided PDF is not VueKumi-verified consent. |
+| Model is a first-class account | **Yes** — invite-only `model`. Photographers may add a `ModelProfile` on the same email. Community contributors are a sixth public type and cannot enter commercial inventory. |
+| Two-party approval | **Yes** — `COMMERCIAL_ELIGIBILITY = copyright cleared + required likeness rights cleared`. Multi-model photos stay locked until every required consent is approved. |
+| Invite-the-model | **Yes** — photographer supplies name, email and private mobile; VueKumi contacts the model. Guest approve / reject / not me / unauthorized. Membership is not required to decide. |
 | Permission states (portfolio / editorial / restricted / agency-protected) | **Yes** — `PermissionState` on each photo; catalog is stock states; profile can show portfolio |
-| Self-shot dual role | **Yes** — photographer confirms likeness and usage on their own photograph. `accountType` stays `contributor`. |
-| Public model portfolio | **Yes** — `/m/:handle` and `/models` list photographs a model approved with confirmed likeness. Copyright stays with the photographer. No booking CTA. |
-| Visual verification | **Yes** — opt-in per photograph. Model uploads a selfie; Vuekumi compares it to the photograph (OpenAI vision when a key is in Admin Settings, otherwise records `unavailable`), stores a discrete result, and discards the selfie. No embedding store. Public profile does not show the check. **Similarity cannot grant commercial rights.** |
+| Self-shot dual role | **Yes** — photographer confirms likeness and usage on their own photograph. `accountType` stays `photographer`. |
+| Public model portfolio | **Yes** — `/m/:handle` and `/models`. Public pages may show **Model Release Verified ✓**. They never show the model's phone, email, or documents. |
+| Visual verification | **Yes** — Stage 1 is automatic person detection (no identity, no face geometry). Stage 2 is photographer/model supplied identity. Stage 3 is the opt-in likeness check. Similarity cannot grant commercial rights. |
 | Public report / takedown | **Yes** — anyone can report; staff can freeze new licensing without delisting |
 | VueQuatro product surface | **No** — `agency_protected` is a not-stock label, not a second product |
 | Photo influencer role | **No** |
@@ -216,9 +214,10 @@ Public model portfolio shipped in Phase 27. Opt-in visual verification shipped i
 
 Keep v1 of the identity graph to:
 
-1. Photographers (already live as `contributor`)
-2. Models (invite-only accounts; claim, confirm likeness, approve/reject usage per image)
-3. Photo influencers (social/discovery creators; not built)
+1. Photographers (professional commercial inventory; `accountType: photographer`)
+2. Community contributors (portfolio / editorial sharing; not commercial stock)
+3. Models (invite-only accounts; claim, confirm likeness, approve/reject usage per image)
+4. Photo influencers (social/discovery creators; not built)
 
 Stylists, MUAs, directors, production crews come later. The first network to establish is
 **photographer–model–image**.

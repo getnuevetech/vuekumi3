@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router'
-import { hasModelAccess, type AccountType } from '@vuekumi/shared'
+import { hasModelAccess, isCreatorAccount, type AccountType } from '@vuekumi/shared'
 import { useAuth } from '../context/AuthContext'
 
 interface ProtectedRouteProps {
@@ -31,7 +31,7 @@ export function ProtectedRoute({ children, allowed }: ProtectedRouteProps) {
     const fallback =
       user.accountType === 'admin'
         ? '/admin'
-        : user.accountType === 'contributor'
+        : isCreatorAccount(user.accountType)
           ? '/contributor'
           : user.accountType === 'agency' || user.agencyId
             ? '/agency'

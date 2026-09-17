@@ -33,8 +33,8 @@ test('admins and agencies cannot become models; photographers may hold a model p
   assert.match(modelAccountBlocked('agency') ?? '', /Agency/)
   assert.equal(ownEmailInviteBlocked('amara-okafor@vuekumi.demo', 'amara-okafor@vuekumi.demo'), 'Identify yourself on this photograph instead of sending an invite')
   assert.equal(ownEmailInviteBlocked('ada@vuekumi.demo', 'amara-okafor@vuekumi.demo'), null)
-  assert.equal(hasModelAccess({ accountType: 'contributor', hasModelProfile: true }), true)
-  assert.equal(hasModelAccess({ accountType: 'contributor', hasModelProfile: false }), false)
+  assert.equal(hasModelAccess({ accountType: 'photographer', hasModelProfile: true }), true)
+  assert.equal(hasModelAccess({ accountType: 'photographer', hasModelProfile: false }), false)
   assert.equal(hasModelAccess({ accountType: 'model' }), true)
 })
 
@@ -125,7 +125,7 @@ test('two-party helper blocks commercial people photos until every appearance is
       licenseType: 'exclusive',
       requiresModelRelease: true,
     }) ?? '',
-    /confirm likeness/,
+    /LOCKED/,
   )
   assert.match(
     twoPartyBlocksLicense({
@@ -203,7 +203,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     method: 'POST',
     url: '/api/contributor/photos/afr-pend-1/appearances',
     headers: { cookie },
-    payload: { displayName: 'Test Model', email },
+    payload: { displayName: 'Test Model', email, mobile: '+2348010000001' },
   })
   assert.equal(identified.statusCode, 200)
   const created = identified.json() as { appearance: { id: string; inviteEmail?: string; status: string }; joinUrl: string }
@@ -227,7 +227,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   const exclusiveLicenses = await app.inject({ method: 'GET', url: '/api/photos/afr-011/licenses' })
   const exclusiveItems = (exclusiveLicenses.json() as { items: { type: string; offered: boolean; blockedReason?: string }[] }).items
   assert.equal(exclusiveItems.find((i) => i.type === 'exclusive')?.offered, false)
-  assert.match(exclusiveItems.find((i) => i.type === 'exclusive')?.blockedReason ?? '', /likeness|approve/)
+  assert.match(exclusiveItems.find((i) => i.type === 'exclusive')?.blockedReason ?? '', /likeness|approve|LOCKED/)
 
   const editorial = await app.inject({ method: 'GET', url: '/api/photos/afr-001/licenses' })
   const editorialItems = (editorial.json() as { items: { type: string; offered: boolean }[] }).items
@@ -296,7 +296,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   const kofiUser = (kofiLogin.json() as {
     user: { accountType: string; hasModelProfile?: boolean; modelHandle: string | null; contributorHandle: string | null }
   }).user
-  assert.equal(kofiUser.accountType, 'contributor')
+  assert.equal(kofiUser.accountType, 'photographer')
   assert.equal(kofiUser.hasModelProfile, true)
   assert.equal(kofiUser.modelHandle, 'kofi-mensah')
   assert.equal(kofiUser.contributorHandle, 'kofi-mensah')
@@ -327,7 +327,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     method: 'POST',
     url: '/api/contributor/photos/afr-009/appearances',
     headers: { cookie },
-    payload: { displayName: 'Amara', email: 'amara-okafor@vuekumi.demo' },
+    payload: { displayName: 'Amara', email: 'amara-okafor@vuekumi.demo', mobile: '+2348010000002' },
   })
   assert.equal(ownEmailInvite.statusCode, 400)
   assert.match((ownEmailInvite.json() as { error: string }).error, /Identify yourself/)
@@ -356,7 +356,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   assert.equal(selfBody.appearance.consentVersion, '1.0')
   const amaraMe = await app.inject({ method: 'GET', url: '/api/auth/me', headers: { cookie } })
   const amaraUser = (amaraMe.json() as { user: { accountType: string; hasModelProfile?: boolean } }).user
-  assert.equal(amaraUser.accountType, 'contributor')
+  assert.equal(amaraUser.accountType, 'photographer')
   assert.equal(amaraUser.hasModelProfile, true)
 
   const stillEditorial = await app.inject({ method: 'GET', url: '/api/photos/afr-009/licenses' })
@@ -388,7 +388,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     method: 'POST',
     url: '/api/contributor/photos/afr-007/appearances',
     headers: { cookie: lekanCookie },
-    payload: { displayName: 'Amara', email: 'amara-okafor@vuekumi.demo' },
+    payload: { displayName: 'Amara', email: 'amara-okafor@vuekumi.demo', mobile: '+2348010000002' },
   })
   assert.equal(inviteAmara.statusCode, 200)
   const amaraInviteToken = (inviteAmara.json() as { joinUrl: string }).joinUrl.split('/invite/model/')[1]
@@ -400,14 +400,14 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   })
   assert.equal(claimedAsContributor.statusCode, 200)
   const claimedDual = (claimedAsContributor.json() as { user: { accountType: string; hasModelProfile?: boolean } }).user
-  assert.equal(claimedDual.accountType, 'contributor')
+  assert.equal(claimedDual.accountType, 'photographer')
   assert.equal(claimedDual.hasModelProfile, true)
 
   const inviteAdmin = await app.inject({
     method: 'POST',
     url: '/api/contributor/photos/afr-023/appearances',
     headers: { cookie },
-    payload: { displayName: 'Staff', email: 'admin@vuekumi.com' },
+    payload: { displayName: 'Staff', email: 'admin@vuekumi.com', mobile: '+2348010000004' },
   })
   assert.equal(inviteAdmin.statusCode, 200)
   const adminToken = (inviteAdmin.json() as { joinUrl: string; appearance: { id: string } }).joinUrl.split('/invite/model/')[1]
@@ -434,7 +434,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     method: 'POST',
     url: '/api/contributor/photos/afr-023/appearances',
     headers: { cookie },
-    payload: { displayName: 'Agency', email: 'agency@vuekumi.demo' },
+    payload: { displayName: 'Agency', email: 'agency@vuekumi.demo', mobile: '+2348010000005' },
   })
   assert.equal(inviteAgency.statusCode, 200)
   const agencyToken = (inviteAgency.json() as { joinUrl: string; appearance: { id: string } }).joinUrl.split('/invite/model/')[1]

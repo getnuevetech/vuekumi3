@@ -9,6 +9,7 @@ datasource db {
 
 enum AccountType {
   admin
+  photographer
   contributor
   user
   agency
@@ -79,6 +80,50 @@ enum ModelReleaseStatus {
   pending
   verified
   rejected
+}
+
+enum CopyrightStatus {
+  claimed
+  verified
+  disputed
+  restricted
+}
+
+enum ModelConsentStatus {
+  not_required
+  required
+  invitation_sent
+  pending
+  approved
+  rejected
+  revoked
+  disputed
+}
+
+enum ReleaseVerificationLevel {
+  photographer_provided
+  vuekumi_verified
+}
+
+enum AppearanceDecisionKind {
+  approved
+  rejected
+  not_me
+  unauthorized
+}
+
+enum SubjectAgeClass {
+  unknown
+  adult
+  minor
+}
+
+enum RightsScreeningKind {
+  no_recognizable_person
+  one_recognizable_person
+  multiple_recognizable_people
+  crowd_background_persons
+  uncertain_human_detection
 }
 
 enum ModelAppearanceStatus {
@@ -157,6 +202,8 @@ model User {
   appearancesInvited    PhotoAppearance[] @relation("AppearanceInviter")
   likenessChecks        LikenessCheck[]   @relation("LikenessCheckModel")
   rightsProcessVerified RightsRecord[] @relation("RightsProcessVerifier")
+  photoShoots           PhotoShoot[]      @relation("PhotographerShoots")
+  uploadedReleases      ModelRelease[]    @relation("ReleaseUploader")
 
   @@index([accountType])
   @@index([status])
@@ -337,8 +384,20 @@ model Photo {
   commercialLockedById String?
   permissionState    PermissionState @default(commercial)
   restrictionNotes   String?
+  shootId                  String?
+  screeningKind            RightsScreeningKind?
+  screeningPeopleCount     Int      @default(0)
+  possibleMinor            Boolean  @default(false)
+  crowdBackground          Boolean  @default(false)
+  selfPortraitLikely       Boolean  @default(false)
+  potentiallySensitive     Boolean  @default(false)
+  uncertainHumanDetection  Boolean  @default(false)
+  screeningNotes           String?
+  screeningAt              DateTime?
+  screeningProvider        String?
 
   contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
+  shoot            PhotoShoot?       @relation(fields: [shootId], references: [id], onDelete: SetNull)
   tags             PhotoTag[]
   rightsRecord     RightsRecord?
   moderationItems  ModerationItem[]
@@ -361,6 +420,21 @@ model Photo {
   @@index([contributorId])
   @@index([commercialLocked])
   @@index([permissionState])
+  @@index([shootId])
+}
+
+model PhotoShoot {
+  id             String   @id @default(cuid())
+  photographerId String
+  title          String
+  shotOn         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  photographer User    @relation("PhotographerShoots", fields: [photographerId], references: [id], onDelete: Cascade)
+  photos       Photo[]
+
+  @@index([photographerId])
 }
 
 model AiSuggestion {
@@ -489,9 +563,13 @@ model RightsRecord {
   photoId              String             @unique
   copyrightVerified    Boolean            @default(false)
   copyrightHolder      String?
+  copyrightStatus      CopyrightStatus    @default(claimed)
+  copyrightAttestedAt  DateTime?
   modelReleaseRequired Boolean            @default(false)
   modelReleaseStatus   ModelReleaseStatus @default(not_required)
   modelReleaseFileKey  String?
+  modelConsentStatus   ModelConsentStatus @default(not_required)
+  commercialEligible   Boolean            @default(false)
   platformRightsOk     Boolean            @default(false)
   processVerifiedAt    DateTime?
   processVerifiedById  String?
@@ -504,53 +582,76 @@ model RightsRecord {
 }
 
 model ModelRelease {
-  id           String             @id @default(cuid())
-  photoId      String
-  fileName     String
-  notes        String?
-  status       ModelReleaseStatus @default(pending)
-  verifiedById String?
-  verifiedAt   DateTime?
-  createdAt    DateTime           @default(now())
+  id                   String                    @id @default(cuid())
+  photoId              String
+  photographerId       String?
+  appearanceId         String?
+  fileName             String
+  notes                String?
+  status               ModelReleaseStatus        @default(pending)
+  verificationLevel    ReleaseVerificationLevel  @default(photographer_provided)
+  attestedGenuine      Boolean                   @default(false)
+  attestedAt           DateTime?
+  modelIdentity        String?
+  confirmationSentAt   DateTime?
+  modelConfirmedAt     DateTime?
+  verifiedById         String?
+  verifiedAt           DateTime?
+  createdAt            DateTime                  @default(now())
 
-  photo      Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
-  verifiedBy User? @relation("ModelReleaseReviewer", fields: [verifiedById], references: [id])
+  photo          Photo            @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photographer   User?            @relation("ReleaseUploader", fields: [photographerId], references: [id], onDelete: SetNull)
+  appearance     PhotoAppearance? @relation(fields: [appearanceId], references: [id], onDelete: SetNull)
+  verifiedBy     User?            @relation("ModelReleaseReviewer", fields: [verifiedById], references: [id])
 
   @@index([photoId])
   @@index([status])
+  @@index([photographerId])
+  @@index([appearanceId])
 }
 
 model PhotoAppearance {
-  id                String                 @id @default(cuid())
-  photoId           String
-  displayName       String
-  inviteEmail       String
-  modelUserId       String?
-  invitedById       String
-  status            ModelAppearanceStatus  @default(identified)
-  usage             ModelUsagePreference   @default(none)
-  confirmedLikeness Boolean                @default(false)
-  inviteTokenHash   String?                @unique
-  inviteExpiresAt   DateTime?
-  invitedAt         DateTime?
-  claimedAt         DateTime?
-  decidedAt         DateTime?
-  consentVersion    String?
-  selfShot          Boolean                @default(false)
-  notes             String?
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
+  id                    String                   @id @default(cuid())
+  photoId               String
+  displayName           String
+  inviteEmail           String?
+  inviteMobile          String?
+  modelUserId           String?
+  invitedById           String
+  status                ModelAppearanceStatus    @default(identified)
+  consentStatus         ModelConsentStatus       @default(required)
+  decisionKind          AppearanceDecisionKind?
+  usage                 ModelUsagePreference     @default(none)
+  confirmedLikeness     Boolean                  @default(false)
+  inviteTokenHash       String?                  @unique
+  inviteExpiresAt       DateTime?
+  invitedAt             DateTime?
+  claimedAt             DateTime?
+  decidedAt             DateTime?
+  consentVersion        String?
+  selfShot              Boolean                  @default(false)
+  notes                 String?
+  ageClass              SubjectAgeClass          @default(unknown)
+  isMinor               Boolean                  @default(false)
+  guardianName          String?
+  guardianEmail         String?
+  guardianMobile        String?
+  guardianAuthorizedAt  DateTime?
+  verificationLevel     ReleaseVerificationLevel?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
 
   photo          Photo           @relation(fields: [photoId], references: [id], onDelete: Cascade)
   modelUser      User?           @relation("ModelAppearances", fields: [modelUserId], references: [id], onDelete: SetNull)
   invitedBy      User            @relation("AppearanceInviter", fields: [invitedById], references: [id])
   likenessChecks LikenessCheck[]
+  releases       ModelRelease[]
 
-  @@unique([photoId, inviteEmail])
   @@index([photoId])
   @@index([modelUserId])
   @@index([inviteEmail])
   @@index([status])
+  @@index([consentStatus])
 }
 
 model LikenessCheck {

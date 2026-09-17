@@ -12,7 +12,7 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 16 September 2026 against `main` after Phase 28.
+Updated 17 September 2026 against `main` after the photographer / likeness-rights overhaul.
 
 ---
 
@@ -49,7 +49,7 @@ build. That plan is superseded.
 | Frontend | `apps/web` — React 19, Vite, Tailwind, react-router 7 (`:3000`, `/api` proxy → API) |
 | Backend | `apps/api` — Fastify, Prisma, PostgreSQL 16 |
 | Shared types | `packages/shared` — Zod + DTOs |
-| Auth | Password + Google OAuth + refresh cookies; one account type per email except self-shot dual role (`contributor` + `ModelProfile` on the same user) |
+| Auth | Password + Google OAuth + refresh cookies; one account type per email except self-shot dual role (`photographer` + `ModelProfile` on the same user). Community `contributor` is a separate, non-commercial path. |
 | Media | Presigned upload, private originals, watermarked premium previews |
 | Commerce | RF / Commercial / Extended / Editorial / RM quote / Exclusive; Stripe + Flutterwave; Vuekumi+ quotas |
 | Payouts | 50/50 of paid licences on `EarningsLedger`; manual mark-paid |
@@ -97,6 +97,7 @@ Locked product rules already in the running system:
 | 26 | Self-shot dual role (contributor + model profile on one account; likeness + usage still required) |
 | 27 | Public model portfolio (`/m/:handle`, `/models`) from approved likeness photographs. Model does not gain copyright. |
 | 28 | Opt-in visual likeness check (result only; selfie discarded; similarity ≠ release) |
+| — | **Photographer vs community contributor** + two-rights engine (photo copyright vs likeness/model release). Automatic AI person screening. Route A photographer-provided release vs Route B VueKumi contacts the model. Guest approve/reject/not-me/unauthorized. Minors need guardian authorization. Commercial eligibility = copyright cleared + required likeness rights cleared. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -115,7 +116,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Two-approval commercial lock | Shipped (Phase 25) — commercial-class licences of people photos require every appearance approved with confirmed likeness and commercial usage. PDF is supporting evidence. |
 | Invite-the-model as acquisition | Shipped (Phase 24) — photographer names a person; VueKumi emails the invite |
 | Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Shipped (Phase 23) — orthogonal to moderation status; catalog is stock states only |
-| Self-shot dual role | Shipped (Phase 26) — photographer identifies themselves on their own photo; `accountType` stays `contributor` |
+| Self-shot dual role | Shipped (Phase 26) — photographer identifies themselves on their own photo; `accountType` stays `photographer` |
 | Visual verification with biometric safeguards | Shipped (Phase 28) — opt-in per photograph, discrete result only, selfie discarded immediately. No embedding store or public face database. Similarity cannot grant rights. |
 | Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
 | Photo influencer role | Missing |

@@ -1,4 +1,15 @@
 import { z } from 'zod'
+import {
+  commercialEligibilityBlock,
+  identifyAppearanceSchema,
+  rollupModelConsentStatus,
+  type AppearanceDecisionKind,
+  type ModelConsentStatus,
+  type ReleaseVerificationLevel,
+  type SubjectAgeClass,
+} from './rights.js'
+
+export { identifyAppearanceSchema }
 
 export const MODEL_APPEARANCE_STATUSES = [
   'identified',
@@ -15,15 +26,11 @@ export const MODEL_USAGE_PREFERENCES = ['none', 'editorial', 'commercial'] as co
 export const modelUsagePreferenceSchema = z.enum(MODEL_USAGE_PREFERENCES)
 export type ModelUsagePreference = z.infer<typeof modelUsagePreferenceSchema>
 
-export const identifyAppearanceSchema = z.object({
-  displayName: z.string().trim().min(2).max(120),
-  email: z.string().email(),
-})
-
 export const decideAppearanceSchema = z.object({
   confirmedLikeness: z.boolean(),
-  status: z.enum(['approved', 'rejected']),
+  status: z.enum(['approved', 'rejected', 'not_me', 'unauthorized']),
   usage: modelUsagePreferenceSchema.optional(),
+  acceptReleaseTerms: z.boolean().optional(),
   notes: z.string().trim().max(2000).optional().nullable(),
 })
 
@@ -75,7 +82,10 @@ export interface PhotoAppearanceDto {
   photographerName?: string
   displayName: string
   inviteEmail?: string | null
+  inviteMobile?: string | null
   status: ModelAppearanceStatus
+  consentStatus?: ModelConsentStatus
+  decisionKind?: AppearanceDecisionKind | null
   usage: ModelUsagePreference
   confirmedLikeness: boolean
   modelHandle?: string | null
@@ -87,6 +97,11 @@ export interface PhotoAppearanceDto {
   selfShot?: boolean
   notes?: string | null
   verification?: LikenessCheckDto | null
+  ageClass?: SubjectAgeClass
+  isMinor?: boolean
+  guardianAuthorized?: boolean
+  releaseVerificationLevel?: ReleaseVerificationLevel | null
+  modelReleaseVerified?: boolean
 }
 
 export function hasModelAccess(user: {
@@ -96,6 +111,15 @@ export function hasModelAccess(user: {
   return user.accountType === 'model' || Boolean(user.hasModelProfile)
 }
 
+export interface ModelInvitePreviewImageDto {
+  appearanceId: string
+  photoId: string
+  photoTitle: string
+  photoSrc?: string
+  status: ModelAppearanceStatus
+  consentStatus?: ModelConsentStatus
+}
+
 export interface ModelInvitePreviewDto {
   email: string
   displayName: string
@@ -103,6 +127,12 @@ export interface ModelInvitePreviewDto {
   photographerName: string
   expiresAt: string
   needsAccount: boolean
+  membershipRequired: false
+  shootTitle?: string | null
+  shotOn?: string | null
+  imageCount: number
+  images: ModelInvitePreviewImageDto[]
+  terms: string
 }
 
 export const MODEL_APPEARANCE_LABEL: Record<ModelAppearanceStatus, string> = {
@@ -145,6 +175,12 @@ export type TwoPartyAppearanceInput = {
   status: ModelAppearanceStatus
   usage: ModelUsagePreference
   confirmedLikeness: boolean
+  consentStatus?: ModelConsentStatus | null
+  isMinor?: boolean
+  guardianAuthorizedAt?: string | Date | null
+  decisionKind?: AppearanceDecisionKind | null
+  selfShot?: boolean
+  verificationLevel?: ReleaseVerificationLevel | null
 }
 
 export function isCommercialClassLicense(licenseType: string): boolean {
@@ -156,22 +192,25 @@ export function twoPartyBlocksLicense(input: {
   appearances: TwoPartyAppearanceInput[]
   licenseType: string
   requiresModelRelease: boolean
+  copyrightStatus?: import('./rights.js').CopyrightStatus
 }): string | undefined {
   if (!input.hasRecognizablePeople) return undefined
   if (!input.requiresModelRelease) return undefined
   if (input.appearances.length === 0) {
     return 'Identify every depicted person and wait until they approve usage'
   }
-  if (input.appearances.some((row) => row.status !== 'approved' || !row.confirmedLikeness)) {
+  if (input.appearances.some((row) => row.status === 'approved' && !row.confirmedLikeness)) {
     return 'Every depicted person must confirm likeness and approve usage'
   }
-  if (
-    isCommercialClassLicense(input.licenseType)
-    && input.appearances.some((row) => row.usage !== 'commercial')
-  ) {
-    return 'Commercial licensing requires commercial usage approval from every depicted person'
-  }
-  return undefined
+  return commercialEligibilityBlock({
+    copyrightStatus: input.copyrightStatus ?? 'claimed',
+    modelConsentStatus: rollupModelConsentStatus({
+      hasRecognizablePeople: true,
+      appearances: input.appearances,
+    }),
+    appearances: input.appearances,
+    licenseType: input.licenseType,
+  })
 }
 
 export function twoPartyCommercialCleared(input: {

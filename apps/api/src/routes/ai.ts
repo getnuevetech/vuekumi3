@@ -116,7 +116,7 @@ async function applyFieldsToPhoto(
 }
 
 export async function aiRoutes(app: FastifyInstance) {
-  const staff = { preHandler: requireAccountTypes(app, 'contributor', 'admin') }
+  const staff = { preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin') }
 
   app.get('/ai/status', staff, async () => {
     try {

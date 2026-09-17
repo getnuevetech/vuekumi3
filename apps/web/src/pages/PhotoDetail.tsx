@@ -284,9 +284,18 @@ export default function PhotoDetail() {
               </p>
             )}
 
+            {view.rights?.modelReleaseVerified && (
+              <p className="mt-4 border border-sand bg-white px-4 py-3 text-sm">
+                <span className="font-medium">Model Release Verified ✓</span>
+                <span className="mt-1 block font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+                  Likeness permission is cleared. Copyright stays with the photographer. Contact details stay private.
+                </span>
+              </p>
+            )}
+
             {view.hasRecognizablePeople && view.rights?.twoPartyBlocker && !(view.commercialLocked || view.rights?.commercialLocked) && (
               <p className="mt-4 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
-                {view.rights.twoPartyBlocker}. A supporting PDF is not enough for commercial licences.
+                {view.rights.twoPartyBlocker}. A photographer-provided PDF is not VueKumi-verified consent.
               </p>
             )}
 

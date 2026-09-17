@@ -66,20 +66,20 @@ export default function App() {
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/join/:token" element={<JoinAgency />} />
         <Route path="/invite/model/:token" element={<JoinModel />} />
-        <Route path="/account" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin', 'model']}><Account /></ProtectedRoute>} />
-        <Route path="/favorites" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Favorites /></ProtectedRoute>} />
-        <Route path="/following" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Following /></ProtectedRoute>} />
-        <Route path="/collections" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Collections /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin', 'model']}><Account /></ProtectedRoute>} />
+        <Route path="/favorites" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><Favorites /></ProtectedRoute>} />
+        <Route path="/following" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><Following /></ProtectedRoute>} />
+        <Route path="/collections" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><Collections /></ProtectedRoute>} />
         <Route path="/c/:id" element={<CollectionDetail />} />
-        <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />
-        <Route path="/checkout/plus/:subscriptionId" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><PlusCheckout /></ProtectedRoute>} />
-        <Route path="/checkout/:paymentId" element={<ProtectedRoute allowed={['user', 'agency', 'contributor', 'admin']}><Checkout /></ProtectedRoute>} />
+        <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />
+        <Route path="/checkout/plus/:subscriptionId" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><PlusCheckout /></ProtectedRoute>} />
+        <Route path="/checkout/:paymentId" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><Checkout /></ProtectedRoute>} />
 
-        <Route path="/contributor" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorDashboard /></ProtectedRoute>} />
-        <Route path="/contributor/upload" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorUpload /></ProtectedRoute>} />
-        <Route path="/contributor/portfolio" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorPortfolio /></ProtectedRoute>} />
-        <Route path="/contributor/photos/:id" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorPhotoEdit /></ProtectedRoute>} />
-        <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['contributor', 'admin']}><ContributorEarnings /></ProtectedRoute>} />
+        <Route path="/contributor" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorDashboard /></ProtectedRoute>} />
+        <Route path="/contributor/upload" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorUpload /></ProtectedRoute>} />
+        <Route path="/contributor/portfolio" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorPortfolio /></ProtectedRoute>} />
+        <Route path="/contributor/photos/:id" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorPhotoEdit /></ProtectedRoute>} />
+        <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorEarnings /></ProtectedRoute>} />
 
         <Route path="/agency" element={<ProtectedRoute allowed={['agency']}><AgencyDashboard /></ProtectedRoute>} />
         <Route path="/agency/team" element={<ProtectedRoute allowed={['agency']}><AgencyTeam /></ProtectedRoute>} />

@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import type { HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
-import { hasModelAccess } from '@vuekumi/shared';
+import { hasModelAccess, isCreatorAccount, isPhotographerAccount } from '@vuekumi/shared';
 import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { fmt } from '../lib/format';
 
-const SELL_HREF = '/login?redirect=/contributor/upload&signup=contributor';
+const SELL_HREF = '/login?redirect=/contributor/upload&signup=photographer';
 const MARQUEE_FALLBACK = ['People', 'Wildlife', 'Landscape', 'Urban', 'Culture', 'Food & Craft', 'Coast', 'Fashion', 'Architecture'];
 
 function contributorPortalHref(accountType?: string) {
-  return accountType === 'contributor' || accountType === 'admin' ? '/contributor' : SELL_HREF;
+  return isCreatorAccount(accountType) ? '/contributor' : SELL_HREF;
 }
 
 /* ---------------- header ---------------- */
@@ -38,7 +38,7 @@ function NoirHeader() {
     ...(user && user.accountType !== 'model' ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
     ...(user && hasModelAccess(user) ? [{ label: 'Model', to: '/model' }] : []),
-    ...((user?.accountType === 'contributor' || user?.accountType === 'admin') ? [{ label: 'Contributor', to: '/contributor' }] : []),
+    ...((isCreatorAccount(user?.accountType)) ? [{ label: isPhotographerAccount(user?.accountType) || user?.accountType === 'admin' ? 'Photographer' : 'Contributor', to: '/contributor' }] : []),
     ...(user?.accountType === 'admin' ? [{ label: 'Admin', to: '/admin' }] : []),
   ];
 
@@ -375,7 +375,7 @@ function CtaBand() {
           to={contributorPortalHref(user?.accountType)}
           className="shrink-0 bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
         >
-          {user?.accountType === 'contributor' ? 'Open contributor portal' : 'Become a contributor'}
+          {isPhotographerAccount(user?.accountType) ? 'Open photographer portal' : isCreatorAccount(user?.accountType) ? 'Open contributor portal' : 'Become a photographer'}
         </Link>
       </div>
     </section>
@@ -502,7 +502,7 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
   const { user } = useAuth();
   const a = photos[0];
   const b = photos[1] ?? photos[0];
-  const uploadHref = user?.accountType === 'contributor' || user?.accountType === 'admin'
+  const uploadHref = isCreatorAccount(user?.accountType)
     ? '/contributor/upload'
     : SELL_HREF;
   return (

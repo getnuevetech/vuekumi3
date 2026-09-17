@@ -79,13 +79,16 @@ async function loadPhotoForLicense(id: string) {
 }
 
 export async function licenseRoutes(app: FastifyInstance) {
-  app.get('/agreements/current', async () => {
-    const row = await prisma.agreementVersion.findFirst({
-      where: { current: true },
-      orderBy: { publishedAt: 'desc' },
-    })
+  app.get('/agreements/current', async (request) => {
+    const kind = (request.query as { kind?: string }).kind
+    const version = kind === 'contributor' ? '1.0-community' : '1.0'
+    const row = await prisma.agreementVersion.findUnique({ where: { version } })
     if (!row) {
-      return { version: '1.0', title: 'VueKumi Contributor Platform Agreement', body: '' }
+      return {
+        version,
+        title: kind === 'contributor' ? 'VueKumi Community Contributor Terms' : 'VueKumi Photographer Licensing Agreement',
+        body: '',
+      }
     }
     return { version: row.version, title: row.title, body: row.body }
   })

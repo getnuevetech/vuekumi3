@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { PHOTO_CATEGORIES, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
+import { PHOTO_CATEGORIES, SCREENING_KIND_LABEL, creatorPortalLabel, isCommunityContributor, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
 import { PortalShell, StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { api, ApiError, type GeoCountry } from '../api/client'
@@ -13,8 +13,15 @@ import { useAuth } from '../context/AuthContext'
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
+  const community = isCommunityContributor(user?.accountType)
   return (
-    <PortalShell title="Contributor portal" subtitle="Upload, rights, and 50% of every paid licence." links={contributorPortalLinks(user?.hasModelProfile)}>
+    <PortalShell
+      title={`${creatorPortalLabel(user?.accountType)} portal`}
+      subtitle={community
+        ? 'Portfolio and editorial sharing. Commercial stock is reserved for professional photographers.'
+        : 'Upload, rights, and 50% of every paid licence.'}
+      links={contributorPortalLinks(user?.hasModelProfile)}
+    >
       {children}
     </PortalShell>
   )
@@ -23,6 +30,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 export function ContributorPhotoEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const community = isCommunityContributor(user?.accountType)
   const [photo, setPhoto] = useState<PhotoDto | null>(null)
   const [countries, setCountries] = useState<GeoCountry[]>([])
   const [title, setTitle] = useState('')
@@ -147,6 +156,13 @@ export function ContributorPhotoEdit() {
               }
             />
           </div>
+          {photo.rights?.screeningKind && (
+            <p className="rounded-xl bg-cream px-4 py-3 text-sm text-ink-soft">
+              AI person detection: <strong>{SCREENING_KIND_LABEL[photo.rights.screeningKind]}</strong>
+              {photo.rights.possibleMinor ? ' · Possible minor — additional verification required' : ''}
+              . Screening does not decide whether consent exists, and does not identify anyone.
+            </p>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
             <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm outline-none focus:border-terra">
@@ -240,6 +256,7 @@ export function ContributorPhotoEdit() {
             onChange={setPermissionState}
             notes={restrictionNotes}
             onNotes={setRestrictionNotes}
+            actor={community ? 'community' : 'contributor'}
             disabled={sold}
           />
           {sold && (

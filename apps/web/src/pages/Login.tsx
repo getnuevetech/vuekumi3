@@ -19,7 +19,7 @@ function safeRedirect(value: string | null): string | null {
 }
 
 type Mode = 'signin' | 'signup'
-type Role = 'member' | 'contributor' | 'agency'
+type Role = 'member' | 'photographer' | 'contributor' | 'agency'
 
 export default function Login() {
   const [mode, setMode] = useState<Mode>('signin')
@@ -39,7 +39,8 @@ export default function Login() {
   const { login, register, completeSession } = useAuth()
 
   const redirect = safeRedirect(searchParams.get('redirect'))
-  const wantsContributor = searchParams.get('signup') === 'contributor' || Boolean(redirect?.startsWith('/contributor'))
+  const wantsPhotographer = searchParams.get('signup') === 'photographer' || searchParams.get('signup') === 'contributor' || Boolean(redirect?.startsWith('/contributor'))
+  const creatorRole = role === 'photographer' || role === 'contributor'
   const showOauth = oauth.google || oauth.dev
   const oauthAllowed = mode === 'signin' || role === 'member'
 
@@ -55,10 +56,10 @@ export default function Login() {
   }, [searchParams])
 
   useEffect(() => {
-    if (!wantsContributor) return
+    if (!wantsPhotographer) return
     setMode('signup')
-    setRole('contributor')
-  }, [wantsContributor])
+    setRole(searchParams.get('signup') === 'contributor' ? 'contributor' : 'photographer')
+  }, [wantsPhotographer, searchParams])
 
   useEffect(() => {
     if (searchParams.get('oauth') !== 'ok') return
@@ -74,13 +75,13 @@ export default function Login() {
 
   useEffect(() => {
     if (mode !== 'signup') return
-    api.countries(role === 'contributor')
+    api.countries(creatorRole)
       .then((d) => setCountries(d.countries))
       .catch(() => setCountries([]))
-    if (role === 'contributor') {
-      api.agreement().then((a) => setAgreementTitle(a.title)).catch(() => undefined)
+    if (creatorRole) {
+      api.agreement(role === 'contributor' ? 'contributor' : 'photographer').then((a) => setAgreementTitle(a.title)).catch(() => undefined)
     }
-  }, [mode, role])
+  }, [mode, role, creatorRole])
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -113,11 +114,12 @@ export default function Login() {
           </div>
 
           {mode === 'signup' && (
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="mt-4 grid grid-cols-2 gap-2">
               {(
                 [
-                  { id: 'member' as Role, label: 'Member', note: 'Download' },
-                  { id: 'contributor' as Role, label: 'Contributor', note: 'Sell photos' },
+                  { id: 'member' as Role, label: 'Member', note: 'License photos' },
+                  { id: 'photographer' as Role, label: 'Photographer', note: 'Commercial stock' },
+                  { id: 'contributor' as Role, label: 'Contributor', note: 'Portfolio / community' },
                   { id: 'agency' as Role, label: 'Agency', note: 'Enterprise' },
                 ]
               ).map((r) => (
@@ -144,7 +146,7 @@ export default function Login() {
               setError(null)
               try {
                 const accountType =
-                  role === 'member' ? 'user' : role === 'contributor' ? 'contributor' : 'agency'
+                  role === 'member' ? 'user' : role === 'agency' ? 'agency' : role
                 const user =
                   mode === 'signin'
                     ? await login({ email, password })
@@ -154,7 +156,7 @@ export default function Login() {
                         name,
                         accountType,
                         country: country || undefined,
-                        acceptAgreement: accountType === 'contributor' ? acceptAgreement : undefined,
+                        acceptAgreement: creatorRole ? acceptAgreement : undefined,
                       })
                 const dest = redirect ?? homeForUser(user)
                 navigate(dest)
@@ -175,19 +177,21 @@ export default function Login() {
                   className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
                 />
                 <select
-                  required={role === 'contributor'}
+                  required={creatorRole}
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
                   className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra"
                 >
-                  <option value="">{role === 'contributor' ? 'African country (required)' : 'Country (optional)'}</option>
+                  <option value="">{creatorRole ? 'African country (required)' : 'Country (optional)'}</option>
                   {countries.map((c) => (
                     <option key={c.code} value={c.code}>{c.name} · {c.currency}</option>
                   ))}
                 </select>
-                {role === 'contributor' && (
+                {creatorRole && (
                   <p className="font-mono-tech text-[10px] text-ink-faint">
-                    Contributors must be based in an African country.
+                    {role === 'photographer'
+                      ? 'Professional photographers must be based in an African country.'
+                      : 'Community contributors must be based in an African country.'}
                   </p>
                 )}
               </>
@@ -200,7 +204,7 @@ export default function Login() {
               placeholder="Email address"
               className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
             />
-            {mode === 'signup' && role === 'contributor' && (
+            {mode === 'signup' && creatorRole && (
               <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
                 <input
                   type="checkbox"

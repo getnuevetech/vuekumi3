@@ -42,7 +42,7 @@ export default function ModelPortal() {
   const { user } = useAuth()
   const [items, setItems] = useState<PhotoAppearanceDto[]>([])
   const [handle, setHandle] = useState<string | null>(null)
-  const dualRole = Boolean(user && user.accountType === 'contributor' && hasModelAccess(user))
+  const dualRole = Boolean(user && (user.accountType === 'contributor' || user.accountType === 'photographer') && hasModelAccess(user))
   const links = dualRole ? [...modelLinks, photographerLink] : modelLinks
 
   const load = () => {

@@ -1,12 +1,13 @@
 import { z } from 'zod'
+import { accountTypeSchema, publicRegisterAccountTypeSchema } from './accounts.js'
 
-export const accountTypeSchema = z.enum(['admin', 'contributor', 'user', 'agency', 'model'])
+export { accountTypeSchema, publicRegisterAccountTypeSchema }
 
 export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(1).max(120),
-  accountType: z.enum(['contributor', 'user', 'agency']),
+  accountType: publicRegisterAccountTypeSchema,
   country: z.string().min(2).max(2).optional(),
   acceptAgreement: z.boolean().optional(),
 })
