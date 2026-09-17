@@ -171,6 +171,8 @@ function RepresentationCard() {
 /* ---------------- dashboard ---------------- */
 
 export function ContributorDashboard() {
+  const { user } = useAuth()
+  const community = isCommunityContributor(user?.accountType)
   const [stats, setStats] = useState<ContributorStatsDto | null>(null)
   useEffect(() => {
     api.contributorStats().then(setStats).catch(() => setStats(null))
