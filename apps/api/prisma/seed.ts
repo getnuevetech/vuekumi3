@@ -40,6 +40,7 @@ async function main() {
   await prisma.licenseGrant.deleteMany()
   await prisma.licenseQuote.deleteMany()
   await prisma.agencyInvite.deleteMany()
+  await prisma.likenessCheck.deleteMany()
   await prisma.photoAppearance.deleteMany()
   await prisma.modelProfile.deleteMany()
   await prisma.modelRelease.deleteMany()
@@ -52,6 +53,7 @@ async function main() {
   await prisma.photoTag.deleteMany()
   await prisma.rightsRecord.deleteMany()
   await prisma.photo.deleteMany()
+  await prisma.photoShoot.deleteMany()
   await prisma.platformAgreement.deleteMany()
   await prisma.agencyMember.deleteMany()
   await prisma.agency.deleteMany()
@@ -85,7 +87,7 @@ async function main() {
         email: `${ph.handle}@vuekumi.demo`,
         passwordHash: userPassword,
         name: ph.name,
-        accountType: 'contributor',
+        accountType: 'photographer',
         country: ({ Nigeria: 'NG', 'South Africa': 'ZA', Ghana: 'GH', Ethiopia: 'ET', Kenya: 'KE' } as Record<string, string>)[ph.location.split(', ').pop() ?? ''] ?? 'NG',
         avatarUrl: ph.avatar,
         emailVerifiedAt: new Date(),
@@ -116,6 +118,25 @@ async function main() {
       country: 'TZ',
       emailVerifiedAt: new Date(),
       userProfile: { create: { subscriptionPlan: 'free' } },
+    },
+  })
+
+  await prisma.user.create({
+    data: {
+      email: 'community@vuekumi.demo',
+      passwordHash: userPassword,
+      name: 'Imani Okonkwo',
+      accountType: 'contributor',
+      country: 'NG',
+      emailVerifiedAt: new Date(),
+      contributorProfile: {
+        create: {
+          handle: 'imani-okonkwo',
+          location: 'Enugu, Nigeria',
+          bio: 'Community contributor — portfolio and editorial sharing, not commercial stock.',
+        },
+      },
+      platformAgreements: { create: { version: '1.0-community' } },
     },
   })
 
@@ -207,7 +228,9 @@ async function main() {
         rightsRecord: {
           create: {
             copyrightVerified: true,
-            copyrightHolder: photographer?.name ?? 'Contributor',
+            copyrightStatus: 'verified',
+            copyrightAttestedAt: new Date(),
+            copyrightHolder: photographer?.name ?? 'Photographer',
             platformRightsOk: true,
             modelReleaseRequired: hasPeople,
             modelReleaseStatus: hasPeople
@@ -215,6 +238,8 @@ async function main() {
                 ? 'verified'
                 : 'pending'
               : 'not_required',
+            modelConsentStatus: hasPeople ? 'required' : 'not_required',
+            commercialEligible: !hasPeople,
           },
         },
         ...(hasPeople
@@ -259,10 +284,14 @@ async function main() {
         rightsRecord: {
           create: {
             copyrightVerified: true,
+            copyrightStatus: 'claimed',
+            copyrightAttestedAt: new Date(),
             copyrightHolder: 'Amara Okafor',
             platformRightsOk: true,
             modelReleaseRequired: true,
             modelReleaseStatus: 'pending',
+            modelConsentStatus: 'required',
+            commercialEligible: false,
           },
         },
         modelReleases: {
@@ -391,6 +420,10 @@ async function main() {
         modelUserId: ada.id,
         invitedById: thandiweId,
         status: 'approved',
+        consentStatus: 'approved',
+        decisionKind: 'approved',
+        verificationLevel: 'vuekumi_verified',
+        ageClass: 'adult',
         usage: 'editorial',
         confirmedLikeness: true,
         consentVersion: '1.0',
@@ -408,6 +441,8 @@ async function main() {
         inviteEmail: 'nomsa@vuekumi.demo',
         invitedById: amaraId,
         status: 'invited',
+        consentStatus: 'invitation_sent',
+        ageClass: 'adult',
         usage: 'none',
         inviteTokenHash: createHash('sha256').update(nomsaInviteToken).digest('hex'),
         inviteExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
@@ -433,6 +468,10 @@ async function main() {
         modelUserId: kofiId,
         invitedById: kofiId,
         status: 'approved',
+        consentStatus: 'approved',
+        decisionKind: 'approved',
+        verificationLevel: 'vuekumi_verified',
+        ageClass: 'adult',
         usage: 'commercial',
         confirmedLikeness: true,
         selfShot: true,
@@ -442,6 +481,19 @@ async function main() {
       },
     })
   }
+
+  await prisma.rightsRecord.update({
+    where: { photoId: 'afr-001' },
+    data: { modelConsentStatus: 'approved', commercialEligible: false },
+  })
+  await prisma.rightsRecord.update({
+    where: { photoId: 'afr-027' },
+    data: { modelConsentStatus: 'approved', commercialEligible: true },
+  })
+  await prisma.rightsRecord.update({
+    where: { photoId: 'afr-011' },
+    data: { modelConsentStatus: 'invitation_sent', commercialEligible: false },
+  })
 
   const favoriteIds = ['afr-011', 'afr-008', 'afr-020']
   await prisma.photoFavorite.createMany({

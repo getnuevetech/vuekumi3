@@ -29,7 +29,7 @@ function payError(reply: { code: (n: number) => { send: (b: unknown) => unknown 
 }
 
 export async function payoutRoutes(app: FastifyInstance) {
-  const contributor = { preHandler: requireAccountTypes(app, 'contributor', 'admin') }
+  const contributor = { preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin') }
   const admin = { preHandler: requireAccountTypes(app, 'admin') }
 
   app.get('/contributor/earnings', {

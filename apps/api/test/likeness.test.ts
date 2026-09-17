@@ -29,7 +29,7 @@ test('similarity never grants commercial rights', () => {
       licenseType: 'commercial',
       requiresModelRelease: true,
     }) ?? '',
-    /confirm likeness/,
+    /LOCKED/,
   )
 })
 

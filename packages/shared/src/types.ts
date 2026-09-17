@@ -1,6 +1,12 @@
 import type { PermissionState } from './permissions.js'
+import type {
+  CopyrightStatus,
+  ModelConsentStatus,
+  ReleaseVerificationLevel,
+  ScreeningKind,
+} from './rights.js'
 
-export type AccountType = 'admin' | 'contributor' | 'user' | 'agency' | 'model'
+export type AccountType = 'admin' | 'photographer' | 'contributor' | 'user' | 'agency' | 'model'
 export type UserStatus = 'active' | 'suspended' | 'pending'
 export type LicenseType = 'free' | 'premium'
 export type GrantLicenseType =
@@ -46,8 +52,17 @@ export interface AuthUser {
 export interface RightsDto {
   copyrightVerified: boolean
   copyrightHolder: string | null
+  copyrightStatus: CopyrightStatus
   modelReleaseRequired: boolean
   modelReleaseStatus: ModelReleaseStatus
+  modelConsentStatus: ModelConsentStatus
+  commercialEligible: boolean
+  modelReleaseVerified: boolean
+  releaseVerificationLevel: ReleaseVerificationLevel | null
+  outstandingConsents: number
+  awaitingModelConsent: boolean
+  possibleMinor: boolean
+  screeningKind: ScreeningKind | null
   platformRightsOk: boolean
   exclusiveAvailable: boolean
   exclusiveSold: boolean

@@ -1,5 +1,6 @@
 import type { PermissionState } from '@vuekumi/shared'
 import {
+  COMMUNITY_CONTRIBUTOR_PERMISSION_STATES,
   CONTRIBUTOR_PERMISSION_STATES,
   PERMISSION_STATE_HELP,
   PERMISSION_STATE_LABEL,
@@ -18,10 +19,15 @@ export function PermissionStateField({
   onChange: (state: PermissionState) => void
   notes?: string
   onNotes?: (notes: string) => void
-  actor?: 'contributor' | 'admin'
+  actor?: 'contributor' | 'community' | 'admin'
   disabled?: boolean
 }) {
-  const options = actor === 'admin' ? PERMISSION_STATES : CONTRIBUTOR_PERMISSION_STATES
+  const options =
+    actor === 'admin'
+      ? PERMISSION_STATES
+      : actor === 'community'
+        ? COMMUNITY_CONTRIBUTOR_PERMISSION_STATES
+        : CONTRIBUTOR_PERMISSION_STATES
   return (
     <div className="space-y-2">
       <label className="block text-sm text-ink-soft">

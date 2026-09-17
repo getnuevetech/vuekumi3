@@ -16,15 +16,27 @@ import type {
 import type {
   AuthUser,
   CheckoutDto,
+  CopyrightStatus,
   LicenseGrantDto,
   LicenseProductDto,
   LicenseQuoteDto,
+  ModelConsentStatus,
   PaymentDto,
   PhotoDto,
+  ReleaseVerificationLevel,
   RightsDto,
+  ScreeningKind,
 } from '@vuekumi/shared'
 import type { TwoPartyAppearanceInput } from '@vuekumi/shared'
-import { twoPartyBlocksLicense, twoPartyCommercialCleared } from '@vuekumi/shared'
+import {
+  copyrightCleared,
+  isCommerciallyEligible,
+  likenessRightsCleared,
+  outstandingConsentCount,
+  rollupModelConsentStatus,
+  twoPartyBlocksLicense,
+  twoPartyCommercialCleared,
+} from '@vuekumi/shared'
 import { isLicenseOffered, priceForProduct, rightsReadyForLive, twoPartyLicenseBlock } from './rights.js'
 import { displayPlan, displayQuota } from './subscriptions.js'
 
@@ -82,25 +94,69 @@ export function serializeUser(user: UserWithRelations): AuthUser {
 }
 
 export function serializeRights(
-  photo: Pick<Photo, 'exclusiveAvailable' | 'exclusiveSold' | 'hasRecognizablePeople' | 'commercialLocked'>,
+  photo: Pick<
+    Photo,
+    | 'exclusiveAvailable'
+    | 'exclusiveSold'
+    | 'hasRecognizablePeople'
+    | 'commercialLocked'
+    | 'possibleMinor'
+    | 'screeningKind'
+  >,
   rights: RightsRecord | null,
   hasAgreement: boolean,
   appearances: TwoPartyAppearanceInput[] = [],
 ): RightsDto {
   const live = rightsReadyForLive({ rights, hasAgreement })
+  const copyrightStatus = (rights?.copyrightStatus ?? (rights?.copyrightVerified ? 'verified' : 'claimed')) as CopyrightStatus
+  const modelConsentStatus = (rights?.modelConsentStatus
+    ?? rollupModelConsentStatus({
+      hasRecognizablePeople: photo.hasRecognizablePeople,
+      appearances,
+    })) as ModelConsentStatus
+  const outstanding = outstandingConsentCount(appearances)
   const twoPartyBlocker = photo.hasRecognizablePeople
     ? twoPartyBlocksLicense({
         hasRecognizablePeople: true,
         appearances,
         licenseType: 'commercial',
         requiresModelRelease: true,
+        copyrightStatus,
       }) ?? null
     : null
+  const commercialEligible = isCommerciallyEligible({
+    copyrightStatus,
+    modelConsentStatus,
+    commercialLocked: photo.commercialLocked,
+  })
+  const levels = appearances
+    .map((row) => row.verificationLevel)
+    .filter((level): level is ReleaseVerificationLevel => Boolean(level))
+  const releaseVerificationLevel: ReleaseVerificationLevel | null = !photo.hasRecognizablePeople
+    ? null
+    : levels.length > 0 && levels.every((level) => level === 'vuekumi_verified')
+      ? 'vuekumi_verified'
+      : levels.length > 0
+        ? 'photographer_provided'
+        : modelConsentStatus === 'approved'
+          ? 'vuekumi_verified'
+          : null
   return {
-    copyrightVerified: rights?.copyrightVerified ?? false,
+    copyrightVerified: copyrightCleared(copyrightStatus) || Boolean(rights?.copyrightVerified),
     copyrightHolder: rights?.copyrightHolder ?? null,
-    modelReleaseRequired: rights?.modelReleaseRequired ?? false,
+    copyrightStatus,
+    modelReleaseRequired: rights?.modelReleaseRequired ?? photo.hasRecognizablePeople,
     modelReleaseStatus: rights?.modelReleaseStatus ?? 'not_required',
+    modelConsentStatus,
+    commercialEligible,
+    modelReleaseVerified: photo.hasRecognizablePeople && likenessRightsCleared(modelConsentStatus),
+    releaseVerificationLevel,
+    outstandingConsents: photo.hasRecognizablePeople ? outstanding : 0,
+    awaitingModelConsent:
+      photo.hasRecognizablePeople
+      && (modelConsentStatus === 'invitation_sent' || modelConsentStatus === 'pending' || modelConsentStatus === 'required'),
+    possibleMinor: Boolean((photo as Photo & { possibleMinor?: boolean }).possibleMinor),
+    screeningKind: ((photo as Photo & { screeningKind?: ScreeningKind | null }).screeningKind ?? null),
     platformRightsOk: rights?.platformRightsOk ?? false,
     exclusiveAvailable: photo.exclusiveAvailable,
     exclusiveSold: photo.exclusiveSold,

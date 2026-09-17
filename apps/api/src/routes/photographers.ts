@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { photographerListQuerySchema, photoListQuerySchema } from '@vuekumi/shared'
 import type { PhotographerDto } from '@vuekumi/shared'
@@ -55,16 +56,16 @@ export async function photographerRoutes(app: FastifyInstance) {
     const query = photographerListQuerySchema.parse(request.query)
     const q = normalizeQuery(query.q)
 
-    const where = {
-      accountType: 'contributor' as const,
-      status: 'active' as const,
+    const where: Prisma.UserWhereInput = {
+      accountType: 'photographer',
+      status: 'active',
       photos: { some: PROFILE_PHOTO_FILTER },
       ...(q
         ? {
             OR: [
-              { name: { contains: q, mode: 'insensitive' as const } },
-              { contributorProfile: { handle: { contains: q, mode: 'insensitive' as const } } },
-              { contributorProfile: { location: { contains: q, mode: 'insensitive' as const } } },
+              { name: { contains: q, mode: 'insensitive' } },
+              { contributorProfile: { handle: { contains: q, mode: 'insensitive' } } },
+              { contributorProfile: { location: { contains: q, mode: 'insensitive' } } },
             ],
           }
         : {}),
@@ -168,7 +169,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       include: { user: { include: { modelProfile: { select: { handle: true } } } } },
     })
 
-    if (!profile || profile.user.accountType !== 'contributor' || profile.user.status !== 'active') {
+    if (!profile || (profile.user.accountType !== 'photographer' && profile.user.accountType !== 'contributor') || profile.user.status !== 'active') {
       return reply.code(404).send({ error: 'Photographer not found' })
     }
 

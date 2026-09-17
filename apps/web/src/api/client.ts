@@ -285,7 +285,8 @@ export const api = {
   removeFromCollection: (collectionId: string, photoId: string) =>
     request<{ ok: boolean }>(`/api/collections/${collectionId}/photos/${photoId}`, { method: 'DELETE' }),
 
-  agreement: () => request<AgreementDto>('/api/agreements/current'),
+  agreement: (kind?: 'photographer' | 'contributor') =>
+    request<AgreementDto>(`/api/agreements/current${kind ? `?kind=${kind}` : ''}`),
 
   licenses: () => request<{ items: LicenseProductDto[] }>('/api/licenses'),
 
@@ -481,6 +482,12 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  uploadSignedRelease: (photoId: string, body: import('@vuekumi/shared').UploadSignedReleaseInput) =>
+    request<{ appearance: PhotoAppearanceDto; release: { id: string; verificationLevel: string }; joinUrl?: string }>(
+      `/api/contributor/photos/${photoId}/releases`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
   selfShotAppearance: (photoId: string, body: SelfShotAppearanceInput) =>
     request<{ appearance: PhotoAppearanceDto }>(`/api/contributor/photos/${photoId}/appearances/self`, {
       method: 'POST',
@@ -493,6 +500,12 @@ export const api = {
       { method: 'POST', body: JSON.stringify({}) },
     ),
 
+  declareSubjectAge: (photoId: string, appearanceId: string, body: import('@vuekumi/shared').DeclareSubjectAgeInput) =>
+    request<{ appearance: PhotoAppearanceDto }>(
+      `/api/contributor/photos/${photoId}/appearances/${appearanceId}/age`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
   removeAppearance: (photoId: string, appearanceId: string) =>
     request<{ ok: boolean }>(`/api/contributor/photos/${photoId}/appearances/${appearanceId}`, { method: 'DELETE' }),
 
@@ -503,6 +516,12 @@ export const api = {
     request<{ user: AuthUser }>(`/api/model/invite/${token}`, {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
+    }),
+
+  guestModelConsent: (token: string, body: import('@vuekumi/shared').GuestConsentInput) =>
+    request<{ appearances: PhotoAppearanceDto[] }>(`/api/model/invite/${token}/decide`, {
+      method: 'POST',
+      body: JSON.stringify(body),
     }),
 
   modelPortal: () =>
@@ -824,6 +843,8 @@ export function homeForAccountType(accountType: AccountType): string {
   switch (accountType) {
     case 'admin':
       return '/admin'
+    case 'photographer':
+      return '/contributor'
     case 'contributor':
       return '/contributor'
     case 'agency':

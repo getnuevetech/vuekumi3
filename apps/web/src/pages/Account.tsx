@@ -30,11 +30,11 @@ export default function Account() {
   const [plan, setPlan] = useState<SubscriptionStatusDto | null>(null)
   const [planBusy, setPlanBusy] = useState(false)
 
-  const contributor = user?.accountType === 'contributor'
+  const contributor = user?.accountType === 'contributor' || user?.accountType === 'photographer'
   const model = Boolean(user && hasModelAccess(user))
   const dualRole = Boolean(contributor && user?.hasModelProfile)
   const publicProfile = contributor || model
-  const canSubscribe = user?.accountType === 'user' || user?.accountType === 'agency' || user?.accountType === 'contributor'
+  const canSubscribe = user?.accountType === 'user' || user?.accountType === 'agency' || user?.accountType === 'contributor' || user?.accountType === 'photographer'
 
   useEffect(() => {
     if (!user) return

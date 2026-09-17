@@ -1,8 +1,10 @@
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import {
   CONSENT_VERSION,
+  MODEL_RELEASE_ATTESTATION,
   acceptModelInviteSchema,
   decideAppearanceSchema,
+  guestConsentSchema,
   verifyLikenessSchema,
 } from '@vuekumi/shared'
 import { config } from '../config.js'
@@ -14,10 +16,12 @@ import {
   MODEL_INVITE_DAYS,
   appearanceInclude,
   appearanceUnclaimed,
+  applyAppearanceDecision,
   claimPendingForEmail,
   decideAppearanceBlocked,
   ensureModelProfile,
   modelAccountBlocked,
+  relatedAppearanceWhere,
   serializeAppearance,
   syncPermissionToTwoParty,
 } from '../lib/models.js'
@@ -47,6 +51,7 @@ export async function issueAppearanceInvite(appearanceId: string) {
     where: { id: appearanceId },
     data: {
       status: 'invited',
+      consentStatus: 'invitation_sent',
       inviteTokenHash: hashToken(raw),
       inviteExpiresAt: expiresAt,
       invitedAt: now,
@@ -55,6 +60,10 @@ export async function issueAppearanceInvite(appearanceId: string) {
   })
   const joinUrl = `${config.webUrl}/invite/model/${raw}`
   if (updated.inviteEmail) {
+    const relatedWhere = relatedAppearanceWhere(updated)
+    const imageCount = relatedWhere
+      ? await prisma.photoAppearance.count({ where: relatedWhere })
+      : 1
     await sendEmail({
       to: updated.inviteEmail,
       subject: `${updated.photo.contributor.name} invited you to confirm a Vuekumi photograph`,
@@ -63,6 +72,8 @@ export async function issueAppearanceInvite(appearanceId: string) {
         photographerName: updated.photo.contributor.name,
         photoTitle: updated.photo.title,
         link: joinUrl,
+        imageCount,
+        shootTitle: updated.photo.shoot?.title ?? null,
       }),
     })
   }
@@ -111,8 +122,6 @@ export async function modelRoutes(app: FastifyInstance) {
     try {
       const { id } = request.params as { id: string }
       const body = decideAppearanceSchema.parse(request.body)
-      const blocked = decideAppearanceBlocked(body)
-      if (blocked) throw new ModelError(blocked)
       const row = await prisma.photoAppearance.findUnique({ where: { id } })
       if (!row || row.modelUserId !== request.userId) {
         throw new ModelError('Appearance not found', 404)
@@ -120,20 +129,14 @@ export async function modelRoutes(app: FastifyInstance) {
       if (appearanceUnclaimed(row.status)) {
         throw new ModelError('Claim this invite before deciding')
       }
-      const usage = body.status === 'approved' ? body.usage! : (body.usage ?? 'none')
-      const updated = await prisma.photoAppearance.update({
-        where: { id },
-        data: {
-          status: body.status,
-          confirmedLikeness: body.confirmedLikeness,
-          usage,
-          notes: body.notes ?? row.notes,
-          decidedAt: new Date(),
-          consentVersion: body.status === 'approved' ? CONSENT_VERSION : null,
-        },
-        include: appearanceInclude,
+      const updated = await applyAppearanceDecision({
+        appearanceId: id,
+        action: body.status,
+        confirmedLikeness: body.confirmedLikeness,
+        usage: body.usage,
+        notes: body.notes,
+        actorId: request.userId,
       })
-      await syncPermissionToTwoParty(row.photoId)
       await writeAuditLog({
         actorId: request.userId,
         action: body.status === 'approved' ? 'model.photo_approve' : 'model.photo_reject',
@@ -142,7 +145,8 @@ export async function modelRoutes(app: FastifyInstance) {
         metadata: {
           photoId: row.photoId,
           confirmedLikeness: body.confirmedLikeness,
-          usage,
+          usage: body.usage ?? null,
+          decisionKind: body.status,
           consentVersion: body.status === 'approved' ? CONSENT_VERSION : null,
         },
         ipAddress: request.ip,
@@ -223,12 +227,31 @@ export async function modelRoutes(app: FastifyInstance) {
       where: { inviteTokenHash: hashToken(token) },
       include: appearanceInclude,
     })
-    if (!invite || invite.claimedAt || !invite.inviteExpiresAt || invite.inviteExpiresAt < new Date()) {
+    if (!invite || !invite.inviteExpiresAt || invite.inviteExpiresAt < new Date()) {
       return reply.code(404).send({ error: 'Invite is invalid or has expired' })
     }
     const existing = invite.inviteEmail
       ? await prisma.user.findUnique({ where: { email: invite.inviteEmail.toLowerCase() } })
       : null
+    const relatedWhere = relatedAppearanceWhere(invite)
+    const related = relatedWhere
+      ? await prisma.photoAppearance.findMany({
+          where: relatedWhere,
+          include: appearanceInclude,
+          orderBy: { createdAt: 'asc' },
+        })
+      : [invite]
+    const images = (related.length ? related : [invite]).map((row) => ({
+      appearanceId: row.id,
+      photoId: row.photoId,
+      photoTitle: row.photo.title,
+      photoSrc:
+        row.photo.storageKey && row.photo.processingStatus === 'ready'
+          ? `/api/media/${row.photo.id}/preview`
+          : row.photo.src,
+      status: row.status,
+      consentStatus: row.consentStatus,
+    }))
     return {
       invite: {
         email: invite.inviteEmail ?? '',
@@ -237,7 +260,64 @@ export async function modelRoutes(app: FastifyInstance) {
         photographerName: invite.photo.contributor.name,
         expiresAt: invite.inviteExpiresAt.toISOString(),
         needsAccount: !existing,
+        membershipRequired: false as const,
+        shootTitle: invite.photo.shoot?.title ?? null,
+        shotOn: invite.photo.shoot?.shotOn ? invite.photo.shoot.shotOn.toISOString().slice(0, 10) : null,
+        imageCount: images.length,
+        images,
+        terms: MODEL_RELEASE_ATTESTATION,
       },
+    }
+  })
+
+  app.post('/model/invite/:token/decide', async (request, reply) => {
+    try {
+      const { token } = request.params as { token: string }
+      const body = guestConsentSchema.parse(request.body)
+      const invite = await prisma.photoAppearance.findUnique({
+        where: { inviteTokenHash: hashToken(token) },
+        include: appearanceInclude,
+      })
+      if (!invite || !invite.inviteExpiresAt || invite.inviteExpiresAt < new Date()) {
+        throw new ModelError('Invite is invalid or has expired', 404)
+      }
+      if (body.action === 'approved' && !body.acceptReleaseTerms) {
+        throw new ModelError('Accept the Model Release Terms for the images you approve')
+      }
+      const relatedWhere = relatedAppearanceWhere(invite)
+      const related = relatedWhere
+        ? await prisma.photoAppearance.findMany({ where: relatedWhere })
+        : [invite]
+      const targets = body.approveAll
+        ? related
+        : body.appearanceIds?.length
+          ? related.filter((row) => body.appearanceIds!.includes(row.id))
+          : [invite]
+      if (targets.length === 0) throw new ModelError('No photographs selected')
+      const updated = []
+      for (const row of targets) {
+        updated.push(await applyAppearanceDecision({
+          appearanceId: row.id,
+          action: body.action,
+          confirmedLikeness: body.confirmedLikeness,
+          usage: body.usage,
+          notes: body.notes,
+        }))
+      }
+      if (body.action === 'unauthorized') {
+        await writeAuditLog({
+          action: 'model.report_unauthorized',
+          entityType: 'photo_appearance',
+          entityId: invite.id,
+          metadata: { photoId: invite.photoId, appearanceIds: targets.map((row) => row.id) },
+          ipAddress: request.ip,
+        })
+      }
+      return {
+        appearances: updated.map((row) => serializeAppearance(row, { includeEmail: false })),
+      }
+    } catch (err) {
+      return modelError(reply, err)
     }
   })
 

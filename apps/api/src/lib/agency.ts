@@ -43,7 +43,8 @@ export function seatsRemaining(input: {
 
 export function inviteAccountBlocked(accountType: AccountType | undefined): string | null {
   if (!accountType) return null
-  if (accountType === 'contributor') return 'Contributors cannot join an agency'
+  if (accountType === 'contributor') return 'Community contributors cannot join an agency'
+  if (accountType === 'photographer') return 'Photographers cannot join an agency'
   if (accountType === 'admin') return 'Administrators cannot join an agency'
   if (accountType === 'model') return 'Models cannot join an agency'
   return null

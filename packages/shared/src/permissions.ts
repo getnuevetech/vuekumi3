@@ -38,6 +38,20 @@ export const CONTRIBUTOR_PERMISSION_STATES: PermissionState[] = [
   'exclusive',
 ]
 
+/** Community contributors cannot enter commercial stock inventory. */
+export const COMMUNITY_CONTRIBUTOR_PERMISSION_STATES: PermissionState[] = [
+  'private',
+  'portfolio',
+  'editorial',
+]
+
+export function communityContributorBlocksState(state: PermissionState): string | undefined {
+  if (!COMMUNITY_CONTRIBUTOR_PERMISSION_STATES.includes(state)) {
+    return 'Community contributors cannot enter commercial inventory. Register as a professional photographer.'
+  }
+  return undefined
+}
+
 export const PERMISSION_STATE_LABEL: Record<PermissionState, string> = {
   private: 'Private',
   portfolio: 'Portfolio only',

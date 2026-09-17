@@ -1,3 +1,4 @@
+import type { AccountType } from '@prisma/client'
 import type { AdminOverviewDto, AdminRevenuePointDto } from '@vuekumi/shared'
 import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
@@ -64,7 +65,9 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
   const [users, contributors, photosLive, pendingReview, openRightsReports, downloadAgg, payments, subscriptions, payouts] =
     await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { accountType: 'contributor' } }),
+      prisma.user.count({
+        where: { accountType: { in: ['photographer', 'contributor'] satisfies AccountType[] } },
+      }),
       prisma.photo.count({ where: LIVE }),
       prisma.moderationItem.count({ where: { status: 'pending' } }),
       prisma.rightsReport.count({ where: { status: { in: ['open', 'reviewing'] } } }),

@@ -2,12 +2,20 @@ import type { FastifyInstance } from 'fastify'
 import type { PermissionState } from '@vuekumi/shared'
 import {
   CONSENT_VERSION,
+  applyScreeningToPeopleFlag,
+  canEnterCommercialInventory,
+  communityContributorBlocksState,
+  copyrightCleared,
+  declareSubjectAgeSchema,
   identifyAppearanceSchema,
+  isCommunityContributor,
+  MODEL_RELEASE_ATTESTATION,
   presignUploadSchema,
   selfShotAppearanceSchema,
   submitPhotoSchema,
   twoPartyCommercialCleared,
   updatePhotoSchema,
+  uploadSignedReleaseSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAccountTypes } from '../lib/auth-middleware.js'
@@ -40,8 +48,10 @@ import {
   ownEmailInviteBlocked,
   serializeAppearance,
   syncPermissionToTwoParty,
+  syncVerifiedRightsRecord,
 } from '../lib/models.js'
 import { issueAppearanceInvite } from './models.js'
+import { loadOriginalBytes, screenImageForRights, screeningWriteData } from '../lib/screening.js'
 import {
   ALLOWED_IMAGE_TYPES,
   assertOwnedOriginalKey,
@@ -62,7 +72,7 @@ const photoInclude = {
 } as const
 
 export async function contributorRoutes(app: FastifyInstance) {
-  const gate = { preHandler: requireAccountTypes(app, 'contributor', 'admin') }
+  const gate = { preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin') }
 
   app.get('/contributor/stats', gate, async (request) => {
     const contributorId = request.userId!
@@ -145,7 +155,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     })
 
     scope.put('/contributor/uploads/bin/:token', {
-      preHandler: requireAccountTypes(app, 'contributor', 'admin'),
+      preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin'),
       bodyLimit: 55 * 1024 * 1024,
     }, async (request, reply) => {
       const { token } = request.params as { token: string }
@@ -208,13 +218,14 @@ export async function contributorRoutes(app: FastifyInstance) {
         photo,
         photo.contributor.contributorProfile?.handle ?? photo.contributorId,
         photo.contributor.platformAgreements.some((a) => a.status === 'accepted'),
-        { appearances: appearances.map((row) => serializeAppearance(row, { includeEmail: true })) },
+        { appearances: appearances.map((row) => serializeAppearance(row, { includeEmail: true, includeMobile: true })) },
       ),
     }
   })
 
   app.post('/contributor/photos', gate, async (request, reply) => {
-    if (request.authUser?.accountType !== 'contributor' && request.authUser?.accountType !== 'admin') {
+    const accountType = request.authUser?.accountType
+    if (accountType !== 'photographer' && accountType !== 'contributor' && accountType !== 'admin') {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
@@ -222,7 +233,11 @@ export async function contributorRoutes(app: FastifyInstance) {
     const contributorId = request.userId!
     const hasAgreement = await contributorHasAgreement(contributorId)
     if (!hasAgreement) {
-      return reply.code(400).send({ error: 'Accept the current VueKumi contributor agreement before submitting' })
+      return reply.code(400).send({
+        error: isCommunityContributor(accountType)
+          ? 'Accept the VueKumi community contributor terms before submitting'
+          : 'Accept the current VueKumi photographer licensing agreement before submitting',
+      })
     }
 
     if (body.originalKey) {
@@ -236,15 +251,38 @@ export async function contributorRoutes(app: FastifyInstance) {
       }
     }
 
-    const people = body.hasRecognizablePeople
+    const image = await loadOriginalBytes(body.originalKey)
+    const screening = await screenImageForRights({
+      title: body.title,
+      category: body.category,
+      filename: body.originalKey,
+      declaredPeople: body.hasRecognizablePeople,
+      image,
+    })
+    const people = applyScreeningToPeopleFlag({ declaredPeople: body.hasRecognizablePeople, screening })
+    const commercialUploader = canEnterCommercialInventory(accountType)
+    if (!commercialUploader && (body.licenseType === 'premium' || body.permissionState === 'commercial' || body.permissionState === 'exclusive')) {
+      return reply.code(400).send({
+        error: 'Community contributors cannot enter commercial inventory. Register as a professional photographer.',
+      })
+    }
+    const requestedPermission = commercialUploader
+      ? body.permissionState
+      : (body.permissionState && ['private', 'portfolio', 'editorial'].includes(body.permissionState)
+          ? body.permissionState
+          : 'portfolio')
     const modelReleaseAttached = Boolean(body.modelReleaseFileName)
     const id = `sub-${Date.now().toString(36)}`
     const processingStatus = body.originalKey ? 'pending' : 'ready'
     const permissionState = resolvePermissionState({
-      requested: body.permissionState,
-      exclusiveAvailable: body.exclusiveAvailable,
+      requested: requestedPermission,
+      exclusiveAvailable: commercialUploader ? body.exclusiveAvailable : false,
       hasRecognizablePeople: people,
     })
+    const communityBlock = isCommunityContributor(accountType) ? communityContributorBlocksState(permissionState) : undefined
+    if (communityBlock) {
+      return reply.code(400).send({ error: communityBlock })
+    }
     try {
       assertPermissionStateChange({
         next: permissionState,
@@ -261,6 +299,22 @@ export async function contributorRoutes(app: FastifyInstance) {
       throw err
     }
     const permission = permissionWriteData(permissionState, false, body.restrictionNotes)
+    const now = new Date()
+    const modelConsentStatus = people ? 'required' : 'not_required'
+    const copyrightStatus = 'claimed' as const
+    const commercialEligible = copyrightCleared(copyrightStatus) && modelConsentStatus === 'not_required'
+
+    let shootId: string | undefined
+    if (body.shootTitle && commercialUploader) {
+      const shoot = await prisma.photoShoot.create({
+        data: {
+          photographerId: contributorId,
+          title: body.shootTitle,
+          shotOn: body.shotOn ? new Date(body.shotOn) : null,
+        },
+      })
+      shootId = shoot.id
+    }
 
     let photo = await prisma.$transaction(async (tx) => {
       const created = await tx.photo.create({
@@ -271,16 +325,18 @@ export async function contributorRoutes(app: FastifyInstance) {
           description: body.description,
           category: body.category,
           country: body.country,
-          licenseType: body.licenseType,
-          price: body.licenseType === 'premium' ? (body.price ?? 12) : 0,
+          licenseType: commercialUploader ? body.licenseType : 'free',
+          price: commercialUploader && body.licenseType === 'premium' ? (body.price ?? 12) : 0,
           status: 'pending',
           src: body.src || PLACEHOLDER_SRC,
           storageKey: body.originalKey,
           processingStatus,
           hasRecognizablePeople: people,
-          exclusiveAvailable: permission.exclusiveAvailable,
+          exclusiveAvailable: commercialUploader ? permission.exclusiveAvailable : false,
           permissionState: permission.permissionState,
           restrictionNotes: permission.restrictionNotes,
+          shootId,
+          ...screeningWriteData(screening),
           tags: body.tags?.length ? { create: body.tags.map((tag) => ({ tag })) } : undefined,
           assets: body.originalKey
             ? {
@@ -294,9 +350,13 @@ export async function contributorRoutes(app: FastifyInstance) {
           rightsRecord: {
             create: {
               copyrightVerified: true,
+              copyrightStatus,
+              copyrightAttestedAt: now,
               copyrightHolder: body.copyrightHolder,
               modelReleaseRequired: people,
               modelReleaseStatus: people ? 'pending' : 'not_required',
+              modelConsentStatus,
+              commercialEligible,
               platformRightsOk: true,
             },
           },
@@ -311,13 +371,17 @@ export async function contributorRoutes(app: FastifyInstance) {
         include: photoInclude,
       })
 
-      if (people && modelReleaseAttached) {
+      if (people && modelReleaseAttached && commercialUploader) {
         await tx.modelRelease.create({
           data: {
             photoId: created.id,
+            photographerId: contributorId,
             fileName: body.modelReleaseFileName!,
             notes: body.modelReleaseNotes,
             status: 'pending',
+            verificationLevel: 'photographer_provided',
+            attestedGenuine: true,
+            attestedAt: now,
           },
         })
       }
@@ -550,6 +614,102 @@ export async function contributorRoutes(app: FastifyInstance) {
     }
   })
 
+  app.post('/contributor/photos/:id/releases', gate, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    if (isCommunityContributor(request.authUser?.accountType)) {
+      return reply.code(400).send({
+        error: 'Community contributors cannot upload commercial model releases. Register as a professional photographer.',
+      })
+    }
+    const body = uploadSignedReleaseSchema.parse(request.body)
+    const photo = await prisma.photo.findUnique({ where: { id }, include: { contributor: true, rightsRecord: true } })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    if (!photo.hasRecognizablePeople) {
+      return reply.code(400).send({ error: 'A model release is only used when a recognizable person appears' })
+    }
+    const email = body.email?.toLowerCase()
+    if (email) {
+      const selfBlocked = ownEmailInviteBlocked(email, photo.contributor.email)
+      if (selfBlocked) return reply.code(400).send({ error: selfBlocked })
+    }
+    const existing = email
+      ? await prisma.photoAppearance.findFirst({ where: { photoId: id, inviteEmail: email } })
+      : await prisma.photoAppearance.findFirst({ where: { photoId: id, displayName: body.displayName, inviteEmail: null } })
+    const appearance = existing
+      ?? await prisma.photoAppearance.create({
+        data: {
+          photoId: id,
+          displayName: body.displayName,
+          inviteEmail: email,
+          inviteMobile: body.mobile,
+          invitedById: request.userId!,
+          status: 'identified',
+          consentStatus: 'required',
+          ageClass: body.ageClass === 'minor' || body.isMinor ? 'minor' : (body.ageClass ?? 'adult'),
+          isMinor: Boolean(body.isMinor || body.ageClass === 'minor'),
+          verificationLevel: 'photographer_provided',
+        },
+      })
+    const release = await prisma.modelRelease.create({
+      data: {
+        photoId: id,
+        photographerId: photo.contributorId,
+        appearanceId: appearance.id,
+        fileName: body.fileName,
+        notes: `${MODEL_RELEASE_ATTESTATION} Identity: ${body.modelIdentity}`,
+        status: 'pending',
+        verificationLevel: 'photographer_provided',
+        attestedGenuine: true,
+        attestedAt: new Date(),
+        modelIdentity: body.modelIdentity,
+      },
+    })
+    await prisma.photoAppearance.update({
+      where: { id: appearance.id },
+      data: { verificationLevel: 'photographer_provided' },
+    })
+    let joinUrl: string | undefined
+    if (body.confirmWithModel && email) {
+      const issued = await issueAppearanceInvite(appearance.id)
+      joinUrl = issued.joinUrl
+      await prisma.modelRelease.update({
+        where: { id: release.id },
+        data: { confirmationSentAt: new Date() },
+      })
+    }
+    await syncVerifiedRightsRecord(id)
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'model.release_upload',
+      entityType: 'model_release',
+      entityId: release.id,
+      metadata: {
+        photoId: id,
+        appearanceId: appearance.id,
+        photographerId: photo.contributorId,
+        verificationLevel: 'photographer_provided',
+        confirmWithModel: Boolean(body.confirmWithModel),
+      },
+      ipAddress: request.ip,
+    })
+    const row = await prisma.photoAppearance.findUnique({
+      where: { id: appearance.id },
+      include: appearanceInclude,
+    })
+    return {
+      release: {
+        id: release.id,
+        verificationLevel: 'photographer_provided',
+        attestedGenuine: true,
+      },
+      appearance: serializeAppearance(row!, { includeEmail: true, includeMobile: true }),
+      joinUrl,
+    }
+  })
+
   app.post('/contributor/photos/:id/appearances', gate, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = identifyAppearanceSchema.parse(request.body)
@@ -567,9 +727,33 @@ export async function contributorRoutes(app: FastifyInstance) {
     if (selfBlocked) {
       return reply.code(400).send({ error: selfBlocked })
     }
-    const dup = await prisma.photoAppearance.findFirst({ where: { photoId: id, inviteEmail: email } })
+    if (isCommunityContributor(request.authUser?.accountType)) {
+      return reply.code(400).send({
+        error: 'Community contributors cannot start commercial model-release clearance. Register as a professional photographer.',
+      })
+    }
+    const dup = await prisma.photoAppearance.findFirst({
+      where: {
+        photoId: id,
+        inviteEmail: email,
+      },
+    })
     if (dup) {
       return reply.code(409).send({ error: 'That person is already identified on this photograph' })
+    }
+
+    const minor = Boolean(body.isMinor || body.ageClass === 'minor')
+    let shootId = body.shootId ?? photo.shootId ?? undefined
+    if (!shootId && body.shootTitle) {
+      const shoot = await prisma.photoShoot.create({
+        data: {
+          photographerId: photo.contributorId,
+          title: body.shootTitle,
+          shotOn: body.shotOn ? new Date(body.shotOn) : null,
+        },
+      })
+      shootId = shoot.id
+      await prisma.photo.update({ where: { id }, data: { shootId } })
     }
 
     try {
@@ -578,21 +762,29 @@ export async function contributorRoutes(app: FastifyInstance) {
           photoId: id,
           displayName: body.displayName,
           inviteEmail: email,
+          inviteMobile: body.mobile,
           invitedById: request.userId!,
           status: 'identified',
+          consentStatus: 'required',
+          ageClass: minor ? 'minor' : (body.ageClass ?? (photo.possibleMinor ? 'unknown' : 'adult')),
+          isMinor: minor,
+          guardianName: minor ? body.guardianName : null,
+          guardianEmail: minor ? body.guardianEmail?.toLowerCase() : null,
+          guardianMobile: minor ? body.guardianMobile : null,
         },
       })
       const issued = await issueAppearanceInvite(created.id)
+      await syncVerifiedRightsRecord(id)
       await writeAuditLog({
         actorId: request.userId,
         action: 'model.invite',
         entityType: 'photo_appearance',
         entityId: created.id,
-        metadata: { photoId: id, email, displayName: body.displayName },
+        metadata: { photoId: id, email, displayName: body.displayName, mobileProvided: true },
         ipAddress: request.ip,
       })
       return {
-        appearance: serializeAppearance(issued.appearance, { includeEmail: true }),
+        appearance: serializeAppearance(issued.appearance, { includeEmail: true, includeMobile: true }),
         joinUrl: issued.joinUrl,
       }
     } catch (err) {
@@ -638,10 +830,15 @@ export async function contributorRoutes(app: FastifyInstance) {
         inviteEmail: email,
         modelUserId: user.id,
         invitedById: user.id,
-        status: body.status,
+        status: body.status === 'approved' || body.status === 'rejected' ? body.status : 'rejected',
+        consentStatus: body.status === 'approved' ? 'approved' as const : 'rejected' as const,
+        decisionKind: body.status === 'approved' ? 'approved' as const : 'rejected' as const,
         usage,
         confirmedLikeness: body.confirmedLikeness,
         selfShot: true,
+        ageClass: 'adult' as const,
+        isMinor: false,
+        verificationLevel: body.status === 'approved' ? 'vuekumi_verified' as const : null,
         notes: body.notes ?? existing?.notes ?? null,
         claimedAt: existing?.claimedAt ?? now,
         decidedAt: now,
@@ -681,6 +878,37 @@ export async function contributorRoutes(app: FastifyInstance) {
       }
       throw err
     }
+  })
+
+  app.post('/contributor/photos/:id/appearances/:appearanceId/age', gate, async (request, reply) => {
+    const { id, appearanceId } = request.params as { id: string; appearanceId: string }
+    const body = declareSubjectAgeSchema.parse({ ...request.body as object, appearanceId })
+    const photo = await prisma.photo.findUnique({ where: { id } })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    const row = await prisma.photoAppearance.findUnique({ where: { id: appearanceId } })
+    if (!row || row.photoId !== id) return reply.code(404).send({ error: 'Appearance not found' })
+    const minor = Boolean(body.isMinor || body.ageClass === 'minor')
+    if (minor && (!body.guardianName || !body.guardianEmail || !body.guardianMobile)) {
+      return reply.code(400).send({
+        error: 'A parent or legal guardian name, email and mobile are required for a minor',
+      })
+    }
+    const updated = await prisma.photoAppearance.update({
+      where: { id: appearanceId },
+      data: {
+        ageClass: minor ? 'minor' : body.ageClass,
+        isMinor: minor,
+        guardianName: minor ? body.guardianName : null,
+        guardianEmail: minor ? body.guardianEmail?.toLowerCase() : null,
+        guardianMobile: minor ? body.guardianMobile : null,
+      },
+      include: appearanceInclude,
+    })
+    await syncVerifiedRightsRecord(id)
+    return { appearance: serializeAppearance(updated, { includeEmail: true, includeMobile: true }) }
   })
 
   app.post('/contributor/photos/:id/appearances/:appearanceId/resend', gate, async (request, reply) => {

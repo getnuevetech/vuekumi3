@@ -1,27 +1,55 @@
 import type { GrantLicenseType } from '@prisma/client'
 
 export const CURRENT_AGREEMENT_VERSION = '1.0'
+export const COMMUNITY_AGREEMENT_VERSION = '1.0-community'
 
 export const VUEKUMI_AGREEMENT = {
   version: CURRENT_AGREEMENT_VERSION,
-  title: 'VueKumi Contributor Platform Agreement',
+  title: 'VueKumi Photographer Licensing Agreement',
   body: `Vuekumi is a marketplace for usage permission, not ownership.
 
-1. Copyright. You retain copyright in every photograph you submit. You warrant that you created the work or hold the exclusive right to license it.
+1. Photo copyright rights. You retain copyright in every photograph you submit. The person who takes the photograph ordinarily owns that copyright. You warrant that you created the work or hold the exclusive right to license it through VueKumi.
 
 2. Platform license. By accepting this agreement you grant Vuekumi a non-exclusive licence to host, display, market and sublicense the work to buyers under the licence types you enable. Vuekumi does not take ownership of your photographs.
 
-3. Model and property rights. If a photograph shows a recognisable person, commercial, royalty-free, extended, exclusive and rights-managed licences require two-party approval: the photographer's listing plus the depicted person's confirmed likeness and commercial usage choice. A PDF filename is supporting evidence only. Editorial use may proceed without commercial approval.
+3. Likeness / model release rights. Copyright in the photograph is separate from the depicted person's right to control use of their likeness. If a photograph shows a recognisable person, commercial licensing requires every required likeness right to be cleared. A photographer-provided signed release is supporting evidence, not automatically VueKumi-verified consent. VueKumi may contact the depicted person directly.
 
-4. Four rights layers. Every sale checks (1) your copyright, (2) model rights where required, (3) this VueKumi agreement, and (4) a buyer licence grant. A live listing requires layers 1 and 3. Commercial licensing of recognisable people also requires layer 2 as two-party consent. A download requires layer 4.
+4. Two rights. (1) Photo copyright rights belong to the photographer. (2) Likeness / model release rights belong to the person depicted. Commercial eligibility = copyright cleared + required likeness rights cleared.
 
-5. Exclusive. Exclusive sale is opt-in per photograph. Once an exclusive licence is granted, Vuekumi delists the image from further sale.
+5. Four layers at sale. Every sale checks (1) photo copyright, (2) likeness/model release where required, (3) this photographer agreement, and (4) a buyer licence grant. AI person detection is a screening mechanism; it does not decide whether consent legally exists.
 
-6. Rights-managed. Custom territory, duration and channel deals are quoted — they are not a fixed price.
+6. Exclusive. Exclusive sale is opt-in per photograph. Once an exclusive licence is granted, Vuekumi delists the image from further sale.
 
-7. Revenue. Premium and paid licences split 50/50 between you and Vuekumi after payment clears.
+7. Rights-managed. Custom territory, duration and channel deals are quoted — they are not a fixed price.
 
-8. Africa-only contributors. Only photographers based in African Union member states may contribute. Buyers may be anywhere.`,
+8. Revenue. Premium and paid licences split 50/50 between the photographer and Vuekumi after payment clears. Models do not earn from licences.
+
+9. Africa-only photographers. Only professional photographers based in African Union member states may license commercial inventory. Buyers may be anywhere.`,
+}
+
+export const COMMUNITY_CONTRIBUTOR_AGREEMENT = {
+  version: COMMUNITY_AGREEMENT_VERSION,
+  title: 'VueKumi Community Contributor Terms',
+  body: `Vuekumi community contributors share photographs for portfolio, editorial and community use. This is not the professional photographer commercial inventory path.
+
+1. Photo copyright rights. You retain copyright in work you upload and warrant that you created it or have the right to share it.
+
+2. No commercial stock. Community contributor uploads default to portfolio. They cannot be commercially licensed as VueKumi stock until you register as a professional photographer and complete photographer rights clearance.
+
+3. Likeness. If a photograph shows a recognisable person, it stays out of commercial inventory. VueKumi does not treat an upload as consent from anyone depicted.
+
+4. Africa-only. Community contributors must be based in African Union member states.
+
+5. Usage permission. Vuekumi hosts and displays community work under these terms. A download is not ownership.`,
+}
+
+export function agreementForAccountType(accountType: string) {
+  if (accountType === 'contributor') return COMMUNITY_CONTRIBUTOR_AGREEMENT
+  return VUEKUMI_AGREEMENT
+}
+
+export function agreementVersionForAccountType(accountType: string) {
+  return agreementForAccountType(accountType).version
 }
 
 export interface LicenseCatalogItem {

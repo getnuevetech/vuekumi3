@@ -1,12 +1,20 @@
 import type {
   AccountType,
+  AppearanceDecisionKind,
   LikenessCheckDto,
   ModelAppearanceStatus,
+  ModelConsentStatus,
   ModelUsagePreference,
   PermissionState,
   PhotoAppearanceDto,
+  ReleaseVerificationLevel,
+  SubjectAgeClass,
 } from '@vuekumi/shared'
-import { twoPartyCommercialCleared } from '@vuekumi/shared'
+import {
+  isCommerciallyEligible,
+  rollupModelConsentStatus,
+  twoPartyCommercialCleared,
+} from '@vuekumi/shared'
 import type { PhotoAppearance, User } from '@prisma/client'
 import { prisma } from './prisma.js'
 import { permissionAfterTwoParty, permissionWriteData } from './permissions.js'
@@ -41,15 +49,29 @@ export function ownEmailInviteBlocked(
 }
 
 export const appearanceInclude = {
-  photo: { include: { contributor: true, assets: true } },
+  photo: { include: { contributor: true, assets: true, shoot: true } },
   modelUser: { include: { modelProfile: true } },
   likenessChecks: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 } as const
 
+export function relatedAppearanceWhere(invite: {
+  inviteEmail: string | null
+  photo: { contributorId: string; shootId: string | null }
+}) {
+  if (!invite.inviteEmail) return null
+  return {
+    inviteEmail: invite.inviteEmail,
+    photo: invite.photo.shootId
+      ? { contributorId: invite.photo.contributorId, shootId: invite.photo.shootId }
+      : { contributorId: invite.photo.contributorId },
+  }
+}
+
 export function decideAppearanceBlocked(input: {
   confirmedLikeness: boolean
-  status: 'approved' | 'rejected'
+  status: 'approved' | 'rejected' | 'not_me' | 'unauthorized'
   usage?: ModelUsagePreference | null
+  acceptReleaseTerms?: boolean
 }): string | null {
   if (input.status === 'approved' && !input.confirmedLikeness) {
     return 'Approving usage requires confirming this is your likeness'
@@ -57,7 +79,21 @@ export function decideAppearanceBlocked(input: {
   if (input.status === 'approved' && (!input.usage || input.usage === 'none')) {
     return 'Choose editorial or commercial usage when you approve'
   }
+  if ((input.status === 'not_me' || input.status === 'unauthorized') && input.confirmedLikeness) {
+    return 'Do not confirm likeness if this is not you or the submission is unauthorized'
+  }
   return null
+}
+
+export function appearanceStatusForDecision(kind: AppearanceDecisionKind): ModelAppearanceStatus {
+  if (kind === 'approved') return 'approved'
+  return 'rejected'
+}
+
+export function consentStatusForDecision(kind: AppearanceDecisionKind): ModelConsentStatus {
+  if (kind === 'approved') return 'approved'
+  if (kind === 'not_me' || kind === 'unauthorized') return 'disputed'
+  return 'rejected'
 }
 
 export function appearanceUnclaimed(status: ModelAppearanceStatus): boolean {
@@ -132,6 +168,7 @@ export async function claimPendingForEmail(userId: string, email: string) {
     data: {
       modelUserId: userId,
       status: 'claimed',
+      consentStatus: 'pending',
       claimedAt: now,
       inviteTokenHash: null,
     },
@@ -158,7 +195,7 @@ export function serializeAppearance(
       notes: string | null
     }[]
   },
-  opts?: { includeEmail?: boolean; includeVerification?: boolean },
+  opts?: { includeEmail?: boolean; includeMobile?: boolean; includeVerification?: boolean; includeGuardian?: boolean },
 ): PhotoAppearanceDto {
   const photo = row.photo
   const src =
@@ -176,6 +213,16 @@ export function serializeAppearance(
         notes: latest.notes,
       }
     : null
+  const consentStatus = (row as { consentStatus?: ModelConsentStatus }).consentStatus
+    ?? (row.status === 'approved'
+      ? 'approved'
+      : row.status === 'rejected'
+        ? 'rejected'
+        : row.status === 'invited'
+          ? 'invitation_sent'
+          : row.status === 'claimed'
+            ? 'pending'
+            : 'required')
   return {
     id: row.id,
     photoId: row.photoId,
@@ -184,7 +231,10 @@ export function serializeAppearance(
     photographerName: photo?.contributor?.name,
     displayName: row.displayName,
     inviteEmail: opts?.includeEmail ? row.inviteEmail : undefined,
+    inviteMobile: opts?.includeMobile ? (row as { inviteMobile?: string | null }).inviteMobile ?? null : undefined,
     status: row.status,
+    consentStatus,
+    decisionKind: (row as { decisionKind?: AppearanceDecisionKind | null }).decisionKind ?? null,
     usage: row.usage,
     confirmedLikeness: row.confirmedLikeness,
     modelHandle: row.modelUser?.modelProfile?.handle ?? null,
@@ -196,6 +246,11 @@ export function serializeAppearance(
     selfShot: row.selfShot,
     notes: row.notes,
     verification: opts?.includeVerification ? verification : undefined,
+    ageClass: ((row as { ageClass?: SubjectAgeClass }).ageClass ?? 'unknown') as SubjectAgeClass,
+    isMinor: Boolean((row as { isMinor?: boolean }).isMinor),
+    guardianAuthorized: Boolean((row as { guardianAuthorizedAt?: Date | null }).guardianAuthorizedAt),
+    releaseVerificationLevel: ((row as { verificationLevel?: ReleaseVerificationLevel | null }).verificationLevel ?? null),
+    modelReleaseVerified: consentStatus === 'approved' && row.confirmedLikeness,
   }
 }
 
@@ -205,6 +260,69 @@ export function publicAppearances(
   return rows
     .filter((row) => row.status === 'approved')
     .map((row) => serializeAppearance(row, { includeEmail: false }))
+}
+
+export async function applyAppearanceDecision(input: {
+  appearanceId: string
+  action: AppearanceDecisionKind
+  confirmedLikeness: boolean
+  usage?: ModelUsagePreference | null
+  notes?: string | null
+  actorId?: string | null
+}) {
+  const row = await prisma.photoAppearance.findUnique({ where: { id: input.appearanceId } })
+  if (!row) throw new ModelError('Appearance not found', 404)
+  const blocked = decideAppearanceBlocked({
+    confirmedLikeness: input.confirmedLikeness,
+    status: input.action,
+    usage: input.usage,
+  })
+  if (blocked) throw new ModelError(blocked)
+  const usage = input.action === 'approved' ? input.usage! : (input.usage ?? 'none')
+  const updated = await prisma.photoAppearance.update({
+    where: { id: input.appearanceId },
+    data: {
+      status: appearanceStatusForDecision(input.action),
+      consentStatus: consentStatusForDecision(input.action),
+      decisionKind: input.action,
+      confirmedLikeness: input.action === 'approved' ? input.confirmedLikeness : false,
+      usage,
+      notes: input.notes ?? row.notes,
+      decidedAt: new Date(),
+      consentVersion: input.action === 'approved' ? '1.0' : null,
+      verificationLevel: input.action === 'approved' ? 'vuekumi_verified' : row.verificationLevel,
+    },
+    include: appearanceInclude,
+  })
+  await syncPermissionToTwoParty(row.photoId)
+  return updated
+}
+
+export async function syncVerifiedRightsRecord(photoId: string) {
+  const photo = await prisma.photo.findUnique({
+    where: { id: photoId },
+    include: { appearances: true, rightsRecord: true },
+  })
+  if (!photo?.rightsRecord) return
+  const modelConsentStatus = rollupModelConsentStatus({
+    hasRecognizablePeople: photo.hasRecognizablePeople,
+    appearances: photo.appearances,
+  })
+  const copyrightStatus = photo.rightsRecord.copyrightStatus
+  const commercialEligible = isCommerciallyEligible({
+    copyrightStatus,
+    modelConsentStatus,
+    commercialLocked: photo.commercialLocked,
+  })
+  await prisma.rightsRecord.update({
+    where: { photoId },
+    data: {
+      modelConsentStatus,
+      commercialEligible,
+      modelReleaseRequired: photo.hasRecognizablePeople,
+      copyrightVerified: copyrightStatus === 'claimed' || copyrightStatus === 'verified',
+    },
+  })
 }
 
 export async function syncPermissionToTwoParty(photoId: string) {
@@ -223,15 +341,17 @@ export async function syncPermissionToTwoParty(photoId: string) {
     twoPartyCleared,
     hasRecognizablePeople: photo.hasRecognizablePeople,
   })
-  if (next === photo.permissionState) return
-  await prisma.photo.update({
-    where: { id: photoId },
-    data: permissionWriteData(next, photo.exclusiveSold),
-  })
-  if (photo.rightsRecord?.processVerifiedAt) {
+  if (next !== photo.permissionState) {
+    await prisma.photo.update({
+      where: { id: photoId },
+      data: permissionWriteData(next, photo.exclusiveSold),
+    })
+  }
+  if (photo.rightsRecord?.processVerifiedAt && !twoPartyCleared) {
     await prisma.rightsRecord.update({
       where: { photoId },
       data: { processVerifiedAt: null, processVerifiedById: null, consentVersion: null },
     })
   }
+  await syncVerifiedRightsRecord(photoId)
 }

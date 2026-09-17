@@ -1,10 +1,11 @@
 import { useEffect, useState, type DragEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { toast } from 'sonner';
 import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto } from '@vuekumi/shared';
+import { creatorPortalLabel, isCommunityContributor } from '@vuekumi/shared';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
 import { api, ApiError } from '../api/client';
@@ -61,8 +62,15 @@ export function contributorPortalLinks(hasModelProfile?: boolean): PortalLink[] 
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const community = isCommunityContributor(user?.accountType);
   return (
-    <PortalShell title="Contributor portal" subtitle="Upload, rights, and 50% of every paid licence." links={contributorPortalLinks(user?.hasModelProfile)}>
+    <PortalShell
+      title={`${creatorPortalLabel(user?.accountType)} portal`}
+      subtitle={community
+        ? 'Portfolio and editorial sharing. Commercial stock is reserved for professional photographers.'
+        : 'Upload, rights, and 50% of every paid licence.'}
+      links={contributorPortalLinks(user?.hasModelProfile)}
+    >
       {children}
     </PortalShell>
   );
@@ -174,6 +182,9 @@ export function ContributorDashboard() {
 /* ---------------- upload ---------------- */
 
 export function ContributorUpload() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const community = isCommunityContributor(user?.accountType);
   const [dragging, setDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState('');
@@ -183,7 +194,7 @@ export function ContributorUpload() {
   const [description, setDescription] = useState('');
   const [licenseType, setLicenseType] = useState<'free' | 'premium'>('free');
   const [people, setPeople] = useState(false);
-  const [permissionState, setPermissionState] = useState<PermissionState>('commercial');
+  const [permissionState, setPermissionState] = useState<PermissionState>(community ? 'portfolio' : 'commercial');
   const [restrictionNotes, setRestrictionNotes] = useState('');
   const [copyrightHolder, setCopyrightHolder] = useState('');
   const [releaseName, setReleaseName] = useState('');
@@ -209,8 +220,9 @@ export function ContributorUpload() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Upload</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Add new work.</h1>
       <p className="mt-1 max-w-xl text-sm text-ink-soft">
-        You keep full copyright — Vuekumi only licenses usage rights. Photos go live after moderation
-        and required rights (copyright, platform agreement). Commercial licences of people also need two-party approval.
+        {community
+          ? 'Community contributors share portfolio and editorial work. Professional photographers complete the two-rights commercial clearance before stock licensing.'
+          : 'You keep full copyright — Vuekumi only licenses usage rights. Photos go live after moderation and required rights. Commercial licences of people also need likeness / model-release clearance.'}
       </p>
 
       <div
@@ -314,6 +326,7 @@ export function ContributorUpload() {
               setTitle('');
               setFiles([]);
               setProgress('');
+              if (people && lastId) navigate(`/contributor/photos/${lastId}`);
             } catch (err) {
               toast.error(err instanceof ApiError ? err.message : 'Submit failed');
             } finally {
@@ -349,8 +362,8 @@ export function ContributorUpload() {
           />
           <fieldset className="grid gap-2 sm:grid-cols-2">
             {[
-              { v: 'free' as const, t: 'Free collection', d: 'Royalty-free grant at $0' },
-              { v: 'premium' as const, t: 'Premium collection', d: 'Commercial licence, 50% to you' },
+              { v: 'free' as const, t: 'Free collection', d: community ? 'Portfolio / editorial sharing' : 'Royalty-free grant at $0' },
+              ...(!community ? [{ v: 'premium' as const, t: 'Premium collection', d: 'Commercial licence, 50% to you' }] : []),
             ].map((o) => (
               <label key={o.v} className="flex cursor-pointer gap-3 rounded-xl border border-sand-soft p-4 transition-colors has-checked:border-terra has-checked:bg-terra/5">
                 <input type="radio" name="license" checked={licenseType === o.v} onChange={() => setLicenseType(o.v)} className="mt-1 accent-[#bc773f]" />
@@ -385,10 +398,11 @@ export function ContributorUpload() {
             onChange={setPermissionState}
             notes={restrictionNotes}
             onNotes={setRestrictionNotes}
+            actor={community ? 'community' : 'contributor'}
           />
           <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
             <input type="checkbox" required checked={attested} onChange={(e) => setAttested(e.target.checked)} className="mt-0.5 accent-[#bc773f]" />
-            I confirm I own the copyright. Vuekumi receives a platform licence to sublicense usage rights, not ownership.
+            I confirm that I created this image or possess the rights necessary to license it through VueKumi. Vuekumi receives a platform licence to sublicense usage rights, not ownership.
           </label>
           <button disabled={busy} className="rounded-full bg-ink px-8 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper transition-colors hover:bg-terra disabled:opacity-50">
             {busy ? (progress || 'Submitting…') : 'Submit for review'}
@@ -399,8 +413,8 @@ export function ContributorUpload() {
           <h3 className="font-serif-display text-lg font-light">Four rights layers</h3>
           <ul className="mt-4 space-y-3">
             {[
-              'Photographer copyright (you keep it)',
-              'Model approval for recognisable people — not a PDF alone',
+              'Photo copyright rights (photographer)',
+              'Likeness / model release rights (person depicted)',
               'VueKumi platform agreement — not ownership',
               'Buyer licence grant + certificate',
             ].map((t) => (

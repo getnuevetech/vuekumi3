@@ -1,7 +1,7 @@
 import type { GrantLicenseType, LicenseProduct, Photo, PlatformAgreement, RightsRecord } from '@prisma/client'
 import type { PermissionState, TwoPartyAppearanceInput } from '@vuekumi/shared'
-import { permissionBlocksLicense, twoPartyBlocksLicense } from '@vuekumi/shared'
-import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
+import { copyrightCleared, permissionBlocksLicense, twoPartyBlocksLicense } from '@vuekumi/shared'
+import { COMMUNITY_AGREEMENT_VERSION, CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 
 export class RightsError extends Error {
@@ -13,8 +13,12 @@ export class RightsError extends Error {
   }
 }
 
-export function hasCurrentAgreement(agreements: Pick<PlatformAgreement, 'version' | 'status'>[]): boolean {
-  return agreements.some((a) => a.version === CURRENT_AGREEMENT_VERSION && a.status === 'accepted')
+export function hasCurrentAgreement(
+  agreements: Pick<PlatformAgreement, 'version' | 'status'>[],
+  accountType?: string,
+): boolean {
+  const needed = accountType === 'contributor' ? COMMUNITY_AGREEMENT_VERSION : CURRENT_AGREEMENT_VERSION
+  return agreements.some((a) => a.version === needed && a.status === 'accepted')
 }
 
 export function rightsReadyForLive(input: {
@@ -22,9 +26,12 @@ export function rightsReadyForLive(input: {
   hasAgreement: boolean
 }): { ok: boolean; reasons: string[] } {
   const reasons: string[] = []
-  if (!input.rights?.copyrightVerified) reasons.push('Copyright not verified')
+  const copyrightOk = input.rights
+    ? copyrightCleared(input.rights.copyrightStatus) || input.rights.copyrightVerified
+    : false
+  if (!copyrightOk) reasons.push('Photo copyright rights are not cleared')
   if (!input.rights?.platformRightsOk) reasons.push('Platform rights incomplete')
-  if (!input.hasAgreement) reasons.push('Contributor has not accepted the current VueKumi agreement')
+  if (!input.hasAgreement) reasons.push('Photographer has not accepted the current VueKumi agreement')
   return { ok: reasons.length === 0, reasons }
 }
 
@@ -97,11 +104,15 @@ export function assertCanGrant(
 }
 
 export async function contributorHasAgreement(userId: string): Promise<boolean> {
-  const agreements = await prisma.platformAgreement.findMany({
-    where: { userId, status: 'accepted' },
-    select: { version: true, status: true },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountType: true,
+      platformAgreements: { where: { status: 'accepted' }, select: { version: true, status: true } },
+    },
   })
-  return hasCurrentAgreement(agreements)
+  if (!user) return false
+  return hasCurrentAgreement(user.platformAgreements, user.accountType)
 }
 
 export function certificateCode(photoId: string, licenseType: GrantLicenseType): string {
