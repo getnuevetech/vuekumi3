@@ -62,6 +62,8 @@ import type {
   CampaignPitchDto,
   CreateCampaignInput,
   CreatePitchInput,
+  PartnerKeyDto,
+  CreatePartnerKeyInput,
 } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
@@ -186,6 +188,14 @@ export const api = {
 
   pitchAction: (id: string, action: 'accept' | 'decline' | 'withdraw') =>
     request<{ pitch: CampaignPitchDto }>(`/api/campaigns/pitches/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }),
+
+  adminPartnerKeys: () => request<{ items: PartnerKeyDto[] }>('/api/admin/partner-keys'),
+
+  createPartnerKey: (body: CreatePartnerKeyInput) =>
+    request<{ key: string; partnerKey: PartnerKeyDto }>('/api/admin/partner-keys', { method: 'POST', body: JSON.stringify(body) }),
+
+  revokePartnerKey: (id: string) =>
+    request<{ partnerKey: PartnerKeyDto }>(`/api/admin/partner-keys/${id}/revoke`, { method: 'POST', body: JSON.stringify({}) }),
 
   changePassword: (body: ChangePasswordInput) =>
     request<{ user: AuthUser }>('/api/auth/me/password', { method: 'PATCH', body: JSON.stringify(body) }),

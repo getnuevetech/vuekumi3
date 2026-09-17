@@ -157,6 +157,11 @@ enum PitchStatus {
   withdrawn
 }
 
+enum PartnerKeyStatus {
+  active
+  revoked
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -213,8 +218,27 @@ model User {
   representationInquiries RepresentationInquiry[]
   campaigns             Campaign[]
   campaignPitches       CampaignPitch[]
+  partnerKeysCreated    PartnerApiKey[]
 
   @@index([accountType])
+  @@index([status])
+}
+
+model PartnerApiKey {
+  id           String           @id @default(cuid())
+  name         String
+  note         String?
+  keyHash      String           @unique
+  keyPrefix    String
+  status       PartnerKeyStatus @default(active)
+  requestCount Int              @default(0)
+  lastUsedAt   DateTime?
+  createdById  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
   @@index([status])
 }
 

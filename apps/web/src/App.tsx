@@ -20,6 +20,7 @@ import {
 } from './pages/Admin'
 import { AdminQuotes } from './pages/AdminQuotes'
 import AdminRepresentation from './pages/AdminRepresentation'
+import AdminPartnerKeys from './pages/AdminPartnerKeys'
 import { AdminReports } from './pages/AdminReports'
 import { AdminSettings } from './pages/AdminSettings'
 import { AdminAdmins, AdminAgencies, AdminContributors, AdminModels, AdminUsers } from './pages/AdminAccounts'
@@ -109,6 +110,7 @@ export default function App() {
         <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']}><AdminReports /></ProtectedRoute>} />
         <Route path="/admin/quotes" element={<ProtectedRoute allowed={['admin']}><AdminQuotes /></ProtectedRoute>} />
         <Route path="/admin/representation" element={<ProtectedRoute allowed={['admin']}><AdminRepresentation /></ProtectedRoute>} />
+        <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']}><AdminPartnerKeys /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']}><AdminPayouts /></ProtectedRoute>} />
         <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']}><AdminCountries /></ProtectedRoute>} />
         <Route path="/admin/rates" element={<ProtectedRoute allowed={['admin']}><AdminRates /></ProtectedRoute>} />

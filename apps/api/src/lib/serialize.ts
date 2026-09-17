@@ -135,7 +135,7 @@ type PhotoWithTags = Photo & {
   appearances?: TwoPartyAppearanceInput[]
 }
 
-function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
+export function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
   if (photo.storageKey && photo.processingStatus === 'ready') return `/api/media/${photo.id}/${kind}`
   return photo.src
 }

@@ -181,13 +181,14 @@ library is a future revenue line only if creators and models can opt in (and, la
 
 ## 8. What production actually does today (honest)
 
-Shipped through Phase 32, the marketplace is a **stock + licensing MVP** with photographer
+Shipped through Phase 33, the marketplace is a **stock + licensing MVP** with photographer
 accounts, photo permission states, invite-only model accounts, self-shot dual role, a
 two-approval commercial lock, public model portfolios, an opt-in visual likeness check
 that cannot grant rights, a creator directory that labels photographers and photo
 influencers honestly, talent booking (briefs and quotes; settlement off-platform),
-opt-in VueQuatro representation with staff-handled agency-protected inventory, and
-brand production (campaign briefs and contributor pitches; settlement off-platform).
+opt-in VueQuatro representation with staff-handled agency-protected inventory,
+brand production (campaign briefs and contributor pitches; settlement off-platform), and
+a read-only partner distribution API over cleared inventory.
 Models do **not** earn from licences and do **not** gain copyright.
 
 | Doctrine | In production now |
@@ -207,7 +208,7 @@ Models do **not** earn from licences and do **not** gain copyright.
 | Photo influencer role | **Yes** (Phase 29) — a `creatorKind` on the contributor profile (photographer / photo influencer), chosen at signup and changeable in account settings. Honest labels on profiles and the `/creators` directory with a kind filter. Same copyright, agreement, and 50% share — presentation and discovery only. |
 | Talent booking | **Yes** (Phase 30) — hire a photographer (`/hire/:handle`) or book a model (`/book/:handle`): brief → quote → accept/decline/withdraw, with availability and an optional indicative day rate on public profiles. Vuekumi records the agreement only. **No booking payments, no commission** — the rate is undecided, and booking money never touches the earnings ledger. Booking does not license any photograph. |
 | Brand production | **Yes** (Phase 32) — campaign briefs at `/campaigns`: buyer/agency accounts post a brief (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts or declines, and the owner (or staff) closes the campaign. Vuekumi records everything; **no production payments, no commission** (rate undecided). Accepting a pitch licenses nothing — photographs are still licensed through checkout with every rights guard. |
-| Partner/API distribution | **No** |
+| Partner/API distribution | **Yes** (Phase 33) — read-only `GET /api/partner/v1/photos[/:id]` behind admin-issued bearer keys (hash-stored, shown once, revocable, 120 req/min per key). Serves **cleared inventory only** (active + stock permission states; never private/portfolio/agency-protected), with attribution and licence flags computed by the same guards as checkout. Licences are granted on VueKumi, not by the API. Terms explicitly **forbid AI training** — no AI-training consent exists. |
 | Separate AI-training consent | **No** |
 | Model share of royalties | **Undecided** — Phase 24 recorded that models do not earn. Ledger still pays the photographer 50% of paid licences. |
 
@@ -217,7 +218,8 @@ Public model portfolio shipped in Phase 27. Opt-in visual verification shipped i
 Photo influencer creator kind shipped in Phase 29. Talent booking (no payments, no
 commission) shipped in Phase 30. VueQuatro representation (opt-in, no commission, staff
 mode only) shipped in Phase 31. Brand production campaigns (no payments, no commission)
-shipped in Phase 32.
+shipped in Phase 32. Partner distribution API (read-only, cleared inventory, no
+AI-training use) shipped in Phase 33.
 
 ---
 

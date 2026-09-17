@@ -544,6 +544,7 @@ export function StatusPill({ status }: { status: string }) {
     new: 'bg-[#e8eef7] text-[#33588f]',
     answered: 'bg-[#e7f2e9] text-[#2e6b3e]',
     closed: 'bg-cream text-ink-soft',
+    revoked: 'bg-[#fbe7e4] text-[#b3382e]',
     not_required: 'bg-cream text-ink',
     owner: 'bg-ink text-paper',
     admin: 'bg-[#f3e9f5] text-[#7a4a8f]',
