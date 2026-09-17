@@ -258,3 +258,15 @@ Do not treat these as already decided:
   numbered retention window remain undecided; do not invent either.
 
 Those are Phase-gate decisions immediately before the relevant build, not this document.
+
+---
+
+## 11. Proposed next arc (not shipped)
+
+Staff ACL, model-as-uploader, claimed/documented/verified quality, Rights Ledger, DMCA,
+and the U.S. + Global Rights Standard + country-overlay legal philosophy are **proposed**
+in [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md).
+Nothing in that document is live until a phase is explicitly approved. Models remain
+invite-only and cannot upload until Phase 38. `AdminRole` remains decorative until
+Phase 36. `claimed` copyright still commercially clears until Phase 37 tightens it.
+
