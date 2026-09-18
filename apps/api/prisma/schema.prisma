@@ -654,6 +654,7 @@ model Photo {
   ledgerEvents     RightsLedgerEvent[]
   dmcaNotices      DmcaNotice[]
   rightsStrikes    RightsStrike[]
+  featuredPins     HomeFeaturedPin[]
 
   @@index([status])
   @@index([category])
@@ -663,6 +664,21 @@ model Photo {
   @@index([commercialLocked])
   @@index([permissionState])
   @@index([shootId])
+}
+
+model HomeFeaturedPin {
+  id        String   @id @default(cuid())
+  slot      String
+  position  Int
+  photoId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([slot, position])
+  @@index([photoId])
+  @@index([slot])
 }
 
 model PhotoShoot {
