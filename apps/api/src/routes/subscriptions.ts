@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { startPlusSchema } from '@vuekumi/shared'
+import { adminHas, startPlusSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { authenticate } from '../lib/auth-middleware.js'
 import { PaymentError } from '../lib/payment-error.js'
@@ -103,7 +103,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const row = await prisma.subscription.findUnique({ where: { id } })
     if (!row) return reply.code(404).send({ error: 'Subscription not found' })
-    if (row.userId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (row.userId !== request.userId && !adminHas(request.authUser, 'accounts.read')) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     return { subscription: serializeSubscription(row) }
@@ -115,7 +115,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const row = await prisma.subscription.findUnique({ where: { id } })
     if (!row) return reply.code(404).send({ error: 'Subscription not found' })
-    if (row.userId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (row.userId !== request.userId && !adminHas(request.authUser, 'accounts.read')) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     try {
@@ -132,7 +132,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const row = await prisma.subscription.findUnique({ where: { id } })
     if (!row) return reply.code(404).send({ error: 'Subscription not found' })
-    if (row.userId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (row.userId !== request.userId && !adminHas(request.authUser, 'accounts.read')) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     try {

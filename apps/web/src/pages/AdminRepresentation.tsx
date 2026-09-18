@@ -2,19 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import type { RepresentationAdminDto, RepresentationInquiryDto } from '@vuekumi/shared'
-import { PortalShell, SectionHead, StatusPill } from '../components/shared'
+import { SectionHead, StatusPill } from '../components/shared'
 import { api, ApiError } from '../api/client'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell
-      title="Admin portal"
-      subtitle="VueQuatro representation. Opt-in, no commission, copyright stays with the photographer."
-      links={adminLinks}
-    >
+    <AdminShell subtitle="VueQuatro representation. Opt-in, no commission, copyright stays with the photographer.">
       {children}
-    </PortalShell>
+    </AdminShell>
   )
 }
 

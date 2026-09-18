@@ -1,13 +1,14 @@
 import type { FastifyInstance } from 'fastify'
 import {
   acceptQuoteSchema,
+  adminHas,
   purchaseLicenseSchema,
   quoteDecisionSchema,
   rightsManagedQuoteSchema,
 } from '@vuekumi/shared'
 import type { AuthUser } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { authenticate, requireAdminCapability } from '../lib/auth-middleware.js'
 import { AgencyError, assertAgencyActive, canPurchase, canQuote } from '../lib/agency.js'
 import { buildCertificatePdf } from '../lib/certificate.js'
 import { convertFromUsd, pricingForCountry } from '../lib/fx.js'
@@ -49,19 +50,19 @@ async function assertAgencyAction(user: AuthUser | undefined, action: 'purchase'
 }
 
 function grantsWhere(user: AuthUser) {
-  if (user.accountType === 'admin') return {}
+  if (adminHas(user, 'accounts.read')) return {}
   if (user.agencyId) return { OR: [{ buyerId: user.id }, { agencyId: user.agencyId }] }
   return { buyerId: user.id }
 }
 
 function quotesWhere(user: AuthUser) {
-  if (user.accountType === 'admin') return {}
+  if (adminHas(user, 'quotes.list')) return {}
   if (user.agencyId) return { OR: [{ requesterId: user.id }, { agencyId: user.agencyId }] }
   return { requesterId: user.id }
 }
 
 function canAccessGrant(user: AuthUser, grant: { buyerId: string; agencyId: string | null }) {
-  if (user.accountType === 'admin') return true
+  if (adminHas(user, 'accounts.read')) return true
   if (grant.buyerId === user.id) return true
   return Boolean(user.agencyId && grant.agencyId === user.agencyId)
 }
@@ -338,7 +339,7 @@ export async function licenseRoutes(app: FastifyInstance) {
     })
     if (!quote) return reply.code(404).send({ error: 'Quote not found' })
     const sameAgency = Boolean(request.authUser?.agencyId && quote.agencyId === request.authUser.agencyId)
-    if (quote.requesterId !== request.userId && request.authUser?.accountType !== 'admin' && !sameAgency) {
+    if (quote.requesterId !== request.userId && !adminHas(request.authUser, 'quotes.manage') && !sameAgency) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     try {
@@ -414,7 +415,7 @@ export async function licenseRoutes(app: FastifyInstance) {
   })
 
   app.patch('/admin/quotes/:id', {
-    preHandler: requireAccountTypes(app, 'admin'),
+    preHandler: requireAdminCapability(app, 'quotes.manage'),
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = quoteDecisionSchema.parse(request.body)

@@ -481,11 +481,13 @@ model Subscription {
 }
 
 model AdminProfile {
-  id        String    @id @default(cuid())
-  userId    String    @unique
-  adminRole AdminRole @default(support)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  adminRole               AdminRole @default(support)
+  capabilities            String[]  @default([])
+  capabilitiesCustomized  Boolean   @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

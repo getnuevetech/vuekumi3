@@ -2,23 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import type { LicenseQuoteDto } from '@vuekumi/shared'
-import { PortalShell, StatusPill } from '../components/shared'
+import { StatusPill } from '../components/shared'
 import { api, ApiError } from '../api/client'
 import { money } from '../lib/format'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 const FILTERS = ['pending', 'quoted', 'all', 'declined', 'accepted'] as const
 type Filter = (typeof FILTERS)[number]
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell
-      title="Admin portal"
-      subtitle="Price rights-managed requests. Vuekumi sells usage permission, not ownership."
-      links={adminLinks}
-    >
+    <AdminShell subtitle="Price rights-managed requests. Vuekumi sells usage permission, not ownership.">
       {children}
-    </PortalShell>
+    </AdminShell>
   )
 }
 

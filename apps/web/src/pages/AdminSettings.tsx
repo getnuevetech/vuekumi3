@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { PortalShell } from '../components/shared'
 import { api, ApiError } from '../api/client'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 interface SettingRow {
   key: string
@@ -17,13 +16,9 @@ interface SettingRow {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell
-      title="Admin portal"
-      subtitle="Platform configuration — API keys live here, not in server env files."
-      links={adminLinks}
-    >
+    <AdminShell subtitle="Platform configuration — API keys live here, not in server env files.">
       {children}
-    </PortalShell>
+    </AdminShell>
   )
 }
 

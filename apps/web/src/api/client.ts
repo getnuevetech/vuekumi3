@@ -66,6 +66,7 @@ import type {
   PartnerKeyDto,
   CreatePartnerKeyInput,
 } from '@vuekumi/shared'
+import { firstAdminPath } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
@@ -778,6 +779,22 @@ export const api = {
   patchAccount: (id: string, body: Partial<Pick<AdminAccount, 'name' | 'email' | 'country' | 'status'>>) =>
     request<{ user: AdminAccount }>(`/api/admin/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
+  createAdmin: (body: {
+    email: string
+    name: string
+    password: string
+    country?: string
+    preset: 'super_admin' | 'moderator' | 'finance' | 'support'
+    capabilities?: string[]
+  }) =>
+    request<{ user: AdminAccount }>('/api/admin/admins', { method: 'POST', body: JSON.stringify(body) }),
+
+  patchAdmin: (id: string, body: {
+    preset?: 'super_admin' | 'moderator' | 'finance' | 'support'
+    capabilities?: string[]
+  }) =>
+    request<{ user: AdminAccount }>(`/api/admin/admins/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
   setAgencyStatus: (agencyId: string, status: 'pending' | 'active' | 'suspended') =>
     request<{ agency: { id: string; name: string; status: string }; user: AdminAccount }>(
       `/api/admin/agencies/${agencyId}/status`,
@@ -932,7 +949,8 @@ export function homeForAccountType(accountType: AccountType): string {
   }
 }
 
-export function homeForUser(user: Pick<AuthUser, 'accountType' | 'agencyId'>): string {
+export function homeForUser(user: Pick<AuthUser, 'accountType' | 'agencyId' | 'adminRole' | 'adminCapabilities' | 'adminCapabilitiesCustomized'>): string {
+  if (user.accountType === 'admin') return firstAdminPath(user as AuthUser)
   if (user.agencyId) return '/agency'
   return homeForAccountType(user.accountType)
 }

@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify'
-import type { PermissionState } from '@vuekumi/shared'
+import type { AuthUser, PermissionState } from '@vuekumi/shared'
 import {
   CONSENT_VERSION,
   applyScreeningToPeopleFlag,
   canEnterCommercialInventory,
+  canImpersonateCreator,
   communityContributorBlocksState,
   copyrightCleared,
   declareSubjectAgeSchema,
@@ -18,7 +19,7 @@ import {
   uploadSignedReleaseSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { requireAccountTypes } from '../lib/auth-middleware.js'
+import { requireCreatorWorkspace } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
 import { processPhotoAssets } from '../lib/process-photo.js'
 import { contributorHasAgreement } from '../lib/rights.js'
@@ -71,8 +72,12 @@ const photoInclude = {
   contributor: { include: { contributorProfile: true, platformAgreements: true } },
 } as const
 
+function isImpersonatingStaff(user: AuthUser | null | undefined): boolean {
+  return Boolean(user && user.accountType === 'admin' && canImpersonateCreator(user))
+}
+
 export async function contributorRoutes(app: FastifyInstance) {
-  const gate = { preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin') }
+  const gate = { preHandler: requireCreatorWorkspace(app) }
 
   app.get('/contributor/stats', gate, async (request) => {
     const contributorId = request.userId!
@@ -155,7 +160,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     })
 
     scope.put('/contributor/uploads/bin/:token', {
-      preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin'),
+      preHandler: requireCreatorWorkspace(app),
       bodyLimit: 55 * 1024 * 1024,
     }, async (request, reply) => {
       const { token } = request.params as { token: string }
@@ -172,7 +177,7 @@ export async function contributorRoutes(app: FastifyInstance) {
   })
 
   app.get('/contributor/photos', gate, async (request) => {
-    const contributorId = request.authUser?.accountType === 'admin' && (request.query as { userId?: string }).userId
+    const contributorId = isImpersonatingStaff(request.authUser) && (request.query as { userId?: string }).userId
       ? (request.query as { userId: string }).userId
       : request.userId!
 
@@ -202,7 +207,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const photo = await prisma.photo.findUnique({ where: { id }, include: photoInclude })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     const appearances = await prisma.photoAppearance.findMany({
@@ -225,7 +230,7 @@ export async function contributorRoutes(app: FastifyInstance) {
 
   app.post('/contributor/photos', gate, async (request, reply) => {
     const accountType = request.authUser?.accountType
-    if (accountType !== 'photographer' && accountType !== 'contributor' && accountType !== 'admin') {
+    if (accountType !== 'photographer' && accountType !== 'contributor' && !isImpersonatingStaff(request.authUser)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
@@ -290,7 +295,7 @@ export async function contributorRoutes(app: FastifyInstance) {
         commercialLocked: false,
         hasRecognizablePeople: people,
         twoPartyCleared: false,
-        actor: request.authUser?.accountType === 'admin' ? 'admin' : 'contributor',
+        actor: isImpersonatingStaff(request.authUser) ? 'admin' : 'contributor',
       })
     } catch (err) {
       if (err instanceof PhotoEditError) {
@@ -434,7 +439,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       include: { rightsRecord: true, appearances: true, contributor: { include: { contributorProfile: true } } },
     })
     if (!existing) return reply.code(404).send({ error: 'Photo not found' })
-    if (request.authUser?.accountType !== 'admin' && existing.contributorId !== request.userId) {
+    if (!isImpersonatingStaff(request.authUser) && existing.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
@@ -446,7 +451,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       current: existing.permissionState as PermissionState,
       hasRecognizablePeople: nextPeople,
     })
-    const actor = request.authUser?.accountType === 'admin' ? 'admin' : 'contributor'
+    const actor = isImpersonatingStaff(request.authUser) ? 'admin' : 'contributor'
 
     try {
       if (body.status) {
@@ -624,7 +629,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     const body = uploadSignedReleaseSchema.parse(request.body)
     const photo = await prisma.photo.findUnique({ where: { id }, include: { contributor: true, rightsRecord: true } })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     if (!photo.hasRecognizablePeople) {
@@ -718,7 +723,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       include: { contributor: true },
     })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
@@ -885,7 +890,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     const body = declareSubjectAgeSchema.parse({ ...request.body as object, appearanceId })
     const photo = await prisma.photo.findUnique({ where: { id } })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     const row = await prisma.photoAppearance.findUnique({ where: { id: appearanceId } })
@@ -915,7 +920,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     const { id, appearanceId } = request.params as { id: string; appearanceId: string }
     const photo = await prisma.photo.findUnique({ where: { id } })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     const row = await prisma.photoAppearance.findUnique({ where: { id: appearanceId } })
@@ -942,7 +947,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     const { id, appearanceId } = request.params as { id: string; appearanceId: string }
     const photo = await prisma.photo.findUnique({ where: { id } })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (request.authUser?.accountType !== 'admin' && photo.contributorId !== request.userId) {
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     const row = await prisma.photoAppearance.findUnique({ where: { id: appearanceId } })

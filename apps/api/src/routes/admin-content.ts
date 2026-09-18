@@ -3,7 +3,7 @@ import type { PermissionState } from '@vuekumi/shared'
 import { canMarkAgencyProtected, CONSENT_VERSION, twoPartyCommercialCleared } from '@vuekumi/shared'
 import { decideModerationSchema, patchRightsSchema, reviewModelReleaseSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { requireAccountTypes } from '../lib/auth-middleware.js'
+import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
 import { contributorHasAgreement, rightsReadyForLive } from '../lib/rights.js'
 import { serializePhoto, serializeQuote } from '../lib/serialize.js'
@@ -17,9 +17,15 @@ import {
 } from '../lib/permissions.js'
 
 export async function adminContentRoutes(app: FastifyInstance) {
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const list = { preHandler: requireAdminCapability(app, 'content.list') }
+  const read = { preHandler: requireAdminCapability(app, 'content.read') }
+  const editRights = { preHandler: requireAdminCapability(app, 'content.rights.edit') }
+  const reviewRelease = { preHandler: requireAdminCapability(app, 'content.model_release.review') }
+  const verifyProcess = { preHandler: requireAdminCapability(app, 'content.two_party.verify') }
+  const moderationList = { preHandler: requireAdminCapability(app, 'moderation.list') }
+  const moderationDecide = { preHandler: requireAdminCapability(app, 'moderation.decide') }
 
-  app.get('/admin/content', admin, async (request) => {
+  app.get('/admin/content', list, async (request) => {
     const query = request.query as { q?: string; status?: string; page?: string }
     const page = Math.max(1, Number(query.page) || 1)
     const limit = 25
@@ -69,7 +75,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
     }
   })
 
-  app.get('/admin/content/:id', admin, async (request, reply) => {
+  app.get('/admin/content/:id', read, async (request, reply) => {
     const { id } = request.params as { id: string }
     const photo = await prisma.photo.findUnique({
       where: { id },
@@ -118,7 +124,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
     }
   })
 
-  app.patch('/admin/content/:id/rights', admin, async (request, reply) => {
+  app.patch('/admin/content/:id/rights', editRights, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = patchRightsSchema.parse(request.body)
     const photo = await prisma.photo.findUnique({
@@ -246,7 +252,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/admin/model-releases/:id/review', admin, async (request, reply) => {
+  app.post('/admin/model-releases/:id/review', reviewRelease, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = reviewModelReleaseSchema.parse(request.body)
     const release = await prisma.modelRelease.findUnique({ where: { id } })
@@ -280,7 +286,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
     return { ok: true }
   })
 
-  app.post('/admin/content/:id/verify-process', admin, async (request, reply) => {
+  app.post('/admin/content/:id/verify-process', verifyProcess, async (request, reply) => {
     const { id } = request.params as { id: string }
     const photo = await prisma.photo.findUnique({
       where: { id },
@@ -329,7 +335,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
     return { ok: true, consentVersion: CONSENT_VERSION }
   })
 
-  app.get('/admin/moderation', admin, async () => {
+  app.get('/admin/moderation', moderationList, async () => {
     const items = await prisma.moderationItem.findMany({
       where: { status: 'pending' },
       include: {
@@ -368,7 +374,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/admin/moderation/:id/decide', admin, async (request, reply) => {
+  app.post('/admin/moderation/:id/decide', moderationDecide, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = decideModerationSchema.parse(request.body)
     const item = await prisma.moderationItem.findUnique({

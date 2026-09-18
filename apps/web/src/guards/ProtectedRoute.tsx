@@ -1,13 +1,22 @@
 import { Navigate, useLocation } from 'react-router'
-import { hasModelAccess, isCreatorAccount, type AccountType } from '@vuekumi/shared'
+import {
+  adminHas,
+  canImpersonateCreator,
+  firstAdminPath,
+  hasModelAccess,
+  isCreatorAccount,
+  type AccountType,
+  type AdminCapability,
+} from '@vuekumi/shared'
 import { useAuth } from '../context/AuthContext'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   allowed: AccountType[]
+  capability?: AdminCapability
 }
 
-export function ProtectedRoute({ children, allowed }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, allowed, capability }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const location = useLocation()
 
@@ -23,14 +32,18 @@ export function ProtectedRoute({ children, allowed }: ProtectedRouteProps) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
   }
 
-  if (
-    !allowed.includes(user.accountType)
-    && !(allowed.includes('agency') && user.agencyId)
-    && !(allowed.includes('model') && hasModelAccess(user))
-  ) {
+  const creatorWorkspace = allowed.includes('photographer') || allowed.includes('contributor')
+  const allowedByType =
+    allowed.includes(user.accountType)
+    || (allowed.includes('agency') && Boolean(user.agencyId))
+    || (allowed.includes('model') && hasModelAccess(user))
+    || (creatorWorkspace && canImpersonateCreator(user))
+  const allowedByCap = capability ? adminHas(user, capability) : true
+
+  if (!allowedByType || !allowedByCap) {
     const fallback =
       user.accountType === 'admin'
-        ? '/admin'
+        ? firstAdminPath(user)
         : isCreatorAccount(user.accountType)
           ? '/contributor'
           : user.accountType === 'agency' || user.agencyId

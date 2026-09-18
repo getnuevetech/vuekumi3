@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { adminHas } from '@vuekumi/shared'
 import { authenticate } from '../lib/auth-middleware.js'
 import { listCheckoutMethods } from '../lib/payments-config.js'
 import {
@@ -34,7 +35,7 @@ export async function paymentRoutes(app: FastifyInstance) {
       include: { grant: { include: { photo: true, product: true } } },
     })
     if (!payment) return reply.code(404).send({ error: 'Payment not found' })
-    if (payment.buyerId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (payment.buyerId !== request.userId && !adminHas(request.authUser, 'accounts.read')) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     return {
@@ -49,7 +50,7 @@ export async function paymentRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const payment = await prisma.payment.findUnique({ where: { id } })
     if (!payment) return reply.code(404).send({ error: 'Payment not found' })
-    if (payment.buyerId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (payment.buyerId !== request.userId && !adminHas(request.authUser, 'accounts.read')) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     try {
@@ -66,7 +67,7 @@ export async function paymentRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const payment = await prisma.payment.findUnique({ where: { id } })
     if (!payment) return reply.code(404).send({ error: 'Payment not found' })
-    if (payment.buyerId !== request.userId && request.authUser?.accountType !== 'admin') {
+    if (payment.buyerId !== request.userId && !adminHas(request.authUser, 'accounts.read')) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     try {

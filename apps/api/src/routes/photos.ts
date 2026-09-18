@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { photoListQuerySchema } from '@vuekumi/shared'
+import { adminHas, photoListQuerySchema } from '@vuekumi/shared'
 import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
 import {
   buildPhotoWhere,
@@ -82,7 +82,7 @@ export async function photoRoutes(app: FastifyInstance) {
       select: { id: true, category: true, country: true, status: true, permissionState: true, contributorId: true },
     })
     const owner = request.userId === photo?.contributorId
-    const admin = request.authUser?.accountType === 'admin'
+    const admin = adminHas(request.authUser, 'content.read')
     if (!photo || photo.status !== 'active') {
       return reply.code(404).send({ error: 'Photo not found' })
     }
@@ -156,7 +156,7 @@ export async function photoRoutes(app: FastifyInstance) {
 
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
     const owner = request.userId === photo.contributorId
-    const admin = request.authUser?.accountType === 'admin'
+    const admin = adminHas(request.authUser, 'content.read')
     if (photo.permissionState === 'private' && !owner && !admin) {
       return reply.code(404).send({ error: 'Photo not found' })
     }

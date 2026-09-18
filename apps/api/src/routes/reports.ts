@@ -5,7 +5,7 @@ import {
   setCommercialLockSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { optionalAuthenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { optionalAuthenticate, requireAdminCapability } from '../lib/auth-middleware.js'
 import { config } from '../config.js'
 import { DEFAULT_OPS_ADDRESS, rightsReportOpsEmail, sendEmail } from '../lib/email.js'
 import { prisma } from '../lib/prisma.js'
@@ -26,7 +26,9 @@ const reportPhotoInclude = {
 } as const
 
 export async function reportRoutes(app: FastifyInstance) {
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const listReports = { preHandler: requireAdminCapability(app, 'reports.list') }
+  const decideReports = { preHandler: requireAdminCapability(app, 'reports.decide') }
+  const commercialLock = { preHandler: requireAdminCapability(app, 'content.commercial_lock') }
 
   app.post('/photos/:id/report', {
     preHandler: (request, reply) => optionalAuthenticate(app, request, reply),
@@ -100,7 +102,7 @@ export async function reportRoutes(app: FastifyInstance) {
     return { ok: true as const }
   })
 
-  app.get('/admin/reports', admin, async (request) => {
+  app.get('/admin/reports', listReports, async (request) => {
     const query = request.query as { status?: string }
     const items = await prisma.rightsReport.findMany({
       where: reportQueueWhere(query.status),
@@ -110,7 +112,7 @@ export async function reportRoutes(app: FastifyInstance) {
     return { items: items.map(serializeRightsReport) }
   })
 
-  app.post('/admin/reports/:id/decide', admin, async (request, reply) => {
+  app.post('/admin/reports/:id/decide', decideReports, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = decideRightsReportSchema.parse(request.body)
     const report = await prisma.rightsReport.findUnique({
@@ -152,7 +154,7 @@ export async function reportRoutes(app: FastifyInstance) {
     return { report: serializeRightsReport(updated) }
   })
 
-  app.post('/admin/content/:id/commercial-lock', admin, async (request, reply) => {
+  app.post('/admin/content/:id/commercial-lock', commercialLock, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = setCommercialLockSchema.parse(request.body)
     const photo = await prisma.photo.findUnique({ where: { id } })

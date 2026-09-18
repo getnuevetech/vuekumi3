@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { writeAuditLog } from '../lib/audit.js'
-import { requireAccountTypes } from '../lib/auth-middleware.js'
+import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { sendEmail, testEmailHtml } from '../lib/email.js'
 import { listSettingsForAdmin, upsertSetting } from '../lib/settings.js'
 
@@ -14,13 +14,13 @@ const updateSchema = z.object({
 
 export async function settingsRoutes(app: FastifyInstance) {
   app.get('/admin/settings', {
-    preHandler: requireAccountTypes(app, 'admin'),
+    preHandler: requireAdminCapability(app, 'settings.read'),
   }, async () => {
     return { settings: await listSettingsForAdmin() }
   })
 
   app.put('/admin/settings', {
-    preHandler: requireAccountTypes(app, 'admin'),
+    preHandler: requireAdminCapability(app, 'settings.write'),
   }, async (request) => {
     const body = updateSchema.parse(request.body)
     for (const item of body.settings) {
@@ -39,7 +39,7 @@ export async function settingsRoutes(app: FastifyInstance) {
   })
 
   app.post('/admin/email/test', {
-    preHandler: requireAccountTypes(app, 'admin'),
+    preHandler: requireAdminCapability(app, 'settings.email.test'),
   }, async (request, reply) => {
     const to = request.authUser?.email
     if (!to) return reply.code(400).send({ error: 'Admin email is missing' })

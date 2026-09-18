@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: Phase 35 shipped. Remaining phases still require approval before implementation.**
+**Status: Phases 35–36 shipped. Remaining phases still require approval before implementation.**
 
 This is the implementation procedure for three product decisions:
 
@@ -348,12 +348,12 @@ Nav and routes hide what the signed-in admin cannot access. API returns 403 with
 4. Tests: create each type; reject public-shaped admin create; agency pending → active; photographer appears in photographers list not community list.
 5. Seed unchanged except document the new screens.
 
-**Phase 36 — Granular ACL**
+**Phase 36 — Granular ACL (shipped)**
 
-1. Schema: `AdminProfile.capabilities String[]`, `AdminProfile.preset AdminRole | custom` (reuse enum + `custom` via string or keep enum and add `capabilitiesCustomized Boolean`).
+1. Schema: `AdminProfile.capabilities String[]`, `capabilitiesCustomized Boolean`.
 2. Shared: `ADMIN_CAPABILITIES` catalog, `adminHas(user, key)`, preset maps.
-3. API: `requireAdminCapability(app, key)` used on every existing admin route; `POST /admin/admins`; `PATCH /admin/admins/:id` capabilities; serialize `capabilities` on `AuthUser`.
-4. UI: create-admin form with preset + checkbox matrix grouped as in §4.2; nav filtered by capabilities; ProtectedRoute accepts capability not only `accountType`.
+3. API: `requireAdminCapability(app, key)` on every admin route; `POST /admin/admins`; `PATCH /admin/admins/:id`; serialize capabilities on `AuthUser`.
+4. UI: create-admin form with preset + checkbox matrix; nav filtered by capabilities; ProtectedRoute accepts capability.
 5. Tests: finance cannot `settings.write`; support cannot `payouts.pay`; moderator cannot `accounts.admins.manage`; super-admin can.
 
 Do not ship model-upload in the same PRs. Ops can use staff ACL while rights work continues.
@@ -471,7 +471,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice after approval: Phase 36.**
+**Default next slice after approval: Phase 37.**
 
 ---
 

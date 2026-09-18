@@ -33,6 +33,7 @@ import {
   isCommerciallyEligible,
   likenessRightsCleared,
   outstandingConsentCount,
+  resolveAdminCapabilities,
   rollupModelConsentStatus,
   twoPartyBlocksLicense,
   twoPartyCommercialCleared,
@@ -89,6 +90,14 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     modelHandle: user.modelProfile?.handle ?? null,
     hasModelProfile: Boolean(user.modelProfile),
     adminRole: user.adminProfile?.adminRole ?? null,
+    adminCapabilities: user.adminProfile
+      ? resolveAdminCapabilities({
+          adminRole: user.adminProfile.adminRole,
+          capabilities: user.adminProfile.capabilities,
+          capabilitiesCustomized: user.adminProfile.capabilitiesCustomized,
+        })
+      : undefined,
+    adminCapabilitiesCustomized: user.adminProfile?.capabilitiesCustomized ?? false,
     agencyId: agencyMember?.agencyId ?? null,
     agencyRole: agencyMember?.agencyRole ?? null,
     agencyName: agencyMember?.agency?.name ?? null,

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import type { AdminOverviewDto, LicenseQuoteDto, PayoutDto, RightsReportDto } from '@vuekumi/shared';
+import { adminHas, ADMIN_NAV_CAPABILITY } from '@vuekumi/shared';
 import { api, ApiError, type AdminModerationRow } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -68,11 +70,28 @@ export const adminLinks: PortalLink[] = [
   { to: '/admin/settings', label: 'Settings', icon: icons.gear },
 ];
 
-function Shell({ children }: { children: React.ReactNode }) {
+export function useAdminLinks(): PortalLink[] {
+  const { user } = useAuth()
+  return adminLinks.filter((link) => {
+    const cap = ADMIN_NAV_CAPABILITY[link.to]
+    return !cap || adminHas(user, cap)
+  })
+}
+
+export function AdminShell({ children, subtitle }: { children: React.ReactNode; subtitle: string }) {
+  const links = useAdminLinks()
   return (
-    <PortalShell title="Admin portal" subtitle="Moderation, accounts, and contributor payouts." links={adminLinks}>
+    <PortalShell title="Admin portal" subtitle={subtitle} links={links}>
       {children}
     </PortalShell>
+  )
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminShell subtitle="Moderation, accounts, and contributor payouts.">
+      {children}
+    </AdminShell>
   );
 }
 

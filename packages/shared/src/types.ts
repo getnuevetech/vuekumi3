@@ -42,6 +42,8 @@ export interface AuthUser {
   availability?: BookingAvailability | null
   dayRateUsd?: number | null
   adminRole?: AdminRole | null
+  adminCapabilities?: import('./admin-acl.js').AdminCapability[]
+  adminCapabilitiesCustomized?: boolean
   agencyId?: string | null
   agencyRole?: AgencyRole | null
   agencyName?: string | null

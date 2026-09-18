@@ -66,7 +66,7 @@ export function adminCreateAccountBlocked(accountType: string): { status: number
   if (accountType === 'admin') {
     return {
       status: 403,
-      error: 'Admin accounts cannot be created here. Super-admin staff creation ships with capability ACL.',
+      error: 'Admin accounts cannot be created here. Use POST /admin/admins (accounts.admins.manage).',
     }
   }
   return null
@@ -88,6 +88,8 @@ export interface AdminAccountDto {
   downloads: number
   plan: string | null
   adminRole: string | null
+  adminCapabilities?: import('./admin-acl.js').AdminCapability[]
+  adminCapabilitiesCustomized?: boolean
   agencyId: string | null
   agencyName: string | null
   agencyStatus: AgencyEntityStatus | null

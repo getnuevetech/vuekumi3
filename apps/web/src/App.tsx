@@ -86,11 +86,11 @@ export default function App() {
         <Route path="/checkout/plus/:subscriptionId" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><PlusCheckout /></ProtectedRoute>} />
         <Route path="/checkout/:paymentId" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'contributor', 'admin']}><Checkout /></ProtectedRoute>} />
 
-        <Route path="/contributor" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorDashboard /></ProtectedRoute>} />
-        <Route path="/contributor/upload" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorUpload /></ProtectedRoute>} />
-        <Route path="/contributor/portfolio" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorPortfolio /></ProtectedRoute>} />
-        <Route path="/contributor/photos/:id" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorPhotoEdit /></ProtectedRoute>} />
-        <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['photographer', 'contributor', 'admin']}><ContributorEarnings /></ProtectedRoute>} />
+        <Route path="/contributor" element={<ProtectedRoute allowed={['photographer', 'contributor']}><ContributorDashboard /></ProtectedRoute>} />
+        <Route path="/contributor/upload" element={<ProtectedRoute allowed={['photographer', 'contributor']}><ContributorUpload /></ProtectedRoute>} />
+        <Route path="/contributor/portfolio" element={<ProtectedRoute allowed={['photographer', 'contributor']}><ContributorPortfolio /></ProtectedRoute>} />
+        <Route path="/contributor/photos/:id" element={<ProtectedRoute allowed={['photographer', 'contributor']}><ContributorPhotoEdit /></ProtectedRoute>} />
+        <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['photographer', 'contributor']}><ContributorEarnings /></ProtectedRoute>} />
 
         <Route path="/agency" element={<ProtectedRoute allowed={['agency']}><AgencyDashboard /></ProtectedRoute>} />
         <Route path="/agency/team" element={<ProtectedRoute allowed={['agency']}><AgencyTeam /></ProtectedRoute>} />
@@ -99,25 +99,25 @@ export default function App() {
 
         <Route path="/model" element={<ProtectedRoute allowed={['model']}><ModelPortal /></ProtectedRoute>} />
 
-        <Route path="/admin" element={<ProtectedRoute allowed={['admin']}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']}><AdminUsers /></ProtectedRoute>} />
-        <Route path="/admin/photographers" element={<ProtectedRoute allowed={['admin']}><AdminPhotographers /></ProtectedRoute>} />
-        <Route path="/admin/contributors" element={<ProtectedRoute allowed={['admin']}><AdminContributors /></ProtectedRoute>} />
-        <Route path="/admin/agencies" element={<ProtectedRoute allowed={['admin']}><AdminAgencies /></ProtectedRoute>} />
-        <Route path="/admin/models" element={<ProtectedRoute allowed={['admin']}><AdminModels /></ProtectedRoute>} />
-        <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']}><AdminAdmins /></ProtectedRoute>} />
-        <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']}><AdminContent /></ProtectedRoute>} />
-        <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']}><AdminModeration /></ProtectedRoute>} />
-        <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']}><AdminReports /></ProtectedRoute>} />
-        <Route path="/admin/quotes" element={<ProtectedRoute allowed={['admin']}><AdminQuotes /></ProtectedRoute>} />
-        <Route path="/admin/representation" element={<ProtectedRoute allowed={['admin']}><AdminRepresentation /></ProtectedRoute>} />
-        <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']}><AdminPartnerKeys /></ProtectedRoute>} />
-        <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']}><AdminPayouts /></ProtectedRoute>} />
-        <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']}><AdminCountries /></ProtectedRoute>} />
-        <Route path="/admin/rates" element={<ProtectedRoute allowed={['admin']}><AdminRates /></ProtectedRoute>} />
-        <Route path="/admin/gateways" element={<ProtectedRoute allowed={['admin']}><AdminGateways /></ProtectedRoute>} />
-        <Route path="/admin/ai" element={<ProtectedRoute allowed={['admin']}><AdminAiProviders /></ProtectedRoute>} />
-        <Route path="/admin/settings" element={<ProtectedRoute allowed={['admin']}><AdminSettings /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute allowed={['admin']} capability="metrics.view"><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']} capability="accounts.users.list"><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin/photographers" element={<ProtectedRoute allowed={['admin']} capability="accounts.photographers.list"><AdminPhotographers /></ProtectedRoute>} />
+        <Route path="/admin/contributors" element={<ProtectedRoute allowed={['admin']} capability="accounts.contributors.list"><AdminContributors /></ProtectedRoute>} />
+        <Route path="/admin/agencies" element={<ProtectedRoute allowed={['admin']} capability="accounts.agencies.list"><AdminAgencies /></ProtectedRoute>} />
+        <Route path="/admin/models" element={<ProtectedRoute allowed={['admin']} capability="accounts.models.list"><AdminModels /></ProtectedRoute>} />
+        <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']} capability="accounts.admins.list"><AdminAdmins /></ProtectedRoute>} />
+        <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']} capability="content.list"><AdminContent /></ProtectedRoute>} />
+        <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']} capability="moderation.list"><AdminModeration /></ProtectedRoute>} />
+        <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']} capability="reports.list"><AdminReports /></ProtectedRoute>} />
+        <Route path="/admin/quotes" element={<ProtectedRoute allowed={['admin']} capability="quotes.list"><AdminQuotes /></ProtectedRoute>} />
+        <Route path="/admin/representation" element={<ProtectedRoute allowed={['admin']} capability="representation.list"><AdminRepresentation /></ProtectedRoute>} />
+        <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']} capability="partner.keys.list"><AdminPartnerKeys /></ProtectedRoute>} />
+        <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']} capability="payouts.list"><AdminPayouts /></ProtectedRoute>} />
+        <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminCountries /></ProtectedRoute>} />
+        <Route path="/admin/rates" element={<ProtectedRoute allowed={['admin']} capability="geo.fx.list"><AdminRates /></ProtectedRoute>} />
+        <Route path="/admin/gateways" element={<ProtectedRoute allowed={['admin']} capability="integrations.gateways.read"><AdminGateways /></ProtectedRoute>} />
+        <Route path="/admin/ai" element={<ProtectedRoute allowed={['admin']} capability="integrations.ai.read"><AdminAiProviders /></ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute allowed={['admin']} capability="settings.read"><AdminSettings /></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
