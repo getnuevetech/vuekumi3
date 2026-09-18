@@ -397,9 +397,120 @@ export function StatCard({
 /* ---------------- Portal shell (sidebar layout) ---------------- */
 
 export interface PortalLink {
-  to: string
+  to?: string
   label: string
   icon: ReactNode
+  children?: PortalLink[]
+}
+
+function isPortalRootPath(to: string) {
+  return to === '/contributor' || to === '/admin' || to === '/agency' || to === '/model'
+}
+
+export function portalLinkActive(pathname: string, to: string | undefined): boolean {
+  if (!to) return false
+  return pathname === to || (!isPortalRootPath(to) && pathname.startsWith(`${to}/`))
+}
+
+function portalGroupActive(pathname: string, link: PortalLink): boolean {
+  if (portalLinkActive(pathname, link.to)) return true
+  return (link.children ?? []).some((child) => portalGroupActive(pathname, child))
+}
+
+export function flattenPortalLeaves(links: PortalLink[]): PortalLink[] {
+  return links.flatMap((link) => {
+    if (link.children?.length) return flattenPortalLeaves(link.children)
+    return link.to ? [link] : []
+  })
+}
+
+function leafKey(link: PortalLink, fallback: string) {
+  return link.to ?? fallback
+}
+
+function NavLeaf({
+  link,
+  pathname,
+  index,
+  nested = false,
+}: {
+  link: PortalLink
+  pathname: string
+  index?: number
+  nested?: boolean
+}) {
+  const to = link.to
+  if (!to) return null
+  const active = portalLinkActive(pathname, to)
+  return (
+    <Link
+      to={to}
+      className={`flex shrink-0 items-center gap-3 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.14em] transition-colors ${
+        nested ? 'pl-10 pr-3' : 'px-3'
+      } ${active ? 'bg-terra text-paper' : 'text-paper-soft hover:bg-paper/5 hover:text-paper'}`}
+    >
+      {!nested && index != null && (
+        <span className="text-[9px] opacity-60">{String(index + 1).padStart(2, '0')}</span>
+      )}
+      {link.icon}
+      {link.label}
+    </Link>
+  )
+}
+
+function NavGroup({
+  link,
+  pathname,
+  index,
+  open,
+  onToggle,
+}: {
+  link: PortalLink
+  pathname: string
+  index: number
+  open: boolean
+  onToggle: () => void
+}) {
+  const children = link.children ?? []
+  const groupActive = portalGroupActive(pathname, link)
+  return (
+    <div className="hidden lg:block">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left font-mono-tech text-[11px] uppercase tracking-[0.14em] transition-colors ${
+          groupActive ? 'text-paper' : 'text-paper-soft hover:bg-paper/5 hover:text-paper'
+        }`}
+      >
+        <span className="text-[9px] opacity-60">{String(index + 1).padStart(2, '0')}</span>
+        {link.icon}
+        <span className="flex-1">{link.label}</span>
+        <svg
+          viewBox="0 0 24 24"
+          className={`h-3 w-3 shrink-0 opacity-60 transition-transform ${open ? 'rotate-90' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden
+        >
+          <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="mb-1 border-l border-paper/10 ml-5">
+          {children.map((child) => (
+            <NavLeaf
+              key={leafKey(child, `${link.label}-${child.label}`)}
+              link={child}
+              pathname={pathname}
+              nested
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function PortalShell({
@@ -415,6 +526,31 @@ export function PortalShell({
 }) {
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
+  const mobileLeaves = flattenPortalLeaves(links)
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const open = new Set<string>()
+    for (const link of links) {
+      if (link.children?.length && (portalGroupActive(pathname, link) || link.children.length === 1)) {
+        open.add(link.label)
+      }
+    }
+    return open
+  })
+  useEffect(() => {
+    setExpanded((prev) => {
+      let changed = false
+      const next = new Set(prev)
+      for (const link of links) {
+        const auto = Boolean(link.children?.length && (portalGroupActive(pathname, link) || link.children.length === 1))
+        if (auto && !next.has(link.label)) {
+          next.add(link.label)
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [pathname, links])
+
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[240px_1fr]">
       {/* sidebar */}
@@ -425,22 +561,36 @@ export function PortalShell({
             {title}
           </span>
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-4 pb-4 no-scrollbar lg:flex-1 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-3 lg:pb-0 lg:pt-4">
+        <nav className="flex gap-1 overflow-x-auto px-4 pb-4 no-scrollbar lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-0 lg:overflow-y-auto lg:px-3 lg:pb-0 lg:pt-4">
+          {mobileLeaves.map((l, i) => (
+            <div key={leafKey(l, `m-${i}`)} className="lg:hidden">
+              <NavLeaf link={l} pathname={pathname} index={i} />
+            </div>
+          ))}
           {links.map((l, i) => {
-            const isPortalRoot = l.to === '/contributor' || l.to === '/admin' || l.to === '/agency' || l.to === '/model'
-            const active = pathname === l.to || (!isPortalRoot && pathname.startsWith(`${l.to}/`))
+            if (l.children?.length) {
+              return (
+                <NavGroup
+                  key={l.label}
+                  link={l}
+                  pathname={pathname}
+                  index={i}
+                  open={expanded.has(l.label)}
+                  onToggle={() => {
+                    setExpanded((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(l.label)) next.delete(l.label)
+                      else next.add(l.label)
+                      return next
+                    })
+                  }}
+                />
+              )
+            }
             return (
-              <Link
-                key={l.to}
-                to={l.to}
-                className={`flex shrink-0 items-center gap-3 px-3 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.14em] transition-colors ${
-                  active ? 'bg-terra text-paper' : 'text-paper-soft hover:bg-paper/5 hover:text-paper'
-                }`}
-              >
-                <span className="text-[9px] opacity-60">0{i + 1}</span>
-                {l.icon}
-                {l.label}
-              </Link>
+              <div key={leafKey(l, `d-${i}`)} className="hidden lg:block">
+                <NavLeaf link={l} pathname={pathname} index={i} />
+              </div>
             )
           })}
         </nav>

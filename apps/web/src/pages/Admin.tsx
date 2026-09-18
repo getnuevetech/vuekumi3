@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import type { AdminOverviewDto, LicenseQuoteDto, PayoutDto, RightsReportDto } from '@vuekumi/shared';
@@ -46,36 +46,90 @@ const icons = {
       <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
     </svg>
   ),
+  rights: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="5" y="3" width="14" height="18" rx="1.5" />
+      <path d="M8 8h8M8 12h8M8 16h5" strokeLinecap="round" />
+    </svg>
+  ),
+  quatro: (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" strokeLinejoin="round" />
+      <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" strokeLinejoin="round" />
+    </svg>
+  ),
 };
 
 export const adminLinks: PortalLink[] = [
   { to: '/admin', label: 'Overview', icon: icons.dash },
-  { to: '/admin/users', label: 'Users', icon: icons.users },
-  { to: '/admin/photographers', label: 'Photographers', icon: icons.users },
-  { to: '/admin/contributors', label: 'Contributors', icon: icons.users },
-  { to: '/admin/agencies', label: 'Agencies', icon: icons.users },
-  { to: '/admin/models', label: 'Models', icon: icons.users },
-  { to: '/admin/admins', label: 'Admins', icon: icons.shield },
-  { to: '/admin/content', label: 'Content', icon: icons.grid },
-  { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
-  { to: '/admin/reports', label: 'Reports', icon: icons.shield },
-  { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
-  { to: '/admin/representation', label: 'VueQuatro', icon: icons.shield },
-  { to: '/admin/partner-api', label: 'Partner API', icon: icons.gear },
-  { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
-  { to: '/admin/countries', label: 'Countries', icon: icons.gear },
-  { to: '/admin/rates', label: 'FX rates', icon: icons.money },
-  { to: '/admin/gateways', label: 'Gateways', icon: icons.money },
-  { to: '/admin/ai', label: 'AI APIs', icon: icons.gear },
-  { to: '/admin/settings', label: 'Settings', icon: icons.gear },
+  {
+    label: 'Users',
+    icon: icons.users,
+    children: [
+      { to: '/admin/users', label: 'Members', icon: icons.users },
+      { to: '/admin/photographers', label: 'Photographers', icon: icons.users },
+      { to: '/admin/contributors', label: 'Contributors', icon: icons.users },
+      { to: '/admin/agencies', label: 'Agencies', icon: icons.users },
+      { to: '/admin/models', label: 'Models', icon: icons.users },
+      { to: '/admin/admins', label: 'Admins', icon: icons.shield },
+    ],
+  },
+  {
+    label: 'Rights',
+    icon: icons.rights,
+    children: [
+      { to: '/admin/content', label: 'Content', icon: icons.grid },
+      { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
+      { to: '/admin/reports', label: 'Reports', icon: icons.shield },
+      { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
+    ],
+  },
+  {
+    label: 'VueQuatro',
+    icon: icons.quatro,
+    children: [
+      { to: '/admin/representation', label: 'Representation', icon: icons.shield },
+      { to: '/admin/partner-api', label: 'Partner API', icon: icons.gear },
+    ],
+  },
+  {
+    label: 'Money',
+    icon: icons.money,
+    children: [
+      { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
+      { to: '/admin/rates', label: 'FX rates', icon: icons.money },
+    ],
+  },
+  {
+    label: 'Platform',
+    icon: icons.gear,
+    children: [
+      { to: '/admin/countries', label: 'Countries', icon: icons.gear },
+      { to: '/admin/gateways', label: 'Gateways', icon: icons.money },
+      { to: '/admin/ai', label: 'AI APIs', icon: icons.gear },
+      { to: '/admin/settings', label: 'Settings', icon: icons.gear },
+    ],
+  },
 ];
+
+function filterAdminNav(links: PortalLink[], user: ReturnType<typeof useAuth>['user']): PortalLink[] {
+  const out: PortalLink[] = []
+  for (const link of links) {
+    if (link.children?.length) {
+      const children = filterAdminNav(link.children, user)
+      if (children.length) out.push({ ...link, children })
+      continue
+    }
+    if (!link.to) continue
+    const cap = ADMIN_NAV_CAPABILITY[link.to]
+    if (!cap || adminHas(user, cap)) out.push(link)
+  }
+  return out
+}
 
 export function useAdminLinks(): PortalLink[] {
   const { user } = useAuth()
-  return adminLinks.filter((link) => {
-    const cap = ADMIN_NAV_CAPABILITY[link.to]
-    return !cap || adminHas(user, cap)
-  })
+  return useMemo(() => filterAdminNav(adminLinks, user), [user])
 }
 
 export function AdminShell({ children, subtitle }: { children: React.ReactNode; subtitle: string }) {
