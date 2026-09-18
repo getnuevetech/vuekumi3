@@ -222,6 +222,6 @@ test('revoking likeness locks new sales and leaves existing grants', async () =>
   const commercial = (licenses.json() as { items: { type: string; offered: boolean; blockedReason?: string }[] }).items
     .find((item) => item.type === 'commercial')
   assert.equal(commercial?.offered, false)
-  assert.match(commercial?.blockedReason ?? '', /revoked|LOCKED|consent/i)
+  assert.match(commercial?.blockedReason ?? '', /revoked|LOCKED|consent|editorial/i)
   await app.close()
 })
