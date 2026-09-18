@@ -92,26 +92,37 @@ After deploy, sign in as admin and open **Settings** to paste those keys.
 
 ## 4. Deploy
 
+### First boot (empty database)
+
+Seed is **destructive** and **off by default**. On a brand-new instance only:
+
 ```bash
-bash deploy/lightsail/deploy.sh
+SEED_DEMO=1 bash deploy/lightsail/deploy.sh
 ```
 
-This will:
-
-1. `npm ci` and build the frontend + shared package
-2. Build the API Docker image
-3. Start Postgres, Redis, API, nginx
-4. Run database migrations automatically (API entrypoint)
-5. Seed demo data (admin user + photos)
-
-**Test:** open `http://YOUR_STATIC_IP` in a browser.
+That builds images, starts services, runs migrations, then wipes and loads demo
+accounts/photos. Change the admin password immediately. Do **not** leave
+`SEED_DEMO=1` in `.env` after the first boot.
 
 | Account | Email | Password |
 |---|---|---|
 | Admin | admin@vuekumi.com | Admin123! |
 | Contributor | amara-okafor@vuekumi.demo | User12345! |
 
-Change the admin password immediately after first login.
+### Routine redeploy (preserve live data)
+
+```bash
+bash deploy/lightsail/deploy.sh
+```
+
+This will:
+
+1. Build the nginx (SPA) and API Docker images
+2. Start Postgres, Redis, API, nginx, certbot
+3. Run database migrations automatically (API entrypoint)
+4. **Skip** seed unless `SEED_DEMO=1` is set
+
+**Test:** open `http://YOUR_STATIC_IP` in a browser.
 
 Then open **Admin → Settings** and add:
 
@@ -148,9 +159,12 @@ docker compose -f docker-compose.prod.yml logs -f api
 
 ```bash
 cd /opt/vuekumi
-git pull
+git pull origin main
 bash deploy/lightsail/deploy.sh
 ```
+
+Do **not** pass `SEED_DEMO=1` on a live site. Seed deletes users, grants,
+payments, and photos before recreating the demo library.
 
 ### Database backup
 
