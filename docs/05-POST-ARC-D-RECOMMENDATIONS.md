@@ -189,7 +189,7 @@ were approved.
 | Step | Work | Done when |
 | --- | --- | --- |
 | **O0** | Inventory live instance: git SHA, migration head, whether admin login works on current `WEB_URL` scheme | Written note of live vs `main` delta |
-| **O1** | Change `deploy.sh` so seed is **opt-in** on production (`SEED_DEMO` / first-boot only); document migrate-only redeploy | Redeploy cannot wipe live users/grants |
+| **O1** | Change `deploy.sh` so seed is **opt-in** on production (`SEED_DEMO=1` / first-boot only); document migrate-only redeploy — **shipped** | Redeploy cannot wipe live users/grants |
 | **O2** | Redeploy Lightsail from `main` (includes HTTP admin cookie fix `83f4577` + Phases 23–28 minimum; prefer full 23–40) | Admin sessions work on HTTP if TLS not yet live; permission states / models / two-approval / self-shot / portfolios / likeness check behave as on `main` |
 | **O3** | Post-deploy: rotate demo admin password if seed ever ran; confirm Admin Settings keys; TLS/`WEB_URL=https://…` when certs exist | Live secrets and cookie Secure flag match scheme |
 | **O4** | Smoke: report queue, commercial freeze, model invite guest page, representation queue | Ops checklist signed off |

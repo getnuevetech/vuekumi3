@@ -84,19 +84,31 @@ if [[ $healthy -eq 0 ]]; then
   exit 1
 fi
 
-echo "==> Seeding database..."
-if $DC -f "$COMPOSE_FILE" exec -T api npx tsx prisma/seed.ts; then
-  echo "Seed complete."
+# Seed is destructive (wipes users/grants/payments). Never run on routine redeploy.
+# First boot / demo only: SEED_DEMO=1 bash deploy/lightsail/deploy.sh
+# Or set SEED_DEMO=1 in .env for one run, then remove it.
+if [[ "${SEED_DEMO:-0}" == "1" ]]; then
+  echo "==> Seeding database (SEED_DEMO=1 — DESTRUCTIVE wipe + demo data)..."
+  if $DC -f "$COMPOSE_FILE" exec -T api npx tsx prisma/seed.ts; then
+    echo "Seed complete."
+  else
+    echo "WARNING: seed failed. Demo logins will not work until it succeeds."
+    echo "  Retry: SEED_DEMO=1 $DC -f $COMPOSE_FILE exec -T api npx tsx prisma/seed.ts"
+    exit 1
+  fi
 else
-  echo "WARNING: seed failed. Demo logins will not work until it succeeds."
-  echo "  Retry: $DC -f $COMPOSE_FILE exec -T api npx tsx prisma/seed.ts"
+  echo "==> Skipping seed (default). Migrations already ran via API entrypoint."
+  echo "    First-boot demo data: SEED_DEMO=1 bash deploy/lightsail/deploy.sh"
+  echo "    Then remove SEED_DEMO from .env / the shell — seed wipes live data."
 fi
 
 echo ""
 echo "Deploy complete."
 echo "  Site:  ${WEB_URL}"
 echo "  Admin: ${WEB_URL}/admin"
-echo "  Login: admin@vuekumi.com / Admin123!  (change this password)"
+if [[ "${SEED_DEMO:-0}" == "1" ]]; then
+  echo "  Login: admin@vuekumi.com / Admin123!  (change this password immediately)"
+fi
 echo "  Keys:  Admin → Settings  (Stripe, Flutterwave, OpenAI, Resend, storage)"
 echo ""
 echo "Logs:  $DC -f $COMPOSE_FILE logs -f"
