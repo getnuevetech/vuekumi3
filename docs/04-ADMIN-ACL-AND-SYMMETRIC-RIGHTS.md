@@ -487,6 +487,7 @@ Same discipline as Phases 16–33:
 6. **Tests** — unit guards for eligibility; inject tests for ACL 403s; rights tests that **claimed third-party copyright does not unlock commercial**.
 7. **Docs** — update `01` shipped table and `03` honest-status row in the same PR.
 8. **CI** — existing `db:migrate:deploy` + seed + `npm test`.
+9. **Merge to `main`** when the phase is complete. `main` is the single source of truth.
 
 Vertical slices. No “schema-only” PR that leaves the old eligibility function selling on `claimed` for third-party copyright.
 

@@ -267,3 +267,5 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
    approve **one** phase at a time.
 3. Default next slice: **Phase 36** (super-admin creates staff with granular capability ACL).
    Phase 34 (AI-training) stays parked. Dataset pricing remains **undecided**.
+4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
+   source of truth — do not leave a finished phase only on a feature branch.
