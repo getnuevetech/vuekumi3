@@ -238,7 +238,15 @@ test('finance cannot manage DMCA; moderator cannot release payout holds', async 
 test('three upheld fraud strikes suspend the account', async () => {
   const app = await buildApp()
   const admin = await login(app, 'admin@vuekumi.com', 'Admin123!')
-  const community = await prisma.user.findUniqueOrThrow({ where: { email: 'community@vuekumi.demo' } })
+  const subject = await prisma.user.create({
+    data: {
+      email: `strike-${Date.now()}@vuekumi.demo`,
+      name: 'Strike Subject',
+      accountType: 'contributor',
+      status: 'active',
+      country: 'NG',
+    },
+  })
   const reasons = ['fake_release', 'fake_photographer', 'false_creation_claim'] as const
   let last: { terminated?: boolean; strikeCount?: number } = {}
   for (const reason of reasons) {
@@ -247,7 +255,7 @@ test('three upheld fraud strikes suspend the account', async () => {
       url: '/api/admin/strikes',
       headers: { cookie: admin },
       payload: {
-        userId: community.id,
+        userId: subject.id,
         reason,
         notes: `Staff upheld ${reason} after reviewing the file. This is not a DMCA notice.`,
       },
@@ -257,7 +265,7 @@ test('three upheld fraud strikes suspend the account', async () => {
   }
   assert.equal(last.strikeCount, 3)
   assert.equal(last.terminated, true)
-  const updated = await prisma.user.findUniqueOrThrow({ where: { id: community.id } })
+  const updated = await prisma.user.findUniqueOrThrow({ where: { id: subject.id } })
   assert.equal(updated.status, 'suspended')
   assert.ok(updated.repeatInfringerAt)
   await app.close()
