@@ -37,8 +37,10 @@ import { modelProfileRoutes } from './routes/model-profiles.js'
 import { modelRoutes } from './routes/models.js'
 import { modelUploadRoutes } from './routes/model-upload.js'
 import { bookingRoutes } from './routes/bookings.js'
+import { adminBookingRoutes } from './routes/admin-bookings.js'
 import { representationRoutes } from './routes/representation.js'
 import { campaignRoutes } from './routes/campaigns.js'
+import { adminCampaignRoutes } from './routes/admin-campaigns.js'
 import { partnerRoutes } from './routes/partner.js'
 
 export async function buildApp() {
@@ -120,8 +122,10 @@ export async function buildApp() {
     await api.register(modelRoutes)
     await api.register(modelUploadRoutes)
     await api.register(bookingRoutes)
+    await api.register(adminBookingRoutes)
     await api.register(representationRoutes)
     await api.register(campaignRoutes)
+    await api.register(adminCampaignRoutes)
     await api.register(partnerRoutes)
   }, { prefix: '/api' })
 

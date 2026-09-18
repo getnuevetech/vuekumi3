@@ -138,12 +138,12 @@ export async function campaignRoutes(app: FastifyInstance) {
   })
 
   app.get('/campaigns', auth, async (request) => {
+    // Full staff inventory lives at GET /admin/campaigns (campaigns.list).
+    // Admins without that capability see the same public/open view as members.
     const mine = request.authUser!.accountType === 'user' || request.authUser!.accountType === 'agency'
     const where = mine
       ? { ownerId: request.userId! }
-      : request.authUser!.accountType === 'admin'
-        ? {}
-        : { OR: [{ status: 'open' as const }, { pitches: { some: { contributorId: request.userId! } } }] }
+      : { OR: [{ status: 'open' as const }, { pitches: { some: { contributorId: request.userId! } } }] }
 
     const campaigns = await prisma.campaign.findMany({
       where,
@@ -164,7 +164,7 @@ export async function campaignRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const campaign = await prisma.campaign.findUnique({ where: { id }, select: { ownerId: true, title: true } })
     if (!campaign) return reply.code(404).send({ error: 'Campaign not found' })
-    if (campaign.ownerId !== request.userId && request.authUser!.accountType !== 'admin') {
+    if (campaign.ownerId !== request.userId) {
       return reply.code(403).send({ error: 'Only the campaign owner can see all pitches' })
     }
     const pitches = await prisma.campaignPitch.findMany({
@@ -182,7 +182,7 @@ export async function campaignRoutes(app: FastifyInstance) {
       campaignFound: Boolean(campaign),
       campaignOpen: campaign?.status === 'open',
       isOwner: campaign?.ownerId === request.userId,
-      isAdmin: request.authUser!.accountType === 'admin',
+      isAdmin: false,
     })
     if (blocked) return reply.code(blocked.status).send({ error: blocked.error })
 

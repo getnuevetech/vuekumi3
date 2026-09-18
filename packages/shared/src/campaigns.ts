@@ -71,6 +71,25 @@ export interface CampaignDto {
   createdAt: string
 }
 
+/** Staff queue view — owner email for contact. Budgets/rates are party-indicated, not fees. */
+export interface CampaignAdminDto {
+  id: string
+  title: string
+  brief: string
+  deliverables: string | null
+  usage: string | null
+  location: string | null
+  startDate: string | null
+  endDate: string | null
+  budgetUsd: number | null
+  status: CampaignStatus
+  ownerName: string
+  ownerEmail: string
+  pitchCount: number
+  pendingPitchCount: number
+  createdAt: string
+}
+
 /** Why a contributor cannot pitch this campaign, or null when they can. */
 export function campaignPitchBlocked(input: {
   campaignFound: boolean

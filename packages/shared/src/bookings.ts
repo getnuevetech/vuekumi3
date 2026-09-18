@@ -64,6 +64,29 @@ export interface BookingDto {
   respondedAt: string | null
 }
 
+/** Staff queue view — same fields as BookingDto plus party emails. No platform fee. */
+export interface BookingAdminDto {
+  id: string
+  kind: BookingKind
+  status: BookingStatus
+  title: string
+  brief: string
+  location: string | null
+  startDate: string | null
+  endDate: string | null
+  budgetUsd: number | null
+  quoteUsd: number | null
+  quoteNote: string | null
+  requesterName: string
+  requesterEmail: string
+  targetName: string
+  targetEmail: string
+  targetHandle: string
+  targetAvatarUrl: string | null
+  createdAt: string
+  respondedAt: string | null
+}
+
 /** Why a new booking request cannot be created, or null when it can. */
 export function bookingCreateBlocked(input: {
   targetFound: boolean

@@ -59,6 +59,7 @@ import type {
   AcceptModelInviteInput,
   VerifyLikenessInput,
   BookingDto,
+  BookingAdminDto,
   CreateBookingInput,
   BookingQuoteInput,
   RepresentationDto,
@@ -69,6 +70,7 @@ import type {
   CreateInquiryInput,
   DecideInquiryInput,
   CampaignDto,
+  CampaignAdminDto,
   CampaignPitchDto,
   CreateCampaignInput,
   CreatePitchInput,
@@ -190,6 +192,16 @@ export const api = {
 
   decideInquiry: (id: string, body: DecideInquiryInput) =>
     request<{ ok: true }>(`/api/admin/inquiries/${id}`, { method: 'POST', body: JSON.stringify(body) }),
+
+  adminBookings: () => request<{ items: BookingAdminDto[] }>('/api/admin/bookings'),
+
+  adminCampaigns: () => request<{ items: CampaignAdminDto[] }>('/api/admin/campaigns'),
+
+  adminCampaignPitches: (id: string) =>
+    request<{ items: CampaignPitchDto[] }>(`/api/admin/campaigns/${id}/pitches`),
+
+  adminCloseCampaign: (id: string) =>
+    request<{ campaign: CampaignAdminDto }>(`/api/admin/campaigns/${id}/close`, { method: 'POST', body: JSON.stringify({}) }),
 
   campaigns: () => request<{ items: CampaignDto[] }>('/api/campaigns'),
 

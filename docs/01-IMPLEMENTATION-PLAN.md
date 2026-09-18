@@ -113,6 +113,7 @@ Locked product rules already in the running system:
 | **39** | DMCA notice path, repeat-infringer strikes, payout holds. `GET /contributor/earnings` is open to photographers. DMCA is copyright only. |
 | **40** | VueKumi Global Rights Standard hooks + country overlays (agreement copy remains counsel-gated). |
 | **41** | Admin-curated homepage featured slots (hero, edge, editorial, pricing, stats background). Unfilled positions keep live ranking. Featuring is not a licence. Private / portfolio / agency-protected cannot be pinned. |
+| **42** | Staff booking + campaign queues (`/admin/bookings`, `/admin/campaigns`). Visibility + campaign close for moderation. No payment rails, no commission. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -276,10 +277,11 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled**. Phase 41 (admin-curated homepage featured slots)
-   is shipped. Phase 34 (AI-training consent) is shipped as an opt-in engine; dataset
-   pricing remains **undecided**. Arc D (Phases 35–40) is shipped. For ops redeploy and
-   decision gates, see
+3. Default next slice: **none scheduled**. Phase 42 (staff booking + campaign queues)
+   is shipped. Phase 41 (admin-curated homepage featured slots) is shipped. Phase 34
+   (AI-training consent) is shipped as an opt-in engine; dataset pricing remains
+   **undecided**. Arc D (Phases 35–40) is shipped. For ops redeploy and decision gates,
+   see
    [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md) — still
    requires explicit approval before any numbered phase.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
