@@ -209,7 +209,8 @@ For production at scale, move the database off the instance:
 |---|---|
 | `API health check timed out` | `docker compose -f docker-compose.prod.yml logs api` — usually bad `DATABASE_URL` or migration error |
 | 502 on `/api` | API container not running; check `docker compose ps` |
-| Login cookies not set | Ensure `WEB_URL` matches the URL you visit (http vs https) |
+| Login cookies not set | Ensure `WEB_URL` matches the URL you visit (http vs https). Pull `main` for the HTTP Secure-cookie fix if TLS is not live yet. |
+| Live users disappeared after redeploy | Seed ran. Redeploys must **not** set `SEED_DEMO=1`. Restore from `pg_dump` backup if you have one. |
 | IP works, `https://vuekumi.com` times out | Port 80 is serving; 443 has no TLS. Run `bash deploy/lightsail/ssl-init.sh vuekumi.com you@email.com` and allow HTTPS (443) in Lightsail Networking. `git pull` no longer wipes HTTPS — deploy rewrites `nginx.runtime.conf` when certs exist |
 | Build looks stuck on `tsc` / `vite build` | Two images were compiling at once and froze a 1–2 GB box. Pull this branch and re-run `bash deploy/lightsail/deploy.sh` (builds one image at a time + adds 2G swap). Still tight: use a 2 GB+ plan |
 | Port 80 in use | `sudo lsof -i :80` — stop conflicting service |
