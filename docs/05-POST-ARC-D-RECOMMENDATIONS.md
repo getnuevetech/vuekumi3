@@ -202,8 +202,8 @@ an O-track failure. Promotion to admin-picked is Track A below, only if approved
 | Step | Work | Gate |
 | --- | --- | --- |
 | **A1** | Review existing Phase 41 branch; merge — admin-pinned featured slots with ranking fallback — **shipped** | Explicit approve as Phase 41 (or equivalent) |
-| **A2** | Homepage marketing copy matches reality (algorithmic vs staff-curated) | Ships with or immediately after A1 |
-| **A3** | Resolve `/models` vs `/m/:handle` booking CTA contradiction + doc drift in `01` / `03` | Product one-liner: booking on or off from index |
+| **A2** | Homepage marketing copy matches reality (staff-pinned featured + ranking fallback) — **shipped** | Ships with or immediately after A1 |
+| **A3** | Resolve `/models` vs `/m/:handle` booking CTA contradiction + doc drift in `01` / `03` — **shipped** | Product one-liner: booking on profile when available |
 
 ### Track Dox — Documentation hygiene (can run anytime)
 

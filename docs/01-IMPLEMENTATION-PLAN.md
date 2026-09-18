@@ -127,7 +127,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | --- | --- |
 | Photographer copyright + platform licence + buyer usage licence | Shipped (agreement + grants) |
 | Model as a real, verifiable account | **Yes** — public `model` registration (Africa not required) plus the photographer invite path. Photographers may also hold a `ModelProfile` on the same email. Models may upload; VueKumi contacts named photographers. Admin/agency cannot. |
-| Public model portfolio | Shipped (Phase 27) — `/m/:handle` and `/models` from approved, confirmed likeness on profile-visible photographs. Model does not gain copyright. No booking CTA. |
+| Public model portfolio | Shipped (Phase 27) — `/m/:handle` and `/models` from approved, confirmed likeness on profile-visible photographs. Model does not gain copyright. Booking CTA on profiles when available (Phase 30). |
 | Two-approval commercial lock | Shipped (Phase 25) — commercial-class licences of people photos require every appearance approved with confirmed likeness and commercial usage. PDF is supporting evidence. |
 | Invite-the-model as acquisition | Shipped (Phase 24) — photographer names a person; VueKumi emails the invite |
 | Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Shipped (Phase 23) — orthogonal to moderation status; catalog is stock states only |

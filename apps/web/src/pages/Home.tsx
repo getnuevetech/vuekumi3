@@ -288,8 +288,8 @@ function Marquee({ categories }: { categories: string[] }) {
 function IconRow() {
   const feats = [
     {
-      title: 'Curated weekly',
-      text: 'Every submission passes a human review for craft, metadata and rights before it goes live.',
+      title: 'Staff featured',
+      text: 'Homepage highlights are staff-pinned live stock; empty slots follow ranking. Featuring is not a licence — commercial sales still need cleared rights.',
       icon: (
         <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.4">
           <rect x="3" y="3" width="18" height="18" rx="2" />

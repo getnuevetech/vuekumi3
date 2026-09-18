@@ -41,7 +41,8 @@ export default function Models() {
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
           Public portfolios assembled from photographs a model approved. Copyright stays with
           the photographer. Vuekumi sells usage permission, not ownership. Models do not earn
-          from licences, and booking is not offered here.
+          from licences. Open a portfolio to book when the model is available — settlement is
+          off-platform and Vuekumi takes no booking commission.
         </p>
 
         <form
