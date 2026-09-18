@@ -31,12 +31,15 @@ import type { TwoPartyAppearanceInput } from '@vuekumi/shared'
 import {
   copyrightCleared,
   isCommerciallyEligible,
-  likenessRightsCleared,
+  likenessAuthorizationSufficient,
   outstandingConsentCount,
+  publicRightsVerified,
   resolveAdminCapabilities,
   rollupModelConsentStatus,
+  thirdPartyCopyright,
   twoPartyBlocksLicense,
   twoPartyCommercialCleared,
+  type CreationClaim,
 } from '@vuekumi/shared'
 import { isLicenseOffered, priceForProduct, rightsReadyForLive, twoPartyLicenseBlock } from './rights.js'
 import { displayPlan, displayQuota } from './subscriptions.js'
@@ -120,6 +123,7 @@ export function serializeRights(
     | 'commercialLocked'
     | 'possibleMinor'
     | 'screeningKind'
+    | 'creationClaim'
   >,
   rights: RightsRecord | null,
   hasAgreement: boolean,
@@ -127,6 +131,7 @@ export function serializeRights(
 ): RightsDto {
   const live = rightsReadyForLive({ rights, hasAgreement })
   const copyrightStatus = (rights?.copyrightStatus ?? (rights?.copyrightVerified ? 'verified' : 'claimed')) as CopyrightStatus
+  const creationClaim = ((photo as { creationClaim?: CreationClaim }).creationClaim ?? 'self_created') as CreationClaim
   const modelConsentStatus = (rights?.modelConsentStatus
     ?? rollupModelConsentStatus({
       hasRecognizablePeople: photo.hasRecognizablePeople,
@@ -140,12 +145,15 @@ export function serializeRights(
         licenseType: 'commercial',
         requiresModelRelease: true,
         copyrightStatus,
+        creationClaim,
       }) ?? null
     : null
   const commercialEligible = isCommerciallyEligible({
     copyrightStatus,
     modelConsentStatus,
     commercialLocked: photo.commercialLocked,
+    creationClaim,
+    appearances,
   })
   const levels = appearances
     .map((row) => row.verificationLevel)
@@ -156,18 +164,30 @@ export function serializeRights(
       ? 'vuekumi_verified'
       : levels.length > 0
         ? 'photographer_provided'
-        : modelConsentStatus === 'approved'
+        : likenessAuthorizationSufficient({ modelConsentStatus, appearances })
           ? 'vuekumi_verified'
           : null
+  const rightsVerified = publicRightsVerified({
+    copyrightStatus,
+    modelConsentStatus,
+    appearances,
+  })
   return {
     copyrightVerified: copyrightCleared(copyrightStatus) || Boolean(rights?.copyrightVerified),
     copyrightHolder: rights?.copyrightHolder ?? null,
     copyrightStatus,
+    copyrightMethod: rights?.copyrightMethod,
+    creationClaim,
+    thirdPartyCopyright: thirdPartyCopyright(creationClaim),
     modelReleaseRequired: rights?.modelReleaseRequired ?? photo.hasRecognizablePeople,
     modelReleaseStatus: rights?.modelReleaseStatus ?? 'not_required',
     modelConsentStatus,
     commercialEligible,
-    modelReleaseVerified: photo.hasRecognizablePeople && likenessRightsCleared(modelConsentStatus),
+    modelReleaseVerified: photo.hasRecognizablePeople && likenessAuthorizationSufficient({
+      modelConsentStatus,
+      appearances,
+    }),
+    rightsVerified,
     releaseVerificationLevel,
     outstandingConsents: photo.hasRecognizablePeople ? outstanding : 0,
     awaitingModelConsent:
@@ -262,12 +282,15 @@ export function serializeLicenseProduct(
     | 'commercialLocked'
     | 'permissionState'
     | 'hasRecognizablePeople'
+    | 'creationClaim'
   >,
   _rights: RightsRecord | null,
   appearances: TwoPartyAppearanceInput[] = [],
 ): LicenseProductDto {
   const offer = isLicenseOffered(product, photo)
-  const twoParty = offer.offered ? twoPartyLicenseBlock(product, photo, appearances) : undefined
+  const twoParty = offer.offered
+    ? twoPartyLicenseBlock(product, photo, appearances, _rights?.copyrightStatus)
+    : undefined
   const blockedReason = twoParty ?? offer.reason
   return {
     id: product.id,

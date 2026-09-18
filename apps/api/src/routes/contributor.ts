@@ -6,11 +6,12 @@ import {
   canEnterCommercialInventory,
   canImpersonateCreator,
   communityContributorBlocksState,
-  copyrightCleared,
   declareSubjectAgeSchema,
   identifyAppearanceSchema,
+  isCommerciallyEligible,
   isCommunityContributor,
   MODEL_RELEASE_ATTESTATION,
+  authorizeGuardianSchema,
   presignUploadSchema,
   selfShotAppearanceSchema,
   submitPhotoSchema,
@@ -51,6 +52,7 @@ import {
   syncPermissionToTwoParty,
   syncVerifiedRightsRecord,
 } from '../lib/models.js'
+import { appendRightsLedgerEvent, loadRightsLedger } from '../lib/ledger.js'
 import { issueAppearanceInvite } from './models.js'
 import { loadOriginalBytes, screenImageForRights, screeningWriteData } from '../lib/screening.js'
 import {
@@ -307,7 +309,11 @@ export async function contributorRoutes(app: FastifyInstance) {
     const now = new Date()
     const modelConsentStatus = people ? 'required' : 'not_required'
     const copyrightStatus = 'claimed' as const
-    const commercialEligible = copyrightCleared(copyrightStatus) && modelConsentStatus === 'not_required'
+    const commercialEligible = isCommerciallyEligible({
+      copyrightStatus,
+      modelConsentStatus,
+      creationClaim: 'self_created',
+    })
 
     let shootId: string | undefined
     if (body.shootTitle && commercialUploader) {
@@ -326,6 +332,8 @@ export async function contributorRoutes(app: FastifyInstance) {
         data: {
           id,
           contributorId,
+          uploadedById: contributorId,
+          creationClaim: 'self_created',
           title: body.title,
           description: body.description,
           category: body.category,
@@ -424,6 +432,18 @@ export async function contributorRoutes(app: FastifyInstance) {
         originalKey: Boolean(body.originalKey),
       },
       ipAddress: request.ip,
+    })
+    await appendRightsLedgerEvent({
+      photoId: photo.id,
+      action: 'copyright.attested',
+      actorId: request.userId,
+      actorKind: 'user',
+      agreementVersion: commercialUploader ? 'photographer' : 'community',
+      nextCopyright: copyrightStatus,
+      nextLikeness: modelConsentStatus,
+      commercialEligible,
+      ip: request.ip,
+      userAgent: request.headers['user-agent'],
     })
 
     return {
@@ -656,6 +676,7 @@ export async function contributorRoutes(app: FastifyInstance) {
           ageClass: body.ageClass === 'minor' || body.isMinor ? 'minor' : (body.ageClass ?? 'adult'),
           isMinor: Boolean(body.isMinor || body.ageClass === 'minor'),
           verificationLevel: 'photographer_provided',
+          consentQuality: 'documented',
         },
       })
     const release = await prisma.modelRelease.create({
@@ -674,7 +695,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     })
     await prisma.photoAppearance.update({
       where: { id: appearance.id },
-      data: { verificationLevel: 'photographer_provided' },
+      data: { verificationLevel: 'photographer_provided', consentQuality: 'documented' },
     })
     let joinUrl: string | undefined
     if (body.confirmWithModel && email) {
@@ -844,6 +865,7 @@ export async function contributorRoutes(app: FastifyInstance) {
         ageClass: 'adult' as const,
         isMinor: false,
         verificationLevel: body.status === 'approved' ? 'vuekumi_verified' as const : null,
+        consentQuality: body.status === 'approved' ? 'verified' as const : 'claimed' as const,
         notes: body.notes ?? existing?.notes ?? null,
         claimedAt: existing?.claimedAt ?? now,
         decidedAt: now,
@@ -909,11 +931,76 @@ export async function contributorRoutes(app: FastifyInstance) {
         guardianName: minor ? body.guardianName : null,
         guardianEmail: minor ? body.guardianEmail?.toLowerCase() : null,
         guardianMobile: minor ? body.guardianMobile : null,
+        guardianAuthorizedAt: minor && body.guardianAuthorized ? new Date() : (minor ? row.guardianAuthorizedAt : null),
       },
       include: appearanceInclude,
     })
     await syncVerifiedRightsRecord(id)
+    if (minor && body.guardianAuthorized) {
+      await appendRightsLedgerEvent({
+        photoId: id,
+        action: 'likeness.guardian_authorized',
+        actorId: request.userId,
+        actorKind: isImpersonatingStaff(request.authUser) ? 'staff' : 'user',
+        relatedIds: { appearanceId },
+        ip: request.ip,
+        userAgent: request.headers['user-agent'],
+      })
+    }
     return { appearance: serializeAppearance(updated, { includeEmail: true, includeMobile: true }) }
+  })
+
+  app.post('/contributor/photos/:id/appearances/:appearanceId/guardian', gate, async (request, reply) => {
+    const { id, appearanceId } = request.params as { id: string; appearanceId: string }
+    authorizeGuardianSchema.parse(request.body)
+    const photo = await prisma.photo.findUnique({ where: { id } })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    const row = await prisma.photoAppearance.findUnique({ where: { id: appearanceId } })
+    if (!row || row.photoId !== id) return reply.code(404).send({ error: 'Appearance not found' })
+    if (!row.isMinor) return reply.code(400).send({ error: 'Guardian authorization applies only to a minor' })
+    if (!row.guardianName || !row.guardianEmail || !row.guardianMobile) {
+      return reply.code(400).send({ error: 'Record the parent or legal guardian name, email and mobile first' })
+    }
+    const updated = await prisma.photoAppearance.update({
+      where: { id: appearanceId },
+      data: { guardianAuthorizedAt: new Date() },
+      include: appearanceInclude,
+    })
+    await syncVerifiedRightsRecord(id)
+    await appendRightsLedgerEvent({
+      photoId: id,
+      action: 'likeness.guardian_authorized',
+      actorId: request.userId,
+      actorKind: isImpersonatingStaff(request.authUser) ? 'staff' : 'user',
+      relatedIds: { appearanceId },
+      ip: request.ip,
+      userAgent: request.headers['user-agent'],
+    })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'rights.guardian_authorized',
+      entityType: 'photo_appearance',
+      entityId: appearanceId,
+      metadata: { photoId: id },
+      ipAddress: request.ip,
+    })
+    return { appearance: serializeAppearance(updated, { includeEmail: true, includeMobile: true }) }
+  })
+
+  app.get('/contributor/photos/:id/rights-ledger', gate, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const photo = await prisma.photo.findUnique({ where: { id }, select: { contributorId: true, uploadedById: true } })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    const mine = photo.contributorId === request.userId || photo.uploadedById === request.userId
+    if (!isImpersonatingStaff(request.authUser) && !mine) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    const ledger = await loadRightsLedger(id)
+    if (!ledger) return reply.code(404).send({ error: 'Photo not found' })
+    return { ledger }
   })
 
   app.post('/contributor/photos/:id/appearances/:appearanceId/resend', gate, async (request, reply) => {

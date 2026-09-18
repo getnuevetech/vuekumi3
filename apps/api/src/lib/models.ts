@@ -11,6 +11,7 @@ import type {
   SubjectAgeClass,
 } from '@vuekumi/shared'
 import {
+  appearanceLikenessQuality,
   isCommerciallyEligible,
   rollupModelConsentStatus,
   twoPartyCommercialCleared,
@@ -18,6 +19,7 @@ import {
 import type { PhotoAppearance, User } from '@prisma/client'
 import { prisma } from './prisma.js'
 import { permissionAfterTwoParty, permissionWriteData } from './permissions.js'
+import { appendRightsLedgerEvent } from './ledger.js'
 
 export class ModelError extends Error {
   statusCode: number
@@ -250,7 +252,8 @@ export function serializeAppearance(
     isMinor: Boolean((row as { isMinor?: boolean }).isMinor),
     guardianAuthorized: Boolean((row as { guardianAuthorizedAt?: Date | null }).guardianAuthorizedAt),
     releaseVerificationLevel: ((row as { verificationLevel?: ReleaseVerificationLevel | null }).verificationLevel ?? null),
-    modelReleaseVerified: consentStatus === 'approved' && row.confirmedLikeness,
+    consentQuality: appearanceLikenessQuality(row),
+    modelReleaseVerified: consentStatus === 'approved' && row.confirmedLikeness && appearanceLikenessQuality(row) === 'verified',
   }
 }
 
@@ -291,10 +294,20 @@ export async function applyAppearanceDecision(input: {
       decidedAt: new Date(),
       consentVersion: input.action === 'approved' ? '1.0' : null,
       verificationLevel: input.action === 'approved' ? 'vuekumi_verified' : row.verificationLevel,
+      consentQuality: input.action === 'approved' ? 'verified' : row.consentQuality,
     },
     include: appearanceInclude,
   })
   await syncPermissionToTwoParty(row.photoId)
+  await appendRightsLedgerEvent({
+    photoId: row.photoId,
+    action: `likeness.${input.action}`,
+    actorId: input.actorId,
+    actorKind: input.actorId ? 'user' : 'guest',
+    nextLikeness: updated.consentStatus,
+    nextQuality: updated.consentQuality,
+    relatedIds: { appearanceId: updated.id },
+  })
   return updated
 }
 
@@ -313,6 +326,8 @@ export async function syncVerifiedRightsRecord(photoId: string) {
     copyrightStatus,
     modelConsentStatus,
     commercialLocked: photo.commercialLocked,
+    creationClaim: photo.creationClaim,
+    appearances: photo.appearances,
   })
   await prisma.rightsRecord.update({
     where: { photoId },
@@ -320,7 +335,7 @@ export async function syncVerifiedRightsRecord(photoId: string) {
       modelConsentStatus,
       commercialEligible,
       modelReleaseRequired: photo.hasRecognizablePeople,
-      copyrightVerified: copyrightStatus === 'claimed' || copyrightStatus === 'verified',
+      copyrightVerified: copyrightStatus === 'claimed' || copyrightStatus === 'documented' || copyrightStatus === 'verified',
     },
   })
 }

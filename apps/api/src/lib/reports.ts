@@ -91,7 +91,7 @@ export function serializeRightsReport(
 export async function applyCommercialLock(input: {
   photoId: string
   locked: boolean
-  actorId: string
+  actorId?: string | null
   notes?: string | null
 }): Promise<Photo> {
   return prisma.photo.update({
@@ -100,7 +100,7 @@ export async function applyCommercialLock(input: {
       ? {
           commercialLocked: true,
           commercialLockedAt: new Date(),
-          commercialLockedById: input.actorId,
+          commercialLockedById: input.actorId || null,
         }
       : {
           commercialLocked: false,

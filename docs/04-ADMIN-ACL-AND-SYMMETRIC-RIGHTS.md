@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: Phases 35–36 shipped. Remaining phases still require approval before implementation.**
+**Status: Phases 35–37 shipped. Remaining phases still require approval before implementation.**
 
 This is the implementation procedure for three product decisions:
 
@@ -108,7 +108,7 @@ Two questions, always, and they are not the same:
 
 ---
 
-## 3. Rights model (Phase 37 foundation — design now, ship then)
+## 3. Rights model (Phase 37 — shipped)
 
 ### 3.1 Two dimensions, not one collapsed enum
 
@@ -356,6 +356,14 @@ Nav and routes hide what the signed-in admin cannot access. API returns 403 with
 4. UI: create-admin form with preset + checkbox matrix; nav filtered by capabilities; ProtectedRoute accepts capability.
 5. Tests: finance cannot `settings.write`; support cannot `payouts.pay`; moderator cannot `accounts.admins.manage`; super-admin can.
 
+**Phase 37 — Rights quality + ledger (shipped)**
+
+1. Shared: `documented` copyright; `creationClaim`; `copyrightAuthoritySufficient`; likeness quality `claimed|documented|verified`; public mark only at `verified`.
+2. Schema: `Photo.creationClaim` / `uploadedById`; `PhotoAppearance.consentQuality`; `RightsLedgerEvent`; `guardianAuthorizedAt` write path.
+3. API: commercial eligibility refuses claimed/documented third-party copyright; `GET /admin/content/:id/rights-ledger`; contributor own-photo ledger; guardian authorize; report filings freeze and dispute the matching track.
+4. UI: admin content sheet shows quality, ledger, guardian write; public “Rights Verified ✓” only at the verified rung.
+5. Tests: self-created claimed still commercial; third-party claimed is not; PDF is documented not verified; finance 403 on ledger; guardian write lands on the ledger.
+
 Do not ship model-upload in the same PRs. Ops can use staff ACL while rights work continues.
 
 ---
@@ -471,7 +479,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice after approval: Phase 37.**
+**Default next slice after approval: Phase 38.**
 
 ---
 

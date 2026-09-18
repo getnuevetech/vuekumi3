@@ -2,6 +2,8 @@ import type { GrantLicenseType, LicenseGrant, LicenseProduct, Photo, Prisma } fr
 import { prisma } from './prisma.js'
 import { assertCanGrant, certificateCode } from './rights.js'
 import { getContributorShare } from './payments-config.js'
+import { appendRightsLedgerEvent } from './ledger.js'
+import { isCommerciallyEligible, thirdPartyCopyright } from '@vuekumi/shared'
 
 type Tx = Prisma.TransactionClient
 export type GrantWithRelations = LicenseGrant & { photo: Photo; product: LicenseProduct }
@@ -37,6 +39,26 @@ export async function issueGrant(
   if (!product) throw new Error('Licence type not found')
   assertCanGrant(product, photo, photo.rightsRecord, photo.appearances)
 
+  const latestEvent = await client.rightsLedgerEvent.findFirst({
+    where: { photoId: input.photoId },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+  })
+  const snapshot = {
+    copyrightStatus: photo.rightsRecord?.copyrightStatus ?? 'claimed',
+    modelConsentStatus: photo.rightsRecord?.modelConsentStatus ?? 'not_required',
+    creationClaim: photo.creationClaim,
+    thirdPartyCopyright: thirdPartyCopyright(photo.creationClaim),
+    commercialEligible: isCommerciallyEligible({
+      copyrightStatus: photo.rightsRecord?.copyrightStatus ?? 'claimed',
+      modelConsentStatus: photo.rightsRecord?.modelConsentStatus ?? 'not_required',
+      commercialLocked: photo.commercialLocked,
+      creationClaim: photo.creationClaim,
+      appearances: photo.appearances,
+    }),
+    ledgerHeadId: latestEvent?.id ?? null,
+  }
+
   const created = await client.licenseGrant.create({
     data: {
       buyerId: input.buyerId,
@@ -49,6 +71,8 @@ export async function issueGrant(
       currency: input.currency,
       amountLocal: input.amountLocal,
       scopeJson: input.scopeJson as Prisma.InputJsonValue,
+      ledgerHeadId: latestEvent?.id ?? undefined,
+      ledgerSnapshot: snapshot as Prisma.InputJsonValue,
       certificateCode: certificateCode(input.photoId, input.licenseType),
     },
     include: { photo: true, product: true },

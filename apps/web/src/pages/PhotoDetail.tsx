@@ -366,7 +366,16 @@ export default function PhotoDetail() {
               </p>
             )}
 
-            {view.rights?.modelReleaseVerified && (
+            {view.rights?.rightsVerified && (
+              <p className="mt-4 border border-sand bg-white px-4 py-3 text-sm">
+                <span className="font-medium">Rights Verified ✓</span>
+                <span className="mt-1 block font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+                  Copyright and likeness are VueKumi-verified. Contact details stay private.
+                </span>
+              </p>
+            )}
+
+            {view.rights?.modelReleaseVerified && !view.rights?.rightsVerified && (
               <p className="mt-4 border border-sand bg-white px-4 py-3 text-sm">
                 <span className="font-medium">Model Release Verified ✓</span>
                 <span className="mt-1 block font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">

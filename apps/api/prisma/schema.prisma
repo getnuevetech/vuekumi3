@@ -84,6 +84,7 @@ enum ModelReleaseStatus {
 
 enum CopyrightStatus {
   claimed
+  documented
   verified
   disputed
   restricted
@@ -103,6 +104,33 @@ enum ModelConsentStatus {
 enum ReleaseVerificationLevel {
   photographer_provided
   vuekumi_verified
+}
+
+enum CopyrightMethod {
+  attestation
+  document
+  vuekumi_direct
+}
+
+enum LikenessQuality {
+  claimed
+  documented
+  verified
+}
+
+enum CreationClaim {
+  self_created
+  photographer_took
+  assigned
+  licensed
+  unknown
+}
+
+enum RightsLedgerActorKind {
+  user
+  guest
+  staff
+  system
 }
 
 enum AppearanceDecisionKind {
@@ -266,6 +294,8 @@ model User {
   campaigns             Campaign[]
   campaignPitches       CampaignPitch[]
   partnerKeysCreated    PartnerApiKey[]
+  photosUploaded        Photo[]              @relation("PhotoUploader")
+  rightsLedgerEvents    RightsLedgerEvent[]  @relation("LedgerActor")
 
   @@index([accountType])
   @@index([status])
@@ -586,7 +616,11 @@ model Photo {
   screeningAt              DateTime?
   screeningProvider        String?
 
+  uploadedById             String?
+  creationClaim            CreationClaim @default(self_created)
+
   contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
+  uploadedBy       User?             @relation("PhotoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   shoot            PhotoShoot?       @relation(fields: [shootId], references: [id], onDelete: SetNull)
   tags             PhotoTag[]
   rightsRecord     RightsRecord?
@@ -604,11 +638,13 @@ model Photo {
   representationInquiries RepresentationInquiry[]
   commercialLockedBy User? @relation("CommercialLockActor", fields: [commercialLockedById], references: [id], onDelete: SetNull)
   appearances      PhotoAppearance[]
+  ledgerEvents     RightsLedgerEvent[]
 
   @@index([status])
   @@index([category])
   @@index([country])
   @@index([contributorId])
+  @@index([uploadedById])
   @@index([commercialLocked])
   @@index([permissionState])
   @@index([shootId])
@@ -756,6 +792,7 @@ model RightsRecord {
   copyrightHolder      String?
   copyrightStatus      CopyrightStatus    @default(claimed)
   copyrightAttestedAt  DateTime?
+  copyrightMethod      CopyrightMethod    @default(attestation)
   modelReleaseRequired Boolean            @default(false)
   modelReleaseStatus   ModelReleaseStatus @default(not_required)
   modelReleaseFileKey  String?
@@ -770,6 +807,34 @@ model RightsRecord {
 
   photo             Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
   processVerifiedBy User? @relation("RightsProcessVerifier", fields: [processVerifiedById], references: [id], onDelete: SetNull)
+}
+
+model RightsLedgerEvent {
+  id                  String                 @id @default(cuid())
+  photoId             String
+  actorId             String?
+  actorKind           RightsLedgerActorKind  @default(system)
+  action              String
+  agreementVersion    String?
+  scopesJson          Json?
+  channel             String?
+  relatedIdsJson      Json?
+  previousCopyright   CopyrightStatus?
+  nextCopyright       CopyrightStatus?
+  previousLikeness    ModelConsentStatus?
+  nextLikeness        ModelConsentStatus?
+  previousQuality     String?
+  nextQuality         String?
+  commercialEligible  Boolean                @default(false)
+  ip                  String?
+  userAgent           String?
+  createdAt           DateTime               @default(now())
+
+  photo Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  actor User?  @relation("LedgerActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([photoId, createdAt])
+  @@index([actorId])
 }
 
 model ModelRelease {
@@ -829,6 +894,7 @@ model PhotoAppearance {
   guardianMobile        String?
   guardianAuthorizedAt  DateTime?
   verificationLevel     ReleaseVerificationLevel?
+  consentQuality        LikenessQuality           @default(claimed)
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
 
@@ -931,6 +997,8 @@ model LicenseGrant {
   currency        String           @default("USD")
   amountLocal     Float
   scopeJson       Json
+  ledgerHeadId    String?
+  ledgerSnapshot  Json?
   certificateCode String           @unique
   createdAt       DateTime         @default(now())
 

@@ -1,6 +1,6 @@
 import type { GrantLicenseType, LicenseProduct, Photo, PlatformAgreement, RightsRecord } from '@prisma/client'
 import type { PermissionState, TwoPartyAppearanceInput } from '@vuekumi/shared'
-import { copyrightCleared, permissionBlocksLicense, twoPartyBlocksLicense } from '@vuekumi/shared'
+import { copyrightCleared, commercialEligibilityBlock, permissionBlocksLicense, thirdPartyCopyright, twoPartyBlocksLicense } from '@vuekumi/shared'
 import { COMMUNITY_AGREEMENT_VERSION, CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 
@@ -80,27 +80,39 @@ export function isLicenseOffered(
 
 export function twoPartyLicenseBlock(
   product: Pick<LicenseProduct, 'requiresModelRelease' | 'type'>,
-  photo: Pick<Photo, 'hasRecognizablePeople'>,
+  photo: Pick<Photo, 'hasRecognizablePeople'> & { creationClaim?: Photo['creationClaim'] },
   appearances: TwoPartyAppearanceInput[],
+  copyrightStatus?: RightsRecord['copyrightStatus'],
 ): string | undefined {
   return twoPartyBlocksLicense({
     hasRecognizablePeople: photo.hasRecognizablePeople,
     appearances,
     licenseType: product.type,
     requiresModelRelease: product.requiresModelRelease,
+    copyrightStatus,
+    creationClaim: photo.creationClaim,
   })
 }
 
 export function assertCanGrant(
   product: LicenseProduct,
-  photo: PhotoLicenseFields,
-  _rights: RightsRecord | null,
+  photo: PhotoLicenseFields & { creationClaim?: Photo['creationClaim'] },
+  rights: RightsRecord | null,
   appearances: TwoPartyAppearanceInput[] = [],
 ) {
   const offer = isLicenseOffered(product, photo)
   if (!offer.offered) throw new RightsError(offer.reason ?? 'Licence not available')
-  const twoParty = twoPartyLicenseBlock(product, photo, appearances)
+  const twoParty = twoPartyLicenseBlock(product, photo, appearances, rights?.copyrightStatus)
   if (twoParty) throw new RightsError(twoParty)
+  const eligibility = commercialEligibilityBlock({
+    copyrightStatus: rights?.copyrightStatus ?? 'claimed',
+    modelConsentStatus: rights?.modelConsentStatus ?? 'not_required',
+    commercialLocked: photo.commercialLocked,
+    appearances,
+    licenseType: product.type,
+    creationClaim: photo.creationClaim,
+  })
+  if (eligibility) throw new RightsError(eligibility)
 }
 
 export async function contributorHasAgreement(userId: string): Promise<boolean> {

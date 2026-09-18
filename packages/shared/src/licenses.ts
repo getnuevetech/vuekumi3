@@ -49,6 +49,8 @@ export const quoteDecisionSchema = z.object({
 export const patchRightsSchema = z.object({
   copyrightVerified: z.boolean().optional(),
   copyrightHolder: z.string().max(200).optional(),
+  copyrightStatus: z.enum(['claimed', 'documented', 'verified', 'disputed', 'restricted']).optional(),
+  creationClaim: z.enum(['self_created', 'photographer_took', 'assigned', 'licensed', 'unknown']).optional(),
   platformRightsOk: z.boolean().optional(),
   modelReleaseRequired: z.boolean().optional(),
   exclusiveAvailable: z.boolean().optional(),

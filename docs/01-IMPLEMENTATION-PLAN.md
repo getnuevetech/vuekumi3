@@ -214,7 +214,7 @@ Approve **one** remaining phase at a time.
 | --- | --- |
 | **35** | Admin user management from the portal: create/edit every account type, photographers list, agency activation — **shipped** |
 | **36** | Super-admin creates admins; granular capability ACL (roles are presets) — **shipped** |
-| **37** | Symmetric rights quality (`claimed → documented → verified`); tighten commercial eligibility; Rights Ledger; guardian write |
+| **37** | Symmetric rights quality (`claimed → documented → verified`); tighten commercial eligibility; Rights Ledger; guardian write — **shipped** |
 | **38** | Model public registration + model upload; VueKumi contacts the photographer (mirror of Route B) |
 | **39** | DMCA notice path, repeat-infringer strikes, payout holds |
 | **40** | VueKumi Global Rights Standard hooks + country overlays (agreement copy remains counsel-gated) |
@@ -266,7 +266,7 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **Phase 37** (rights quality: claimed → documented → verified, commercial eligibility tighten, Rights Ledger).
+3. Default next slice: **Phase 38** (model public register + model upload; VueKumi contacts the photographer).
    Phase 34 (AI-training) stays parked. Dataset pricing remains **undecided**.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.

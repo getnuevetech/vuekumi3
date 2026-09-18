@@ -8,6 +8,8 @@ import { writeAuditLog } from '../lib/audit.js'
 import { optionalAuthenticate, requireAdminCapability } from '../lib/auth-middleware.js'
 import { config } from '../config.js'
 import { DEFAULT_OPS_ADDRESS, rightsReportOpsEmail, sendEmail } from '../lib/email.js'
+import { appendRightsLedgerEvent } from '../lib/ledger.js'
+import { syncVerifiedRightsRecord } from '../lib/models.js'
 import { prisma } from '../lib/prisma.js'
 import { REPORT_RATE_LIMIT } from '../lib/rate-limit.js'
 import {
@@ -76,6 +78,37 @@ export async function reportRoutes(app: FastifyInstance) {
         ipAddress: request.ip,
         userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'].slice(0, 400) : null,
       },
+    })
+
+    await applyCommercialLock({
+      photoId: photo.id,
+      locked: true,
+      actorId: request.userId,
+    })
+    const rightsPatch =
+      body.reason === 'copyright' || body.reason === 'unauthorized_use'
+        ? { copyrightStatus: 'disputed' as const }
+        : body.reason === 'likeness'
+          ? { modelConsentStatus: 'disputed' as const }
+          : {}
+    if (Object.keys(rightsPatch).length) {
+      await prisma.rightsRecord.updateMany({
+        where: { photoId: photo.id },
+        data: { ...rightsPatch, commercialEligible: false },
+      })
+    }
+    await syncVerifiedRightsRecord(photo.id)
+    await appendRightsLedgerEvent({
+      photoId: photo.id,
+      action: 'report.filed',
+      actorId: request.userId,
+      actorKind: request.userId ? 'user' : 'guest',
+      nextCopyright: body.reason === 'copyright' || body.reason === 'unauthorized_use' ? 'disputed' : undefined,
+      nextLikeness: body.reason === 'likeness' ? 'disputed' : undefined,
+      commercialEligible: false,
+      relatedIds: { reportId: report.id, reason: body.reason },
+      ip: request.ip,
+      userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : null,
     })
 
     await writeAuditLog({

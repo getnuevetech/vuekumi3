@@ -1,13 +1,14 @@
 import type { FastifyInstance } from 'fastify'
 import type { PermissionState } from '@vuekumi/shared'
-import { canMarkAgencyProtected, CONSENT_VERSION, twoPartyCommercialCleared } from '@vuekumi/shared'
+import { canMarkAgencyProtected, CONSENT_VERSION, authorizeGuardianSchema, twoPartyCommercialCleared } from '@vuekumi/shared'
 import { decideModerationSchema, patchRightsSchema, reviewModelReleaseSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
 import { contributorHasAgreement, rightsReadyForLive } from '../lib/rights.js'
 import { serializePhoto, serializeQuote } from '../lib/serialize.js'
-import { serializeAppearance } from '../lib/models.js'
+import { serializeAppearance, syncVerifiedRightsRecord } from '../lib/models.js'
+import { appendRightsLedgerEvent, loadRightsLedger } from '../lib/ledger.js'
 import { serializeRightsReport } from '../lib/reports.js'
 import { PhotoEditError } from '../lib/photo-edit.js'
 import {
@@ -19,6 +20,7 @@ import {
 export async function adminContentRoutes(app: FastifyInstance) {
   const list = { preHandler: requireAdminCapability(app, 'content.list') }
   const read = { preHandler: requireAdminCapability(app, 'content.read') }
+  const ledgerRead = { preHandler: requireAdminCapability(app, 'content.rights_ledger.read') }
   const editRights = { preHandler: requireAdminCapability(app, 'content.rights.edit') }
   const reviewRelease = { preHandler: requireAdminCapability(app, 'content.model_release.review') }
   const verifyProcess = { preHandler: requireAdminCapability(app, 'content.two_party.verify') }
@@ -124,6 +126,52 @@ export async function adminContentRoutes(app: FastifyInstance) {
     }
   })
 
+  app.get('/admin/content/:id/rights-ledger', ledgerRead, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const ledger = await loadRightsLedger(id)
+    if (!ledger) return reply.code(404).send({ error: 'Photo not found' })
+    return { ledger }
+  })
+
+  app.post('/admin/content/:id/appearances/:appearanceId/guardian', editRights, async (request, reply) => {
+    const { id, appearanceId } = request.params as { id: string; appearanceId: string }
+    authorizeGuardianSchema.parse(request.body)
+    const row = await prisma.photoAppearance.findUnique({ where: { id: appearanceId } })
+    if (!row || row.photoId !== id) return reply.code(404).send({ error: 'Appearance not found' })
+    if (!row.isMinor) return reply.code(400).send({ error: 'Guardian authorization applies only to a minor' })
+    if (!row.guardianName || !row.guardianEmail || !row.guardianMobile) {
+      return reply.code(400).send({ error: 'Record the parent or legal guardian name, email and mobile first' })
+    }
+    const updated = await prisma.photoAppearance.update({
+      where: { id: appearanceId },
+      data: { guardianAuthorizedAt: new Date() },
+      include: {
+        photo: { include: { contributor: true } },
+        modelUser: { include: { modelProfile: true } },
+        likenessChecks: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    })
+    await syncVerifiedRightsRecord(id)
+    await appendRightsLedgerEvent({
+      photoId: id,
+      action: 'likeness.guardian_authorized',
+      actorId: request.userId,
+      actorKind: 'staff',
+      relatedIds: { appearanceId },
+      ip: request.ip,
+      userAgent: request.headers['user-agent'],
+    })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'rights.guardian_authorized',
+      entityType: 'photo_appearance',
+      entityId: appearanceId,
+      metadata: { photoId: id },
+      ipAddress: request.ip,
+    })
+    return { appearance: serializeAppearance(updated, { includeEmail: true, includeVerification: true }) }
+  })
+
   app.patch('/admin/content/:id/rights', editRights, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = patchRightsSchema.parse(request.body)
@@ -196,6 +244,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
             : {}),
           ...(body.restrictionNotes !== undefined ? { restrictionNotes: permission.restrictionNotes } : {}),
           ...(body.modelReleaseRequired != null ? { hasRecognizablePeople: body.modelReleaseRequired } : {}),
+          ...(body.creationClaim != null ? { creationClaim: body.creationClaim } : {}),
         },
       }),
       prisma.rightsRecord.upsert({
@@ -204,6 +253,9 @@ export async function adminContentRoutes(app: FastifyInstance) {
           photoId: id,
           copyrightVerified: body.copyrightVerified ?? false,
           copyrightHolder: body.copyrightHolder,
+          copyrightStatus: body.copyrightStatus
+            ?? (body.copyrightVerified ? 'verified' : body.creationClaim === 'unknown' ? 'restricted' : 'claimed'),
+          copyrightMethod: body.copyrightVerified ? 'vuekumi_direct' : 'attestation',
           platformRightsOk: body.platformRightsOk ?? false,
           modelReleaseRequired: body.modelReleaseRequired ?? false,
           modelReleaseStatus: body.modelReleaseRequired ? 'pending' : 'not_required',
@@ -212,6 +264,14 @@ export async function adminContentRoutes(app: FastifyInstance) {
           ...(body.copyrightVerified != null ? { copyrightVerified: body.copyrightVerified } : {}),
           ...(body.copyrightHolder != null ? { copyrightHolder: body.copyrightHolder } : {}),
           ...(body.platformRightsOk != null ? { platformRightsOk: body.platformRightsOk } : {}),
+          ...(body.copyrightStatus != null ? { copyrightStatus: body.copyrightStatus } : {}),
+          ...(body.copyrightVerified === true
+            ? { copyrightStatus: 'verified' as const, copyrightMethod: 'vuekumi_direct' as const, copyrightVerified: true }
+            : {}),
+          ...(body.copyrightVerified === false && body.copyrightStatus == null
+            ? { copyrightStatus: 'claimed' as const, copyrightMethod: 'attestation' as const }
+            : {}),
+          ...(body.creationClaim === 'unknown' ? { copyrightStatus: 'restricted' as const } : {}),
           ...(body.modelReleaseRequired != null
             ? {
                 modelReleaseRequired: body.modelReleaseRequired,
@@ -233,6 +293,19 @@ export async function adminContentRoutes(app: FastifyInstance) {
       entityId: id,
       metadata: body,
       ipAddress: request.ip,
+    })
+    await syncVerifiedRightsRecord(id)
+    const nextRecord = await prisma.rightsRecord.findUnique({ where: { photoId: id } })
+    await appendRightsLedgerEvent({
+      photoId: id,
+      action: 'staff.patch_rights',
+      actorId: request.userId,
+      actorKind: 'staff',
+      previousCopyright: photo.rightsRecord?.copyrightStatus,
+      nextCopyright: nextRecord?.copyrightStatus,
+      commercialEligible: nextRecord?.commercialEligible,
+      ip: request.ip,
+      userAgent: request.headers['user-agent'],
     })
 
     const next = await prisma.photo.findUnique({

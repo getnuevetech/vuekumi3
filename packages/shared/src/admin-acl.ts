@@ -165,6 +165,7 @@ const MODERATOR: AdminCapability[] = [
   'content.two_party.verify',
   'content.model_release.review',
   'content.commercial_lock',
+  'content.rights_ledger.read',
   'moderation.list',
   'moderation.decide',
   'reports.list',

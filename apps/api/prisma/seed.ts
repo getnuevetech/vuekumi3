@@ -235,6 +235,8 @@ async function main() {
       data: {
         id: p.id,
         contributorId,
+        uploadedById: contributorId,
+        creationClaim: 'self_created',
         title: p.title,
         category: p.category,
         country: p.country,
@@ -294,6 +296,8 @@ async function main() {
       data: {
         id: 'afr-pend-1',
         contributorId: pendingContributor,
+        uploadedById: pendingContributor,
+        creationClaim: 'self_created',
         title: 'Studio Sitting, Unreleased',
         description: 'Pending rights review — recognisable person, model release uploaded.',
         category: 'People',
@@ -449,6 +453,7 @@ async function main() {
         consentStatus: 'approved',
         decisionKind: 'approved',
         verificationLevel: 'vuekumi_verified',
+        consentQuality: 'verified',
         ageClass: 'adult',
         usage: 'editorial',
         confirmedLikeness: true,
@@ -497,6 +502,7 @@ async function main() {
         consentStatus: 'approved',
         decisionKind: 'approved',
         verificationLevel: 'vuekumi_verified',
+        consentQuality: 'verified',
         ageClass: 'adult',
         usage: 'commercial',
         confirmedLikeness: true,
@@ -520,6 +526,54 @@ async function main() {
     where: { photoId: 'afr-011' },
     data: { modelConsentStatus: 'invitation_sent', commercialEligible: false },
   })
+
+  if (pendingContributor) {
+    await prisma.photo.create({
+      data: {
+        id: 'afr-third-party',
+        contributorId: pendingContributor,
+        uploadedById: pendingContributor,
+        creationClaim: 'photographer_took',
+        title: 'Commissioned studio still',
+        description: 'Another photographer took this. Claimed copyright must not unlock commercial.',
+        category: 'People',
+        country: 'Nigeria',
+        licenseType: 'premium',
+        price: 18,
+        status: 'active',
+        src: '/images/photos/fashion-portrait.jpg',
+        hasRecognizablePeople: false,
+        exclusiveAvailable: false,
+        permissionState: 'portfolio',
+        publishedAt: new Date(),
+        tags: { create: [{ tag: 'commission' }] },
+        rightsRecord: {
+          create: {
+            copyrightVerified: false,
+            copyrightStatus: 'claimed',
+            copyrightMethod: 'attestation',
+            copyrightAttestedAt: new Date(),
+            copyrightHolder: 'Amara Okafor',
+            platformRightsOk: true,
+            modelReleaseRequired: false,
+            modelReleaseStatus: 'not_required',
+            modelConsentStatus: 'not_required',
+            commercialEligible: false,
+          },
+        },
+        ledgerEvents: {
+          create: {
+            action: 'copyright.attested',
+            actorId: pendingContributor,
+            actorKind: 'user',
+            nextCopyright: 'claimed',
+            nextLikeness: 'not_required',
+            commercialEligible: false,
+          },
+        },
+      },
+    })
+  }
 
   const favoriteIds = ['afr-011', 'afr-008', 'afr-020']
   await prisma.photoFavorite.createMany({

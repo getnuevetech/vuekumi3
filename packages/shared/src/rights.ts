@@ -1,8 +1,30 @@
 import { z } from 'zod'
 
-export const COPYRIGHT_STATUSES = ['claimed', 'verified', 'disputed', 'restricted'] as const
+export const COPYRIGHT_STATUSES = ['claimed', 'documented', 'verified', 'disputed', 'restricted'] as const
 export const copyrightStatusSchema = z.enum(COPYRIGHT_STATUSES)
 export type CopyrightStatus = z.infer<typeof copyrightStatusSchema>
+
+export const COPYRIGHT_METHODS = ['attestation', 'document', 'vuekumi_direct'] as const
+export const copyrightMethodSchema = z.enum(COPYRIGHT_METHODS)
+export type CopyrightMethod = z.infer<typeof copyrightMethodSchema>
+
+export const LIKENESS_QUALITIES = ['claimed', 'documented', 'verified'] as const
+export const likenessQualitySchema = z.enum(LIKENESS_QUALITIES)
+export type LikenessQuality = z.infer<typeof likenessQualitySchema>
+
+export const CREATION_CLAIMS = [
+  'self_created',
+  'photographer_took',
+  'assigned',
+  'licensed',
+  'unknown',
+] as const
+export const creationClaimSchema = z.enum(CREATION_CLAIMS)
+export type CreationClaim = z.infer<typeof creationClaimSchema>
+
+export const RIGHTS_LEDGER_ACTOR_KINDS = ['user', 'guest', 'staff', 'system'] as const
+export const rightsLedgerActorKindSchema = z.enum(RIGHTS_LEDGER_ACTOR_KINDS)
+export type RightsLedgerActorKind = z.infer<typeof rightsLedgerActorKindSchema>
 
 export const MODEL_CONSENT_STATUSES = [
   'not_required',
@@ -57,9 +79,30 @@ export const MODEL_RELEASE_ATTESTATION =
 
 export const COPYRIGHT_STATUS_LABEL: Record<CopyrightStatus, string> = {
   claimed: 'Copyright claimed',
+  documented: 'Copyright documented',
   verified: 'Copyright verified',
   disputed: 'Copyright disputed',
   restricted: 'Copyright restricted',
+}
+
+export const COPYRIGHT_METHOD_LABEL: Record<CopyrightMethod, string> = {
+  attestation: 'Uploader attestation',
+  document: 'Supporting document',
+  vuekumi_direct: 'VueKumi-verified with the rightsholder',
+}
+
+export const LIKENESS_QUALITY_LABEL: Record<LikenessQuality, string> = {
+  claimed: 'Likeness claimed',
+  documented: 'Likeness documented',
+  verified: 'Likeness verified',
+}
+
+export const CREATION_CLAIM_LABEL: Record<CreationClaim, string> = {
+  self_created: 'Uploader created this photograph',
+  photographer_took: 'Another photographer took this photograph',
+  assigned: 'Copyright assigned to the uploader',
+  licensed: 'Copyright licensed to the uploader',
+  unknown: 'Copyright owner is unknown',
 }
 
 export const MODEL_CONSENT_STATUS_LABEL: Record<ModelConsentStatus, string> = {
@@ -84,11 +127,27 @@ export const BIOMETRIC_STAGES = {
   biometric: 3,
 } as const
 
-export const COPYRIGHT_CLEARED_STATUSES: readonly CopyrightStatus[] = ['claimed', 'verified']
+export const COPYRIGHT_CLEARED_STATUSES: readonly CopyrightStatus[] = ['claimed', 'documented', 'verified']
 export const LIKENESS_CLEARED_STATUSES: readonly ModelConsentStatus[] = ['not_required', 'approved']
 
+export function thirdPartyCopyright(claim: CreationClaim | null | undefined): boolean {
+  return claim === 'photographer_took' || claim === 'assigned' || claim === 'licensed' || claim === 'unknown'
+}
+
 export function copyrightCleared(status: CopyrightStatus | null | undefined): boolean {
-  return status === 'claimed' || status === 'verified'
+  return status === 'claimed' || status === 'documented' || status === 'verified'
+}
+
+export function copyrightAuthoritySufficient(input: {
+  copyrightStatus: CopyrightStatus | null | undefined
+  thirdPartyCopyright?: boolean
+  creationClaim?: CreationClaim | null
+}): boolean {
+  const status = input.copyrightStatus
+  if (!status || status === 'disputed' || status === 'restricted') return false
+  const thirdParty = input.thirdPartyCopyright ?? thirdPartyCopyright(input.creationClaim)
+  if (thirdParty) return status === 'verified'
+  return copyrightCleared(status)
 }
 
 export function likenessRightsCleared(status: ModelConsentStatus | null | undefined): boolean {
@@ -113,6 +172,8 @@ export type RightsAppearanceInput = {
   guardianAuthorizedAt?: string | Date | null
   decisionKind?: AppearanceDecisionKind | null
   selfShot?: boolean
+  verificationLevel?: ReleaseVerificationLevel | null
+  consentQuality?: LikenessQuality | null
 }
 
 function consentFromAppearance(row: RightsAppearanceInput): ModelConsentStatus {
@@ -132,6 +193,37 @@ function consentFromAppearance(row: RightsAppearanceInput): ModelConsentStatus {
     default:
       return 'required'
   }
+}
+
+export function appearanceLikenessQuality(row: RightsAppearanceInput): LikenessQuality {
+  if (row.consentQuality) return row.consentQuality
+  if (row.verificationLevel === 'vuekumi_verified') return 'verified'
+  if (row.verificationLevel === 'photographer_provided') return 'documented'
+  return 'claimed'
+}
+
+export function likenessAuthorizationSufficient(input: {
+  modelConsentStatus: ModelConsentStatus
+  appearances?: RightsAppearanceInput[]
+}): boolean {
+  if (input.modelConsentStatus === 'not_required') return true
+  if (!likenessRightsCleared(input.modelConsentStatus)) return false
+  const appearances = input.appearances ?? []
+  if (appearances.length === 0) return false
+  return appearances.every((row) => {
+    if (appearanceConsentOutstanding(row)) return false
+    return appearanceLikenessQuality(row) === 'verified'
+  })
+}
+
+export function publicRightsVerified(input: {
+  copyrightStatus: CopyrightStatus
+  modelConsentStatus: ModelConsentStatus
+  appearances?: RightsAppearanceInput[]
+}): boolean {
+  if (input.copyrightStatus !== 'verified') return false
+  if (input.modelConsentStatus === 'not_required') return true
+  return likenessAuthorizationSufficient(input)
 }
 
 export function appearanceConsentOutstanding(row: RightsAppearanceInput): boolean {
@@ -179,9 +271,12 @@ export function isCommerciallyEligible(input: {
   copyrightStatus: CopyrightStatus
   modelConsentStatus: ModelConsentStatus
   commercialLocked?: boolean
+  thirdPartyCopyright?: boolean
+  creationClaim?: CreationClaim | null
+  appearances?: RightsAppearanceInput[]
 }): boolean {
-  return copyrightCleared(input.copyrightStatus)
-    && likenessRightsCleared(input.modelConsentStatus)
+  return copyrightAuthoritySufficient(input)
+    && likenessAuthorizationSufficient(input)
     && !input.commercialLocked
 }
 
@@ -191,14 +286,23 @@ export function commercialEligibilityBlock(input: {
   commercialLocked?: boolean
   appearances?: RightsAppearanceInput[]
   licenseType?: string
+  thirdPartyCopyright?: boolean
+  creationClaim?: CreationClaim | null
 }): string | undefined {
   if (input.commercialLocked) return 'New licensing is paused while staff review a rights report'
-  if (!copyrightCleared(input.copyrightStatus)) {
+  const thirdParty = input.thirdPartyCopyright ?? thirdPartyCopyright(input.creationClaim)
+  if (!copyrightAuthoritySufficient({ ...input, thirdPartyCopyright: thirdParty })) {
     if (input.copyrightStatus === 'disputed') return 'Photo copyright rights are disputed'
     if (input.copyrightStatus === 'restricted') return 'Photo copyright rights are restricted'
+    if (thirdParty) {
+      return 'Copyright must be VueKumi-verified because another person may own it. A declaration does not unlock commercial licensing'
+    }
+    if (input.copyrightStatus === 'documented') {
+      return 'Copyright is documented but not VueKumi-verified'
+    }
     return 'Photo copyright rights are not cleared'
   }
-  if (!likenessRightsCleared(input.modelConsentStatus)) {
+  if (!likenessAuthorizationSufficient(input)) {
     const outstanding = outstandingConsentCount(input.appearances ?? [])
     if (input.modelConsentStatus === 'disputed') return 'Likeness / model release rights are disputed'
     if (input.modelConsentStatus === 'rejected') return 'A depicted person rejected likeness use'
@@ -208,6 +312,9 @@ export function commercialEligibilityBlock(input: {
     }
     if (input.modelConsentStatus === 'invitation_sent' || input.modelConsentStatus === 'pending') {
       return 'AWAITING MODEL CONSENT — the photograph cannot be commercially licensed yet'
+    }
+    if (likenessRightsCleared(input.modelConsentStatus)) {
+      return 'Likeness is not VueKumi-verified. A photographer-provided PDF or a claimed consent does not unlock commercial licensing'
     }
     return 'Likeness / model release rights are not cleared'
   }
@@ -316,19 +423,67 @@ export const declareSubjectAgeSchema = z.object({
   guardianName: z.string().trim().min(2).max(120).optional(),
   guardianEmail: z.string().email().optional(),
   guardianMobile: z.string().trim().min(7).max(32).optional(),
+  guardianAuthorized: z.boolean().optional(),
+})
+
+export const authorizeGuardianSchema = z.object({
+  authorized: z.literal(true),
 })
 
 export type UploadSignedReleaseInput = z.infer<typeof uploadSignedReleaseSchema>
 export type GuestConsentInput = z.infer<typeof guestConsentSchema>
 export type DeclareSubjectAgeInput = z.infer<typeof declareSubjectAgeSchema>
+export type AuthorizeGuardianInput = z.infer<typeof authorizeGuardianSchema>
 
 export interface VerifiedRightsRecordDto {
   copyrightStatus: CopyrightStatus
   modelConsentStatus: ModelConsentStatus
   commercialEligible: boolean
   modelReleaseVerified: boolean
+  rightsVerified: boolean
   releaseVerificationLevel: ReleaseVerificationLevel | null
   outstandingConsents: number
   awaitingModelConsent: boolean
   possibleMinor: boolean
+}
+
+export interface RightsLedgerEventDto {
+  id: string
+  photoId: string
+  actorKind: RightsLedgerActorKind
+  actorId: string | null
+  actorName: string | null
+  action: string
+  agreementVersion: string | null
+  channel: string | null
+  previousCopyright: CopyrightStatus | null
+  nextCopyright: CopyrightStatus | null
+  previousLikeness: ModelConsentStatus | null
+  nextLikeness: ModelConsentStatus | null
+  previousQuality: string | null
+  nextQuality: string | null
+  commercialEligible: boolean
+  createdAt: string
+}
+
+export interface RightsLedgerDto {
+  photoId: string
+  title: string
+  uploadedBy: { id: string; name: string; accountType: string } | null
+  creationClaim: CreationClaim
+  thirdPartyCopyright: boolean
+  copyright: {
+    status: CopyrightStatus
+    method: CopyrightMethod
+    holder: string | null
+    attestedAt: string | null
+  }
+  likeness: {
+    status: ModelConsentStatus
+    quality: LikenessQuality | null
+  }
+  commercialEligible: boolean
+  commercialLocked: boolean
+  rightsVerified: boolean
+  events: RightsLedgerEventDto[]
 }

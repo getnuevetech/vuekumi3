@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { PermissionState } from '@vuekumi/shared'
+import type { PermissionState, RightsLedgerDto } from '@vuekumi/shared'
 import { MODEL_APPEARANCE_LABEL, LIKENESS_CHECK_LABEL } from '@vuekumi/shared'
 import { StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
@@ -22,6 +22,7 @@ export function AdminContent() {
   const [items, setItems] = useState<AdminContentRow[]>([])
   const [total, setTotal] = useState(0)
   const [detail, setDetail] = useState<AdminContentDetail | null>(null)
+  const [ledger, setLedger] = useState<RightsLedgerDto | null>(null)
   const [quoteUsd, setQuoteUsd] = useState('')
   const [restrictionNotes, setRestrictionNotes] = useState('')
 
@@ -39,6 +40,9 @@ export function AdminContent() {
       setDetail(next)
       setRestrictionNotes(next.photo.restrictionNotes ?? '')
     }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed'))
+    api.adminRightsLedger(id)
+      .then((next) => setLedger(next.ledger))
+      .catch(() => setLedger(null))
   }
 
   return (
@@ -123,6 +127,10 @@ export function AdminContent() {
 
               <div className="mt-4 space-y-2 text-sm">
                 <p><span className="text-ink-soft">Copyright holder</span> · {detail.photo.rights?.copyrightHolder ?? '—'}</p>
+                <p><span className="text-ink-soft">Copyright quality</span> · {detail.photo.rights?.copyrightStatus ?? '—'}</p>
+                <p><span className="text-ink-soft">Who took this</span> · {(detail.photo.rights?.creationClaim ?? 'self_created').replaceAll('_', ' ')}</p>
+                <p><span className="text-ink-soft">Commercial</span> · {detail.photo.rights?.commercialEligible ? 'Eligible' : 'Locked'}</p>
+                <p><span className="text-ink-soft">Public mark</span> · {detail.photo.rights?.rightsVerified ? 'Rights Verified ✓' : 'None'}</p>
                 <p><span className="text-ink-soft">Live ready</span> · {detail.photo.rights?.liveReady ? 'Yes' : (detail.photo.rights?.liveBlockers ?? []).join('; ') || 'No'}</p>
                 <p>
                   <span className="text-ink-soft">Two-party commercial</span>
@@ -235,7 +243,26 @@ export function AdminContent() {
                       {row.modelHandle ? ` · @${row.modelHandle}` : ''}
                       {row.selfShot ? ' · self-shot' : ''}
                       {row.usage !== 'none' ? ` · ${row.usage}` : ''}
+                      {row.consentQuality ? ` · ${row.consentQuality}` : ''}
+                      {row.isMinor ? (row.guardianAuthorized ? ' · guardian authorized' : ' · minor — guardian pending') : ''}
                     </p>
+                    {row.isMinor && !row.guardianAuthorized && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          api.authorizeGuardian(detail.photo.id, row.id)
+                            .then(() => {
+                              toast.success('Guardian authorization recorded')
+                              open(detail.photo.id)
+                              load()
+                            })
+                            .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not authorize guardian'))
+                        }}
+                        className="mt-2 rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase"
+                      >
+                        Record guardian authorization
+                      </button>
+                    )}
                     {row.verification && (
                       <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
                         Visual check: {LIKENESS_CHECK_LABEL[row.verification.status]}
@@ -279,6 +306,27 @@ export function AdminContent() {
                   </div>
                 ))}
               </div>
+
+              <h3 className="mt-6 font-serif-display text-lg">Rights ledger</h3>
+              <p className="mt-1 text-sm text-ink-soft">
+                Append-only. Claimed is not documented, and documented is not VueKumi-verified.
+                A third-party copyright declaration never unlocks commercial licensing.
+              </p>
+              {ledger && (
+                <div className="mt-2 space-y-2">
+                  {ledger.events.length === 0 && <p className="text-sm text-ink-soft">No ledger events yet.</p>}
+                  {ledger.events.map((event) => (
+                    <div key={event.id} className="border border-sand-soft p-3 text-sm">
+                      <p className="font-medium">{event.action.replaceAll('.', ' ')}</p>
+                      <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
+                        {event.actorName ?? event.actorKind} · {event.createdAt.slice(0, 16).replace('T', ' ')}
+                        {event.nextCopyright ? ` · copyright ${event.nextCopyright}` : ''}
+                        {event.nextLikeness ? ` · likeness ${event.nextLikeness}` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <h3 className="mt-6 font-serif-display text-lg">Rights reports</h3>
               <div className="mt-2 space-y-2">

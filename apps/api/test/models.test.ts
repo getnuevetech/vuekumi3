@@ -130,7 +130,7 @@ test('two-party helper blocks commercial people photos until every appearance is
   assert.match(
     twoPartyBlocksLicense({
       hasRecognizablePeople: true,
-      appearances: [{ status: 'approved', usage: 'editorial', confirmedLikeness: true }],
+      appearances: [{ status: 'approved', usage: 'editorial', confirmedLikeness: true, consentQuality: 'verified' }],
       licenseType: 'commercial',
       requiresModelRelease: true,
     }) ?? '',
@@ -139,7 +139,7 @@ test('two-party helper blocks commercial people photos until every appearance is
   assert.equal(
     twoPartyBlocksLicense({
       hasRecognizablePeople: true,
-      appearances: [{ status: 'approved', usage: 'commercial', confirmedLikeness: true }],
+      appearances: [{ status: 'approved', usage: 'commercial', confirmedLikeness: true, consentQuality: 'verified' }],
       licenseType: 'exclusive',
       requiresModelRelease: true,
     }),

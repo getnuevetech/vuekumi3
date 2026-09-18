@@ -101,6 +101,7 @@ export interface PhotoAppearanceDto {
   isMinor?: boolean
   guardianAuthorized?: boolean
   releaseVerificationLevel?: ReleaseVerificationLevel | null
+  consentQuality?: import('./rights.js').LikenessQuality
   modelReleaseVerified?: boolean
 }
 
@@ -181,6 +182,7 @@ export type TwoPartyAppearanceInput = {
   decisionKind?: AppearanceDecisionKind | null
   selfShot?: boolean
   verificationLevel?: ReleaseVerificationLevel | null
+  consentQuality?: import('./rights.js').LikenessQuality | null
 }
 
 export function isCommercialClassLicense(licenseType: string): boolean {
@@ -193,6 +195,8 @@ export function twoPartyBlocksLicense(input: {
   licenseType: string
   requiresModelRelease: boolean
   copyrightStatus?: import('./rights.js').CopyrightStatus
+  thirdPartyCopyright?: boolean
+  creationClaim?: import('./rights.js').CreationClaim | null
 }): string | undefined {
   if (!input.hasRecognizablePeople) return undefined
   if (!input.requiresModelRelease) return undefined
@@ -210,6 +214,8 @@ export function twoPartyBlocksLicense(input: {
     }),
     appearances: input.appearances,
     licenseType: input.licenseType,
+    thirdPartyCopyright: input.thirdPartyCopyright,
+    creationClaim: input.creationClaim,
   })
 }
 

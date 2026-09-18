@@ -5,13 +5,16 @@ import {
   canEnterCommercialInventory,
   commercialEligibilityBlock,
   communityContributorBlocksState,
+  copyrightAuthoritySufficient,
   copyrightCleared,
   identifyAppearanceSchema,
   isCommerciallyEligible,
   isCommunityContributor,
   isPhotographerAccount,
+  likenessAuthorizationSufficient,
   likenessRightsCleared,
   outstandingConsentCount,
+  publicRightsVerified,
   registerSchema,
   rollupModelConsentStatus,
   screeningIndicatesPerson,
@@ -43,6 +46,7 @@ test('photographers and community contributors are different account types', () 
 
 test('copyright and likeness are separate rights', () => {
   assert.equal(copyrightCleared('claimed'), true)
+  assert.equal(copyrightCleared('documented'), true)
   assert.equal(copyrightCleared('verified'), true)
   assert.equal(copyrightCleared('disputed'), false)
   assert.equal(copyrightCleared('restricted'), false)
@@ -61,6 +65,97 @@ test('copyright and likeness are separate rights', () => {
     copyrightStatus: 'disputed',
     modelConsentStatus: 'approved',
   }), false)
+})
+
+test('claimed third-party copyright never unlocks commercial licensing', () => {
+  assert.equal(copyrightAuthoritySufficient({
+    copyrightStatus: 'claimed',
+    thirdPartyCopyright: false,
+  }), true)
+  assert.equal(copyrightAuthoritySufficient({
+    copyrightStatus: 'claimed',
+    thirdPartyCopyright: true,
+  }), false)
+  assert.equal(copyrightAuthoritySufficient({
+    copyrightStatus: 'documented',
+    creationClaim: 'photographer_took',
+  }), false)
+  assert.equal(copyrightAuthoritySufficient({
+    copyrightStatus: 'verified',
+    creationClaim: 'photographer_took',
+  }), true)
+  assert.equal(isCommerciallyEligible({
+    copyrightStatus: 'claimed',
+    modelConsentStatus: 'not_required',
+    creationClaim: 'photographer_took',
+  }), false)
+  assert.equal(isCommerciallyEligible({
+    copyrightStatus: 'documented',
+    modelConsentStatus: 'not_required',
+    creationClaim: 'assigned',
+  }), false)
+  assert.equal(isCommerciallyEligible({
+    copyrightStatus: 'verified',
+    modelConsentStatus: 'not_required',
+    creationClaim: 'licensed',
+  }), true)
+  assert.match(
+    commercialEligibilityBlock({
+      copyrightStatus: 'claimed',
+      modelConsentStatus: 'not_required',
+      creationClaim: 'photographer_took',
+    }) ?? '',
+    /another person may own it/,
+  )
+})
+
+test('a photographer-provided PDF is documented likeness, not VueKumi-verified', () => {
+  const documented = [{
+    status: 'approved' as const,
+    usage: 'commercial' as const,
+    confirmedLikeness: true,
+    consentStatus: 'approved' as const,
+    verificationLevel: 'photographer_provided' as const,
+    consentQuality: 'documented' as const,
+  }]
+  assert.equal(likenessAuthorizationSufficient({
+    modelConsentStatus: 'approved',
+    appearances: documented,
+  }), false)
+  assert.equal(isCommerciallyEligible({
+    copyrightStatus: 'claimed',
+    modelConsentStatus: 'approved',
+    appearances: documented,
+  }), false)
+  assert.equal(publicRightsVerified({
+    copyrightStatus: 'verified',
+    modelConsentStatus: 'approved',
+    appearances: documented,
+  }), false)
+  const verified = [{
+    ...documented[0]!,
+    verificationLevel: 'vuekumi_verified' as const,
+    consentQuality: 'verified' as const,
+  }]
+  assert.equal(likenessAuthorizationSufficient({
+    modelConsentStatus: 'approved',
+    appearances: verified,
+  }), true)
+  assert.equal(isCommerciallyEligible({
+    copyrightStatus: 'claimed',
+    modelConsentStatus: 'approved',
+    appearances: verified,
+  }), true)
+  assert.equal(publicRightsVerified({
+    copyrightStatus: 'claimed',
+    modelConsentStatus: 'approved',
+    appearances: verified,
+  }), false)
+  assert.equal(publicRightsVerified({
+    copyrightStatus: 'verified',
+    modelConsentStatus: 'approved',
+    appearances: verified,
+  }), true)
 })
 
 test('multi-model lock counts outstanding consents and does not treat a PDF as clearance', () => {

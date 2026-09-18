@@ -60,11 +60,15 @@ export interface RightsDto {
   copyrightVerified: boolean
   copyrightHolder: string | null
   copyrightStatus: CopyrightStatus
+  copyrightMethod?: import('./rights.js').CopyrightMethod
+  creationClaim?: import('./rights.js').CreationClaim
+  thirdPartyCopyright?: boolean
   modelReleaseRequired: boolean
   modelReleaseStatus: ModelReleaseStatus
   modelConsentStatus: ModelConsentStatus
   commercialEligible: boolean
   modelReleaseVerified: boolean
+  rightsVerified?: boolean
   releaseVerificationLevel: ReleaseVerificationLevel | null
   outstandingConsents: number
   awaitingModelConsent: boolean

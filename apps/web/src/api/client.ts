@@ -690,6 +690,15 @@ export const api = {
   verifyTwoPartyProcess: (id: string) =>
     request<{ ok: boolean; consentVersion: string }>(`/api/admin/content/${id}/verify-process`, { method: 'POST', body: '{}' }),
 
+  adminRightsLedger: (id: string) =>
+    request<{ ledger: import('@vuekumi/shared').RightsLedgerDto }>(`/api/admin/content/${id}/rights-ledger`),
+
+  authorizeGuardian: (photoId: string, appearanceId: string) =>
+    request<{ appearance: import('@vuekumi/shared').PhotoAppearanceDto }>(
+      `/api/admin/content/${photoId}/appearances/${appearanceId}/guardian`,
+      { method: 'POST', body: JSON.stringify({ authorized: true }) },
+    ),
+
   reviewModelRelease: (id: string, status: 'verified' | 'rejected', notes?: string) =>
     request<{ ok: boolean }>(`/api/admin/model-releases/${id}/review`, {
       method: 'POST',
