@@ -35,6 +35,8 @@ import { AdminCountries, AdminRates } from './pages/AdminGeo'
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
 import AdminHomepage from './pages/AdminHomepage'
+import AdminBookings from './pages/AdminBookings'
+import AdminCampaigns from './pages/AdminCampaigns'
 import Licenses from './pages/Licenses'
 import Checkout from './pages/Checkout'
 import PlusCheckout from './pages/PlusCheckout'
@@ -127,6 +129,8 @@ export default function App() {
         <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']} capability="reports.list"><AdminReports /></ProtectedRoute>} />
         <Route path="/admin/dmca" element={<ProtectedRoute allowed={['admin']} capability="dmca.manage"><AdminDmca /></ProtectedRoute>} />
         <Route path="/admin/quotes" element={<ProtectedRoute allowed={['admin']} capability="quotes.list"><AdminQuotes /></ProtectedRoute>} />
+        <Route path="/admin/bookings" element={<ProtectedRoute allowed={['admin']} capability="bookings.list"><AdminBookings /></ProtectedRoute>} />
+        <Route path="/admin/campaigns" element={<ProtectedRoute allowed={['admin']} capability="campaigns.list"><AdminCampaigns /></ProtectedRoute>} />
         <Route path="/admin/representation" element={<ProtectedRoute allowed={['admin']} capability="representation.list"><AdminRepresentation /></ProtectedRoute>} />
         <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']} capability="partner.keys.list"><AdminPartnerKeys /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']} capability="payouts.list"><AdminPayouts /></ProtectedRoute>} />

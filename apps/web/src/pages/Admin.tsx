@@ -85,6 +85,8 @@ export const adminLinks: PortalLink[] = [
       { to: '/admin/reports', label: 'Reports', icon: icons.shield },
       { to: '/admin/dmca', label: 'DMCA', icon: icons.rights },
       { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
+      { to: '/admin/bookings', label: 'Bookings', icon: icons.grid },
+      { to: '/admin/campaigns', label: 'Campaigns', icon: icons.grid },
     ],
   },
   {

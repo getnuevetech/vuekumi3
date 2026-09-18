@@ -862,6 +862,65 @@ async function main() {
     })
   }
 
+  // Phase 30/32 demo fixtures for admin queues (no money moves; no commission).
+  if (kofiUserId) {
+    await prisma.bookingRequest.create({
+      data: {
+        kind: 'photographer',
+        targetId: kofiUserId,
+        requesterId: member.id,
+        title: 'Accra product day',
+        brief: 'Half-day product stills for a fintech launch. Natural light preferred.',
+        location: 'Accra, Ghana',
+        startDate: new Date('2026-10-12T00:00:00.000Z'),
+        endDate: new Date('2026-10-12T00:00:00.000Z'),
+        budgetUsd: 450,
+        status: 'pending',
+      },
+    })
+  }
+  const adaModel = await prisma.user.findUnique({ where: { email: 'ada@vuekumi.demo' } })
+  if (adaModel) {
+    await prisma.bookingRequest.create({
+      data: {
+        kind: 'model',
+        targetId: adaModel.id,
+        requesterId: agencyOwner.id,
+        title: 'Lagos lookbook',
+        brief: 'Editorial lookbook for a West African ready-to-wear drop. Two looks.',
+        location: 'Lagos, Nigeria',
+        budgetUsd: 300,
+        quoteUsd: 350,
+        quoteNote: 'Day rate including fittings. Settlement off-platform.',
+        status: 'quoted',
+        respondedAt: new Date(),
+      },
+    })
+  }
+  if (kofiUserId) {
+    const seedCampaign = await prisma.campaign.create({
+      data: {
+        ownerId: agencyOwner.id,
+        title: 'Q4 social cutdowns',
+        brief: 'Need three short-form social cutdowns from existing cleared stock or a quick day shoot.',
+        deliverables: '3 vertical videos + stills',
+        usage: 'Social + website, 12 months',
+        location: 'Remote / West Africa',
+        budgetUsd: 2500,
+        status: 'open',
+      },
+    })
+    await prisma.campaignPitch.create({
+      data: {
+        campaignId: seedCampaign.id,
+        contributorId: kofiUserId,
+        note: 'Happy to pitch a one-day Accra shoot plus grade. Rate is indicative only.',
+        rateUsd: 900,
+        status: 'pending',
+      },
+    })
+  }
+
   await prisma.homeFeaturedPin.create({
     data: { slot: 'hero', position: 0, photoId: 'afr-014' },
   })
