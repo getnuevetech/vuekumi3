@@ -135,7 +135,7 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
   const [selfie, setSelfie] = useState<File | null>(null)
   const [fileKey, setFileKey] = useState(0)
 
-  const decide = async (status: 'approved' | 'rejected') => {
+  const decide = async (status: 'approved' | 'rejected' | 'revoked') => {
     setBusy(true)
     try {
       await api.decideAppearance(row.id, {
@@ -143,7 +143,13 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
         status,
         usage: status === 'approved' ? usage : 'none',
       })
-      toast.success(status === 'approved' ? 'Usage approved' : 'Usage rejected')
+      toast.success(
+        status === 'approved'
+          ? 'Usage approved'
+          : status === 'revoked'
+            ? 'Consent withdrawn. New sales locked. Past grants remain.'
+            : 'Usage rejected',
+      )
       onChanged()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not save decision')
@@ -198,6 +204,11 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
         {row.status === 'approved' && (
           <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
             {MODEL_USAGE_LABEL[row.usage]}
+          </p>
+        )}
+        {row.status === 'revoked' && (
+          <p className="mt-2 text-sm text-ink-soft">
+            New licensing is locked. Existing certificates are not silently voided. Contest a past grant with a rights report.
           </p>
         )}
         <label className="mt-4 flex items-start gap-2 text-sm text-ink-soft">
@@ -283,6 +294,16 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
           >
             Reject
           </button>
+          {row.status === 'approved' && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void decide('revoked')}
+              className="rounded-full border border-sand px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-ink-soft hover:border-[#b3382e] hover:text-[#b3382e] disabled:opacity-50"
+            >
+              Withdraw consent
+            </button>
+          )}
           {row.photoId && (
             <Link to={`/photo/${row.photoId}`} className="rounded-full border border-sand px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-ink-soft hover:border-ink">
               View

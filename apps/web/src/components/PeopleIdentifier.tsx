@@ -78,6 +78,10 @@ export function PeopleIdentifier({
         </button>
       </div>
       {route === 'invite' ? (
+      <>
+      <p className="mt-3 text-sm text-ink-soft">
+        Only provide this contact for rights clearance. VueKumi will name you as the supplier. This is not a marketing list.
+      </p>
       <form
         className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]"
         onSubmit={async (e) => {
@@ -160,6 +164,7 @@ export function PeopleIdentifier({
           </div>
         )}
       </form>
+      </>
       ) : (
         <form
           className="mt-4 space-y-2"

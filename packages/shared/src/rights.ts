@@ -43,7 +43,7 @@ export const RELEASE_VERIFICATION_LEVELS = ['photographer_provided', 'vuekumi_ve
 export const releaseVerificationLevelSchema = z.enum(RELEASE_VERIFICATION_LEVELS)
 export type ReleaseVerificationLevel = z.infer<typeof releaseVerificationLevelSchema>
 
-export const APPEARANCE_DECISION_KINDS = ['approved', 'rejected', 'not_me', 'unauthorized'] as const
+export const APPEARANCE_DECISION_KINDS = ['approved', 'rejected', 'not_me', 'unauthorized', 'revoked'] as const
 export const appearanceDecisionKindSchema = z.enum(APPEARANCE_DECISION_KINDS)
 export type AppearanceDecisionKind = z.infer<typeof appearanceDecisionKindSchema>
 

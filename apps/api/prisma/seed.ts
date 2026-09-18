@@ -354,6 +354,9 @@ async function main() {
   const { seedLicenseCatalog } = await importApp(
     'lib/licenses-seed.js',
   ) as typeof import('../src/lib/licenses-seed.js')
+  const { seedLegalOverlays } = await importApp(
+    'lib/legal.js',
+  ) as typeof import('../src/lib/legal.js')
   await seedLicenseCatalog()
 
   for (const c of ALL_COUNTRIES) {
@@ -377,6 +380,8 @@ async function main() {
       },
     })
   }
+
+  await seedLegalOverlays()
 
   for (const g of DEFAULT_GATEWAYS) {
     await prisma.paymentGateway.upsert({

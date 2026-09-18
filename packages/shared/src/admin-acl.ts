@@ -368,6 +368,7 @@ export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin/partner-api': 'partner.keys.list',
   '/admin/payouts': 'payouts.list',
   '/admin/countries': 'geo.countries.list',
+  '/admin/legal': 'geo.countries.list',
   '/admin/rates': 'geo.fx.list',
   '/admin/gateways': 'integrations.gateways.read',
   '/admin/ai': 'integrations.ai.read',

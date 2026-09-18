@@ -4,6 +4,7 @@ import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { seedCountries } from '../lib/geo.js'
 import { effectiveRate, syncExchangeRates } from '../lib/fx.js'
+import { overlaySeedForCountry } from '../lib/legal.js'
 import { prisma } from '../lib/prisma.js'
 
 const countrySchema = z.object({
@@ -28,16 +29,40 @@ export async function adminGeoRoutes(app: FastifyInstance) {
   const overrideFx = { preHandler: requireAdminCapability(app, 'geo.fx.override') }
 
   app.get('/admin/countries', listCountries, async () => {
-    const countries = await prisma.country.findMany({ orderBy: [{ region: 'asc' }, { name: 'asc' }] })
-    return { countries }
+    const countries = await prisma.country.findMany({
+      orderBy: [{ region: 'asc' }, { name: 'asc' }],
+      include: { legalOverlay: true },
+    })
+    return {
+      countries: countries.map((c) => ({
+        code: c.code,
+        name: c.name,
+        currency: c.currency,
+        currencyName: c.currencyName,
+        region: c.region,
+        contributorEligible: c.contributorEligible,
+        enabled: c.enabled,
+        overlayKind: c.legalOverlay?.overlayKind ?? null,
+        biometricForbidden: c.legalOverlay?.biometricForbidden ?? true,
+        counselStatus: c.legalOverlay?.counselStatus ?? 'placeholder',
+      })),
+    }
   })
 
-  app.post('/admin/countries', writeCountries, async (request) => {
+  app.post('/admin/countries', writeCountries, async (request, reply) => {
     const body = countrySchema.parse(request.body)
+    if (body.contributorEligible && body.region !== 'africa') {
+      return reply.code(400).send({ error: 'Country overlays cannot make a non-African country creator-eligible' })
+    }
     const country = await prisma.country.upsert({
       where: { code: body.code },
       create: { ...body, sortOrder: body.region === 'africa' ? 10 : 40 },
       update: body,
+    })
+    await prisma.legalOverlay.upsert({
+      where: { countryCode: country.code },
+      create: overlaySeedForCountry(country),
+      update: { contributorAllowed: country.contributorEligible && country.region === 'africa' },
     })
     await prisma.exchangeRate.upsert({
       where: { currency: body.currency },
@@ -58,7 +83,17 @@ export async function adminGeoRoutes(app: FastifyInstance) {
     const body = countrySchema.partial().parse(request.body)
     const existing = await prisma.country.findUnique({ where: { code: code.toUpperCase() } })
     if (!existing) return reply.code(404).send({ error: 'Country not found' })
+    const nextRegion = body.region ?? existing.region
+    const nextEligible = body.contributorEligible ?? existing.contributorEligible
+    if (nextEligible && nextRegion !== 'africa') {
+      return reply.code(400).send({ error: 'Country overlays cannot make a non-African country creator-eligible' })
+    }
     const country = await prisma.country.update({ where: { code: existing.code }, data: body })
+    await prisma.legalOverlay.upsert({
+      where: { countryCode: country.code },
+      create: overlaySeedForCountry(country),
+      update: { contributorAllowed: country.contributorEligible && country.region === 'africa' },
+    })
     return { country }
   })
 

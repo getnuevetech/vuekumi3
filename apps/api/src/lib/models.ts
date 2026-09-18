@@ -72,7 +72,7 @@ export function relatedAppearanceWhere(invite: {
 
 export function decideAppearanceBlocked(input: {
   confirmedLikeness: boolean
-  status: 'approved' | 'rejected' | 'not_me' | 'unauthorized'
+  status: 'approved' | 'rejected' | 'not_me' | 'unauthorized' | 'revoked'
   usage?: ModelUsagePreference | null
   acceptReleaseTerms?: boolean
 }): string | null {
@@ -90,11 +90,13 @@ export function decideAppearanceBlocked(input: {
 
 export function appearanceStatusForDecision(kind: AppearanceDecisionKind): ModelAppearanceStatus {
   if (kind === 'approved') return 'approved'
+  if (kind === 'revoked') return 'revoked'
   return 'rejected'
 }
 
 export function consentStatusForDecision(kind: AppearanceDecisionKind): ModelConsentStatus {
   if (kind === 'approved') return 'approved'
+  if (kind === 'revoked') return 'revoked'
   if (kind === 'not_me' || kind === 'unauthorized') return 'disputed'
   return 'rejected'
 }
@@ -293,7 +295,7 @@ export async function applyAppearanceDecision(input: {
       usage,
       notes: input.notes ?? row.notes,
       decidedAt: new Date(),
-      consentVersion: input.action === 'approved' ? '1.0' : null,
+      consentVersion: input.action === 'approved' ? '1.0' : input.action === 'revoked' ? row.consentVersion : null,
       verificationLevel: input.action === 'approved' ? 'vuekumi_verified' : row.verificationLevel,
       consentQuality: input.action === 'approved' ? 'verified' : row.consentQuality,
     },
@@ -305,6 +307,7 @@ export async function applyAppearanceDecision(input: {
     action: `likeness.${input.action}`,
     actorId: input.actorId,
     actorKind: input.actorId ? 'user' : 'guest',
+    agreementVersion: input.action === 'approved' || input.action === 'revoked' ? '1.0' : undefined,
     nextLikeness: updated.consentStatus,
     nextQuality: updated.consentQuality,
     relatedIds: { appearanceId: updated.id },

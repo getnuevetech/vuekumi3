@@ -17,6 +17,7 @@ export const MODEL_APPEARANCE_STATUSES = [
   'claimed',
   'approved',
   'rejected',
+  'revoked',
 ] as const
 
 export const modelAppearanceStatusSchema = z.enum(MODEL_APPEARANCE_STATUSES)
@@ -28,7 +29,7 @@ export type ModelUsagePreference = z.infer<typeof modelUsagePreferenceSchema>
 
 export const decideAppearanceSchema = z.object({
   confirmedLikeness: z.boolean(),
-  status: z.enum(['approved', 'rejected', 'not_me', 'unauthorized']),
+  status: z.enum(['approved', 'rejected', 'not_me', 'unauthorized', 'revoked']),
   usage: modelUsagePreferenceSchema.optional(),
   acceptReleaseTerms: z.boolean().optional(),
   notes: z.string().trim().max(2000).optional().nullable(),
@@ -142,6 +143,7 @@ export const MODEL_APPEARANCE_LABEL: Record<ModelAppearanceStatus, string> = {
   claimed: 'Claimed — awaiting decision',
   approved: 'Approved',
   rejected: 'Rejected',
+  revoked: 'Revoked — new sales locked',
 }
 
 export const MODEL_USAGE_LABEL: Record<ModelUsagePreference, string> = {

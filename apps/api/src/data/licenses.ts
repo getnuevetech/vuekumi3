@@ -85,10 +85,39 @@ export const MODEL_UPLOADER_AGREEMENT = {
 8. Usage permission, not ownership. VueKumi hosts, displays, and — only when both rights tracks verify and commercial scopes are granted — sublicenses usage. AI-training consent is not included.`,
 }
 
+export const TERMS_AGREEMENT = {
+  version: '1.0-terms',
+  kind: 'terms',
+  title: 'VueKumi Platform Terms',
+  counselStatus: 'placeholder',
+  body: `Placeholder (counsel-gated, not legal advice). VueKumi is a U.S. company. These terms are product rules the engine enforces; they are not signed counsel copy.
+
+1. VueKumi sells usage permission, not ownership.
+2. Photo copyright and likeness consent are independent. Claim ≠ documented ≠ verified.
+3. Do not read this as “exclusively U.S. law regardless of the user’s country.” Country overlays add notice. They never weaken the VueKumi Global Rights Standard.
+4. DMCA covers copyright only. Likeness, privacy, and contract complaints use the photograph report.
+5. AI-training consent is not included (Phase 34 parked).
+6. Existing licence certificates are not silently voided if consent is later withdrawn. New licensing stops. Contest a past grant with a rights report.`,
+}
+
+export const BUYER_LICENCE_AGREEMENT = {
+  version: '1.0-buyer',
+  kind: 'buyer_licence',
+  title: 'Buyer licence grant',
+  counselStatus: 'placeholder',
+  body: `Placeholder (counsel-gated, not legal advice). This grant is usage permission, not ownership of the photograph.
+
+1. The licence type on the certificate is the scope. It is not a transfer of copyright.
+2. AI-training use is not included.
+3. VueKumi verified rights at the time of grant. A later consent withdrawal does not silently void this certificate. A dispute uses the rights-report path.
+4. Models do not earn from this grant. Photographer revenue share is 50% of paid licences.`,
+}
+
 export function agreementForAccountType(accountType: string) {
   if (accountType === 'contributor') return COMMUNITY_CONTRIBUTOR_AGREEMENT
   if (accountType === 'photo_influencer') return PHOTO_INFLUENCER_AGREEMENT
   if (accountType === 'model') return MODEL_UPLOADER_AGREEMENT
+  if (accountType === 'user' || accountType === 'agency') return TERMS_AGREEMENT
   return VUEKUMI_AGREEMENT
 }
 

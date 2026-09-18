@@ -1,5 +1,22 @@
-import { COMMUNITY_CONTRIBUTOR_AGREEMENT, LICENSE_CATALOG, MODEL_UPLOADER_AGREEMENT, PHOTO_INFLUENCER_AGREEMENT, VUEKUMI_AGREEMENT } from '../data/licenses.js'
+import {
+  BUYER_LICENCE_AGREEMENT,
+  COMMUNITY_CONTRIBUTOR_AGREEMENT,
+  LICENSE_CATALOG,
+  MODEL_UPLOADER_AGREEMENT,
+  PHOTO_INFLUENCER_AGREEMENT,
+  TERMS_AGREEMENT,
+  VUEKUMI_AGREEMENT,
+} from '../data/licenses.js'
 import { prisma } from './prisma.js'
+
+const STACK = [
+  { ...VUEKUMI_AGREEMENT, kind: 'photographer', current: true, counselStatus: 'placeholder' },
+  { ...COMMUNITY_CONTRIBUTOR_AGREEMENT, kind: 'community', current: false, counselStatus: 'placeholder' },
+  { ...PHOTO_INFLUENCER_AGREEMENT, kind: 'photo_influencer', current: false, counselStatus: 'placeholder' },
+  { ...MODEL_UPLOADER_AGREEMENT, kind: 'model', current: false, counselStatus: 'placeholder' },
+  { ...TERMS_AGREEMENT, current: false },
+  { ...BUYER_LICENCE_AGREEMENT, current: false },
+] as const
 
 export async function seedLicenseCatalog() {
   for (const item of LICENSE_CATALOG) {
@@ -23,40 +40,24 @@ export async function seedLicenseCatalog() {
   }
 
   await prisma.agreementVersion.updateMany({ data: { current: false } })
-  await prisma.agreementVersion.upsert({
-    where: { version: VUEKUMI_AGREEMENT.version },
-    create: { ...VUEKUMI_AGREEMENT, current: true },
-    update: {
-      title: VUEKUMI_AGREEMENT.title,
-      body: VUEKUMI_AGREEMENT.body,
-      current: true,
-    },
-  })
-  await prisma.agreementVersion.upsert({
-    where: { version: COMMUNITY_CONTRIBUTOR_AGREEMENT.version },
-    create: { ...COMMUNITY_CONTRIBUTOR_AGREEMENT, current: false },
-    update: {
-      title: COMMUNITY_CONTRIBUTOR_AGREEMENT.title,
-      body: COMMUNITY_CONTRIBUTOR_AGREEMENT.body,
-      current: false,
-    },
-  })
-  await prisma.agreementVersion.upsert({
-    where: { version: PHOTO_INFLUENCER_AGREEMENT.version },
-    create: { ...PHOTO_INFLUENCER_AGREEMENT, current: false },
-    update: {
-      title: PHOTO_INFLUENCER_AGREEMENT.title,
-      body: PHOTO_INFLUENCER_AGREEMENT.body,
-      current: false,
-    },
-  })
-  await prisma.agreementVersion.upsert({
-    where: { version: MODEL_UPLOADER_AGREEMENT.version },
-    create: { ...MODEL_UPLOADER_AGREEMENT, current: false },
-    update: {
-      title: MODEL_UPLOADER_AGREEMENT.title,
-      body: MODEL_UPLOADER_AGREEMENT.body,
-      current: false,
-    },
-  })
+  for (const row of STACK) {
+    await prisma.agreementVersion.upsert({
+      where: { version: row.version },
+      create: {
+        version: row.version,
+        kind: row.kind,
+        title: row.title,
+        body: row.body,
+        current: row.current,
+        counselStatus: row.counselStatus,
+      },
+      update: {
+        kind: row.kind,
+        title: row.title,
+        body: row.body,
+        current: row.current,
+        counselStatus: row.counselStatus,
+      },
+    })
+  }
 }

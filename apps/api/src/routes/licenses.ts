@@ -99,7 +99,11 @@ export async function licenseRoutes(app: FastifyInstance) {
           ? '1.0-photo-influencer'
           : kind === 'model'
             ? '1.0-model'
-            : '1.0'
+            : kind === 'terms'
+              ? '1.0-terms'
+              : kind === 'buyer'
+                ? '1.0-buyer'
+                : '1.0'
     const row = await prisma.agreementVersion.findUnique({ where: { version } })
     if (!row) {
       return {
@@ -111,7 +115,11 @@ export async function licenseRoutes(app: FastifyInstance) {
               ? 'VueKumi Photo Influencer Terms'
               : kind === 'model'
                 ? 'VueKumi Model Uploader Agreement'
-                : 'VueKumi Photographer Licensing Agreement',
+                : kind === 'terms'
+                  ? 'VueKumi Platform Terms'
+                  : kind === 'buyer'
+                    ? 'Buyer licence grant'
+                    : 'VueKumi Photographer Licensing Agreement',
         body: '',
       }
     }

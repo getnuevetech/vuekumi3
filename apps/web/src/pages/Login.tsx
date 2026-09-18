@@ -31,6 +31,7 @@ export default function Login() {
   const [acceptAgreement, setAcceptAgreement] = useState(false)
   const [agreementTitle, setAgreementTitle] = useState('VueKumi Contributor Platform Agreement')
   const [countries, setCountries] = useState<GeoCountry[]>([])
+  const [overlay, setOverlay] = useState<{ dataTransferNotice: string; commissionedPhotoPrompt: string; extraNotice: string | null; overlayKind: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [oauth, setOauth] = useState<PublicConfigDto['oauth']>({ google: false, dev: false })
@@ -105,6 +106,16 @@ export default function Login() {
       api.agreement(kind).then((a) => setAgreementTitle(a.title)).catch(() => undefined)
     }
   }, [mode, role, creatorRole, needsAgreement])
+
+  useEffect(() => {
+    if (mode !== 'signup' || !country) {
+      setOverlay(null)
+      return
+    }
+    api.legalOverlay(country)
+      .then((d) => setOverlay(d.overlay))
+      .catch(() => setOverlay(null))
+  }, [mode, country])
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -225,6 +236,14 @@ export default function Login() {
                   <p className="font-mono-tech text-[10px] text-ink-faint">
                     Models as subjects are not Africa-restricted. Commercial self-shot work later requires the photographer agreement and an African country.
                   </p>
+                )}
+                {overlay && (
+                  <div className="space-y-2 rounded-2xl border border-sand-soft bg-white px-4 py-3 text-[13px] text-ink-soft">
+                    <p>{overlay.dataTransferNotice}</p>
+                    {creatorRole && <p>{overlay.commissionedPhotoPrompt}</p>}
+                    {overlay.extraNotice && <p>{overlay.extraNotice}</p>}
+                    <p className="font-mono-tech text-[10px] text-ink-faint">Product notice. Not legal advice. Counsel has not signed this overlay.</p>
+                  </div>
                 )}
               </>
             )}

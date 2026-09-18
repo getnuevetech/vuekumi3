@@ -26,6 +26,7 @@ import { aiRoutes } from './routes/ai.js'
 import { agencyRoutes } from './routes/agency.js'
 import { payoutRoutes } from './routes/payouts.js'
 import { dmcaRoutes } from './routes/dmca.js'
+import { legalRoutes } from './routes/legal.js'
 import { photographerRoutes } from './routes/photographers.js'
 import { collectionRoutes } from './routes/collections.js'
 import { subscriptionRoutes } from './routes/subscriptions.js'
@@ -113,6 +114,7 @@ export async function buildApp() {
     await api.register(adminMetricsRoutes)
     await api.register(reportRoutes)
     await api.register(dmcaRoutes)
+    await api.register(legalRoutes)
     await api.register(modelRoutes)
     await api.register(modelUploadRoutes)
     await api.register(bookingRoutes)

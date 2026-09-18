@@ -5,8 +5,12 @@ export async function assertContributorCountry(countryCode?: string) {
   if (!countryCode) {
     throw Object.assign(new Error('Contributors must select an African country'), { statusCode: 400 })
   }
-  const country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } })
-  if (!country?.enabled || !country.contributorEligible) {
+  const country = await prisma.country.findUnique({
+    where: { code: countryCode.toUpperCase() },
+    include: { legalOverlay: true },
+  })
+  const overlayAllows = country?.legalOverlay ? country.legalOverlay.contributorAllowed : true
+  if (!country?.enabled || !country.contributorEligible || country.region !== 'africa' || !overlayAllows) {
     throw Object.assign(
       new Error('Vuekumi only accepts contributors from African countries'),
       { statusCode: 400 },

@@ -391,6 +391,8 @@ export function serializeGrant(
     scope: (grant.scopeJson ?? {}) as Record<string, unknown>,
     buyerName: grant.buyer?.name,
     buyerEmail: grant.buyer?.email,
+    agreementKind: (grant as { agreementKind?: string | null }).agreementKind ?? undefined,
+    agreementVersion: (grant as { agreementVersion?: string | null }).agreementVersion ?? undefined,
   }
 }
 

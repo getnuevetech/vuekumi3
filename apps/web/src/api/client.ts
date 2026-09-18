@@ -46,6 +46,9 @@ import type {
   CreateDmcaCounterNoticeInput,
   DmcaNoticeDto,
   DmcaPublicPageDto,
+  LegalOverlayDto,
+  LegalStandardDto,
+  PatchLegalOverlayInput,
   RightsStrikeDto,
   EarningsHoldDto,
   PhotoAppearanceDto,
@@ -382,6 +385,18 @@ export const api = {
     }),
 
   dmcaPage: () => request<DmcaPublicPageDto>('/api/dmca'),
+
+  legalStandard: () => request<LegalStandardDto>('/api/legal/standard'),
+  legalOverlay: (code: string) => request<{ overlay: LegalOverlayDto }>(`/api/legal/overlays/${code}`),
+  adminLegalOverlays: (kind?: string) =>
+    request<{ standard: LegalStandardDto; items: LegalOverlayDto[] }>(
+      `/api/admin/legal/overlays${kind && kind !== 'all' ? `?kind=${encodeURIComponent(kind)}` : ''}`,
+    ),
+  patchLegalOverlay: (code: string, body: PatchLegalOverlayInput) =>
+    request<{ overlay: LegalOverlayDto }>(`/api/admin/legal/overlays/${code}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
 
   fileDmcaNotice: (body: CreateDmcaNoticeInput) =>
     request<{ notice: DmcaNoticeDto }>('/api/dmca/notices', {
@@ -939,6 +954,9 @@ export interface GeoCountry {
   region: string
   contributorEligible: boolean
   enabled: boolean
+  overlayKind?: string | null
+  biometricForbidden?: boolean
+  counselStatus?: string
 }
 
 export interface PricingQuote {

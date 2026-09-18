@@ -139,6 +139,7 @@ enum AppearanceDecisionKind {
   rejected
   not_me
   unauthorized
+  revoked
 }
 
 enum SubjectAgeClass {
@@ -161,6 +162,7 @@ enum ModelAppearanceStatus {
   claimed
   approved
   rejected
+  revoked
 }
 
 enum ModelUsagePreference {
@@ -1044,11 +1046,13 @@ model LicenseGrant {
   amountUsd       Float
   currency        String           @default("USD")
   amountLocal     Float
-  scopeJson       Json
-  ledgerHeadId    String?
-  ledgerSnapshot  Json?
-  certificateCode String           @unique
-  createdAt       DateTime         @default(now())
+  scopeJson         Json
+  ledgerHeadId      String?
+  ledgerSnapshot    Json?
+  certificateCode   String           @unique
+  agreementKind     String?
+  agreementVersion  String?
+  createdAt         DateTime         @default(now())
 
   buyer   User           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   photo   Photo          @relation(fields: [photoId], references: [id], onDelete: Cascade)
@@ -1160,11 +1164,15 @@ model EarningsLedger {
 }
 
 model AgreementVersion {
-  version     String   @id
-  title       String
-  body        String
-  current     Boolean  @default(false)
-  publishedAt DateTime @default(now())
+  version       String   @id
+  kind          String   @default("photographer")
+  title         String
+  body          String
+  current       Boolean  @default(false)
+  counselStatus String   @default("placeholder")
+  publishedAt   DateTime @default(now())
+
+  @@index([kind])
 }
 
 model PlatformAgreement {
@@ -1406,8 +1414,27 @@ model Country {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
+  legalOverlay LegalOverlay?
+
   @@index([region])
   @@index([contributorEligible])
+}
+
+model LegalOverlay {
+  countryCode              String   @id
+  overlayKind              String
+  contributorAllowed       Boolean
+  dataTransferNotice       String
+  commissionedPhotoPrompt  String
+  extraNotice              String?
+  biometricForbidden       Boolean  @default(true)
+  counselStatus            String   @default("placeholder")
+  lawLabel                 String?
+  updatedAt                DateTime @updatedAt
+
+  country Country @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  @@index([overlayKind])
 }
 
 model ExchangeRate {

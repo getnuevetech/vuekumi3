@@ -145,7 +145,11 @@ export async function modelRoutes(app: FastifyInstance) {
       })
       await writeAuditLog({
         actorId: request.userId,
-        action: body.status === 'approved' ? 'model.photo_approve' : 'model.photo_reject',
+        action: body.status === 'approved'
+          ? 'model.photo_approve'
+          : body.status === 'revoked'
+            ? 'model.photo_revoke'
+            : 'model.photo_reject',
         entityType: 'photo_appearance',
         entityId: id,
         metadata: {

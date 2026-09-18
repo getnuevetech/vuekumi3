@@ -1,4 +1,5 @@
 import type { GrantLicenseType, LicenseGrant, LicenseProduct, Photo, Prisma } from '@prisma/client'
+import { BUYER_LICENCE_AGREEMENT } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 import { assertCanGrant, certificateCode } from './rights.js'
 import { getContributorShare } from './payments-config.js'
@@ -86,6 +87,8 @@ export async function issueGrant(
       ledgerHeadId: latestEvent?.id ?? undefined,
       ledgerSnapshot: snapshot as Prisma.InputJsonValue,
       certificateCode: certificateCode(input.photoId, input.licenseType),
+      agreementKind: 'buyer_licence',
+      agreementVersion: BUYER_LICENCE_AGREEMENT.version,
     },
     include: { photo: true, product: true },
   })

@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: Phases 35–39 shipped. Remaining phases still require approval before implementation.**
+**Status: Phases 35–40 shipped. Arc D is complete. Phase 34 (AI-training) stays parked.**
 
 This is the implementation procedure for three product decisions:
 
@@ -61,7 +61,7 @@ Do **not** build a parallel rights system or a parallel admin app.
 | Reports | Public report + staff commercial lock + `AuditLog` | Shipped (Phase 22); DMCA / strikes / holds are Phase 39 |
 | Earnings | `available → reserved → paid` | No dispute hold / reserve |
 | Rights record | `RightsRecord` + `PhotoAppearance` + `ModelRelease` + grants + audit | No unified Rights Ledger API |
-| Legal | Africa-only creators; photographer / community agreements in `apps/api/src/data/licenses.ts` | No model uploader agreement; no Global Rights Standard module; no country overlay engine |
+| Legal | Africa-only creators; photographer / community / model / influencer agreements; Global Rights Standard + country overlays | Counsel-gated copy (signed sentences, DMCA Copyright Office filing, insurance, VueQuatro entity split) |
 | Guardian | Schema fields exist | `guardianAuthorizedAt` is never written |
 
 Agency RBAC (`AgencyRole`, `canManageTeam`) is the pattern to copy for admin capabilities.
@@ -431,7 +431,7 @@ Token not consumed on GET. PII of the model limited. First email/SMS explains th
 
 DMCA is **copyright only**. Likeness/privacy/contract complaints stay on the existing rights-report path. Do not tell staff “DMCA covers everything.”
 
-### Phase 40 — Legal architecture (docs + engine hooks, counsel-gated copy)
+### Phase 40 — Legal architecture (docs + engine hooks, counsel-gated copy) — shipped
 
 ```
               VUEKUMI / VUEQUATRO  (U.S. company)
@@ -473,7 +473,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
         │
 39 DMCA + strikes + payout holds — shipped
         │
-40 Overlay module + versioned agreement hooks (copy still counsel)
+40 Overlay module + versioned agreement hooks (copy still counsel) — shipped
 ```
 
 35 and 36 do not wait on legal copy.  
@@ -481,7 +481,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice after approval: Phase 40.**
+**Default next slice after approval: Phase 34 (AI-training), parked unless redirected.**
 
 ---
 

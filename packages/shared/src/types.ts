@@ -155,6 +155,8 @@ export interface LicenseGrantDto {
   hasOriginal?: boolean
   buyerName?: string
   buyerEmail?: string
+  agreementKind?: string
+  agreementVersion?: string
 }
 
 export interface LicenseQuoteDto {

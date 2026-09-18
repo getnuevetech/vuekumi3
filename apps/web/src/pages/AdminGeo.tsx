@@ -63,7 +63,7 @@ export function AdminCountries() {
         <table className="w-full min-w-[800px] text-left text-sm">
           <thead>
             <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-              {['Code', 'Name', 'Currency', 'Region', 'Contributor', 'Enabled'].map((h) => <th key={h} className="px-4 py-3 font-medium">{h}</th>)}
+              {['Code', 'Name', 'Currency', 'Region', 'Contributor', 'Overlay', 'Enabled'].map((h) => <th key={h} className="px-4 py-3 font-medium">{h}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -74,6 +74,7 @@ export function AdminCountries() {
                 <td className="px-4 py-3">{c.currency} · {c.currencyName}</td>
                 <td className="px-4 py-3 capitalize">{c.region.replace('_', ' ')}</td>
                 <td className="px-4 py-3"><StatusPill status={c.contributorEligible ? 'active' : 'free'} /></td>
+                <td className="px-4 py-3 font-mono-tech text-[10px] uppercase text-ink-faint">{c.overlayKind ?? '—'}</td>
                 <td className="px-4 py-3">
                   <button
                     onClick={async () => { await api.patchCountry(c.code, { enabled: !c.enabled }); load() }}

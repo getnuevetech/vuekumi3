@@ -184,10 +184,15 @@ export function ModelUpload() {
         </fieldset>
 
         {needsPhotographer && (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-2">
+            <p className="text-sm text-ink-soft">
+              Only provide this contact for rights clearance. VueKumi will name you as the supplier. This is not a marketing list.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
             <input required value={photographerName} onChange={(e) => setPhotographerName(e.target.value)} placeholder="Photographer name" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
             <input required type="email" value={photographerEmail} onChange={(e) => setPhotographerEmail(e.target.value)} placeholder="Photographer email" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
             <input required value={photographerMobile} onChange={(e) => setPhotographerMobile(e.target.value)} placeholder="Photographer mobile" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
+            </div>
           </div>
         )}
         {(claim === 'assigned' || claim === 'licensed') && (
