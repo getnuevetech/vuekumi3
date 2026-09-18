@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import type { AppearanceDecisionKind, ModelInvitePreviewDto, ModelUsagePreference } from '@vuekumi/shared'
-import { isCreatorWorkspaceAccount } from '@vuekumi/shared'
+import { AI_TRAINING_OPT_IN_COPY, isCreatorWorkspaceAccount } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
@@ -19,6 +19,7 @@ export default function JoinModel() {
   const [likeness, setLikeness] = useState(false)
   const [terms, setTerms] = useState(false)
   const [usage, setUsage] = useState<ModelUsagePreference>('commercial')
+  const [aiTraining, setAiTraining] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function JoinModel() {
         appearanceIds: selected.length ? selected : undefined,
         confirmedLikeness: action === 'approved' ? likeness : false,
         usage: action === 'approved' ? usage : 'none',
+        aiTraining: action === 'approved' ? aiTraining : false,
         acceptReleaseTerms: action === 'approved' ? terms : undefined,
       })
       setStatus('decided')
@@ -135,6 +137,10 @@ export default function JoinModel() {
                     </label>
                   ))}
                 </fieldset>
+                <label className="flex items-start gap-2 text-sm text-ink-soft">
+                  <input type="checkbox" checked={aiTraining} onChange={(e) => setAiTraining(e.target.checked)} className="mt-0.5 accent-[#bc773f]" />
+                  {AI_TRAINING_OPT_IN_COPY}
+                </label>
                 {error && <p className="text-sm text-[#b3382e]">{error}</p>}
                 <div className="flex flex-wrap gap-2">
                   <button type="button" disabled={busy} onClick={() => void decide('approved')} className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">Approve selected</button>

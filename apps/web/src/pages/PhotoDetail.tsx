@@ -527,7 +527,7 @@ export default function PhotoDetail() {
             </button>
             )}
             <p className="mt-3 text-center font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink-faint">
-              Vuekumi sells usage permission, not ownership. A certificate PDF is issued with every grant.
+              Vuekumi sells usage permission, not ownership. AI-training is not included in this licence.
             </p>
             <div className="mt-4 border-t border-sand pt-4">
               <button

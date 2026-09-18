@@ -628,6 +628,8 @@ model Photo {
 
   uploadedById             String?
   creationClaim            CreationClaim @default(self_created)
+  copyrightAiTraining      Boolean   @default(false)
+  aiTrainingEligible       Boolean   @default(false)
 
   contributor      User              @relation("ContributorPhotos", fields: [contributorId], references: [id])
   uploadedBy       User?             @relation("PhotoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
@@ -928,6 +930,7 @@ model PhotoAppearance {
   consentStatus         ModelConsentStatus       @default(required)
   decisionKind          AppearanceDecisionKind?
   usage                 ModelUsagePreference     @default(none)
+  aiTraining            Boolean                  @default(false)
   confirmedLikeness     Boolean                  @default(false)
   inviteTokenHash       String?                  @unique
   inviteExpiresAt       DateTime?

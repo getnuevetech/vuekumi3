@@ -652,6 +652,7 @@ export async function modelUploadRoutes(app: FastifyInstance) {
           usage: body.usage,
           notes: body.notes,
           acceptAuthorizationTerms: body.acceptAuthorizationTerms,
+          aiTraining: body.aiTraining,
         }))
       }
       if (body.action === 'unauthorized') {

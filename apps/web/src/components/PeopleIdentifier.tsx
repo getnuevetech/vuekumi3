@@ -4,6 +4,7 @@ import {
   MODEL_APPEARANCE_LABEL,
   MODEL_CONSENT_STATUS_LABEL,
   MODEL_USAGE_LABEL,
+  AI_TRAINING_OPT_IN_COPY,
   type ModelConsentStatus,
   type ModelUsagePreference,
   type PhotoAppearanceDto,
@@ -233,6 +234,7 @@ function SelfShotForm({
   const [displayName, setDisplayName] = useState(defaultName)
   const [likeness, setLikeness] = useState(false)
   const [usage, setUsage] = useState<ModelUsagePreference>('commercial')
+  const [aiTraining, setAiTraining] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const submit = async (status: 'approved' | 'rejected') => {
@@ -243,6 +245,7 @@ function SelfShotForm({
         confirmedLikeness: likeness,
         status,
         usage: status === 'approved' ? usage : 'none',
+        aiTraining: status === 'approved' ? aiTraining : false,
       })
       toast.success(status === 'approved' ? 'You approved your likeness' : 'You rejected usage of your likeness')
       onDone()
@@ -304,6 +307,15 @@ function SelfShotForm({
           </label>
         ))}
       </fieldset>
+      <label className="flex items-start gap-2 text-sm text-ink-soft">
+        <input
+          type="checkbox"
+          checked={aiTraining}
+          onChange={(e) => setAiTraining(e.target.checked)}
+          className="mt-0.5 accent-[#bc773f]"
+        />
+        {AI_TRAINING_OPT_IN_COPY}
+      </label>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isCreatorAccount } from './accounts.js'
+import { AI_TRAINING_AGREEMENT, AI_TRAINING_CONSENT_VERSION, aiTrainingProductRules } from './ai-training.js'
 import { commercialEligibilityBlock } from './rights.js'
 import type { CopyrightStatus, CreationClaim, ModelConsentStatus } from './rights.js'
 
@@ -24,6 +25,7 @@ export const AGREEMENT_KINDS = [
   'copyright_authorization',
   'model_release',
   'buyer_licence',
+  'ai_training',
 ] as const
 export const agreementKindSchema = z.enum(AGREEMENT_KINDS)
 export type AgreementKind = z.infer<typeof agreementKindSchema>
@@ -36,6 +38,7 @@ export const PHOTO_INFLUENCER_AGREEMENT_VERSION = '1.0-photo-influencer'
 export const MODEL_UPLOADER_AGREEMENT_VERSION = '1.0-model'
 export const COPYRIGHT_AUTHORIZATION_AGREEMENT_VERSION = '1.0'
 export const MODEL_RELEASE_AGREEMENT_VERSION = '1.0'
+export const AI_TRAINING_AGREEMENT_VERSION = AI_TRAINING_CONSENT_VERSION
 
 export const AGREEMENT_STACK: {
   kind: AgreementKind
@@ -51,6 +54,7 @@ export const AGREEMENT_STACK: {
   { kind: 'copyright_authorization', version: COPYRIGHT_AUTHORIZATION_AGREEMENT_VERSION, title: 'Copyright authorization (photographer guest)', counselStatus: 'placeholder' },
   { kind: 'model_release', version: MODEL_RELEASE_AGREEMENT_VERSION, title: 'Model release / likeness consent', counselStatus: 'placeholder' },
   { kind: 'buyer_licence', version: BUYER_LICENCE_AGREEMENT_VERSION, title: 'Buyer licence grant', counselStatus: 'placeholder' },
+  { kind: 'ai_training', version: AI_TRAINING_AGREEMENT.version, title: AI_TRAINING_AGREEMENT.title, counselStatus: 'placeholder' },
 ]
 
 export const GLOBAL_RIGHTS_STANDARD = {
@@ -69,7 +73,7 @@ export const GLOBAL_RIGHTS_STANDARD = {
     'Models do not earn from likeness. Photographer 50% of paid licences is unchanged.',
     'Africa-only creators (photographer / photo influencer / community). Models as subjects are not Africa-restricted.',
     'Stage 1 AI is person detection only. Stage 3 biometric identification is forbidden without separate counsel-approved consent.',
-    'AI-training consent is Phase 34 and remains off.',
+    'AI-training is a separate opt-in from RF/commercial grants. Dataset pricing is undecided, so VueKumi does not sell training access. Buyer licences never include AI training.',
     'DMCA is copyright only. Likeness stays on the rights-report path.',
     'Consent withdrawal locks new sales. Existing certificates are not silently voided. Contest a past grant with a rights report.',
     'Do not write “exclusively U.S. law regardless of the user’s country” into Terms.',
@@ -114,6 +118,7 @@ export interface LegalStandardDto {
   agreementStack: typeof AGREEMENT_STACK
   rightsClearanceContactCopy: string
   withdrawal: ReturnType<typeof consentWithdrawalEffect>
+  aiTraining: ReturnType<typeof aiTrainingProductRules>
 }
 
 export const patchLegalOverlaySchema = z.object({

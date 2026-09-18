@@ -130,6 +130,7 @@ export function AdminContent() {
                 <p><span className="text-ink-soft">Copyright quality</span> · {detail.photo.rights?.copyrightStatus ?? '—'}</p>
                 <p><span className="text-ink-soft">Who took this</span> · {(detail.photo.rights?.creationClaim ?? 'self_created').replaceAll('_', ' ')}</p>
                 <p><span className="text-ink-soft">Commercial</span> · {detail.photo.rights?.commercialEligible ? 'Eligible' : 'Locked'}</p>
+                <p><span className="text-ink-soft">AI-training consent</span> · {detail.photo.rights?.aiTrainingEligible ? 'Recorded (not sold)' : (detail.photo.rights?.aiTrainingBlock ?? 'Not opted in')}</p>
                 <p><span className="text-ink-soft">Public mark</span> · {detail.photo.rights?.rightsVerified ? 'Rights Verified ✓' : 'None'}</p>
                 <p><span className="text-ink-soft">Live ready</span> · {detail.photo.rights?.liveReady ? 'Yes' : (detail.photo.rights?.liveBlockers ?? []).join('; ') || 'No'}</p>
                 <p>

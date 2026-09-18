@@ -11,6 +11,7 @@ import { prisma } from './prisma.js'
 import { appendRightsLedgerEvent } from './ledger.js'
 import { holdAvailableEarnings } from './holds.js'
 import { MODEL_INVITE_DAYS, ModelError, appearanceStatusForDecision, syncVerifiedRightsRecord } from './models.js'
+import { syncAiTrainingEligible } from './ai-training.js'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { config } from '../config.js'
 import { photographerRightsNoticeEmail, sendEmail } from './email.js'
@@ -63,6 +64,7 @@ export function serializeCopyrightAuthorization(
     usage: row.usage,
     portfolioDisplay: row.portfolioDisplay,
     commercialSublicensing: row.commercialSublicensing,
+    aiTraining: row.aiTraining,
     quality: row.quality,
     documentFileName: row.documentFileName,
     invitedAt: row.invitedAt ? row.invitedAt.toISOString() : null,
@@ -100,6 +102,7 @@ export async function applyCopyrightDecision(input: {
   notes?: string | null
   actorId?: string | null
   acceptAuthorizationTerms?: boolean
+  aiTraining?: boolean
 }) {
   const row = await prisma.copyrightAuthorization.findUnique({
     where: { id: input.authorizationId },
@@ -117,6 +120,7 @@ export async function applyCopyrightDecision(input: {
   const usage = input.action === 'approved' ? input.usage! : (input.usage ?? 'none')
   const portfolioDisplay = input.action === 'approved'
   const commercialSublicensing = input.action === 'approved' && usage === 'commercial'
+  const aiTraining = input.action === 'approved' ? Boolean(input.aiTraining) : false
   const quality: CopyrightStatus = input.action === 'approved'
     ? 'verified'
     : input.action === 'unauthorized'
@@ -157,7 +161,7 @@ export async function applyCopyrightDecision(input: {
       usage,
       portfolioDisplay,
       commercialSublicensing,
-      aiTraining: false,
+      aiTraining,
       quality,
       notes: input.notes ?? row.notes,
       decidedAt: new Date(),
@@ -205,7 +209,7 @@ export async function applyCopyrightDecision(input: {
     scopes: {
       portfolio_display: portfolioDisplay,
       commercial_sublicensing: commercialSublicensing,
-      ai_training: false,
+      ai_training: aiTraining,
     },
   })
   return updated

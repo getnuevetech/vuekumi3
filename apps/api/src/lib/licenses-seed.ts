@@ -7,6 +7,7 @@ import {
   TERMS_AGREEMENT,
   VUEKUMI_AGREEMENT,
 } from '../data/licenses.js'
+import { AI_TRAINING_AGREEMENT } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 
 const STACK = [
@@ -16,6 +17,7 @@ const STACK = [
   { ...MODEL_UPLOADER_AGREEMENT, kind: 'model', current: false, counselStatus: 'placeholder' },
   { ...TERMS_AGREEMENT, current: false },
   { ...BUYER_LICENCE_AGREEMENT, current: false },
+  { ...AI_TRAINING_AGREEMENT, current: false },
 ] as const
 
 export async function seedLicenseCatalog() {

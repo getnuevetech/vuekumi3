@@ -142,6 +142,7 @@ export async function modelRoutes(app: FastifyInstance) {
         usage: body.usage,
         notes: body.notes,
         actorId: request.userId,
+        aiTraining: body.aiTraining,
       })
       await writeAuditLog({
         actorId: request.userId,
@@ -312,6 +313,7 @@ export async function modelRoutes(app: FastifyInstance) {
           confirmedLikeness: body.confirmedLikeness,
           usage: body.usage,
           notes: body.notes,
+          aiTraining: body.aiTraining,
         }))
       }
       if (body.action === 'unauthorized') {

@@ -21,6 +21,7 @@ import { prisma } from './prisma.js'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { permissionAfterTwoParty, permissionWriteData } from './permissions.js'
 import { appendRightsLedgerEvent } from './ledger.js'
+import { syncAiTrainingEligible } from './ai-training.js'
 
 export class ModelError extends Error {
   statusCode: number
@@ -241,6 +242,7 @@ export function serializeAppearance(
     consentStatus,
     decisionKind: (row as { decisionKind?: AppearanceDecisionKind | null }).decisionKind ?? null,
     usage: row.usage,
+    aiTraining: Boolean((row as { aiTraining?: boolean }).aiTraining),
     confirmedLikeness: row.confirmedLikeness,
     modelHandle: row.modelUser?.modelProfile?.handle ?? null,
     invitedAt: row.invitedAt ? row.invitedAt.toISOString() : null,
@@ -275,6 +277,7 @@ export async function applyAppearanceDecision(input: {
   usage?: ModelUsagePreference | null
   notes?: string | null
   actorId?: string | null
+  aiTraining?: boolean
 }) {
   const row = await prisma.photoAppearance.findUnique({ where: { id: input.appearanceId } })
   if (!row) throw new ModelError('Appearance not found', 404)
@@ -285,6 +288,7 @@ export async function applyAppearanceDecision(input: {
   })
   if (blocked) throw new ModelError(blocked)
   const usage = input.action === 'approved' ? input.usage! : (input.usage ?? 'none')
+  const aiTraining = input.action === 'approved' ? Boolean(input.aiTraining) : false
   const updated = await prisma.photoAppearance.update({
     where: { id: input.appearanceId },
     data: {
@@ -293,6 +297,7 @@ export async function applyAppearanceDecision(input: {
       decisionKind: input.action,
       confirmedLikeness: input.action === 'approved' ? input.confirmedLikeness : false,
       usage,
+      aiTraining,
       notes: input.notes ?? row.notes,
       decidedAt: new Date(),
       consentVersion: input.action === 'approved' ? '1.0' : input.action === 'revoked' ? row.consentVersion : null,
@@ -311,6 +316,7 @@ export async function applyAppearanceDecision(input: {
     nextLikeness: updated.consentStatus,
     nextQuality: updated.consentQuality,
     relatedIds: { appearanceId: updated.id },
+    scopes: { ai_training: aiTraining, usage },
   })
   return updated
 }
@@ -355,6 +361,7 @@ export async function syncVerifiedRightsRecord(photoId: string) {
       copyrightVerified: copyrightStatus === 'claimed' || copyrightStatus === 'documented' || copyrightStatus === 'verified',
     },
   })
+  await syncAiTrainingEligible(photoId)
 }
 
 export async function syncPermissionToTwoParty(photoId: string) {

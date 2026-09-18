@@ -82,7 +82,7 @@ export type CopyrightScope = z.infer<typeof copyrightScopeSchema>
 export const COPYRIGHT_AUTHORIZATION_TERMS_VERSION = '1.0'
 
 export const COPYRIGHT_AUTHORIZATION_ATTESTATION =
-  'I confirm that I own or control the copyright in these photographs and authorize the selected usage through VueKumi. A claim is not verification. VueKumi sells usage permission, not ownership. AI-training use is not granted.'
+  'I confirm that I own or control the copyright in these photographs and authorize the selected usage through VueKumi. A claim is not verification. VueKumi sells usage permission, not ownership. AI-training use is a separate opt-in and is not granted by this authorization unless I tick that box.'
 
 export const COPYRIGHT_ATTESTATION =
   'I confirm that I created this image or possess the rights necessary to license it through VueKumi.'
@@ -90,7 +90,7 @@ export const COPYRIGHT_ATTESTATION =
 export const MODEL_RELEASE_TERMS_VERSION = '1.0'
 
 export const MODEL_RELEASE_ATTESTATION =
-  'I confirm that I am the person depicted in these images and authorize the approved images to be displayed and licensed through VueKumi according to the Model Release Terms.'
+  'I confirm that I am the person depicted in these images and authorize the approved images to be displayed and licensed through VueKumi according to the Model Release Terms. AI-training use is a separate opt-in and is not granted by editorial or commercial approval alone.'
 
 export const COPYRIGHT_STATUS_LABEL: Record<CopyrightStatus, string> = {
   claimed: 'Copyright claimed',
@@ -444,6 +444,7 @@ export const guestConsentSchema = z.object({
   approveAll: z.boolean().optional(),
   confirmedLikeness: z.boolean(),
   usage: z.enum(['none', 'editorial', 'commercial']).optional(),
+  aiTraining: z.boolean().optional(),
   acceptReleaseTerms: z.boolean().optional(),
   notes: z.string().trim().max(2000).optional().nullable(),
 })
@@ -458,6 +459,7 @@ export const guestCopyrightConsentSchema = z.object({
   action: appearanceDecisionKindSchema,
   confirmedIdentity: z.boolean(),
   usage: z.enum(['none', 'editorial', 'commercial']).optional(),
+  aiTraining: z.boolean().optional(),
   acceptAuthorizationTerms: z.boolean().optional(),
   notes: z.string().trim().max(2000).optional().nullable(),
 })
@@ -556,6 +558,7 @@ export interface CopyrightAuthorizationDto {
   usage: 'none' | 'editorial' | 'commercial'
   portfolioDisplay: boolean
   commercialSublicensing: boolean
+  aiTraining?: boolean
   quality: CopyrightStatus
   documentFileName?: string | null
   invitedAt?: string | null

@@ -25,7 +25,7 @@ export default function Licenses() {
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Your licences</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Usage grants.</h1>
         <p className="mt-1 max-w-xl text-sm text-ink-soft">
-          Vuekumi sells permission to use a photograph, not ownership. Each grant issues a certificate.
+          Vuekumi sells permission to use a photograph, not ownership. Each grant issues a certificate. AI-training is never included.
         </p>
 
         <div className="mt-10 overflow-hidden rounded-2xl border border-sand-soft bg-white">

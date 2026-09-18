@@ -12,13 +12,14 @@ import { z } from 'zod'
  *
  * The API distributes usage permission, not ownership. Licences are granted on
  * VueKumi checkout, not by the API. Partner access explicitly excludes
- * AI-training use: a separate opt-in consent (Phase 34) was never shipped, so
- * no partner may train models on this content.
+ * AI-training use even when a photograph has a separate AI-training opt-in.
+ * Dataset pricing is undecided; this API never grants training rights.
  */
 
 export const PARTNER_API_TERMS =
   'Usage permission only, never ownership. Licences are granted on VueKumi checkout. '
-  + 'AI training is not permitted — there is no AI-training consent on this content. '
+  + 'AI training is not permitted through this API even when a photograph has a separate AI-training opt-in. '
+  + 'Dataset pricing is undecided; VueKumi does not sell training access. '
   + 'Attribution: photographer name and profile URL.'
 
 export const createPartnerKeySchema = z.object({
@@ -63,6 +64,8 @@ export interface PartnerPhotoDto {
   licenses: PartnerLicenseDto[]
   webUrl: string
   createdAt: string
+  aiTrainingConsented: boolean
+  aiTrainingPermitted: false
 }
 
 /** Why a partner request is rejected, or null when the key is good. */

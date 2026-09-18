@@ -81,6 +81,14 @@ export default function LegalPage() {
           <p className="mt-4 text-sm text-ink-soft">{page?.withdrawal.copy}</p>
         </div>
 
+        <div className="mt-10 rounded-2xl border border-sand-soft bg-white p-5">
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.16em] text-ink-faint">AI-training</p>
+          <p className="mt-2 text-sm text-ink-soft">{page?.aiTraining.copy}</p>
+          <p className="mt-2 font-mono-tech text-[10px] text-ink-faint">
+            Separate opt-in: {page?.aiTraining.separateOptIn ? 'yes' : 'no'}. Included in buyer licences: {page?.aiTraining.includedInBuyerLicences ? 'yes' : 'no'}. Dataset pricing decided: {page?.aiTraining.datasetPricingDecided ? 'yes' : 'no'}. Access offered: {page?.aiTraining.accessOffered ? 'yes' : 'no'}.
+          </p>
+        </div>
+
         <p className="mt-8 text-sm text-ink-soft">
           Copyright takedown is a separate <Link to="/dmca" className="text-terra">DMCA notice</Link>.
         </p>

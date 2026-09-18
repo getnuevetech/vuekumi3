@@ -18,7 +18,7 @@ export const VUEKUMI_AGREEMENT = {
 
 4. Two rights. (1) Photo copyright rights belong to the photographer. (2) Likeness / model release rights belong to the person depicted. Commercial eligibility = copyright cleared + required likeness rights cleared.
 
-5. Four layers at sale. Every sale checks (1) photo copyright, (2) likeness/model release where required, (3) this photographer agreement, and (4) a buyer licence grant. AI person detection is a screening mechanism; it does not decide whether consent legally exists.
+5. Four layers at sale. Every sale checks (1) photo copyright, (2) likeness/model release where required, (3) this photographer agreement, and (4) a buyer licence grant. AI person detection is a screening mechanism; it does not decide whether consent legally exists. AI-training is a separate opt-in and is not included in royalty-free or commercial sublicences. Dataset pricing is undecided, so VueKumi does not sell training access.
 
 6. Exclusive. Exclusive sale is opt-in per photograph. Once an exclusive licence is granted, Vuekumi delists the image from further sale.
 
@@ -82,7 +82,7 @@ export const MODEL_UPLOADER_AGREEMENT = {
 
 7. Africa. Models as subjects are not Africa-restricted. Africa is required only if you accept the photographer agreement to enter commercial inventory.
 
-8. Usage permission, not ownership. VueKumi hosts, displays, and — only when both rights tracks verify and commercial scopes are granted — sublicenses usage. AI-training consent is not included.`,
+8. Usage permission, not ownership. VueKumi hosts, displays, and — only when both rights tracks verify and commercial scopes are granted — sublicenses usage. AI-training is a separate opt-in and is not included in this agreement unless recorded per photograph.`,
 }
 
 export const TERMS_AGREEMENT = {
@@ -96,7 +96,7 @@ export const TERMS_AGREEMENT = {
 2. Photo copyright and likeness consent are independent. Claim ≠ documented ≠ verified.
 3. Do not read this as “exclusively U.S. law regardless of the user’s country.” Country overlays add notice. They never weaken the VueKumi Global Rights Standard.
 4. DMCA covers copyright only. Likeness, privacy, and contract complaints use the photograph report.
-5. AI-training consent is not included (Phase 34 parked).
+5. AI-training is a separate opt-in from stock licences. Dataset pricing is undecided, so VueKumi does not sell training access. Buyer certificates never include AI training.
 6. Existing licence certificates are not silently voided if consent is later withdrawn. New licensing stops. Contest a past grant with a rights report.`,
 }
 
@@ -108,7 +108,7 @@ export const BUYER_LICENCE_AGREEMENT = {
   body: `Placeholder (counsel-gated, not legal advice). This grant is usage permission, not ownership of the photograph.
 
 1. The licence type on the certificate is the scope. It is not a transfer of copyright.
-2. AI-training use is not included.
+2. AI-training use is not included. Dataset pricing is undecided; this certificate never grants training rights.
 3. VueKumi verified rights at the time of grant. A later consent withdrawal does not silently void this certificate. A dispute uses the rights-report path.
 4. Models do not earn from this grant. Photographer revenue share is 50% of paid licences.`,
 }

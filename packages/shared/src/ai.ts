@@ -42,6 +42,7 @@ export const updatePhotoSchema = z.object({
   permissionState: permissionStateSchema.optional(),
   restrictionNotes: z.string().trim().max(2000).optional().nullable(),
   copyrightHolder: z.string().min(2).max(200).optional(),
+  copyrightAiTraining: z.boolean().optional(),
   status: z.enum(['delisted', 'pending']).optional(),
   modelReleaseFileName: z.string().max(200).optional(),
   modelReleaseNotes: z.string().max(2000).optional(),

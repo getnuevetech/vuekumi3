@@ -8,6 +8,7 @@ import {
   commercialInventoryBlocked,
   declareSubjectAgeSchema,
   identifyAppearanceSchema,
+  isAiTrainingEligible,
   isCommerciallyEligible,
   isCommunityContributor,
   isCreatorWorkspaceAccount,
@@ -23,6 +24,7 @@ import {
   uploadSignedReleaseSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
+import { syncAiTrainingEligible } from '../lib/ai-training.js'
 import { requireCreatorWorkspace } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
 import { processPhotoAssets } from '../lib/process-photo.js'
@@ -468,6 +470,11 @@ export async function contributorRoutes(app: FastifyInstance) {
     if (!isImpersonatingStaff(request.authUser) && existing.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
+    if (!isImpersonatingStaff(request.authUser) && isNonCommercialCreator(request.authUser?.accountType) && body.copyrightAiTraining) {
+      return reply.code(400).send({
+        error: 'AI-training opt-in is for professional photographers. Dataset pricing is undecided.',
+      })
+    }
 
     const people = body.hasRecognizablePeople
     const nextPeople = people ?? existing.hasRecognizablePeople
@@ -573,6 +580,7 @@ export async function contributorRoutes(app: FastifyInstance) {
             : {}),
           ...(body.restrictionNotes !== undefined ? { restrictionNotes: permission.restrictionNotes } : {}),
           ...(body.status ? { status: body.status } : {}),
+          ...(body.copyrightAiTraining !== undefined ? { copyrightAiTraining: body.copyrightAiTraining } : {}),
         },
       })
 
@@ -631,6 +639,26 @@ export async function contributorRoutes(app: FastifyInstance) {
 
       return tx.photo.findUniqueOrThrow({ where: { id }, include: photoInclude })
     })
+
+    await syncAiTrainingEligible(id)
+    if (body.copyrightAiTraining !== undefined) {
+      photo.copyrightAiTraining = body.copyrightAiTraining
+    }
+    photo.aiTrainingEligible = isAiTrainingEligible({
+      copyrightAiTraining: photo.copyrightAiTraining,
+      hasRecognizablePeople: photo.hasRecognizablePeople,
+      appearances: photo.appearances,
+    })
+    if (body.copyrightAiTraining !== undefined) {
+      await appendRightsLedgerEvent({
+        photoId: id,
+        action: body.copyrightAiTraining ? 'ai_training.copyright_opt_in' : 'ai_training.copyright_opt_out',
+        actorId: request.userId,
+        actorKind: 'user',
+        agreementVersion: body.copyrightAiTraining ? '1.0-ai-training' : undefined,
+        scopes: { ai_training: body.copyrightAiTraining },
+      })
+    }
 
     await writeAuditLog({
       actorId: request.userId,
@@ -881,6 +909,7 @@ export async function contributorRoutes(app: FastifyInstance) {
         usage,
         confirmedLikeness: body.confirmedLikeness,
         selfShot: true,
+        aiTraining: body.status === 'approved' ? Boolean(body.aiTraining) : false,
         ageClass: 'adult' as const,
         isMinor: false,
         verificationLevel: body.status === 'approved' ? 'vuekumi_verified' as const : null,

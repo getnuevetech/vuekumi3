@@ -12,6 +12,7 @@ import {
   PRIORITY_OVERLAY_COUNTRIES,
   RIGHTS_CLEARANCE_CONTACT_COPY,
   consentWithdrawalEffect,
+  aiTrainingProductRules,
   isPriorityOverlayCountry,
   creatorCountryAllowed,
   type LegalOverlayDto,
@@ -149,5 +150,6 @@ export function globalRightsStandardDto() {
     agreementStack: AGREEMENT_STACK,
     rightsClearanceContactCopy: RIGHTS_CLEARANCE_CONTACT_COPY,
     withdrawal: consentWithdrawalEffect(),
+    aiTraining: aiTrainingProductRules(),
   }
 }

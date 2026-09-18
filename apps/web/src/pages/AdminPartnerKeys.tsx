@@ -27,7 +27,8 @@ export default function AdminPartnerKeys() {
         Partners read the cleared catalog at <code className="font-mono-tech text-[12px]">/api/partner/v1/photos</code> with
         a bearer key (120 requests/minute). Private, portfolio-only, and agency-protected inventory is
         never exposed, licence flags carry the same guards as checkout, licences are granted on
-        VueKumi only, and AI training is not permitted — no AI-training consent exists on this content.
+        VueKumi only, and AI training is not permitted through this API even when a photograph has a
+        separate AI-training opt-in. Dataset pricing is undecided; VueKumi does not sell training access.
       </p>
 
       <form

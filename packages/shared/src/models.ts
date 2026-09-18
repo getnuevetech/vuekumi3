@@ -31,6 +31,7 @@ export const decideAppearanceSchema = z.object({
   confirmedLikeness: z.boolean(),
   status: z.enum(['approved', 'rejected', 'not_me', 'unauthorized', 'revoked']),
   usage: modelUsagePreferenceSchema.optional(),
+  aiTraining: z.boolean().optional(),
   acceptReleaseTerms: z.boolean().optional(),
   notes: z.string().trim().max(2000).optional().nullable(),
 })
@@ -88,6 +89,7 @@ export interface PhotoAppearanceDto {
   consentStatus?: ModelConsentStatus
   decisionKind?: AppearanceDecisionKind | null
   usage: ModelUsagePreference
+  aiTraining?: boolean
   confirmedLikeness: boolean
   modelHandle?: string | null
   invitedAt?: string | null

@@ -68,6 +68,9 @@ export interface RightsDto {
   modelReleaseStatus: ModelReleaseStatus
   modelConsentStatus: ModelConsentStatus
   commercialEligible: boolean
+  copyrightAiTraining?: boolean
+  aiTrainingEligible?: boolean
+  aiTrainingBlock?: string | null
   modelReleaseVerified: boolean
   rightsVerified?: boolean
   releaseVerificationLevel: ReleaseVerificationLevel | null

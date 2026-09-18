@@ -7,6 +7,7 @@ import {
   LIKENESS_CHECK_LABEL,
   MODEL_APPEARANCE_LABEL,
   MODEL_USAGE_LABEL,
+  AI_TRAINING_OPT_IN_COPY,
   type ModelUsagePreference,
   type PhotoAppearanceDto,
 } from '@vuekumi/shared'
@@ -129,6 +130,7 @@ export default function ModelPortal() {
 function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged: () => void }) {
   const [likeness, setLikeness] = useState(row.confirmedLikeness)
   const [usage, setUsage] = useState<ModelUsagePreference>(row.usage === 'none' ? 'editorial' : row.usage)
+  const [aiTraining, setAiTraining] = useState(Boolean(row.aiTraining))
   const [busy, setBusy] = useState(false)
   const [verifyBusy, setVerifyBusy] = useState(false)
   const [consented, setConsented] = useState(false)
@@ -142,6 +144,7 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
         confirmedLikeness: likeness,
         status,
         usage: status === 'approved' ? usage : 'none',
+        aiTraining: status === 'approved' ? aiTraining : false,
       })
       toast.success(
         status === 'approved'
@@ -277,6 +280,20 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
             </label>
           ))}
         </fieldset>
+        <label className="mt-3 flex items-start gap-2 text-sm text-ink-soft">
+          <input
+            type="checkbox"
+            checked={aiTraining}
+            onChange={(e) => setAiTraining(e.target.checked)}
+            className="mt-0.5 accent-[#bc773f]"
+          />
+          {AI_TRAINING_OPT_IN_COPY}
+        </label>
+        {row.aiTraining && (
+          <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+            Likeness AI-training opted in
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"

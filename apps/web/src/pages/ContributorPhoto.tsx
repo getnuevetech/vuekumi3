@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { PHOTO_CATEGORIES, SCREENING_KIND_LABEL, creatorPortalLabel, isNonCommercialCreator, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
+import { PHOTO_CATEGORIES, SCREENING_KIND_LABEL, AI_TRAINING_OPT_IN_COPY, creatorPortalLabel, isNonCommercialCreator, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
 import { PortalShell, StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { api, ApiError, type GeoCountry } from '../api/client'
@@ -45,6 +45,7 @@ export function ContributorPhotoEdit() {
   const [permissionState, setPermissionState] = useState<PermissionState>('commercial')
   const [restrictionNotes, setRestrictionNotes] = useState('')
   const [copyrightHolder, setCopyrightHolder] = useState('')
+  const [copyrightAiTraining, setCopyrightAiTraining] = useState(false)
   const [releaseName, setReleaseName] = useState('')
   const [releaseNotes, setReleaseNotes] = useState('')
   const [busy, setBusy] = useState(false)
@@ -62,6 +63,7 @@ export function ContributorPhotoEdit() {
     setPermissionState(row.permissionState ?? (row.exclusiveAvailable ? 'exclusive' : 'commercial'))
     setRestrictionNotes(row.restrictionNotes ?? '')
     setCopyrightHolder(row.rights?.copyrightHolder ?? '')
+    setCopyrightAiTraining(Boolean(row.rights?.copyrightAiTraining))
   }
 
   useEffect(() => {
@@ -100,6 +102,7 @@ export function ContributorPhotoEdit() {
     permissionState,
     restrictionNotes: permissionState === 'restricted' ? restrictionNotes : restrictionNotes || null,
     copyrightHolder: copyrightHolder || undefined,
+    copyrightAiTraining: community ? undefined : copyrightAiTraining,
     hasRecognizablePeople: people || undefined,
     modelReleaseFileName: people && releaseName ? releaseName : undefined,
     modelReleaseNotes: people && releaseNotes ? releaseNotes : undefined,
@@ -201,6 +204,24 @@ export function ContributorPhotoEdit() {
             placeholder="Copyright holder (your name or studio)"
             className="w-full rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra"
           />
+          {!community && (
+            <label className="flex items-start gap-2 rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm text-ink-soft">
+              <input
+                type="checkbox"
+                checked={copyrightAiTraining}
+                onChange={(e) => setCopyrightAiTraining(e.target.checked)}
+                className="mt-0.5 accent-[#bc773f]"
+              />
+              <span>
+                {AI_TRAINING_OPT_IN_COPY}
+                {photo.rights?.aiTrainingEligible
+                  ? ' Consent on this photograph is complete.'
+                  : photo.rights?.aiTrainingBlock
+                    ? ` ${photo.rights.aiTrainingBlock}.`
+                    : ''}
+              </span>
+            </label>
+          )}
           <fieldset className="grid gap-2 sm:grid-cols-2">
             {[
               { v: 'free' as const, t: 'Free collection', d: 'Royalty-free grant at $0' },

@@ -102,7 +102,8 @@ Locked product rules already in the running system:
 | 30 | Booking: hire photographer / book model — briefs, quotes, accept/decline/withdraw, availability + indicative day rate on profiles. Payment is settled off-platform; Vuekumi takes **no booking commission** (rate undecided — do not invent one). Booking money never touches the earnings ledger. |
 | 31 | VueQuatro representation — opt-in request → staff approve/decline, revocable by either side. `agency_protected` becomes real handling: only settable while represented, licensed through staff-routed inquiries, reverts to portfolio-only when representation ends. Staff queue at `/admin/representation`. **No representation commission** (undecided) and **no second public app** — VueQuatro is a staff mode. |
 | 32 | Brand production — campaign-shaped sourcing at `/campaigns`: buyer/agency accounts post campaign briefs (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts/declines, contributors withdraw pending pitches, owner or staff close campaigns. **No production commission** (undecided), settlement off-platform, campaign money never touches the earnings ledger, and accepting a pitch licenses nothing — photographs still go through checkout with all rights guards. |
-| 33 | Partner / distribution API — authenticated (admin-issued bearer keys, hash-stored, shown once, revocable), licensed (cleared stock inventory only; licence flags computed with the same guards as checkout; licences granted on VueKumi, not by the API), rate-limited (120 req/min per key). Read-only `GET /api/partner/v1/photos[/:id]` with attribution and terms. **AI training explicitly not permitted** — no AI-training consent exists (that is Phase 34). Staff key management at `/admin/partner-api`. |
+| 33 | Partner / distribution API — authenticated (admin-issued bearer keys, hash-stored, shown once, revocable), licensed (cleared stock inventory only; licence flags computed with the same guards as checkout; licences granted on VueKumi, not by the API), rate-limited (120 req/min per key). Read-only `GET /api/partner/v1/photos[/:id]` with attribution and terms. **AI training is not permitted through this API** even when a photograph has a separate opt-in (Phase 34). Dataset pricing is undecided. Staff key management at `/admin/partner-api`. |
+| **34** | AI-training opt-in, separate from RF/commercial grants. Consent recorded on copyright and likeness. Dataset pricing **undecided** — not sold; buyer grants stamp `ai_training: false`; partner API still forbids training. Minors never eligible. |
 | **35** | Admin user management from the portal: create members, photographers, community contributors, agencies, and models; dedicated photographers list; activate/suspend the **agency entity** (not only the user). |
 | **36** | Super-admin creates staff; `AdminRole` is a preset; authorization is `AdminProfile.capabilities[]`. Nav and every admin API route are gated. `content.impersonate_creator` is off for support/moderator/finance. |
 | **37** | Symmetric rights quality (`claimed → documented → verified`); third-party copyright never commercially cleared by declaration; Rights Ledger; guardian write. |
@@ -133,7 +134,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Talent booking | Shipped (Phase 30) — briefs, quotes, accept/decline/withdraw with availability on profiles. Off-platform settlement; no commission (rate undecided). |
 | VueQuatro representation / agency-protected inventory | Shipped (Phase 31) — opt-in, revocable, no commission (rate undecided), copyright unchanged. Agency-protected inventory routes to staff inquiries instead of checkout. Staff mode only, no second public brand. |
 | Partner API | Shipped (Phase 33) — read-only distribution of cleared inventory with honest licence flags, per-key rate limits, and explicit no-AI-training terms. Licences are still granted on VueKumi. |
-| Separate AI-training consent | Missing |
+| Separate AI-training consent | **Yes** (Phase 34) — explicit per-photograph opt-in on copyright and likeness, separate from RF/commercial grants. Dataset pricing is **undecided**; VueKumi does not sell training access. Buyer certificates stamp `ai_training: false`. Partner API still does not grant training rights. |
 | Photographer/model revenue split | **Undecided — do not invent** |
 
 Marketplace leftovers that still matter for a honest live site, but are **not** the
@@ -192,8 +193,9 @@ image licensing still runs through checkout with the two-approval commercial loc
 distribution of **cleared inventory only** (active photos in stock permission states —
 never private, portfolio, or agency-protected). Licence flags reuse the exact checkout
 guards, and licences are granted on VueKumi, not by the API. Partner terms **exclude AI
-training** — the separate AI-training consent (Phase 34) has not shipped, and no dataset
-pricing exists. Do not add API-side granting or AI-training access without both.
+training** — Phase 34 records a separate AI-training opt-in. Dataset pricing remains
+**undecided**, so VueKumi does not sell training access and the partner API still does not
+grant AI-training rights. Do not invent a dataset SKU or price.
 
 ### Arc C — Talent, VueQuatro, distribution
 
@@ -206,7 +208,7 @@ Only after commercially cleared images have real people behind them.
 | **31** | VueQuatro representation: agency-protected inventory, opt-in enforcement/admin of rights, staff tools. Not a second public brand required on day one. No representation commission (undecided) — **shipped** |
 | **32** | Brand production (campaign-shaped sourcing, not only single-image checkout). Off-platform settlement, no commission — **shipped** |
 | **33** | Partner / Unsplash-style **distribution API** (authenticated, licensed, rate-limited). Cleared inventory only; no AI-training use — **shipped** |
-| **34** | **AI-training** licence as an explicit opt-in, separate from RF/commercial grants, payable if we sell datasets |
+| **34** | AI-training opt-in, separate from RF/commercial grants. Consent can be recorded on copyright and likeness tracks. **Dataset pricing remains undecided** — VueKumi does not sell training access, partner APIs never grant it, buyer certificates stamp `ai_training: false`. Minors never eligible. — **shipped** |
 
 ### Arc D — Staff ACL and symmetric rights
 
@@ -269,7 +271,7 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **Phase 34** (AI-training consent) stays parked until you approve it. Dataset pricing remains **undecided**.
+3. Default next slice: **none scheduled**. Phase 34 (AI-training consent) is shipped as an opt-in engine; dataset pricing remains **undecided**.
    Arc D (Phases 35–40) is shipped.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.

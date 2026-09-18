@@ -255,6 +255,8 @@ async function main() {
         hasRecognizablePeople: hasPeople,
         exclusiveAvailable: exclusive,
         permissionState,
+        copyrightAiTraining: p.id === 'afr-014',
+        aiTrainingEligible: p.id === 'afr-014',
         restrictionNotes: p.id === 'afr-001' ? 'Editorial demo — not for advertising.' : undefined,
         publishedAt: new Date(),
         tags: { create: p.tags.map((tag) => ({ tag })) },

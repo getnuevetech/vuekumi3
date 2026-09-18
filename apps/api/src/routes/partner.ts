@@ -87,6 +87,8 @@ function serializePartnerPhoto(photo: CatalogPhoto, products: LicenseProduct[]):
     }),
     webUrl: `${config.webUrl}/photo/${photo.id}`,
     createdAt: photo.createdAt.toISOString(),
+    aiTrainingConsented: Boolean((photo as { aiTrainingEligible?: boolean }).aiTrainingEligible),
+    aiTrainingPermitted: false as const,
   }
 }
 

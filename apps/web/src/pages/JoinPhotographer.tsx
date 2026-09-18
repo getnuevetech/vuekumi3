@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import type { AppearanceDecisionKind, CopyrightInvitePreviewDto, ModelUsagePreference } from '@vuekumi/shared'
+import { AI_TRAINING_OPT_IN_COPY } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { LogoMark } from '../components/shared'
 
@@ -13,6 +14,7 @@ export default function JoinPhotographer() {
   const [identity, setIdentity] = useState(false)
   const [terms, setTerms] = useState(false)
   const [usage, setUsage] = useState<ModelUsagePreference>('editorial')
+  const [aiTraining, setAiTraining] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -36,6 +38,7 @@ export default function JoinPhotographer() {
         action,
         confirmedIdentity: action === 'approved' ? identity : false,
         usage: action === 'approved' ? usage : 'none',
+        aiTraining: action === 'approved' ? aiTraining : false,
         acceptAuthorizationTerms: action === 'approved' ? terms : undefined,
       })
       setStatus('decided')
@@ -98,6 +101,10 @@ export default function JoinPhotographer() {
                     </label>
                   ))}
                 </fieldset>
+                <label className="flex items-start gap-2 text-sm text-ink-soft">
+                  <input type="checkbox" checked={aiTraining} onChange={(e) => setAiTraining(e.target.checked)} className="mt-0.5 accent-[#bc773f]" />
+                  {AI_TRAINING_OPT_IN_COPY}
+                </label>
                 {error && <p className="text-sm text-[#b3382e]">{error}</p>}
                 <div className="flex flex-wrap gap-2">
                   <button type="button" disabled={busy} onClick={() => void decide('approved')} className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">Approve</button>

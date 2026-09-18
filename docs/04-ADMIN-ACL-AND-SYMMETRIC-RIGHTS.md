@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: Phases 35–40 shipped. Arc D is complete. Phase 34 (AI-training) stays parked.**
+**Status: Phases 35–40 shipped. Arc D is complete. Phase 34 (AI-training opt-in) is shipped; dataset pricing stays undecided.**
 
 This is the implementation procedure for three product decisions:
 
@@ -10,7 +10,7 @@ This is the implementation procedure for three product decisions:
 
 It also records the legal operating philosophy (U.S. contracts + VueKumi Global Rights Standard + country overlays) as **product rules the engine will enforce**. Agreement copy, DMCA agent registration with the Copyright Office, insurance, and entity split remain **counsel-gated**. The engine ships the structure; we do not invent signed legal language.
 
-Phases 0–33 are shipped on `main`. Phase 34 (AI-training consent) stays parked. This work is **Arc D (Phases 35–40)**.
+Phases 0–33 are shipped on `main`. Phase 34 (AI-training consent) is shipped as an opt-in engine (not a dataset product). This work is **Arc D (Phases 35–40)**.
 
 ---
 
@@ -33,7 +33,7 @@ These are already in code or are locked by this plan. Implementers must not weak
 | One account type per email except dual-role on the same user | Shipped |
 | Typed name ≠ identity. Checkbox ≠ consent. PDF ≠ VueKumi-verified | Shipped |
 | Stage 1 AI = person **detection** only. No identity, no face geometry, no biometrics without separate consent | Shipped |
-| AI-training consent is Phase 34 and remains **off** | Shipped exclusion |
+| AI-training is a separate opt-in; dataset pricing undecided so it is not sold | Shipped (Phase 34) |
 | Commercial lock ≠ takedown. A dispute **suspends new licensing** immediately | Shipped freeze; extend to copyright/likeness dispute states |
 | Booking / campaigns / partner API do not grant licences and do not invent commissions | Shipped |
 | Do not write “exclusively U.S. law regardless of the user’s country” into Terms | **Lock now** |
@@ -174,7 +174,7 @@ Every copyright authorization and every likeness decision stores **scope**:
 - `editorial`
 - `commercial_sublicensing` (required for stock)
 - `exclusive` (optional)
-- `ai_training` — always stored `false` until Phase 34
+- `ai_training` — separate opt-in (Phase 34). Never implied by RF/commercial approval. Buyer grants always store `false`.
 
 A photographer can authorize a model to **show** the photo on VueKumi and still refuse commercial sublicensing. The photo may live in portfolio/editorial; checkout stays locked.
 
@@ -456,7 +456,7 @@ DMCA is **copyright only**. Likeness/privacy/contract complaints stay on the exi
 
 **Not in these phases:** insurance procurement, incorporating VueQuatro as a separate contracting party, rewriting 54 national contracts, “U.S. law only” clauses.
 
-Phase 34 (AI-training) remains after this arc unless redirected.
+Phase 34 (AI-training opt-in) shipped after this arc as a consent engine. Dataset pricing remains undecided.
 
 ---
 
@@ -481,7 +481,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice after approval: Phase 34 (AI-training), parked unless redirected.**
+**Default next slice: none scheduled.** Dataset pricing for AI-training remains undecided.
 
 ---
 
@@ -515,7 +515,7 @@ Vertical slices. No “schema-only” PR that leaves the old eligibility functio
 
 ## 9. Explicitly out of Arc D
 
-- Phase 34 AI-training licence / dataset pricing
+- Inventing an AI-training dataset price or SKU (Phase 34 records consent only)
 - Inventing a model revenue share
 - Biometric identification (Stage 3) as a rights grant
 - Public face database

@@ -40,6 +40,7 @@ import {
   thirdPartyCopyright,
   twoPartyBlocksLicense,
   twoPartyCommercialCleared,
+  aiTrainingEligibilityBlock,
   type CreationClaim,
 } from '@vuekumi/shared'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
@@ -192,6 +193,26 @@ export function serializeRights(
     modelReleaseStatus: rights?.modelReleaseStatus ?? 'not_required',
     modelConsentStatus,
     commercialEligible,
+    copyrightAiTraining: Boolean((photo as Photo & { copyrightAiTraining?: boolean }).copyrightAiTraining)
+      || Boolean(
+        (photo as PhotoWithTags).copyrightAuthorizations?.some((row) =>
+          row.status === 'approved' && Boolean((row as { aiTraining?: boolean }).aiTraining),
+        ),
+      ),
+    aiTrainingEligible: Boolean((photo as Photo & { aiTrainingEligible?: boolean }).aiTrainingEligible),
+    aiTrainingBlock: aiTrainingEligibilityBlock({
+      copyrightAiTraining: Boolean((photo as Photo & { copyrightAiTraining?: boolean }).copyrightAiTraining),
+      authorizations: ((photo as PhotoWithTags).copyrightAuthorizations ?? []).map((row) => ({
+        status: row.status,
+        aiTraining: Boolean((row as { aiTraining?: boolean }).aiTraining),
+      })),
+      hasRecognizablePeople: photo.hasRecognizablePeople,
+      appearances: appearances.map((row) => ({
+        status: row.status,
+        aiTraining: Boolean((row as { aiTraining?: boolean }).aiTraining),
+        isMinor: Boolean((row as { isMinor?: boolean }).isMinor),
+      })),
+    }),
     modelReleaseVerified: photo.hasRecognizablePeople && likenessAuthorizationSufficient({
       modelConsentStatus,
       appearances,
@@ -234,6 +255,7 @@ type PhotoWithTags = Photo & {
     commercialSublicensing: boolean
     status: string
     quality: string
+    aiTraining?: boolean
   }[]
   copyrightCommercialScope?: boolean
 }

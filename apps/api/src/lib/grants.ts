@@ -5,7 +5,7 @@ import { assertCanGrant, certificateCode } from './rights.js'
 import { getContributorShare } from './payments-config.js'
 import { appendRightsLedgerEvent } from './ledger.js'
 import { decideGrantEarningsStatus } from './holds.js'
-import { isCommerciallyEligible, thirdPartyCopyright } from '@vuekumi/shared'
+import { isCommerciallyEligible, thirdPartyCopyright, buyerGrantMustExcludeAiTraining } from '@vuekumi/shared'
 
 type Tx = Prisma.TransactionClient
 export type GrantWithRelations = LicenseGrant & { photo: Photo; product: LicenseProduct }
@@ -83,7 +83,7 @@ export async function issueGrant(
       amountUsd: input.amountUsd,
       currency: input.currency,
       amountLocal: input.amountLocal,
-      scopeJson: input.scopeJson as Prisma.InputJsonValue,
+      scopeJson: buyerGrantMustExcludeAiTraining(input.scopeJson) as Prisma.InputJsonValue,
       ledgerHeadId: latestEvent?.id ?? undefined,
       ledgerSnapshot: snapshot as Prisma.InputJsonValue,
       certificateCode: certificateCode(input.photoId, input.licenseType),
