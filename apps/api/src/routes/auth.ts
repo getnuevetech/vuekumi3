@@ -15,7 +15,7 @@ import {
   passwordChangeBlocked,
   summarizeUserAgent,
 } from '../lib/account.js'
-import { creatorKindChange, registrationCreatorKind } from '../lib/creator-kind.js'
+import { registrationCreatorKind } from '../lib/creator-kind.js'
 import { handleTaken } from '../lib/models.js'
 import {
   adminPasswordResetEmail,
@@ -62,12 +62,14 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: 'Email already registered' })
     }
 
-    if (body.accountType === 'photographer' || body.accountType === 'contributor') {
+    if (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor') {
       if (!body.acceptAgreement) {
         return reply.code(400).send({
           error: body.accountType === 'photographer'
             ? 'Photographers must accept the VueKumi photographer licensing agreement'
-            : 'Community contributors must accept the VueKumi community contributor terms',
+            : body.accountType === 'photo_influencer'
+              ? 'Photo influencers must accept the VueKumi photo influencer terms'
+              : 'Community contributors must accept the VueKumi community contributor terms',
         })
       }
       try {
@@ -93,14 +95,14 @@ export async function authRoutes(app: FastifyInstance) {
         },
       })
 
-      if (body.accountType === 'photographer' || body.accountType === 'contributor') {
+      if (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor') {
         const handle = body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         await tx.contributorProfile.create({
           data: {
             userId: created.id,
             handle: `${handle}-${created.id.slice(-4)}`,
             location: body.country,
-            creatorKind: registrationCreatorKind(body.accountType, body.creatorKind) ?? 'photographer',
+            creatorKind: registrationCreatorKind(body.accountType) ?? 'photographer',
           },
         })
         await tx.platformAgreement.create({
@@ -209,7 +211,7 @@ export async function authRoutes(app: FastifyInstance) {
     let country = existing.country
     if (body.country !== undefined) {
       country = body.country ? body.country.toUpperCase() : null
-      if ((existing.accountType === 'contributor' || existing.accountType === 'photographer') && country) {
+      if ((existing.accountType === 'contributor' || existing.accountType === 'photographer' || existing.accountType === 'photo_influencer') && country) {
         try {
           await assertContributorCountry(country)
         } catch (err) {
@@ -220,7 +222,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     let handle = existing.contributorProfile?.handle ?? existing.modelProfile?.handle
-    if (body.handle && (existing.accountType === 'contributor' || existing.accountType === 'photographer' || existing.accountType === 'model')) {
+    if (body.handle && (existing.accountType === 'contributor' || existing.accountType === 'photographer' || existing.accountType === 'photo_influencer' || existing.accountType === 'model')) {
       const normalized = normalizeHandle(body.handle)
       if ('error' in normalized) {
         return reply.code(400).send({ error: normalized.error })
@@ -248,14 +250,12 @@ export async function authRoutes(app: FastifyInstance) {
         ...(body.dayRateUsd !== undefined ? { dayRateUsd: body.dayRateUsd } : {}),
       }
       if (existing.contributorProfile) {
-        const nextKind = creatorKindChange(true, body.creatorKind)
         await tx.contributorProfile.update({
           where: { userId },
           data: {
             ...(handle ? { handle } : {}),
             ...(body.bio !== undefined ? { bio: body.bio.trim() || null } : {}),
             ...(body.location !== undefined ? { location: body.location.trim() || null } : {}),
-            ...(nextKind ? { creatorKind: nextKind } : {}),
             ...availabilityData,
           },
         })

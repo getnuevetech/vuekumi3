@@ -356,7 +356,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   assert.equal(selfBody.appearance.consentVersion, '1.0')
   const amaraMe = await app.inject({ method: 'GET', url: '/api/auth/me', headers: { cookie } })
   const amaraUser = (amaraMe.json() as { user: { accountType: string; hasModelProfile?: boolean } }).user
-  assert.equal(amaraUser.accountType, 'photographer')
+  assert.equal(amaraUser.accountType, 'photo_influencer')
   assert.equal(amaraUser.hasModelProfile, true)
 
   const stillEditorial = await app.inject({ method: 'GET', url: '/api/photos/afr-009/licenses' })
@@ -370,11 +370,12 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     headers: { cookie },
     payload: { permissionState: 'commercial' },
   })
-  assert.equal(unlockNine.statusCode, 200)
+  assert.equal(unlockNine.statusCode, 400)
+  assert.match((unlockNine.json() as { error: string }).error, /Photo influencers cannot enter commercial inventory/)
   const nineOpen = await app.inject({ method: 'GET', url: '/api/photos/afr-009/licenses' })
   assert.equal(
     (nineOpen.json() as { items: { type: string; offered: boolean }[] }).items.find((i) => i.type === 'commercial')?.offered,
-    true,
+    false,
   )
 
   const lekanLogin = await app.inject({
@@ -400,7 +401,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   })
   assert.equal(claimedAsContributor.statusCode, 200)
   const claimedDual = (claimedAsContributor.json() as { user: { accountType: string; hasModelProfile?: boolean } }).user
-  assert.equal(claimedDual.accountType, 'photographer')
+  assert.equal(claimedDual.accountType, 'photo_influencer')
   assert.equal(claimedDual.hasModelProfile, true)
 
   const inviteAdmin = await app.inject({
@@ -520,7 +521,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     payload: { permissionState: 'commercial' },
   })
   assert.equal(stillBlocked.statusCode, 400)
-  assert.match((stillBlocked.json() as { error: string }).error, /photographer and model approval/i)
+  assert.match((stillBlocked.json() as { error: string }).error, /Photo influencers cannot enter commercial inventory/)
 
   const nomsaClaim = await app.inject({
     method: 'POST',

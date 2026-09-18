@@ -80,6 +80,9 @@ export async function adminAccountRoutes(app: FastifyInstance) {
   app.get('/admin/photographers', cap(accountListCapability('photographers')), async (request) =>
     list({ accountType: 'photographer' }, request),
   )
+  app.get('/admin/influencers', cap(accountListCapability('influencers')), async (request) =>
+    list({ accountType: 'photo_influencer' }, request),
+  )
   app.get('/admin/agencies', cap(accountListCapability('agencies')), async (request) =>
     list({ accountType: 'agency' }, request),
   )
@@ -108,7 +111,7 @@ export async function adminAccountRoutes(app: FastifyInstance) {
     const existing = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } })
     if (existing) return reply.code(409).send({ error: 'Email already registered' })
 
-    if (body.accountType === 'photographer' || body.accountType === 'contributor') {
+    if (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor') {
       try {
         await assertContributorCountry(body.country)
       } catch (err) {
@@ -242,7 +245,7 @@ export async function adminAccountRoutes(app: FastifyInstance) {
       country = country ? country.toUpperCase() : ''
       if (
         country
-        && (existing.accountType === 'photographer' || existing.accountType === 'contributor')
+        && (existing.accountType === 'photographer' || existing.accountType === 'photo_influencer' || existing.accountType === 'contributor')
       ) {
         try {
           await assertContributorCountry(country)

@@ -10,6 +10,7 @@ import {
   identifyAppearanceSchema,
   isCommerciallyEligible,
   isCommunityContributor,
+  isPhotoInfluencerAccount,
   isPhotographerAccount,
   likenessAuthorizationSufficient,
   likenessRightsCleared,
@@ -21,11 +22,15 @@ import {
   twoPartyBlocksLicense,
 } from '@vuekumi/shared'
 
-test('photographers and community contributors are different account types', () => {
+test('photographers, photo influencers, and community contributors are different account types', () => {
   assert.equal(isPhotographerAccount('photographer'), true)
+  assert.equal(isPhotographerAccount('photo_influencer'), false)
   assert.equal(isPhotographerAccount('contributor'), false)
+  assert.equal(isPhotoInfluencerAccount('photo_influencer'), true)
+  assert.equal(isPhotoInfluencerAccount('photographer'), false)
   assert.equal(isCommunityContributor('contributor'), true)
   assert.equal(canEnterCommercialInventory('photographer'), true)
+  assert.equal(canEnterCommercialInventory('photo_influencer'), false)
   assert.equal(canEnterCommercialInventory('contributor'), false)
   assert.equal(canEnterCommercialInventory('admin'), true)
   assert.match(communityContributorBlocksState('commercial') ?? '', /professional photographer/)
@@ -35,6 +40,12 @@ test('photographers and community contributors are different account types', () 
     password: 'password1',
     name: 'Ada',
     accountType: 'photographer',
+  }).success, true)
+  assert.equal(registerSchema.safeParse({
+    email: 'i@example.com',
+    password: 'password1',
+    name: 'Amara',
+    accountType: 'photo_influencer',
   }).success, true)
   assert.equal(registerSchema.safeParse({
     email: 'c@example.com',

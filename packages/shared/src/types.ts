@@ -8,7 +8,7 @@ import type {
 import type { CreatorKind } from './creators.js'
 import type { BookingAvailability } from './bookings.js'
 
-export type AccountType = 'admin' | 'photographer' | 'contributor' | 'user' | 'agency' | 'model'
+export type AccountType = 'admin' | 'photographer' | 'photo_influencer' | 'contributor' | 'user' | 'agency' | 'model'
 export type UserStatus = 'active' | 'suspended' | 'pending'
 export type LicenseType = 'free' | 'premium'
 export type GrantLicenseType =

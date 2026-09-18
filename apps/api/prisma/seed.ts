@@ -112,7 +112,7 @@ async function main() {
         email: `${ph.handle}@vuekumi.demo`,
         passwordHash: userPassword,
         name: ph.name,
-        accountType: 'photographer',
+        accountType: ph.creatorKind === 'photo_influencer' ? 'photo_influencer' : 'photographer',
         country: ({ Nigeria: 'NG', 'South Africa': 'ZA', Ghana: 'GH', Ethiopia: 'ET', Kenya: 'KE' } as Record<string, string>)[ph.location.split(', ').pop() ?? ''] ?? 'NG',
         avatarUrl: ph.avatar,
         emailVerifiedAt: new Date(),
@@ -128,7 +128,7 @@ async function main() {
           },
         },
         platformAgreements: {
-          create: { version: '1.0' },
+          create: { version: ph.creatorKind === 'photo_influencer' ? '1.0-photo-influencer' : '1.0' },
         },
       },
     })

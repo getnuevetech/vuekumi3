@@ -49,8 +49,9 @@ export default function Creators() {
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">The makers</p>
         <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">Creators.</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          Photographers and photo influencers licensing work across the continent. Every
-          creator keeps copyright; Vuekumi sells usage permission, not ownership.
+          Photographers and photo influencers are different account types. Every
+          creator keeps copyright; Vuekumi sells usage permission, not ownership. Photographers
+          license commercial stock. Photo influencers are discovery creators, not commercial inventory.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">

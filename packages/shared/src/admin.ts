@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { accountTypeSchema } from './accounts.js'
-import { creatorKindSchema, type CreatorKind } from './creators.js'
+import type { CreatorKind } from './creators.js'
 
 export interface AdminOverviewStatsDto {
   users: number
@@ -28,6 +28,7 @@ export const ADMIN_ACCOUNT_LIST_KINDS = [
   'users',
   'contributors',
   'photographers',
+  'influencers',
   'agencies',
   'admins',
   'models',
@@ -41,7 +42,6 @@ export const adminCreateAccountSchema = z.object({
   accountType: accountTypeSchema,
   password: z.string().min(8, 'Password must be at least 8 characters').max(200),
   country: z.string().length(2).optional(),
-  creatorKind: creatorKindSchema.optional(),
   sendPasswordReset: z.boolean().optional(),
 })
 export type AdminCreateAccountInput = z.infer<typeof adminCreateAccountSchema>

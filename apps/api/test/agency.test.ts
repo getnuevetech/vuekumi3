@@ -41,6 +41,7 @@ test('seat remaining counts members plus pending invites', () => {
 test('contributors, photographers and admins cannot join an agency', () => {
   assert.equal(inviteAccountBlocked('contributor'), 'Community contributors cannot join an agency')
   assert.equal(inviteAccountBlocked('photographer'), 'Photographers cannot join an agency')
+  assert.equal(inviteAccountBlocked('photo_influencer'), 'Photo influencers cannot join an agency')
   assert.equal(inviteAccountBlocked('admin'), 'Administrators cannot join an agency')
   assert.equal(inviteAccountBlocked('user'), null)
   assert.equal(inviteAccountBlocked('agency'), null)

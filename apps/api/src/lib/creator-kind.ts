@@ -1,36 +1,52 @@
 import type { CreatorKind } from '@vuekumi/shared'
+import { creatorKindFromAccountType } from '@vuekumi/shared'
+import { DIRECTORY_ACCOUNT_TYPES } from '@vuekumi/shared'
 
 /**
- * Phase 29 — creator kind is presentation and discovery only. It never changes
- * rights, earnings, or the platform agreement: a photo influencer is a
- * photographer account, not a separate type.
+ * Creator kind is derived from account type. Photographers and photo
+ * influencers are separate types and cannot be mixed or converted.
  */
 
-/** Photographer and community-contributor registrations carry a creator kind. */
 export function registrationCreatorKind(
   accountType: string,
-  requested?: CreatorKind,
+  _requested?: CreatorKind,
 ): CreatorKind | null {
-  if (accountType !== 'contributor' && accountType !== 'photographer') return null
-  return requested ?? 'photographer'
+  const locked = creatorKindFromAccountType(accountType)
+  if (locked) return locked
+  if (accountType === 'contributor') return 'photographer'
+  return null
 }
 
-/**
- * A profile update may change the kind only when the account actually has a
- * contributor profile (model-only and buyer accounts have no creator kind).
- * Returns the kind to write, or null for "no change".
- */
+export function mixedCreatorKindBlocked(
+  accountType: string,
+  requested?: CreatorKind,
+): string | null {
+  if (!requested) return null
+  if (accountType === 'photographer' && requested === 'photo_influencer') {
+    return 'Photographers and photo influencers are separate account types. Register as a photo influencer.'
+  }
+  if (accountType === 'photo_influencer' && requested === 'photographer') {
+    return 'Photographers and photo influencers are separate account types. Register as a photographer.'
+  }
+  if (accountType === 'contributor' && requested === 'photo_influencer') {
+    return 'Community contributors and photo influencers are separate account types.'
+  }
+  return null
+}
+
+/** Kind cannot change after signup — account type is the source of truth. */
 export function creatorKindChange(
-  hasContributorProfile: boolean,
-  requested?: CreatorKind,
+  _hasContributorProfile: boolean,
+  _requested?: CreatorKind,
 ): CreatorKind | null {
-  if (!requested || !hasContributorProfile) return null
-  return requested
+  return null
 }
 
-/** Prisma where fragment for filtering the public creator directory by kind. */
+/** Prisma where fragment for the public creator directory. */
 export function creatorKindWhere(kind?: CreatorKind): {
-  contributorProfile?: { creatorKind: CreatorKind }
+  accountType: 'photographer' | 'photo_influencer' | { in: Array<'photographer' | 'photo_influencer'> }
 } {
-  return kind ? { contributorProfile: { creatorKind: kind } } : {}
+  if (kind === 'photo_influencer') return { accountType: 'photo_influencer' }
+  if (kind === 'photographer') return { accountType: 'photographer' }
+  return { accountType: { in: [...DIRECTORY_ACCOUNT_TYPES] } }
 }

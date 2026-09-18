@@ -10,6 +10,7 @@ datasource db {
 enum AccountType {
   admin
   photographer
+  photo_influencer
   contributor
   user
   agency

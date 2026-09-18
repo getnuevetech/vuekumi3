@@ -5,13 +5,16 @@ import {
   applyScreeningToPeopleFlag,
   canEnterCommercialInventory,
   canImpersonateCreator,
-  communityContributorBlocksState,
+  commercialInventoryBlocked,
   declareSubjectAgeSchema,
   identifyAppearanceSchema,
   isCommerciallyEligible,
   isCommunityContributor,
+  isCreatorWorkspaceAccount,
+  isNonCommercialCreator,
   MODEL_RELEASE_ATTESTATION,
   authorizeGuardianSchema,
+  nonCommercialCreatorBlocksState,
   presignUploadSchema,
   selfShotAppearanceSchema,
   submitPhotoSchema,
@@ -232,7 +235,7 @@ export async function contributorRoutes(app: FastifyInstance) {
 
   app.post('/contributor/photos', gate, async (request, reply) => {
     const accountType = request.authUser?.accountType
-    if (accountType !== 'photographer' && accountType !== 'contributor' && !isImpersonatingStaff(request.authUser)) {
+    if (!isCreatorWorkspaceAccount(accountType) && !isImpersonatingStaff(request.authUser)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
@@ -243,7 +246,9 @@ export async function contributorRoutes(app: FastifyInstance) {
       return reply.code(400).send({
         error: isCommunityContributor(accountType)
           ? 'Accept the VueKumi community contributor terms before submitting'
-          : 'Accept the current VueKumi photographer licensing agreement before submitting',
+          : isNonCommercialCreator(accountType)
+            ? 'Accept the VueKumi photo influencer terms before submitting'
+            : 'Accept the current VueKumi photographer licensing agreement before submitting',
       })
     }
 
@@ -270,7 +275,8 @@ export async function contributorRoutes(app: FastifyInstance) {
     const commercialUploader = canEnterCommercialInventory(accountType)
     if (!commercialUploader && (body.licenseType === 'premium' || body.permissionState === 'commercial' || body.permissionState === 'exclusive')) {
       return reply.code(400).send({
-        error: 'Community contributors cannot enter commercial inventory. Register as a professional photographer.',
+        error: commercialInventoryBlocked(accountType)
+          ?? 'This account type cannot enter commercial inventory.',
       })
     }
     const requestedPermission = commercialUploader
@@ -286,7 +292,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       exclusiveAvailable: commercialUploader ? body.exclusiveAvailable : false,
       hasRecognizablePeople: people,
     })
-    const communityBlock = isCommunityContributor(accountType) ? communityContributorBlocksState(permissionState) : undefined
+    const communityBlock = nonCommercialCreatorBlocksState(accountType, permissionState)
     if (communityBlock) {
       return reply.code(400).send({ error: communityBlock })
     }
@@ -472,6 +478,18 @@ export async function contributorRoutes(app: FastifyInstance) {
       hasRecognizablePeople: nextPeople,
     })
     const actor = isImpersonatingStaff(request.authUser) ? 'admin' : 'contributor'
+    const inventoryBlock = !isImpersonatingStaff(request.authUser)
+      ? nonCommercialCreatorBlocksState(request.authUser?.accountType, permissionState)
+      : undefined
+    if (inventoryBlock) {
+      return reply.code(400).send({ error: inventoryBlock })
+    }
+    if (!isImpersonatingStaff(request.authUser) && isNonCommercialCreator(request.authUser?.accountType) && body.licenseType === 'premium') {
+      return reply.code(400).send({
+        error: commercialInventoryBlocked(request.authUser?.accountType)
+          ?? 'This account type cannot enter commercial inventory.',
+      })
+    }
 
     try {
       if (body.status) {
@@ -641,9 +659,10 @@ export async function contributorRoutes(app: FastifyInstance) {
 
   app.post('/contributor/photos/:id/releases', gate, async (request, reply) => {
     const { id } = request.params as { id: string }
-    if (isCommunityContributor(request.authUser?.accountType)) {
+    if (isNonCommercialCreator(request.authUser?.accountType)) {
       return reply.code(400).send({
-        error: 'Community contributors cannot upload commercial model releases. Register as a professional photographer.',
+        error: commercialInventoryBlocked(request.authUser?.accountType)
+          ?? 'This account type cannot upload commercial model releases.',
       })
     }
     const body = uploadSignedReleaseSchema.parse(request.body)

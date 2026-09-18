@@ -32,7 +32,7 @@ export function ProtectedRoute({ children, allowed, capability }: ProtectedRoute
     return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
   }
 
-  const creatorWorkspace = allowed.includes('photographer') || allowed.includes('contributor')
+  const creatorWorkspace = allowed.includes('photographer') || allowed.includes('photo_influencer') || allowed.includes('contributor')
   const allowedByType =
     allowed.includes(user.accountType)
     || (allowed.includes('agency') && Boolean(user.agencyId))

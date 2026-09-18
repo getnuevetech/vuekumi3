@@ -4,11 +4,9 @@ import {
   accountWriteCapability,
   adminHas,
   capabilitiesForPreset,
-  creatorKindLabel,
   sameCapabilities,
   type AdminCapability,
   type AdminRole,
-  type CreatorKind,
 } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { StatusPill } from '../components/shared'
@@ -17,21 +15,23 @@ import { api, ApiError, type AdminAccount, type GeoCountry } from '../api/client
 import { useAuth } from '../context/AuthContext'
 import { AdminShell } from './Admin'
 
-type Kind = 'users' | 'contributors' | 'photographers' | 'agencies' | 'admins' | 'models'
+type Kind = 'users' | 'contributors' | 'photographers' | 'influencers' | 'agencies' | 'admins' | 'models'
 type StaffPreset = Exclude<AdminRole, never>
 
 const copy: Record<Kind, { kicker: string; title: string; blurb: string }> = {
   users: { kicker: 'Users', title: 'Members.', blurb: 'Individual buyers — one row per account.' },
-  photographers: { kicker: 'Photographers', title: 'Photographers.', blurb: 'Professional commercial inventory and photo influencers. Click a row to edit.' },
+  photographers: { kicker: 'Photographers', title: 'Photographers.', blurb: 'Professional commercial inventory. Click a row to edit.' },
+  influencers: { kicker: 'Photo influencers', title: 'Photo influencers.', blurb: 'Social and discovery creators — not photographers, not commercial stock. Click a row to edit.' },
   contributors: { kicker: 'Contributors', title: 'Community.', blurb: 'Portfolio and editorial sharing — not commercial stock. Click a row to edit.' },
   agencies: { kicker: 'Agencies', title: 'Enterprise.', blurb: 'Corporate accounts. Activate the agency entity to unlock licensing.' },
   admins: { kicker: 'Admins', title: 'Staff.', blurb: 'Roles are presets. Super-admin assigns the capability matrix. You cannot edit your own access.' },
   models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only models and self-shot photographers. Confirm likeness per image. They do not earn in this phase.' },
 }
 
-const createType: Record<Exclude<Kind, 'admins'>, 'user' | 'photographer' | 'contributor' | 'agency' | 'model'> = {
+const createType: Record<Exclude<Kind, 'admins'>, 'user' | 'photographer' | 'photo_influencer' | 'contributor' | 'agency' | 'model'> = {
   users: 'user',
   photographers: 'photographer',
+  influencers: 'photo_influencer',
   contributors: 'contributor',
   agencies: 'agency',
   models: 'model',
@@ -99,7 +99,6 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
     email: '',
     password: '',
     country: '',
-    creatorKind: 'photographer' as CreatorKind,
   })
   const [preset, setPreset] = useState<StaffPreset>('support')
   const [caps, setCaps] = useState<AdminCapability[]>(capabilitiesForPreset('support'))
@@ -111,8 +110,8 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
   const canWrite = canCreate
   const canReset = adminHas(user, 'accounts.password_reset')
   const canActivate = adminHas(user, 'accounts.agencies.activate')
-  const creatorCountry = kind === 'photographers' || kind === 'contributors'
-  const creatorColumns = kind === 'contributors' || kind === 'photographers'
+  const creatorCountry = kind === 'photographers' || kind === 'influencers' || kind === 'contributors'
+  const creatorColumns = kind === 'contributors' || kind === 'photographers' || kind === 'influencers'
   const customized = !sameCapabilities(caps, capabilitiesForPreset(preset))
 
   const load = () => {
@@ -166,7 +165,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
   }
 
   const columns = creatorColumns
-    ? ['ID', 'Name', 'Email', 'Handle', 'Kind', 'Country', 'Photos', 'Earnings', 'Status']
+    ? ['ID', 'Name', 'Email', 'Handle', 'Country', 'Photos', 'Earnings', 'Status']
     : kind === 'models'
       ? ['ID', 'Name', 'Email', 'Handle', 'Country', 'Appearances', 'Joined', 'Status']
       : kind === 'agencies'
@@ -192,7 +191,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
           <button
             type="button"
             onClick={() => {
-              setCreateDraft({ name: '', email: '', password: '', country: '', creatorKind: 'photographer' })
+              setCreateDraft({ name: '', email: '', password: '', country: '' })
               applyPreset('support')
               setCreating(true)
             }}
@@ -223,7 +222,6 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                 <td className="px-4 py-3 font-medium">{u.name}{kind === 'models' && u.dualRole ? ' · photographer' : ''}</td>
                 <td className="px-4 py-3">{u.email}</td>
                 {creatorColumns && <td className="px-4 py-3">@{u.handle}</td>}
-                {creatorColumns && <td className="px-4 py-3">{creatorKindLabel(u.creatorKind)}</td>}
                 {kind === 'models' && <td className="px-4 py-3">@{u.handle}</td>}
                 {kind === 'agencies' && <td className="px-4 py-3">{u.agencyName}</td>}
                 {kind === 'agencies' && (
@@ -386,7 +384,6 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                       password: createDraft.password,
                       accountType: createType[kind],
                       country: createDraft.country || undefined,
-                      creatorKind: kind === 'photographers' ? createDraft.creatorKind : undefined,
                     })
                   }
                   toast.success(kind === 'admins' ? 'Staff created' : 'Account created')
@@ -423,18 +420,6 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                     {countries.map((c) => (
                       <option key={c.code} value={c.code}>{c.name} · {c.code}</option>
                     ))}
-                  </select>
-                </label>
-              )}
-              {kind === 'photographers' && (
-                <label className="block text-sm">Creator kind
-                  <select
-                    value={createDraft.creatorKind}
-                    onChange={(e) => setCreateDraft({ ...createDraft, creatorKind: e.target.value as CreatorKind })}
-                    className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm"
-                  >
-                    <option value="photographer">Photographer</option>
-                    <option value="photo_influencer">Photo influencer</option>
                   </select>
                 </label>
               )}
@@ -479,6 +464,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
 
 export function AdminUsers() { return <AdminAccountList kind="users" /> }
 export function AdminPhotographers() { return <AdminAccountList kind="photographers" /> }
+export function AdminInfluencers() { return <AdminAccountList kind="influencers" /> }
 export function AdminContributors() { return <AdminAccountList kind="contributors" /> }
 export function AdminAgencies() { return <AdminAccountList kind="agencies" /> }
 export function AdminAdmins() { return <AdminAccountList kind="admins" /> }

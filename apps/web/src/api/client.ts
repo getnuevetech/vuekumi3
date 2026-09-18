@@ -362,7 +362,7 @@ export const api = {
   removeFromCollection: (collectionId: string, photoId: string) =>
     request<{ ok: boolean }>(`/api/collections/${collectionId}/photos/${photoId}`, { method: 'DELETE' }),
 
-  agreement: (kind?: 'photographer' | 'contributor') =>
+  agreement: (kind?: 'photographer' | 'contributor' | 'photo_influencer') =>
     request<AgreementDto>(`/api/agreements/current${kind ? `?kind=${kind}` : ''}`),
 
   licenses: () => request<{ items: LicenseProductDto[] }>('/api/licenses'),
@@ -764,7 +764,7 @@ export const api = {
   pricing: (country?: string) =>
     request<PricingQuote>(`/api/geo/pricing${country ? `?country=${country}` : ''}`),
 
-  adminAccounts: (type: 'users' | 'contributors' | 'photographers' | 'agencies' | 'admins' | 'models', params?: { q?: string; page?: number }) => {
+  adminAccounts: (type: 'users' | 'contributors' | 'photographers' | 'influencers' | 'agencies' | 'admins' | 'models', params?: { q?: string; page?: number }) => {
     const qs = new URLSearchParams()
     if (params?.q) qs.set('q', params.q)
     if (params?.page) qs.set('page', String(params.page))
@@ -778,10 +778,9 @@ export const api = {
   createAccount: (body: {
     email: string
     name: string
-    accountType: 'user' | 'photographer' | 'contributor' | 'agency' | 'model'
+    accountType: 'user' | 'photographer' | 'photo_influencer' | 'contributor' | 'agency' | 'model'
     password: string
     country?: string
-    creatorKind?: 'photographer' | 'photo_influencer'
   }) =>
     request<{ user: AdminAccount }>('/api/admin/accounts', { method: 'POST', body: JSON.stringify(body) }),
 
@@ -946,6 +945,8 @@ export function homeForAccountType(accountType: AccountType): string {
     case 'admin':
       return '/admin'
     case 'photographer':
+      return '/contributor'
+    case 'photo_influencer':
       return '/contributor'
     case 'contributor':
       return '/contributor'

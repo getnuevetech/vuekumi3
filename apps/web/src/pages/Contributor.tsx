@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto, RepresentationDto } from '@vuekumi/shared';
-import { creatorPortalLabel, isCommunityContributor, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
+import { creatorPortalLabel, isNonCommercialCreator, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
 import { api, ApiError } from '../api/client';
@@ -62,7 +62,7 @@ export function contributorPortalLinks(hasModelProfile?: boolean): PortalLink[] 
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const community = isCommunityContributor(user?.accountType);
+  const community = isNonCommercialCreator(user?.accountType);
   return (
     <PortalShell
       title={`${creatorPortalLabel(user?.accountType)} portal`}
@@ -172,7 +172,7 @@ function RepresentationCard() {
 
 export function ContributorDashboard() {
   const { user } = useAuth()
-  const community = isCommunityContributor(user?.accountType)
+  const community = isNonCommercialCreator(user?.accountType)
   const [stats, setStats] = useState<ContributorStatsDto | null>(null)
   useEffect(() => {
     api.contributorStats().then(setStats).catch(() => setStats(null))
@@ -280,7 +280,7 @@ export function ContributorDashboard() {
 export function ContributorUpload() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const community = isCommunityContributor(user?.accountType);
+  const community = isNonCommercialCreator(user?.accountType);
   const [dragging, setDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState('');

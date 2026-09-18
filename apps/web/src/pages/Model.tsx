@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { toast } from 'sonner'
 import {
   hasModelAccess,
+  isCreatorWorkspaceAccount,
   LIKENESS_CHECK_LABEL,
   MODEL_APPEARANCE_LABEL,
   MODEL_USAGE_LABEL,
@@ -42,7 +43,7 @@ export default function ModelPortal() {
   const { user } = useAuth()
   const [items, setItems] = useState<PhotoAppearanceDto[]>([])
   const [handle, setHandle] = useState<string | null>(null)
-  const dualRole = Boolean(user && (user.accountType === 'contributor' || user.accountType === 'photographer') && hasModelAccess(user))
+  const dualRole = Boolean(user && isCreatorWorkspaceAccount(user.accountType) && hasModelAccess(user))
   const links = dualRole ? [...modelLinks, photographerLink] : modelLinks
 
   const load = () => {

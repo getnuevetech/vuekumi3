@@ -8,6 +8,7 @@ import {
   type ModelUsagePreference,
   type PhotoAppearanceDto,
   type PhotoDto,
+  isCreatorWorkspaceAccount,
 } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -65,7 +66,7 @@ export function PeopleIdentifier({
           <AppearanceRow key={row.id} photoId={photo.id} row={row} onChanged={() => void reload()} />
         ))}
       </ul>
-      {!alreadySelf && (user?.accountType === 'contributor' || user?.accountType === 'photographer') && (
+      {!alreadySelf && user && isCreatorWorkspaceAccount(user.accountType) && (
         <SelfShotForm photoId={photo.id} defaultName={user.name} onDone={() => void reload()} />
       )}
       <div className="mt-4 flex gap-2">

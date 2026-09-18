@@ -46,7 +46,27 @@ export const COMMUNITY_CONTRIBUTOR_PERMISSION_STATES: PermissionState[] = [
 ]
 
 export function communityContributorBlocksState(state: PermissionState): string | undefined {
-  if (!COMMUNITY_CONTRIBUTOR_PERMISSION_STATES.includes(state)) {
+  return nonCommercialCreatorBlocksState('contributor', state)
+}
+
+/** Community contributors and photo influencers cannot enter commercial stock. */
+export function nonCommercialCreatorBlocksState(
+  accountType: string | null | undefined,
+  state: PermissionState,
+): string | undefined {
+  if (accountType !== 'contributor' && accountType !== 'photo_influencer') return undefined
+  if (COMMUNITY_CONTRIBUTOR_PERMISSION_STATES.includes(state)) return undefined
+  if (accountType === 'photo_influencer') {
+    return 'Photo influencers cannot enter commercial inventory. Photographers and photo influencers are separate account types.'
+  }
+  return 'Community contributors cannot enter commercial inventory. Register as a professional photographer.'
+}
+
+export function commercialInventoryBlocked(accountType: string | null | undefined): string | undefined {
+  if (accountType === 'photo_influencer') {
+    return 'Photo influencers cannot enter commercial inventory. Photographers and photo influencers are separate account types.'
+  }
+  if (accountType === 'contributor') {
     return 'Community contributors cannot enter commercial inventory. Register as a professional photographer.'
   }
   return undefined
