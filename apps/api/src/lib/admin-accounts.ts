@@ -180,6 +180,9 @@ export async function provisionStaffCreatedUser(body: AdminCreateAccountInput) {
           location: country ?? null,
         },
       })
+      await tx.platformAgreement.create({
+        data: { userId: created.id, version: agreementVersionForAccountType('model') },
+      })
     }
 
     return created.id

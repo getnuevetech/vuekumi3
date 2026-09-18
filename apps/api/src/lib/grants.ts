@@ -32,12 +32,20 @@ export async function issueGrant(
 
   const photo = await client.photo.findUnique({
     where: { id: input.photoId },
-    include: { rightsRecord: true, appearances: true },
+    include: { rightsRecord: true, appearances: true, copyrightAuthorizations: true },
   })
   if (!photo) throw new Error('Photo not found')
   const product = await client.licenseProduct.findUnique({ where: { id: input.productId } })
   if (!product) throw new Error('Licence type not found')
-  assertCanGrant(product, photo, photo.rightsRecord, photo.appearances)
+  const copyrightCommercialScope = photo.copyrightAuthorizations.some((row) =>
+    row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
+  )
+  assertCanGrant(
+    product,
+    { ...photo, copyrightCommercialScope },
+    photo.rightsRecord,
+    photo.appearances,
+  )
 
   const latestEvent = await client.rightsLedgerEvent.findFirst({
     where: { photoId: input.photoId },
@@ -55,6 +63,7 @@ export async function issueGrant(
       commercialLocked: photo.commercialLocked,
       creationClaim: photo.creationClaim,
       appearances: photo.appearances,
+      copyrightCommercialScope,
     }),
     ledgerHeadId: latestEvent?.id ?? null,
   }

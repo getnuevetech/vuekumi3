@@ -39,6 +39,7 @@ export interface AuthUser {
   creatorKind?: CreatorKind | null
   modelHandle?: string | null
   hasModelProfile?: boolean
+  hasPhotographerAgreement?: boolean
   availability?: BookingAvailability | null
   dayRateUsd?: number | null
   adminRole?: AdminRole | null
@@ -110,6 +111,7 @@ export interface PhotoDto {
   permissionState?: PermissionState
   restrictionNotes?: string | null
   appearances?: import('./models.js').PhotoAppearanceDto[]
+  copyrightAuthorizations?: import('./rights.js').CopyrightAuthorizationDto[]
   exclusiveAvailable?: boolean
   exclusiveSold?: boolean
   hasRecognizablePeople?: boolean

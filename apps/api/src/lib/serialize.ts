@@ -29,6 +29,7 @@ import type {
 } from '@vuekumi/shared'
 import type { TwoPartyAppearanceInput } from '@vuekumi/shared'
 import {
+  commercialEligibilityBlock,
   copyrightCleared,
   isCommerciallyEligible,
   likenessAuthorizationSufficient,
@@ -41,6 +42,7 @@ import {
   twoPartyCommercialCleared,
   type CreationClaim,
 } from '@vuekumi/shared'
+import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { isLicenseOffered, priceForProduct, rightsReadyForLive, twoPartyLicenseBlock } from './rights.js'
 import { displayPlan, displayQuota } from './subscriptions.js'
 
@@ -49,6 +51,7 @@ export const authUserInclude = {
   modelProfile: true,
   adminProfile: true,
   userProfile: true,
+  platformAgreements: { where: { status: 'accepted' as const }, select: { version: true } },
   agencyMembers: {
     where: { status: 'active' },
     take: 1,
@@ -67,6 +70,7 @@ type UserWithRelations = User & {
   } | null
   adminProfile?: AdminProfile | null
   userProfile?: UserProfile | null
+  platformAgreements?: { version: string }[]
   agencyMembers?: (AgencyMember & { agency?: Pick<Agency, 'name' | 'status'> })[]
 }
 
@@ -92,6 +96,9 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     dayRateUsd: user.contributorProfile?.dayRateUsd ?? user.modelProfile?.dayRateUsd ?? null,
     modelHandle: user.modelProfile?.handle ?? null,
     hasModelProfile: Boolean(user.modelProfile),
+    hasPhotographerAgreement: Boolean(
+      user.platformAgreements?.some((row) => row.version === CURRENT_AGREEMENT_VERSION),
+    ),
     adminRole: user.adminProfile?.adminRole ?? null,
     adminCapabilities: user.adminProfile
       ? resolveAdminCapabilities({
@@ -124,7 +131,7 @@ export function serializeRights(
     | 'possibleMinor'
     | 'screeningKind'
     | 'creationClaim'
-  >,
+  > & { copyrightCommercialScope?: boolean },
   rights: RightsRecord | null,
   hasAgreement: boolean,
   appearances: TwoPartyAppearanceInput[] = [],
@@ -146,6 +153,7 @@ export function serializeRights(
         requiresModelRelease: true,
         copyrightStatus,
         creationClaim,
+        copyrightCommercialScope: (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope,
       }) ?? null
     : null
   const commercialEligible = isCommerciallyEligible({
@@ -154,6 +162,7 @@ export function serializeRights(
     commercialLocked: photo.commercialLocked,
     creationClaim,
     appearances,
+    copyrightCommercialScope: (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope,
   })
   const levels = appearances
     .map((row) => row.verificationLevel)
@@ -218,6 +227,12 @@ type PhotoWithTags = Photo & {
   contributor?: User & { contributorProfile?: ContributorProfile | null }
   agreements?: Pick<PlatformAgreement, 'version' | 'status'>[]
   appearances?: TwoPartyAppearanceInput[]
+  copyrightAuthorizations?: {
+    commercialSublicensing: boolean
+    status: string
+    quality: string
+  }[]
+  copyrightCommercialScope?: boolean
 }
 
 export function mediaSrc(photo: Photo, kind: 'preview' | 'thumb') {
@@ -229,9 +244,18 @@ export function serializePhoto(
   photo: PhotoWithTags,
   photographerHandle: string,
   hasAgreement = true,
-  extras?: { favorited?: boolean; photographerFollowed?: boolean; appearances?: PhotoDto['appearances'] },
+  extras?: {
+    favorited?: boolean
+    photographerFollowed?: boolean
+    appearances?: PhotoDto['appearances']
+    copyrightAuthorizations?: PhotoDto['copyrightAuthorizations']
+  },
 ): PhotoDto {
   const contributor = photo.contributor
+  const copyrightCommercialScope = photo.copyrightCommercialScope
+    ?? photo.copyrightAuthorizations?.some((row) =>
+      row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
+    )
   return {
     id: photo.id,
     src: mediaSrc(photo, 'preview'),
@@ -263,10 +287,16 @@ export function serializePhoto(
     permissionState: photo.permissionState,
     restrictionNotes: photo.restrictionNotes,
     rights: photo.rightsRecord
-      ? serializeRights(photo, photo.rightsRecord, hasAgreement, photo.appearances ?? extras?.appearances ?? [])
+      ? serializeRights(
+          { ...photo, copyrightCommercialScope },
+          photo.rightsRecord,
+          hasAgreement,
+          photo.appearances ?? extras?.appearances ?? [],
+        )
       : undefined,
     commercialLocked: photo.commercialLocked,
     appearances: extras?.appearances,
+    copyrightAuthorizations: extras?.copyrightAuthorizations,
   }
 }
 
@@ -291,7 +321,21 @@ export function serializeLicenseProduct(
   const twoParty = offer.offered
     ? twoPartyLicenseBlock(product, photo, appearances, _rights?.copyrightStatus)
     : undefined
-  const blockedReason = twoParty ?? offer.reason
+  const eligibility = offer.offered
+    ? commercialEligibilityBlock({
+        copyrightStatus: _rights?.copyrightStatus ?? 'claimed',
+        modelConsentStatus: _rights?.modelConsentStatus ?? 'not_required',
+        commercialLocked: photo.commercialLocked,
+        appearances,
+        licenseType: product.type,
+        creationClaim: photo.creationClaim,
+        copyrightCommercialScope: (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope
+          ?? (photo as { copyrightAuthorizations?: { commercialSublicensing: boolean; status: string; quality: string }[] })
+            .copyrightAuthorizations
+            ?.some((row) => row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified'),
+      })
+    : undefined
+  const blockedReason = eligibility ?? twoParty ?? offer.reason
   return {
     id: product.id,
     type: product.type,

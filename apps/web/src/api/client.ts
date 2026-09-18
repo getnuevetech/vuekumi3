@@ -362,7 +362,7 @@ export const api = {
   removeFromCollection: (collectionId: string, photoId: string) =>
     request<{ ok: boolean }>(`/api/collections/${collectionId}/photos/${photoId}`, { method: 'DELETE' }),
 
-  agreement: (kind?: 'photographer' | 'contributor' | 'photo_influencer') =>
+  agreement: (kind?: 'photographer' | 'contributor' | 'photo_influencer' | 'model') =>
     request<AgreementDto>(`/api/agreements/current${kind ? `?kind=${kind}` : ''}`),
 
   licenses: () => request<{ items: LicenseProductDto[] }>('/api/licenses'),
@@ -607,10 +607,55 @@ export const api = {
       location: string | null
       bio: string | null
       earns: false
+      hasPhotographerAgreement?: boolean
+      photosCount?: number
       counts: { invited: number; claimed: number; approved: number; rejected: number; total: number }
     }>('/api/model'),
 
   modelAppearances: () => request<{ items: PhotoAppearanceDto[] }>('/api/model/appearances'),
+
+  modelPhotos: () => request<{ items: PhotoDto[] }>('/api/model/photos'),
+
+  modelPhoto: (id: string) => request<{ photo: PhotoDto }>(`/api/model/photos/${id}`),
+
+  submitModelPhoto: (body: import('@vuekumi/shared').SubmitModelPhotoInput) =>
+    request<{ photo: PhotoDto }>('/api/model/photos', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateModelPhoto: (id: string, body: UpdatePhotoInput) =>
+    request<{ photo: PhotoDto }>(`/api/model/photos/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  identifyCopyrightHolder: (photoId: string, body: import('@vuekumi/shared').IdentifyCopyrightHolderInput) =>
+    request<{ authorization: import('@vuekumi/shared').CopyrightAuthorizationDto; joinUrl: string }>(
+      `/api/model/photos/${photoId}/copyright-holder`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
+  acceptPhotographerAgreement: (body: import('@vuekumi/shared').AcceptPhotographerAgreementInput) =>
+    request<{ user: AuthUser }>('/api/model/photographer-agreement', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  presignModelUpload: (filename: string, contentType: string) =>
+    request<{
+      driver: 's3' | 'local'
+      key: string
+      uploadUrl: string
+      method: 'PUT'
+      headers: Record<string, string>
+    }>('/api/model/uploads/presign', {
+      method: 'POST',
+      body: JSON.stringify({ filename, contentType }),
+    }),
+
+  copyrightInvitePreview: (token: string) =>
+    request<{ invite: import('@vuekumi/shared').CopyrightInvitePreviewDto }>(`/api/copyright/invite/${token}`),
+
+  guestCopyrightConsent: (token: string, body: import('@vuekumi/shared').GuestCopyrightConsentInput) =>
+    request<{ authorizations: import('@vuekumi/shared').CopyrightAuthorizationDto[] }>(
+      `/api/copyright/invite/${token}/decide`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
 
   decideAppearance: (id: string, body: DecideAppearanceInput) =>
     request<{ appearance: PhotoAppearanceDto }>(`/api/model/appearances/${id}/decide`, {

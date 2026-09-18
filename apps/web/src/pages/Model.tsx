@@ -25,6 +25,16 @@ const icons = {
 
 const modelLinks: PortalLink[] = [
   { to: '/model', label: 'Appearances', icon: icons.dash },
+  {
+    to: '/model/upload',
+    label: 'Upload',
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 16V4m0 0l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 20h16" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ]
 
 const photographerLink: PortalLink = {
@@ -39,18 +49,26 @@ const photographerLink: PortalLink = {
   ),
 }
 
+export function modelPortalLinks(hasPhotographerProfile?: boolean): PortalLink[] {
+  return hasPhotographerProfile ? [...modelLinks, photographerLink] : modelLinks
+}
+
 export default function ModelPortal() {
   const { user } = useAuth()
   const [items, setItems] = useState<PhotoAppearanceDto[]>([])
+  const [photos, setPhotos] = useState<import('@vuekumi/shared').PhotoDto[]>([])
   const [handle, setHandle] = useState<string | null>(null)
   const dualRole = Boolean(user && isCreatorWorkspaceAccount(user.accountType) && hasModelAccess(user))
-  const links = dualRole ? [...modelLinks, photographerLink] : modelLinks
+  const links = modelPortalLinks(dualRole)
 
   const load = () => {
     api.modelPortal().then((d) => setHandle(d.handle)).catch(() => setHandle(null))
     api.modelAppearances()
       .then((d) => setItems(d.items))
       .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load'))
+    api.modelPhotos()
+      .then((d) => setPhotos(d.items))
+      .catch(() => setPhotos([]))
   }
 
   useEffect(() => { load() }, [])
@@ -65,7 +83,7 @@ export default function ModelPortal() {
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your likeness.</h1>
       <p className="mt-1 text-sm text-ink-soft">
         {handle ? `@${handle}` : 'Claimed model account'}. Usage permission, not ownership. A checkbox is not consent — confirm each photograph. Commercial sale of your likeness needs your commercial approval.
-        {dualRole ? ' You are also the photographer on this account.' : ''}
+        {dualRole ? ' You are also the photographer on this account.' : user?.hasPhotographerAgreement ? ' You have accepted the photographer agreement on this same email. Account type stays model.' : ''}
       </p>
       <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
         Models do not earn yet. The photographer/model split is undecided. A visual check is optional and cannot grant rights.
@@ -77,9 +95,28 @@ export default function ModelPortal() {
         </p>
       )}
 
+      {photos.length > 0 && (
+        <div className="mt-10">
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Your uploads</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {photos.map((p) => (
+              <Link key={p.id} to={`/model/photos/${p.id}`} className="flex gap-3 rounded-2xl border border-sand-soft bg-white p-3 hover:border-terra">
+                <img src={p.thumbSrc ?? p.src} alt="" className="h-16 w-20 rounded-lg object-cover" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{p.title}</p>
+                  <p className="font-mono-tech text-[10px] text-ink-faint">{p.permissionState} · {p.rights?.creationClaim ?? 'claim'}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-8 space-y-4">
         {items.length === 0 && (
-          <p className="text-sm text-ink-soft">No photographs yet. Photographers invite you from their editor.</p>
+          <p className="text-sm text-ink-soft">
+            No photographs yet. Photographers invite you from their editor, or <Link to="/model/upload" className="text-terra">upload your own</Link>.
+          </p>
         )}
         {items.map((row) => (
           <AppearanceCard key={row.id} row={row} onChanged={load} />

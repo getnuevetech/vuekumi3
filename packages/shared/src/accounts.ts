@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const ACCOUNT_TYPES = ['admin', 'photographer', 'photo_influencer', 'contributor', 'user', 'agency', 'model'] as const
 export const accountTypeSchema = z.enum(ACCOUNT_TYPES)
 
-export const PUBLIC_REGISTER_ACCOUNT_TYPES = ['photographer', 'photo_influencer', 'contributor', 'user', 'agency'] as const
+export const PUBLIC_REGISTER_ACCOUNT_TYPES = ['photographer', 'photo_influencer', 'contributor', 'user', 'agency', 'model'] as const
 export const publicRegisterAccountTypeSchema = z.enum(PUBLIC_REGISTER_ACCOUNT_TYPES)
 
 /** Account types staff may create from the admin portal (Phase 35). Admin users wait for Phase 36. */
@@ -46,9 +46,18 @@ export function isCreatorAccount(accountType: string | null | undefined): boolea
   return isCreatorWorkspaceAccount(accountType) || accountType === 'admin'
 }
 
-/** Professional photographers (and staff acting as them) may enter commercial inventory. */
-export function canEnterCommercialInventory(accountType: string | null | undefined): boolean {
-  return accountType === 'photographer' || accountType === 'admin'
+/**
+ * Professional photographers (and staff acting as them) may enter commercial inventory.
+ * A model who has accepted the photographer agreement on the same email (dual-role)
+ * may also enter commercial inventory. `accountType` stays `model`.
+ */
+export function canEnterCommercialInventory(
+  accountType: string | null | undefined,
+  opts?: { hasPhotographerAgreement?: boolean | null },
+): boolean {
+  if (accountType === 'photographer' || accountType === 'admin') return true
+  if (accountType === 'model' && opts?.hasPhotographerAgreement) return true
+  return false
 }
 
 export function creatorPortalLabel(accountType: string | null | undefined): string {

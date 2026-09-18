@@ -117,7 +117,10 @@ export function approvedLikenessWhere(modelUserId: string): Prisma.PhotoAppearan
 export function modelPortfolioPhotoWhere(modelUserId: string, category?: string): Prisma.PhotoWhereInput {
   return {
     ...PROFILE_PHOTO_FILTER,
-    appearances: { some: approvedLikenessWhere(modelUserId) },
+    OR: [
+      { appearances: { some: approvedLikenessWhere(modelUserId) } },
+      { uploadedById: modelUserId },
+    ],
     ...(category && category !== 'All' ? { category } : {}),
   }
 }

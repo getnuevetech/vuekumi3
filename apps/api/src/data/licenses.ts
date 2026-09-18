@@ -3,6 +3,7 @@ import type { GrantLicenseType } from '@prisma/client'
 export const CURRENT_AGREEMENT_VERSION = '1.0'
 export const COMMUNITY_AGREEMENT_VERSION = '1.0-community'
 export const PHOTO_INFLUENCER_AGREEMENT_VERSION = '1.0-photo-influencer'
+export const MODEL_UPLOADER_AGREEMENT_VERSION = '1.0-model'
 
 export const VUEKUMI_AGREEMENT = {
   version: CURRENT_AGREEMENT_VERSION,
@@ -62,9 +63,32 @@ export const PHOTO_INFLUENCER_AGREEMENT = {
 6. Usage permission. Vuekumi hosts and displays this work under these terms. A download is not ownership.`,
 }
 
+export const MODEL_UPLOADER_AGREEMENT = {
+  version: MODEL_UPLOADER_AGREEMENT_VERSION,
+  title: 'VueKumi Model Uploader Agreement',
+  body: `Vuekumi models may register and upload photographs. This is not a photographer commercial inventory path unless you also accept the photographer licensing agreement on the same email.
+
+1. Two independent rights. Photo copyright and likeness / model consent are separate. Whoever uploads must prove the rights they do not personally control. A claim is not documented evidence, and documented evidence is not VueKumi-verified.
+
+2. Representations. You warrant that you have the right to upload each photograph for the usage you select, that contact details you supply for photographers are accurate and provided only for rights clearance, and that you indemnify VueKumi against false claims.
+
+3. VueKumi may contact named photographers. First contact is a rights-clearance notice, not a marketing list. Photographer contact details are not shown to other users.
+
+4. Display is not commercial licensing. Portfolio or editorial permission does not unlock stock sale. Commercial licensing requires VueKumi-verified copyright (including the photographer's confirmation when another person may own the work) and VueKumi-verified likeness where people appear, plus commercial scopes.
+
+5. Self-shot commercial path. If you took the photograph yourself, commercial stock still requires the photographer licensing agreement, an African Union country, and a contributor profile on this same email. Your account type stays model. You then earn the photographer 50% as photographer, not as model.
+
+6. Models do not earn from likeness. The photographer/model/platform split remains undecided.
+
+7. Africa. Models as subjects are not Africa-restricted. Africa is required only if you accept the photographer agreement to enter commercial inventory.
+
+8. Usage permission, not ownership. VueKumi hosts, displays, and — only when both rights tracks verify and commercial scopes are granted — sublicenses usage. AI-training consent is not included.`,
+}
+
 export function agreementForAccountType(accountType: string) {
   if (accountType === 'contributor') return COMMUNITY_CONTRIBUTOR_AGREEMENT
   if (accountType === 'photo_influencer') return PHOTO_INFLUENCER_AGREEMENT
+  if (accountType === 'model') return MODEL_UPLOADER_AGREEMENT
   return VUEKUMI_AGREEMENT
 }
 

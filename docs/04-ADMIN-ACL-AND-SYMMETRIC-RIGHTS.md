@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: Phases 35–37 shipped. Remaining phases still require approval before implementation.**
+**Status: Phases 35–38 shipped. Remaining phases still require approval before implementation.**
 
 This is the implementation procedure for three product decisions:
 
@@ -370,7 +370,7 @@ Do not ship model-upload in the same PRs. Ops can use staff ACL while rights wor
 
 ---
 
-## 5. Model registration and upload (Phase 38 — after 37)
+## 5. Model registration and upload (Phase 38 — shipped)
 
 ### 5.1 Registration
 
@@ -469,7 +469,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
         │
 37 Symmetric rights quality + eligibility tighten + ledger + guardian write
         │
-38 Model public register + model upload + photographer contact mirror
+38 Model public register + model upload + photographer contact mirror — shipped
         │
 39 DMCA + strikes + payout holds
         │
@@ -481,7 +481,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice after approval: Phase 38.**
+**Default next slice after approval: Phase 39.**
 
 ---
 

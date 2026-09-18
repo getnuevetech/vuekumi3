@@ -189,7 +189,7 @@ Shipped through the photographer / likeness-rights overhaul plus Phases 29–33,
 | Photographer keeps copyright; VueKumi gets a platform licence | Yes — photographer licensing agreement + copyright attestation (`COPYRIGHT_STATUS`) |
 | Buyer receives a usage licence, not ownership | Yes — RF / Commercial / Extended / Editorial / RM quotes / Exclusive opt-in; certificates |
 | Four layers checked at grant time | Yes — photo copyright rights, likeness / model release rights where required, platform agreement, then grant. A photographer-provided PDF is not VueKumi-verified consent. |
-| Model is a first-class account | **Yes** — invite-only `model`. Photographers may add a `ModelProfile` on the same email. Community contributors are a sixth public type and cannot enter commercial inventory. |
+| Model is a first-class account | **Yes** — public `model` registration (Africa not required) plus photographer invite. Models may upload; VueKumi contacts named photographers. Photographers may add a `ModelProfile` on the same email. Community contributors are a sixth public type and cannot enter commercial inventory. |
 | Two-party approval | **Yes** — `COMMERCIAL_ELIGIBILITY = copyright cleared + required likeness rights cleared`. Multi-model photos stay locked until every required consent is approved. |
 | Invite-the-model | **Yes** — photographer supplies name, email and private mobile; VueKumi contacts the model. Guest approve / reject / not me / unauthorized. Membership is not required to decide. |
 | Permission states (portfolio / editorial / restricted / agency-protected) | **Yes** — `PermissionState` on each photo; catalog is stock states; profile can show portfolio |
@@ -222,7 +222,7 @@ Keep v1 of the identity graph to:
 
 1. Photographers (professional commercial inventory; `accountType: photographer`)
 2. Community contributors (portfolio / editorial sharing; not commercial stock)
-3. Models (invite-only accounts; claim, confirm likeness, approve/reject usage per image)
+3. Models (public accounts; upload + likeness decisions; VueKumi contacts photographers)
 4. Photo influencers (social/discovery creators; `accountType: photo_influencer` — not a photographer kind)
 
 Stylists, MUAs, directors, production crews come later. The first network to establish is
@@ -266,8 +266,7 @@ Those are Phase-gate decisions immediately before the relevant build, not this d
 Staff ACL, model-as-uploader, claimed/documented/verified quality, Rights Ledger, DMCA,
 and the U.S. + Global Rights Standard + country-overlay legal philosophy are **proposed**
 in [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md).
-Phases 35–37 are shipped. Nothing in Phases 38–40 starts until you approve a phase. Models remain
-invite-only and cannot upload until Phase 38. `AdminRole` is a capability preset (Phase 36).
+Phases 35–38 are shipped. Nothing in Phases 39–40 starts until you approve a phase. Models may public-register and upload; VueKumi contacts named photographers. `AdminRole` is a capability preset (Phase 36).
 Third-party copyright at `claimed` or `documented` never unlocks commercial licensing.
 Staff can create and edit members, photographers, community contributors,
 agencies, models, and **admins** from the portal; each staff user is limited to selected

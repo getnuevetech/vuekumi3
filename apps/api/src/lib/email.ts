@@ -133,6 +133,15 @@ export function agencyInviteEmail(agencyName: string, role: string, link: string
   return `<p>You have been invited to join <strong>${agencyName}</strong> on Vuekumi as ${role}.</p><p>Accept the invite:</p><p><a href="${link}">${link}</a></p><p>This link expires in 14 days. Vuekumi sells usage permission, not ownership.</p>`
 }
 
+export function photographerRightsNoticeEmail(input: {
+  displayName: string
+  modelName: string
+  photoTitle: string
+  link: string
+}): string {
+  return `<p>Hi ${input.displayName},</p><p>A model on VueKumi identified you as the photographer or copyright holder of a photograph they uploaded. This message is for <strong>rights clearance only</strong> — it is not a marketing list, and the model supplied your contact details solely so VueKumi can confirm copyright.</p><p><strong>${input.modelName}</strong> uploaded <strong>${input.photoTitle}</strong> and named you.</p><p>You can authorize display on VueKumi, authorize commercial sublicensing through VueKumi, reject the request, say this is not you, or report an unauthorized submission. You do not need a VueKumi account to decide. A typed name is not identity, and a checkbox is not consent.</p><p>Vuekumi sells usage permission, not ownership. Display permission is not commercial licensing. AI-training use is not requested.</p><p><a href="${input.link}">${input.link}</a></p><p>This link expires in 14 days. Your contact details stay private.</p>`
+}
+
 export function modelInviteEmail(input: {
   displayName: string
   photographerName: string

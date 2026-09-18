@@ -68,14 +68,14 @@ test('model handles slug from the display name', () => {
   assert.equal(slugModelHandle('!!!', 'zz'), 'model-zz')
 })
 
-test('public registration cannot create a model account', () => {
+test('public registration can create a model account', () => {
   const parsed = registerSchema.safeParse({
     email: 'model@example.com',
     password: 'password1',
     name: 'No',
     accountType: 'model',
   })
-  assert.equal(parsed.success, false)
+  assert.equal(parsed.success, true)
 })
 
 test('model invite copy states likeness, consent, and that models do not earn', () => {
@@ -280,12 +280,13 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
   assert.equal(approved.statusCode, 200)
   assert.equal((approved.json() as { appearance: { status: string; confirmedLikeness: boolean } }).appearance.status, 'approved')
 
-  const rejectedRegister = await app.inject({
+  const registered = await app.inject({
     method: 'POST',
     url: '/api/auth/register',
-    payload: { email: `reg-${Date.now()}@vuekumi.demo`, password: 'User12345!', name: 'Nope', accountType: 'model' },
+    payload: { email: `reg-${Date.now()}@vuekumi.demo`, password: 'User12345!', name: 'Nope', accountType: 'model', acceptAgreement: true },
   })
-  assert.equal(rejectedRegister.statusCode, 400)
+  assert.equal(registered.statusCode, 200)
+  assert.equal((registered.json() as { user: { accountType: string } }).user.accountType, 'model')
 
   const kofiLogin = await app.inject({
     method: 'POST',

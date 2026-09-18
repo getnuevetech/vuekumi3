@@ -197,6 +197,7 @@ export function twoPartyBlocksLicense(input: {
   copyrightStatus?: import('./rights.js').CopyrightStatus
   thirdPartyCopyright?: boolean
   creationClaim?: import('./rights.js').CreationClaim | null
+  copyrightCommercialScope?: boolean | null
 }): string | undefined {
   if (!input.hasRecognizablePeople) return undefined
   if (!input.requiresModelRelease) return undefined
@@ -216,6 +217,7 @@ export function twoPartyBlocksLicense(input: {
     licenseType: input.licenseType,
     thirdPartyCopyright: input.thirdPartyCopyright,
     creationClaim: input.creationClaim,
+    copyrightCommercialScope: input.copyrightCommercialScope,
   })
 }
 

@@ -18,6 +18,7 @@ import {
 } from '@vuekumi/shared'
 import type { PhotoAppearance, User } from '@prisma/client'
 import { prisma } from './prisma.js'
+import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { permissionAfterTwoParty, permissionWriteData } from './permissions.js'
 import { appendRightsLedgerEvent } from './ledger.js'
 
@@ -314,7 +315,12 @@ export async function applyAppearanceDecision(input: {
 export async function syncVerifiedRightsRecord(photoId: string) {
   const photo = await prisma.photo.findUnique({
     where: { id: photoId },
-    include: { appearances: true, rightsRecord: true },
+    include: {
+      appearances: true,
+      rightsRecord: true,
+      copyrightAuthorizations: true,
+      uploadedBy: { include: { platformAgreements: true } },
+    },
   })
   if (!photo?.rightsRecord) return
   const modelConsentStatus = rollupModelConsentStatus({
@@ -322,12 +328,20 @@ export async function syncVerifiedRightsRecord(photoId: string) {
     appearances: photo.appearances,
   })
   const copyrightStatus = photo.rightsRecord.copyrightStatus
-  const commercialEligible = isCommerciallyEligible({
+  const copyrightCommercialScope = photo.copyrightAuthorizations.some((row) =>
+    row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
+  )
+  const uploader = photo.uploadedBy
+  const modelSelfShotNeedsAgreement = uploader?.accountType === 'model'
+    && photo.creationClaim === 'self_created'
+    && !uploader.platformAgreements.some((a) => a.version === CURRENT_AGREEMENT_VERSION && a.status === 'accepted')
+  const commercialEligible = !modelSelfShotNeedsAgreement && isCommerciallyEligible({
     copyrightStatus,
     modelConsentStatus,
     commercialLocked: photo.commercialLocked,
     creationClaim: photo.creationClaim,
     appearances: photo.appearances,
+    copyrightCommercialScope,
   })
   await prisma.rightsRecord.update({
     where: { photoId },
@@ -343,7 +357,7 @@ export async function syncVerifiedRightsRecord(photoId: string) {
 export async function syncPermissionToTwoParty(photoId: string) {
   const photo = await prisma.photo.findUnique({
     where: { id: photoId },
-    include: { appearances: true, rightsRecord: true },
+    include: { appearances: true, rightsRecord: true, copyrightAuthorizations: true },
   })
   if (!photo) return
   const twoPartyCleared = twoPartyCommercialCleared({

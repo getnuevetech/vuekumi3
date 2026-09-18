@@ -69,6 +69,21 @@ export const SCREENING_KIND_LABEL: Record<ScreeningKind, string> = {
   uncertain_human_detection: 'Uncertain human detection',
 }
 
+export const COPYRIGHT_SCOPES = [
+  'portfolio_display',
+  'editorial',
+  'commercial_sublicensing',
+  'exclusive',
+  'ai_training',
+] as const
+export const copyrightScopeSchema = z.enum(COPYRIGHT_SCOPES)
+export type CopyrightScope = z.infer<typeof copyrightScopeSchema>
+
+export const COPYRIGHT_AUTHORIZATION_TERMS_VERSION = '1.0'
+
+export const COPYRIGHT_AUTHORIZATION_ATTESTATION =
+  'I confirm that I own or control the copyright in these photographs and authorize the selected usage through VueKumi. A claim is not verification. VueKumi sells usage permission, not ownership. AI-training use is not granted.'
+
 export const COPYRIGHT_ATTESTATION =
   'I confirm that I created this image or possess the rights necessary to license it through VueKumi.'
 
@@ -267,6 +282,16 @@ const COMMERCIAL_CLASS = new Set([
   'rights_managed',
 ])
 
+export function copyrightCommercialScopeGranted(input: {
+  creationClaim?: CreationClaim | null
+  thirdPartyCopyright?: boolean
+  copyrightCommercialScope?: boolean | null
+}): boolean {
+  const thirdParty = input.thirdPartyCopyright ?? thirdPartyCopyright(input.creationClaim)
+  if (!thirdParty) return true
+  return input.copyrightCommercialScope === true
+}
+
 export function isCommerciallyEligible(input: {
   copyrightStatus: CopyrightStatus
   modelConsentStatus: ModelConsentStatus
@@ -274,9 +299,11 @@ export function isCommerciallyEligible(input: {
   thirdPartyCopyright?: boolean
   creationClaim?: CreationClaim | null
   appearances?: RightsAppearanceInput[]
+  copyrightCommercialScope?: boolean | null
 }): boolean {
   return copyrightAuthoritySufficient(input)
     && likenessAuthorizationSufficient(input)
+    && copyrightCommercialScopeGranted(input)
     && !input.commercialLocked
 }
 
@@ -288,6 +315,7 @@ export function commercialEligibilityBlock(input: {
   licenseType?: string
   thirdPartyCopyright?: boolean
   creationClaim?: CreationClaim | null
+  copyrightCommercialScope?: boolean | null
 }): string | undefined {
   if (input.commercialLocked) return 'New licensing is paused while staff review a rights report'
   const thirdParty = input.thirdPartyCopyright ?? thirdPartyCopyright(input.creationClaim)
@@ -301,6 +329,9 @@ export function commercialEligibilityBlock(input: {
       return 'Copyright is documented but not VueKumi-verified'
     }
     return 'Photo copyright rights are not cleared'
+  }
+  if (!copyrightCommercialScopeGranted({ ...input, thirdPartyCopyright: thirdParty })) {
+    return 'The copyright holder authorized display only. Commercial sublicensing through VueKumi was not granted'
   }
   if (!likenessAuthorizationSufficient(input)) {
     const outstanding = outstandingConsentCount(input.appearances ?? [])
@@ -416,6 +447,73 @@ export const guestConsentSchema = z.object({
   notes: z.string().trim().max(2000).optional().nullable(),
 })
 
+export const identifyCopyrightHolderSchema = z.object({
+  displayName: z.string().trim().min(2).max(120),
+  email: z.string().email(),
+  mobile: z.string().trim().min(7).max(32).regex(/^[+0-9 ().-]+$/, 'Enter a mobile number VueKumi can use to contact the photographer'),
+})
+
+export const guestCopyrightConsentSchema = z.object({
+  action: appearanceDecisionKindSchema,
+  confirmedIdentity: z.boolean(),
+  usage: z.enum(['none', 'editorial', 'commercial']).optional(),
+  acceptAuthorizationTerms: z.boolean().optional(),
+  notes: z.string().trim().max(2000).optional().nullable(),
+})
+
+export const acceptPhotographerAgreementSchema = z.object({
+  country: z.string().length(2),
+  acceptAgreement: z.literal(true),
+})
+
+export const submitModelPhotoSchema = z
+  .object({
+    title: z.string().min(2).max(160),
+    description: z.string().max(2000).optional(),
+    category: z.string().min(1).max(80),
+    country: z.string().min(2).max(80),
+    tags: z.array(z.string().min(1).max(40)).max(20).optional(),
+    hasRecognizablePeople: z.boolean(),
+    copyrightHolder: z.string().min(2).max(200),
+    copyrightAttested: z.literal(true),
+    creationClaim: creationClaimSchema,
+    inPhotograph: z.boolean(),
+    ownLikenessConfirmed: z.boolean().optional(),
+    ownUsage: z.enum(['editorial', 'commercial']).optional(),
+    photographerName: z.string().trim().min(2).max(120).optional(),
+    photographerEmail: z.string().email().optional(),
+    photographerMobile: z.string().trim().min(7).max(32).regex(/^[+0-9 ().-]+$/).optional(),
+    assignmentDocumentName: z.string().min(3).max(200).optional(),
+    src: z.string().max(500).optional(),
+    originalKey: z.string().min(8).max(400).optional(),
+  })
+  .superRefine((value, ctx) => {
+    const needsPhotographer = value.creationClaim === 'photographer_took'
+      || value.creationClaim === 'assigned'
+      || value.creationClaim === 'licensed'
+    if (needsPhotographer && (!value.photographerName || !value.photographerEmail || !value.photographerMobile)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Name, email and mobile are required so VueKumi can contact the photographer',
+        path: ['photographerEmail'],
+      })
+    }
+    if (value.inPhotograph && !value.ownLikenessConfirmed) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Confirm your likeness before submitting a photograph you appear in',
+        path: ['ownLikenessConfirmed'],
+      })
+    }
+    if (value.inPhotograph && (!value.ownUsage || value.ownUsage === undefined)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Choose editorial or commercial usage for your own likeness',
+        path: ['ownUsage'],
+      })
+    }
+  })
+
 export const declareSubjectAgeSchema = z.object({
   appearanceId: z.string().min(1).optional(),
   ageClass: subjectAgeClassSchema,
@@ -434,6 +532,55 @@ export type UploadSignedReleaseInput = z.infer<typeof uploadSignedReleaseSchema>
 export type GuestConsentInput = z.infer<typeof guestConsentSchema>
 export type DeclareSubjectAgeInput = z.infer<typeof declareSubjectAgeSchema>
 export type AuthorizeGuardianInput = z.infer<typeof authorizeGuardianSchema>
+export type IdentifyCopyrightHolderInput = z.infer<typeof identifyCopyrightHolderSchema>
+export type GuestCopyrightConsentInput = z.infer<typeof guestCopyrightConsentSchema>
+export type AcceptPhotographerAgreementInput = z.infer<typeof acceptPhotographerAgreementSchema>
+export type SubmitModelPhotoInput = z.infer<typeof submitModelPhotoSchema>
+
+export const COPYRIGHT_AUTHORIZATION_STATUSES = ['identified', 'invited', 'claimed', 'approved', 'rejected'] as const
+export const copyrightAuthorizationStatusSchema = z.enum(COPYRIGHT_AUTHORIZATION_STATUSES)
+export type CopyrightAuthorizationStatus = z.infer<typeof copyrightAuthorizationStatusSchema>
+
+export interface CopyrightAuthorizationDto {
+  id: string
+  photoId: string
+  photoTitle?: string
+  photoSrc?: string
+  modelName?: string
+  displayName: string
+  inviteEmail?: string | null
+  inviteMobile?: string | null
+  status: CopyrightAuthorizationStatus
+  decisionKind?: AppearanceDecisionKind | null
+  usage: 'none' | 'editorial' | 'commercial'
+  portfolioDisplay: boolean
+  commercialSublicensing: boolean
+  quality: CopyrightStatus
+  documentFileName?: string | null
+  invitedAt?: string | null
+  decidedAt?: string | null
+  inviteExpiresAt?: string | null
+}
+
+export interface CopyrightInvitePreviewDto {
+  email: string
+  displayName: string
+  photoTitle: string
+  modelName: string
+  expiresAt: string
+  needsAccount: boolean
+  membershipRequired: false
+  imageCount: number
+  images: {
+    authorizationId: string
+    photoId: string
+    photoTitle: string
+    photoSrc?: string
+    status: CopyrightAuthorizationStatus
+  }[]
+  terms: string
+  notice: string
+}
 
 export interface VerifiedRightsRecordDto {
   copyrightStatus: CopyrightStatus

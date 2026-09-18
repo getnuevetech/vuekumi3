@@ -439,6 +439,7 @@ async function main() {
       avatarUrl: '/images/avatars/portrait-botswana.jpg',
       emailVerifiedAt: new Date(),
       modelProfile: { create: { handle: 'ada-molefe', location: 'Gaborone, Botswana' } },
+      platformAgreements: { create: { version: '1.0-model' } },
     },
   })
   if (thandiweId) {
@@ -525,6 +526,171 @@ async function main() {
   await prisma.rightsRecord.update({
     where: { photoId: 'afr-011' },
     data: { modelConsentStatus: 'invitation_sent', commercialEligible: false },
+  })
+
+  const lenaInviteToken = 'seed-lena-photographer-invite'
+  await prisma.photo.create({
+    data: {
+      id: 'mdl-pending-copy',
+      contributorId: ada.id,
+      uploadedById: ada.id,
+      creationClaim: 'photographer_took',
+      title: 'Studio portrait awaiting photographer',
+      description: 'Ada uploaded this. VueKumi contacted the photographer. Commercial stays locked.',
+      category: 'People',
+      country: 'Botswana',
+      licenseType: 'free',
+      price: 0,
+      status: 'active',
+      src: '/images/photos/fashion-portrait.jpg',
+      hasRecognizablePeople: true,
+      exclusiveAvailable: false,
+      permissionState: 'portfolio',
+      publishedAt: new Date(),
+      tags: { create: [{ tag: 'model-upload' }] },
+      rightsRecord: {
+        create: {
+          copyrightVerified: false,
+          copyrightStatus: 'claimed',
+          copyrightMethod: 'attestation',
+          copyrightAttestedAt: new Date(),
+          copyrightHolder: 'Lena Khumalo',
+          platformRightsOk: true,
+          modelReleaseRequired: true,
+          modelReleaseStatus: 'pending',
+          modelConsentStatus: 'approved',
+          commercialEligible: false,
+        },
+      },
+      appearances: {
+        create: {
+          displayName: 'Ada Molefe',
+          inviteEmail: 'ada@vuekumi.demo',
+          modelUserId: ada.id,
+          invitedById: ada.id,
+          status: 'approved',
+          consentStatus: 'approved',
+          decisionKind: 'approved',
+          verificationLevel: 'vuekumi_verified',
+          consentQuality: 'verified',
+          ageClass: 'adult',
+          usage: 'editorial',
+          confirmedLikeness: true,
+          selfShot: true,
+          consentVersion: '1.0',
+          claimedAt: new Date(),
+          decidedAt: new Date(),
+        },
+      },
+      copyrightAuthorizations: {
+        create: {
+          displayName: 'Lena Khumalo',
+          inviteEmail: 'lena-rights@vuekumi.demo',
+          inviteMobile: '+26771100000',
+          invitedById: ada.id,
+          status: 'invited',
+          quality: 'claimed',
+          inviteTokenHash: createHash('sha256').update(lenaInviteToken).digest('hex'),
+          inviteExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          invitedAt: new Date(),
+        },
+      },
+      ledgerEvents: {
+        create: {
+          action: 'copyright.attested',
+          actorId: ada.id,
+          actorKind: 'user',
+          nextCopyright: 'claimed',
+          nextLikeness: 'approved',
+          commercialEligible: false,
+        },
+      },
+    },
+  })
+
+  const zuri = await prisma.user.create({
+    data: {
+      email: 'zuri-adewale@vuekumi.demo',
+      passwordHash: userPassword,
+      name: 'Zuri Adewale',
+      accountType: 'model',
+      country: 'NG',
+      avatarUrl: '/images/avatars/portrait-nigeria.jpg',
+      emailVerifiedAt: new Date(),
+      modelProfile: { create: { handle: 'zuri-adewale', location: 'Lagos, Nigeria' } },
+      contributorProfile: {
+        create: { handle: 'zuri-adewale-photo', location: 'NG', creatorKind: 'photographer' },
+      },
+      platformAgreements: {
+        create: [{ version: '1.0-model' }, { version: '1.0' }],
+      },
+    },
+  })
+  await prisma.photo.create({
+    data: {
+      id: 'mdl-self-shot',
+      contributorId: zuri.id,
+      uploadedById: zuri.id,
+      creationClaim: 'self_created',
+      title: 'Self-shot dual-role portrait',
+      description: 'Zuri took this herself and accepted the photographer agreement. Account type stays model.',
+      category: 'People',
+      country: 'Nigeria',
+      licenseType: 'premium',
+      price: 12,
+      status: 'active',
+      src: '/images/photos/fashion-portrait.jpg',
+      hasRecognizablePeople: true,
+      exclusiveAvailable: false,
+      permissionState: 'commercial',
+      publishedAt: new Date(),
+      tags: { create: [{ tag: 'self-shot' }] },
+      rightsRecord: {
+        create: {
+          copyrightVerified: true,
+          copyrightStatus: 'claimed',
+          copyrightMethod: 'attestation',
+          copyrightAttestedAt: new Date(),
+          copyrightHolder: 'Zuri Adewale',
+          platformRightsOk: true,
+          modelReleaseRequired: true,
+          modelReleaseStatus: 'verified',
+          modelConsentStatus: 'approved',
+          commercialEligible: true,
+        },
+      },
+      appearances: {
+        create: {
+          displayName: 'Zuri Adewale',
+          inviteEmail: 'zuri-adewale@vuekumi.demo',
+          modelUserId: zuri.id,
+          invitedById: zuri.id,
+          status: 'approved',
+          consentStatus: 'approved',
+          decisionKind: 'approved',
+          verificationLevel: 'vuekumi_verified',
+          consentQuality: 'verified',
+          ageClass: 'adult',
+          usage: 'commercial',
+          confirmedLikeness: true,
+          selfShot: true,
+          consentVersion: '1.0',
+          claimedAt: new Date(),
+          decidedAt: new Date(),
+        },
+      },
+      ledgerEvents: {
+        create: {
+          action: 'copyright.attested',
+          actorId: zuri.id,
+          actorKind: 'user',
+          agreementVersion: '1.0',
+          nextCopyright: 'claimed',
+          nextLikeness: 'approved',
+          commercialEligible: true,
+        },
+      },
+    },
   })
 
   if (pendingContributor) {

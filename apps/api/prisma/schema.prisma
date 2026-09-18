@@ -297,6 +297,8 @@ model User {
   partnerKeysCreated    PartnerApiKey[]
   photosUploaded        Photo[]              @relation("PhotoUploader")
   rightsLedgerEvents    RightsLedgerEvent[]  @relation("LedgerActor")
+  copyrightAuthorizations CopyrightAuthorization[] @relation("CopyrightHolder")
+  copyrightInvitesSent    CopyrightAuthorization[] @relation("CopyrightInviter")
 
   @@index([accountType])
   @@index([status])
@@ -639,6 +641,7 @@ model Photo {
   representationInquiries RepresentationInquiry[]
   commercialLockedBy User? @relation("CommercialLockActor", fields: [commercialLockedById], references: [id], onDelete: SetNull)
   appearances      PhotoAppearance[]
+  copyrightAuthorizations CopyrightAuthorization[]
   ledgerEvents     RightsLedgerEvent[]
 
   @@index([status])
@@ -865,6 +868,43 @@ model ModelRelease {
   @@index([status])
   @@index([photographerId])
   @@index([appearanceId])
+}
+
+model CopyrightAuthorization {
+  id                     String                         @id @default(cuid())
+  photoId                String
+  displayName            String
+  inviteEmail            String?
+  inviteMobile           String?
+  photographerUserId     String?
+  invitedById            String
+  status                 ModelAppearanceStatus          @default(identified)
+  decisionKind           AppearanceDecisionKind?
+  usage                  ModelUsagePreference           @default(none)
+  portfolioDisplay       Boolean                        @default(false)
+  commercialSublicensing Boolean                        @default(false)
+  aiTraining             Boolean                        @default(false)
+  quality                CopyrightStatus                @default(claimed)
+  documentFileName       String?
+  documentKey            String?
+  inviteTokenHash        String?                        @unique
+  inviteExpiresAt        DateTime?
+  invitedAt              DateTime?
+  claimedAt              DateTime?
+  decidedAt              DateTime?
+  consentVersion         String?
+  notes                  String?
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+
+  photo              Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photographerUser   User? @relation("CopyrightHolder", fields: [photographerUserId], references: [id], onDelete: SetNull)
+  invitedBy          User  @relation("CopyrightInviter", fields: [invitedById], references: [id])
+
+  @@index([photoId])
+  @@index([photographerUserId])
+  @@index([inviteEmail])
+  @@index([status])
 }
 
 model PhotoAppearance {

@@ -105,6 +105,8 @@ Locked product rules already in the running system:
 | 33 | Partner / distribution API — authenticated (admin-issued bearer keys, hash-stored, shown once, revocable), licensed (cleared stock inventory only; licence flags computed with the same guards as checkout; licences granted on VueKumi, not by the API), rate-limited (120 req/min per key). Read-only `GET /api/partner/v1/photos[/:id]` with attribution and terms. **AI training explicitly not permitted** — no AI-training consent exists (that is Phase 34). Staff key management at `/admin/partner-api`. |
 | **35** | Admin user management from the portal: create members, photographers, community contributors, agencies, and models; dedicated photographers list; activate/suspend the **agency entity** (not only the user). |
 | **36** | Super-admin creates staff; `AdminRole` is a preset; authorization is `AdminProfile.capabilities[]`. Nav and every admin API route are gated. `content.impersonate_creator` is off for support/moderator/finance. |
+| **37** | Symmetric rights quality (`claimed → documented → verified`); third-party copyright never commercially cleared by declaration; Rights Ledger; guardian write. |
+| **38** | Model public registration + model upload; VueKumi contacts the photographer (copyright authorization, guest rights page). Self-shot commercial requires photographer agreement on the same email; `accountType` stays `model`. Models still do not earn. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -118,7 +120,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Concept | Status |
 | --- | --- |
 | Photographer copyright + platform licence + buyer usage licence | Shipped (agreement + grants) |
-| Model as a real, verifiable account | Shipped (Phase 24–26) — invite-only fifth type; photographers may also hold a model profile on the same email. Admin/agency cannot. |
+| Model as a real, verifiable account | **Yes** — public `model` registration (Africa not required) plus the photographer invite path. Photographers may also hold a `ModelProfile` on the same email. Models may upload; VueKumi contacts named photographers. Admin/agency cannot. |
 | Public model portfolio | Shipped (Phase 27) — `/m/:handle` and `/models` from approved, confirmed likeness on profile-visible photographs. Model does not gain copyright. No booking CTA. |
 | Two-approval commercial lock | Shipped (Phase 25) — commercial-class licences of people photos require every appearance approved with confirmed likeness and commercial usage. PDF is supporting evidence. |
 | Invite-the-model as acquisition | Shipped (Phase 24) — photographer names a person; VueKumi emails the invite |
@@ -215,7 +217,7 @@ Approve **one** remaining phase at a time.
 | **35** | Admin user management from the portal: create/edit every account type, photographers list, agency activation — **shipped** |
 | **36** | Super-admin creates admins; granular capability ACL (roles are presets) — **shipped** |
 | **37** | Symmetric rights quality (`claimed → documented → verified`); tighten commercial eligibility; Rights Ledger; guardian write — **shipped** |
-| **38** | Model public registration + model upload; VueKumi contacts the photographer (mirror of Route B) |
+| **38** | Model public registration + model upload; VueKumi contacts the photographer (mirror of Route B) — **shipped** |
 | **39** | DMCA notice path, repeat-infringer strikes, payout holds |
 | **40** | VueKumi Global Rights Standard hooks + country overlays (agreement copy remains counsel-gated) |
 
@@ -236,7 +238,7 @@ Do **not** start from this slice:
 ## 6. Cross-cutting (still in force)
 
 - Contract-first DTOs in `packages/shared`
-- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos. `amara-okafor@vuekumi.demo` is seeded as `accountType: photo_influencer` (not a photographer). Staff presets: `support@vuekumi.demo`, `moderator@vuekumi.demo`, `finance@vuekumi.demo` (`User12345!`); super-admin remains `admin@vuekumi.com` / `Admin123!`.
+- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including public-register models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`, plus model-uploaded `mdl-pending-copy` awaiting photographer Lena) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), self-shot dual-role photographer `kofi-mensah@vuekumi.demo`, and model-primary dual-role `zuri-adewale@vuekumi.demo` (`mdl-self-shot`, accountType stays model). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos. `amara-okafor@vuekumi.demo` is seeded as `accountType: photo_influencer` (not a photographer). Staff presets: `support@vuekumi.demo`, `moderator@vuekumi.demo`, `finance@vuekumi.demo` (`User12345!`); super-admin remains `admin@vuekumi.com` / `Admin123!`.
 - CI seeds the database before the API test suite (the seeded demo constellation is test fixture data).
 - Vertical slices (schema → API → UI → tests)
 - Africa-only contributors; keys in Admin Settings; Docker-only Lightsail
@@ -266,7 +268,7 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **Phase 38** (model public register + model upload; VueKumi contacts the photographer).
+3. Default next slice: **Phase 39** (DMCA notice path, repeat-infringer strikes, payout holds).
    Phase 34 (AI-training) stays parked. Dataset pricing remains **undecided**.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.

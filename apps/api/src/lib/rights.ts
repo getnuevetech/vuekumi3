@@ -1,7 +1,7 @@
 import type { GrantLicenseType, LicenseProduct, Photo, PlatformAgreement, RightsRecord } from '@prisma/client'
 import type { PermissionState, TwoPartyAppearanceInput } from '@vuekumi/shared'
 import { copyrightCleared, commercialEligibilityBlock, permissionBlocksLicense, thirdPartyCopyright, twoPartyBlocksLicense } from '@vuekumi/shared'
-import { COMMUNITY_AGREEMENT_VERSION, CURRENT_AGREEMENT_VERSION, PHOTO_INFLUENCER_AGREEMENT_VERSION } from '../data/licenses.js'
+import { COMMUNITY_AGREEMENT_VERSION, CURRENT_AGREEMENT_VERSION, MODEL_UPLOADER_AGREEMENT_VERSION, PHOTO_INFLUENCER_AGREEMENT_VERSION } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 
 export class RightsError extends Error {
@@ -22,7 +22,15 @@ export function hasCurrentAgreement(
       ? COMMUNITY_AGREEMENT_VERSION
       : accountType === 'photo_influencer'
         ? PHOTO_INFLUENCER_AGREEMENT_VERSION
-        : CURRENT_AGREEMENT_VERSION
+        : accountType === 'model'
+          ? MODEL_UPLOADER_AGREEMENT_VERSION
+          : CURRENT_AGREEMENT_VERSION
+  if (accountType === 'model') {
+    return agreements.some((a) =>
+      (a.version === MODEL_UPLOADER_AGREEMENT_VERSION || a.version === CURRENT_AGREEMENT_VERSION)
+      && a.status === 'accepted',
+    )
+  }
   return agreements.some((a) => a.version === needed && a.status === 'accepted')
 }
 
@@ -85,7 +93,7 @@ export function isLicenseOffered(
 
 export function twoPartyLicenseBlock(
   product: Pick<LicenseProduct, 'requiresModelRelease' | 'type'>,
-  photo: Pick<Photo, 'hasRecognizablePeople'> & { creationClaim?: Photo['creationClaim'] },
+  photo: Pick<Photo, 'hasRecognizablePeople'> & { creationClaim?: Photo['creationClaim']; copyrightCommercialScope?: boolean },
   appearances: TwoPartyAppearanceInput[],
   copyrightStatus?: RightsRecord['copyrightStatus'],
 ): string | undefined {
@@ -96,12 +104,13 @@ export function twoPartyLicenseBlock(
     requiresModelRelease: product.requiresModelRelease,
     copyrightStatus,
     creationClaim: photo.creationClaim,
+    copyrightCommercialScope: (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope,
   })
 }
 
 export function assertCanGrant(
   product: LicenseProduct,
-  photo: PhotoLicenseFields & { creationClaim?: Photo['creationClaim'] },
+  photo: PhotoLicenseFields & { creationClaim?: Photo['creationClaim']; copyrightCommercialScope?: boolean },
   rights: RightsRecord | null,
   appearances: TwoPartyAppearanceInput[] = [],
 ) {
@@ -116,6 +125,7 @@ export function assertCanGrant(
     appearances,
     licenseType: product.type,
     creationClaim: photo.creationClaim,
+    copyrightCommercialScope: (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope,
   })
   if (eligibility) throw new RightsError(eligibility)
 }

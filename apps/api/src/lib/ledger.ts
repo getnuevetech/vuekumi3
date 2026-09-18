@@ -66,6 +66,7 @@ export async function loadRightsLedger(photoId: string): Promise<RightsLedgerDto
       contributor: { select: { id: true, name: true, accountType: true } },
       rightsRecord: true,
       appearances: true,
+      copyrightAuthorizations: true,
       ledgerEvents: {
         orderBy: { createdAt: 'desc' },
         take: 80,
@@ -83,6 +84,9 @@ export async function loadRightsLedger(photoId: string): Promise<RightsLedgerDto
     commercialLocked: photo.commercialLocked,
     creationClaim: claim,
     appearances: photo.appearances,
+    copyrightCommercialScope: (photo as { copyrightAuthorizations?: { commercialSublicensing: boolean; status: string; quality: string }[] })
+      .copyrightAuthorizations
+      ?.some((row) => row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified'),
   })
   const qualities = photo.appearances.map((row) => appearanceLikenessQuality(row))
   const likenessQuality: LikenessQuality | null = photo.hasRecognizablePeople

@@ -85,12 +85,16 @@ export async function modelRoutes(app: FastifyInstance) {
 
   app.get('/model', gate, async (request) => {
     const userId = request.userId!
-    const [profile, counts] = await Promise.all([
+    const [profile, counts, photosCount, photographerAgreement] = await Promise.all([
       prisma.modelProfile.findUnique({ where: { userId } }),
       prisma.photoAppearance.groupBy({
         by: ['status'],
         where: { modelUserId: userId },
         _count: { _all: true },
+      }),
+      prisma.photo.count({ where: { uploadedById: userId } }),
+      prisma.platformAgreement.count({
+        where: { userId, version: '1.0', status: 'accepted' },
       }),
     ])
     const byStatus = Object.fromEntries(counts.map((row) => [row.status, row._count._all]))
@@ -99,6 +103,8 @@ export async function modelRoutes(app: FastifyInstance) {
       location: profile?.location ?? null,
       bio: profile?.bio ?? null,
       earns: false,
+      hasPhotographerAgreement: photographerAgreement > 0,
+      photosCount,
       counts: {
         invited: byStatus.invited ?? 0,
         claimed: byStatus.claimed ?? 0,

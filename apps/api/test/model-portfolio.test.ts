@@ -3,13 +3,14 @@ import { test } from 'node:test'
 import { buildApp } from '../src/app.js'
 import { approvedLikenessWhere, modelPortfolioPhotoWhere } from '../src/lib/catalog.js'
 
-test('model portfolios only include approved, confirmed likeness on profile-visible photos', () => {
+test('model portfolios include approved likeness photographs and display-allowed model uploads', () => {
   const where = modelPortfolioPhotoWhere('model-user')
   assert.equal(where.status, 'active')
   assert.ok(where.permissionState)
-  assert.deepEqual(where.appearances, {
-    some: approvedLikenessWhere('model-user'),
-  })
+  assert.deepEqual(where.OR, [
+    { appearances: { some: approvedLikenessWhere('model-user') } },
+    { uploadedById: 'model-user' },
+  ])
   const appearance = approvedLikenessWhere('model-user')
   assert.equal(appearance.status, 'approved')
   assert.equal(appearance.confirmedLikeness, true)

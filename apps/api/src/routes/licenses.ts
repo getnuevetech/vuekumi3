@@ -68,15 +68,23 @@ function canAccessGrant(user: AuthUser, grant: { buyerId: string; agencyId: stri
 }
 
 async function loadPhotoForLicense(id: string) {
-  return prisma.photo.findUnique({
+  const photo = await prisma.photo.findUnique({
     where: { id },
     include: {
       rightsRecord: true,
       appearances: true,
+      copyrightAuthorizations: true,
       contributor: { include: { contributorProfile: true, platformAgreements: true } },
       tags: true,
     },
   })
+  if (!photo) return null
+  return {
+    ...photo,
+    copyrightCommercialScope: photo.copyrightAuthorizations.some((row) =>
+      row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
+    ),
+  }
 }
 
 export async function licenseRoutes(app: FastifyInstance) {
@@ -87,7 +95,9 @@ export async function licenseRoutes(app: FastifyInstance) {
         ? '1.0-community'
         : kind === 'photo_influencer'
           ? '1.0-photo-influencer'
-          : '1.0'
+          : kind === 'model'
+            ? '1.0-model'
+            : '1.0'
     const row = await prisma.agreementVersion.findUnique({ where: { version } })
     if (!row) {
       return {
@@ -97,7 +107,9 @@ export async function licenseRoutes(app: FastifyInstance) {
             ? 'VueKumi Community Contributor Terms'
             : kind === 'photo_influencer'
               ? 'VueKumi Photo Influencer Terms'
-              : 'VueKumi Photographer Licensing Agreement',
+              : kind === 'model'
+                ? 'VueKumi Model Uploader Agreement'
+                : 'VueKumi Photographer Licensing Agreement',
         body: '',
       }
     }

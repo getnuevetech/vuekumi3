@@ -19,7 +19,7 @@ function safeRedirect(value: string | null): string | null {
 }
 
 type Mode = 'signin' | 'signup'
-type Role = 'member' | 'photographer' | 'photo_influencer' | 'contributor' | 'agency'
+type Role = 'member' | 'photographer' | 'photo_influencer' | 'contributor' | 'agency' | 'model'
 
 export default function Login() {
   const [mode, setMode] = useState<Mode>('signin')
@@ -45,7 +45,10 @@ export default function Login() {
     || signupRole === 'photo_influencer'
     || signupRole === 'contributor'
     || Boolean(redirect?.startsWith('/contributor'))
+  const wantsModel = signupRole === 'model' || Boolean(redirect?.startsWith('/model'))
   const creatorRole = role === 'photographer' || role === 'photo_influencer' || role === 'contributor'
+  const modelRole = role === 'model'
+  const needsAgreement = creatorRole || modelRole
   const showOauth = oauth.google || oauth.dev
   const oauthAllowed = mode === 'signin' || role === 'member'
 
@@ -61,16 +64,18 @@ export default function Login() {
   }, [searchParams])
 
   useEffect(() => {
-    if (!wantsCreator) return
+    if (!wantsCreator && !wantsModel) return
     setMode('signup')
     setRole(
       signupRole === 'contributor'
         ? 'contributor'
         : signupRole === 'photo_influencer'
           ? 'photo_influencer'
-          : 'photographer',
+          : signupRole === 'model'
+            ? 'model'
+            : 'photographer',
     )
-  }, [wantsCreator, signupRole])
+  }, [wantsCreator, wantsModel, signupRole])
 
   useEffect(() => {
     if (searchParams.get('oauth') !== 'ok') return
@@ -89,11 +94,17 @@ export default function Login() {
     api.countries(creatorRole)
       .then((d) => setCountries(d.countries))
       .catch(() => setCountries([]))
-    if (creatorRole) {
-      const kind = role === 'contributor' ? 'contributor' : role === 'photo_influencer' ? 'photo_influencer' : 'photographer'
+    if (needsAgreement) {
+      const kind = role === 'contributor'
+        ? 'contributor'
+        : role === 'photo_influencer'
+          ? 'photo_influencer'
+          : role === 'model'
+            ? 'model'
+            : 'photographer'
       api.agreement(kind).then((a) => setAgreementTitle(a.title)).catch(() => undefined)
     }
-  }, [mode, role, creatorRole])
+  }, [mode, role, creatorRole, needsAgreement])
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -133,6 +144,7 @@ export default function Login() {
                   { id: 'photographer' as Role, label: 'Photographer', note: 'Commercial stock' },
                   { id: 'photo_influencer' as Role, label: 'Photo influencer', note: 'Social & discovery' },
                   { id: 'contributor' as Role, label: 'Contributor', note: 'Portfolio / community' },
+                  { id: 'model' as Role, label: 'Model', note: 'Likeness & upload' },
                   { id: 'agency' as Role, label: 'Agency', note: 'Enterprise' },
                 ]
               ).map((r) => (
@@ -169,7 +181,7 @@ export default function Login() {
                         name,
                         accountType,
                         country: country || undefined,
-                        acceptAgreement: creatorRole ? acceptAgreement : undefined,
+                        acceptAgreement: needsAgreement ? acceptAgreement : undefined,
                       })
                 const dest = redirect ?? homeForUser(user)
                 navigate(dest)
@@ -209,6 +221,11 @@ export default function Login() {
                         : 'Community contributors must be based in an African country.'}
                   </p>
                 )}
+                {modelRole && (
+                  <p className="font-mono-tech text-[10px] text-ink-faint">
+                    Models as subjects are not Africa-restricted. Commercial self-shot work later requires the photographer agreement and an African country.
+                  </p>
+                )}
               </>
             )}
             <input
@@ -219,7 +236,7 @@ export default function Login() {
               placeholder="Email address"
               className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
             />
-            {mode === 'signup' && creatorRole && (
+            {mode === 'signup' && needsAgreement && (
               <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
                 <input
                   type="checkbox"
@@ -297,7 +314,7 @@ export default function Login() {
 
           {mode === 'signup' && role !== 'member' && (
             <p className="mt-4 text-center text-[12px] text-ink-faint">
-              Contributors and agencies register with email so we can collect country and the platform agreement.
+              Contributors, models, and agencies register with email so we can collect the platform agreement.
             </p>
           )}
 

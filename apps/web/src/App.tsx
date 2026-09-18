@@ -10,7 +10,10 @@ import VerifyEmail from './pages/VerifyEmail'
 import AgencyDashboard, { AgencyLicenses, AgencyQuotes, AgencyTeam } from './pages/Agency'
 import JoinAgency from './pages/JoinAgency'
 import JoinModel from './pages/JoinModel'
+import JoinPhotographer from './pages/JoinPhotographer'
 import ModelPortal from './pages/Model'
+import { ModelUpload } from './pages/ModelUpload'
+import { ModelPhotoEdit } from './pages/ModelPhoto'
 import {
   ContributorDashboard, ContributorEarnings, ContributorPortfolio, ContributorUpload,
 } from './pages/Contributor'
@@ -77,6 +80,7 @@ export default function App() {
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/join/:token" element={<JoinAgency />} />
         <Route path="/invite/model/:token" element={<JoinModel />} />
+        <Route path="/invite/photographer/:token" element={<JoinPhotographer />} />
         <Route path="/account" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin', 'model']}><Account /></ProtectedRoute>} />
         <Route path="/favorites" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Favorites /></ProtectedRoute>} />
         <Route path="/following" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Following /></ProtectedRoute>} />
@@ -98,6 +102,8 @@ export default function App() {
         <Route path="/agency/quotes" element={<ProtectedRoute allowed={['agency']}><AgencyQuotes /></ProtectedRoute>} />
 
         <Route path="/model" element={<ProtectedRoute allowed={['model']}><ModelPortal /></ProtectedRoute>} />
+        <Route path="/model/upload" element={<ProtectedRoute allowed={['model']}><ModelUpload /></ProtectedRoute>} />
+        <Route path="/model/photos/:id" element={<ProtectedRoute allowed={['model']}><ModelPhotoEdit /></ProtectedRoute>} />
 
         <Route path="/admin" element={<ProtectedRoute allowed={['admin']} capability="metrics.view"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']} capability="accounts.users.list"><AdminUsers /></ProtectedRoute>} />

@@ -80,6 +80,10 @@ export async function authRoutes(app: FastifyInstance) {
       }
     }
 
+    if (body.accountType === 'model' && !body.acceptAgreement) {
+      return reply.code(400).send({ error: 'Models must accept the VueKumi model uploader agreement' })
+    }
+
     const passwordHash = await hashPassword(body.password)
     const status = body.accountType === 'agency' ? 'pending' : 'active'
 
@@ -112,6 +116,20 @@ export async function authRoutes(app: FastifyInstance) {
 
       if (body.accountType === 'user' || body.accountType === 'agency') {
         await tx.userProfile.create({ data: { userId: created.id } })
+      }
+
+      if (body.accountType === 'model') {
+        const handle = body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        await tx.modelProfile.create({
+          data: {
+            userId: created.id,
+            handle: `${handle || 'model'}-${created.id.slice(-4)}`,
+            location: body.country ?? null,
+          },
+        })
+        await tx.platformAgreement.create({
+          data: { userId: created.id, version: agreementVersionForAccountType('model') },
+        })
       }
 
       if (body.accountType === 'agency') {
