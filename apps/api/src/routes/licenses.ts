@@ -81,9 +81,11 @@ async function loadPhotoForLicense(id: string) {
   if (!photo) return null
   return {
     ...photo,
-    copyrightCommercialScope: photo.copyrightAuthorizations.some((row) =>
-      row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
-    ),
+    copyrightCommercialScope: photo.copyrightAuthorizations.length > 0
+      ? photo.copyrightAuthorizations.some((row) =>
+        row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
+      )
+      : undefined,
   }
 }
 

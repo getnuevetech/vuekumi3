@@ -119,7 +119,7 @@ export function modelPortfolioPhotoWhere(modelUserId: string, category?: string)
     ...PROFILE_PHOTO_FILTER,
     OR: [
       { appearances: { some: approvedLikenessWhere(modelUserId) } },
-      { uploadedById: modelUserId },
+      { uploadedById: modelUserId, uploadedBy: { accountType: 'model' } },
     ],
     ...(category && category !== 'All' ? { category } : {}),
   }

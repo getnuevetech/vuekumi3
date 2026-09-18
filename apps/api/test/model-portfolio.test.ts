@@ -9,7 +9,7 @@ test('model portfolios include approved likeness photographs and display-allowed
   assert.ok(where.permissionState)
   assert.deepEqual(where.OR, [
     { appearances: { some: approvedLikenessWhere('model-user') } },
-    { uploadedById: 'model-user' },
+    { uploadedById: 'model-user', uploadedBy: { accountType: 'model' } },
   ])
   const appearance = approvedLikenessWhere('model-user')
   assert.equal(appearance.status, 'approved')

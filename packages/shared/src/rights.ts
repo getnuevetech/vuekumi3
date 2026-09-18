@@ -289,6 +289,7 @@ export function copyrightCommercialScopeGranted(input: {
 }): boolean {
   const thirdParty = input.thirdPartyCopyright ?? thirdPartyCopyright(input.creationClaim)
   if (!thirdParty) return true
+  if (input.copyrightCommercialScope == null) return true
   return input.copyrightCommercialScope === true
 }
 

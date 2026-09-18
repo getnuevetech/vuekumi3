@@ -37,9 +37,11 @@ export async function issueGrant(
   if (!photo) throw new Error('Photo not found')
   const product = await client.licenseProduct.findUnique({ where: { id: input.productId } })
   if (!product) throw new Error('Licence type not found')
-  const copyrightCommercialScope = photo.copyrightAuthorizations.some((row) =>
-    row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
-  )
+  const copyrightCommercialScope = photo.copyrightAuthorizations.length > 0
+    ? photo.copyrightAuthorizations.some((row) =>
+      row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
+    )
+    : undefined
   assertCanGrant(
     product,
     { ...photo, copyrightCommercialScope },

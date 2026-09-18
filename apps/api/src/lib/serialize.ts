@@ -131,7 +131,7 @@ export function serializeRights(
     | 'possibleMinor'
     | 'screeningKind'
     | 'creationClaim'
-  > & { copyrightCommercialScope?: boolean },
+  > & { copyrightCommercialScope?: boolean; modelSelfShotNeedsAgreement?: boolean },
   rights: RightsRecord | null,
   hasAgreement: boolean,
   appearances: TwoPartyAppearanceInput[] = [],
@@ -162,8 +162,8 @@ export function serializeRights(
     commercialLocked: photo.commercialLocked,
     creationClaim,
     appearances,
-    copyrightCommercialScope: (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope,
-  })
+    copyrightCommercialScope: photo.copyrightCommercialScope,
+  }) && !photo.modelSelfShotNeedsAgreement
   const levels = appearances
     .map((row) => row.verificationLevel)
     .filter((level): level is ReleaseVerificationLevel => Boolean(level))
@@ -224,7 +224,10 @@ export function serializeRights(
 type PhotoWithTags = Photo & {
   tags: { tag: string }[]
   rightsRecord?: RightsRecord | null
-  contributor?: User & { contributorProfile?: ContributorProfile | null }
+  contributor?: User & {
+    contributorProfile?: ContributorProfile | null
+    platformAgreements?: Pick<PlatformAgreement, 'version' | 'status'>[]
+  }
   agreements?: Pick<PlatformAgreement, 'version' | 'status'>[]
   appearances?: TwoPartyAppearanceInput[]
   copyrightAuthorizations?: {
@@ -253,9 +256,17 @@ export function serializePhoto(
 ): PhotoDto {
   const contributor = photo.contributor
   const copyrightCommercialScope = photo.copyrightCommercialScope
-    ?? photo.copyrightAuthorizations?.some((row) =>
-      row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
-    )
+    ?? (photo.copyrightAuthorizations && photo.copyrightAuthorizations.length > 0
+      ? photo.copyrightAuthorizations.some((row) =>
+        row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified',
+      )
+      : undefined)
+  const photographerAgreement = Boolean(
+    photo.contributor?.platformAgreements?.some((a) => a.version === CURRENT_AGREEMENT_VERSION && a.status === 'accepted'),
+  )
+  const modelSelfShotNeedsAgreement = photo.contributor?.accountType === 'model'
+    && ((photo.creationClaim ?? 'self_created') === 'self_created')
+    && !photographerAgreement
   return {
     id: photo.id,
     src: mediaSrc(photo, 'preview'),
@@ -288,7 +299,7 @@ export function serializePhoto(
     restrictionNotes: photo.restrictionNotes,
     rights: photo.rightsRecord
       ? serializeRights(
-          { ...photo, copyrightCommercialScope },
+          { ...photo, copyrightCommercialScope, modelSelfShotNeedsAgreement },
           photo.rightsRecord,
           hasAgreement,
           photo.appearances ?? extras?.appearances ?? [],
@@ -321,7 +332,12 @@ export function serializeLicenseProduct(
   const twoParty = offer.offered
     ? twoPartyLicenseBlock(product, photo, appearances, _rights?.copyrightStatus)
     : undefined
-  const eligibility = offer.offered
+  const authorizations = (photo as { copyrightAuthorizations?: { commercialSublicensing: boolean; status: string; quality: string }[] }).copyrightAuthorizations
+  const copyrightCommercialScope = (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope
+    ?? (authorizations && authorizations.length > 0
+      ? authorizations.some((row) => row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified')
+      : undefined)
+  const eligibility = offer.offered && product.commercialAllowed
     ? commercialEligibilityBlock({
         copyrightStatus: _rights?.copyrightStatus ?? 'claimed',
         modelConsentStatus: _rights?.modelConsentStatus ?? 'not_required',
@@ -329,10 +345,7 @@ export function serializeLicenseProduct(
         appearances,
         licenseType: product.type,
         creationClaim: photo.creationClaim,
-        copyrightCommercialScope: (photo as { copyrightCommercialScope?: boolean }).copyrightCommercialScope
-          ?? (photo as { copyrightAuthorizations?: { commercialSublicensing: boolean; status: string; quality: string }[] })
-            .copyrightAuthorizations
-            ?.some((row) => row.status === 'approved' && row.commercialSublicensing && row.quality === 'verified'),
+        copyrightCommercialScope,
       })
     : undefined
   const blockedReason = eligibility ?? twoParty ?? offer.reason
