@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify'
-import { applyAiFieldsSchema, suggestFileSchema } from '@vuekumi/shared'
+import { applyAiFieldsSchema, canImpersonateCreator, suggestFileSchema } from '@vuekumi/shared'
+import type { AuthUser } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { authenticate, requireCreatorWorkspace } from '../lib/auth-middleware.js'
 import { AiError, loadPhotoImage, resolveVisionProvider, suggestFromContext } from '../lib/ai.js'
 import { prisma } from '../lib/prisma.js'
 import { serializePhoto } from '../lib/serialize.js'
@@ -42,13 +43,14 @@ function serializeSuggestion(row: {
   }
 }
 
-async function assertPhotoAccess(photoId: string, userId: string, accountType?: string) {
+async function assertPhotoAccess(photoId: string, userId: string, user?: AuthUser | null) {
   const photo = await prisma.photo.findUnique({
     where: { id: photoId },
     include: { assets: true, tags: true },
   })
   if (!photo) return null
-  if (accountType !== 'admin' && photo.contributorId !== userId) return 'forbidden' as const
+  const staff = Boolean(user && user.accountType === 'admin' && canImpersonateCreator(user))
+  if (!staff && photo.contributorId !== userId) return 'forbidden' as const
   return photo
 }
 
@@ -116,7 +118,7 @@ async function applyFieldsToPhoto(
 }
 
 export async function aiRoutes(app: FastifyInstance) {
-  const staff = { preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin') }
+  const staff = { preHandler: requireCreatorWorkspace(app) }
 
   app.get('/ai/status', staff, async () => {
     try {
@@ -156,7 +158,7 @@ export async function aiRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
-    const access = await assertPhotoAccess(id, request.userId!, request.authUser?.accountType)
+    const access = await assertPhotoAccess(id, request.userId!, request.authUser)
     if (!access) return reply.code(404).send({ error: 'Photo not found' })
     if (access === 'forbidden') return reply.code(403).send({ error: 'Forbidden' })
 
@@ -202,7 +204,7 @@ export async function aiRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
-    const access = await assertPhotoAccess(id, request.userId!, request.authUser?.accountType)
+    const access = await assertPhotoAccess(id, request.userId!, request.authUser)
     if (!access) return reply.code(404).send({ error: 'Photo not found' })
     if (access === 'forbidden') return reply.code(403).send({ error: 'Forbidden' })
     const items = await prisma.aiSuggestion.findMany({
@@ -217,7 +219,7 @@ export async function aiRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
     const { id, sid } = request.params as { id: string; sid: string }
-    const access = await assertPhotoAccess(id, request.userId!, request.authUser?.accountType)
+    const access = await assertPhotoAccess(id, request.userId!, request.authUser)
     if (!access) return reply.code(404).send({ error: 'Photo not found' })
     if (access === 'forbidden') return reply.code(403).send({ error: 'Forbidden' })
     const body = applyAiFieldsSchema.parse(request.body)
@@ -254,7 +256,7 @@ export async function aiRoutes(app: FastifyInstance) {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
     const { id, sid } = request.params as { id: string; sid: string }
-    const access = await assertPhotoAccess(id, request.userId!, request.authUser?.accountType)
+    const access = await assertPhotoAccess(id, request.userId!, request.authUser)
     if (!access) return reply.code(404).send({ error: 'Photo not found' })
     if (access === 'forbidden') return reply.code(403).send({ error: 'Forbidden' })
     const suggestion = await prisma.aiSuggestion.findFirst({ where: { id: sid, photoId: id } })

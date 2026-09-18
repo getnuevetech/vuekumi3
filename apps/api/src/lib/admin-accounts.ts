@@ -1,4 +1,12 @@
-import type { AdminAccountDto, AdminCreateAccountInput, AgencyEntityStatus, CreatorKind } from '@vuekumi/shared'
+import type {
+  AdminAccountDto,
+  AdminCreateAccountInput,
+  AdminCreateAdminInput,
+  AdminRole,
+  AgencyEntityStatus,
+  CreatorKind,
+} from '@vuekumi/shared'
+import { resolveAdminCapabilities, storedAdminCapabilities } from '@vuekumi/shared'
 import { registrationCreatorKind } from './creator-kind.js'
 import { agreementVersionForAccountType } from '../data/licenses.js'
 import { handleTaken } from './models.js'
@@ -23,7 +31,11 @@ type AccountRow = {
   } | null
   modelProfile: { handle: string } | null
   userProfile: { subscriptionPlan: string; downloadQuotaUsed: number } | null
-  adminProfile: { adminRole: string } | null
+  adminProfile: {
+    adminRole: AdminRole | string
+    capabilities?: string[]
+    capabilitiesCustomized?: boolean
+  } | null
   ownedAgencies: { id: string; name: string; status: AgencyEntityStatus }[]
   agencyMembers?: { agency: { id: string; name: string; status: AgencyEntityStatus } }[]
   _count?: { modelAppearances: number }
@@ -61,6 +73,14 @@ export function serializeAdminAccount(user: AccountRow): AdminAccountDto {
     downloads: user.contributorProfile?.downloads ?? user.userProfile?.downloadQuotaUsed ?? 0,
     plan: user.userProfile?.subscriptionPlan ?? null,
     adminRole: user.adminProfile?.adminRole ?? null,
+    adminCapabilities: user.adminProfile
+      ? resolveAdminCapabilities({
+          adminRole: user.adminProfile.adminRole as AdminRole,
+          capabilities: user.adminProfile.capabilities,
+          capabilitiesCustomized: user.adminProfile.capabilitiesCustomized,
+        })
+      : undefined,
+    adminCapabilitiesCustomized: user.adminProfile?.capabilitiesCustomized ?? false,
     agencyId: agency?.id ?? null,
     agencyName: agency?.name ?? null,
     agencyStatus: agency?.status ?? null,
@@ -164,4 +184,47 @@ export async function provisionStaffCreatedUser(body: AdminCreateAccountInput) {
 
     return created.id
   })
+}
+
+export async function provisionStaffCreatedAdmin(body: AdminCreateAdminInput) {
+  const passwordHash = await hashPassword(body.password)
+  const stored = storedAdminCapabilities(body.preset, body.capabilities)
+  const country = body.country?.toUpperCase()
+
+  const created = await prisma.user.create({
+    data: {
+      email: body.email.toLowerCase(),
+      passwordHash,
+      name: body.name.trim(),
+      accountType: 'admin',
+      country,
+      status: 'active',
+      adminProfile: {
+        create: {
+          adminRole: body.preset,
+          capabilities: stored.capabilities,
+          capabilitiesCustomized: stored.capabilitiesCustomized,
+        },
+      },
+    },
+  })
+  return created.id
+}
+
+export async function isLastActiveSuperAdmin(userId: string): Promise<boolean> {
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { adminProfile: true },
+  })
+  if (!target || target.accountType !== 'admin' || target.status !== 'active') return false
+  if (target.adminProfile?.adminRole !== 'super_admin') return false
+  const others = await prisma.user.count({
+    where: {
+      id: { not: userId },
+      accountType: 'admin',
+      status: 'active',
+      adminProfile: { adminRole: 'super_admin' },
+    },
+  })
+  return others === 0
 }

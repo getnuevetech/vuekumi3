@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { writeAuditLog } from '../lib/audit.js'
-import { requireAccountTypes } from '../lib/auth-middleware.js'
+import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { seedCountries } from '../lib/geo.js'
 import { effectiveRate, syncExchangeRates } from '../lib/fx.js'
 import { prisma } from '../lib/prisma.js'
@@ -21,14 +21,18 @@ const rateOverrideSchema = z.object({
 })
 
 export async function adminGeoRoutes(app: FastifyInstance) {
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const listCountries = { preHandler: requireAdminCapability(app, 'geo.countries.list') }
+  const writeCountries = { preHandler: requireAdminCapability(app, 'geo.countries.write') }
+  const listFx = { preHandler: requireAdminCapability(app, 'geo.fx.list') }
+  const syncFx = { preHandler: requireAdminCapability(app, 'geo.fx.sync') }
+  const overrideFx = { preHandler: requireAdminCapability(app, 'geo.fx.override') }
 
-  app.get('/admin/countries', admin, async () => {
+  app.get('/admin/countries', listCountries, async () => {
     const countries = await prisma.country.findMany({ orderBy: [{ region: 'asc' }, { name: 'asc' }] })
     return { countries }
   })
 
-  app.post('/admin/countries', admin, async (request) => {
+  app.post('/admin/countries', writeCountries, async (request) => {
     const body = countrySchema.parse(request.body)
     const country = await prisma.country.upsert({
       where: { code: body.code },
@@ -49,7 +53,7 @@ export async function adminGeoRoutes(app: FastifyInstance) {
     return { country }
   })
 
-  app.patch('/admin/countries/:code', admin, async (request, reply) => {
+  app.patch('/admin/countries/:code', writeCountries, async (request, reply) => {
     const { code } = request.params as { code: string }
     const body = countrySchema.partial().parse(request.body)
     const existing = await prisma.country.findUnique({ where: { code: code.toUpperCase() } })
@@ -58,7 +62,7 @@ export async function adminGeoRoutes(app: FastifyInstance) {
     return { country }
   })
 
-  app.get('/admin/exchange-rates', admin, async () => {
+  app.get('/admin/exchange-rates', listFx, async () => {
     const rates = await prisma.exchangeRate.findMany({ orderBy: { currency: 'asc' } })
     return {
       rates: rates.map((r) => {
@@ -68,7 +72,7 @@ export async function adminGeoRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/admin/exchange-rates/sync', admin, async (request) => {
+  app.post('/admin/exchange-rates/sync', syncFx, async (request) => {
     const result = await syncExchangeRates()
     await writeAuditLog({
       actorId: request.userId,
@@ -79,7 +83,7 @@ export async function adminGeoRoutes(app: FastifyInstance) {
     return result
   })
 
-  app.patch('/admin/exchange-rates/:currency', admin, async (request, reply) => {
+  app.patch('/admin/exchange-rates/:currency', overrideFx, async (request, reply) => {
     const { currency } = request.params as { currency: string }
     const body = rateOverrideSchema.parse(request.body)
     const existing = await prisma.exchangeRate.findUnique({ where: { currency: currency.toUpperCase() } })
@@ -101,7 +105,7 @@ export async function adminGeoRoutes(app: FastifyInstance) {
     return { rate }
   })
 
-  app.post('/admin/countries/seed-defaults', admin, async () => {
+  app.post('/admin/countries/seed-defaults', writeCountries, async () => {
     await seedCountries()
     const countries = await prisma.country.findMany()
     return { ok: true, count: countries.length }

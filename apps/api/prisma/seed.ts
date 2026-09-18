@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { PRESET_CAPABILITIES } from '@vuekumi/shared'
 import bcrypt from 'bcryptjs'
 import { randomBytes, createHash } from 'node:crypto'
 import { photos, photographers } from './seed-data.js'
@@ -78,6 +79,30 @@ async function main() {
       adminProfile: { create: { adminRole: 'super_admin' } },
     },
   })
+
+  for (const staff of [
+    { email: 'support@vuekumi.demo', name: 'Support Staff', role: 'support' as const },
+    { email: 'moderator@vuekumi.demo', name: 'Moderator Staff', role: 'moderator' as const },
+    { email: 'finance@vuekumi.demo', name: 'Finance Staff', role: 'finance' as const },
+  ]) {
+    await prisma.user.create({
+      data: {
+        email: staff.email,
+        passwordHash: userPassword,
+        name: staff.name,
+        accountType: 'admin',
+        country: 'KE',
+        emailVerifiedAt: new Date(),
+        adminProfile: {
+          create: {
+            adminRole: staff.role,
+            capabilities: [...PRESET_CAPABILITIES[staff.role]],
+            capabilitiesCustomized: false,
+          },
+        },
+      },
+    })
+  }
 
   const contributorUsers = new Map<string, string>()
 
@@ -558,6 +583,9 @@ async function main() {
 
   console.log('Seed complete.')
   console.log('Admin: admin@vuekumi.com / Admin123!')
+  console.log('Support: support@vuekumi.demo / User12345!')
+  console.log('Moderator: moderator@vuekumi.demo / User12345!')
+  console.log('Finance: finance@vuekumi.demo / User12345!')
   console.log('Contributor: amara-okafor@vuekumi.demo / User12345!')
   console.log('Member: member@vuekumi.demo / User12345!')
   console.log('Contributor (self-shot dual role): kofi-mensah@vuekumi.demo / User12345!')

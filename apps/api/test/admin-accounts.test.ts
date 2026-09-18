@@ -19,7 +19,7 @@ test('admin create guard: staff cannot mint admin accounts from this endpoint', 
   assert.equal(adminCreateAccountBlocked('photographer'), null)
   assert.equal(adminCreateAccountBlocked('model'), null)
   assert.equal(adminCreateAccountBlocked('admin')!.status, 403)
-  assert.match(adminCreateAccountBlocked('admin')!.error, /capability ACL/)
+  assert.match(adminCreateAccountBlocked('admin')!.error, /POST \/admin\/admins/)
 })
 
 test('admin account management: photographers list, create types, reject admin, agency activate', async () => {

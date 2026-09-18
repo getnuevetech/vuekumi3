@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { PortalShell, StatusPill } from '../components/shared'
+import { StatusPill } from '../components/shared'
 import { api, ApiError, type AiProvider, type PaymentGateway } from '../api/client'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell title="Admin portal" subtitle="Add African payout rails and AI APIs without a deploy." links={adminLinks}>
+    <AdminShell subtitle="Add African payout rails and AI APIs without a deploy.">
       {children}
-    </PortalShell>
+    </AdminShell>
   )
 }
 

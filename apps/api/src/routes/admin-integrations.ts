@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { writeAuditLog } from '../lib/audit.js'
-import { requireAccountTypes } from '../lib/auth-middleware.js'
+import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { encryptSecret, maskSecret, decryptSecret } from '../lib/settings.js'
 import { prisma } from '../lib/prisma.js'
 
@@ -28,9 +28,12 @@ const aiSchema = z.object({
 })
 
 export async function adminIntegrationRoutes(app: FastifyInstance) {
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const readGateways = { preHandler: requireAdminCapability(app, 'integrations.gateways.read') }
+  const writeGateways = { preHandler: requireAdminCapability(app, 'integrations.gateways.write') }
+  const readAi = { preHandler: requireAdminCapability(app, 'integrations.ai.read') }
+  const writeAi = { preHandler: requireAdminCapability(app, 'integrations.ai.write') }
 
-  app.get('/admin/gateways', admin, async () => {
+  app.get('/admin/gateways', readGateways, async () => {
     const gateways = await prisma.paymentGateway.findMany({ orderBy: { name: 'asc' } })
     return {
       gateways: gateways.map((g) => ({
@@ -42,7 +45,7 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/admin/gateways', admin, async (request) => {
+  app.post('/admin/gateways', writeGateways, async (request) => {
     const body = gatewaySchema.parse(request.body)
     const gateway = await prisma.paymentGateway.create({
       data: {
@@ -66,7 +69,7 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
     return { gateway: { ...gateway, configEnc: undefined, hasSecret: Boolean(gateway.configEnc) } }
   })
 
-  app.patch('/admin/gateways/:id', admin, async (request, reply) => {
+  app.patch('/admin/gateways/:id', writeGateways, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = gatewaySchema.partial().parse(request.body)
     const existing = await prisma.paymentGateway.findUnique({ where: { id } })
@@ -87,13 +90,13 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
     return { gateway: { ...gateway, configEnc: undefined, hasSecret: Boolean(gateway.configEnc) } }
   })
 
-  app.delete('/admin/gateways/:id', admin, async (request) => {
+  app.delete('/admin/gateways/:id', writeGateways, async (request) => {
     const { id } = request.params as { id: string }
     await prisma.paymentGateway.delete({ where: { id } })
     return { ok: true }
   })
 
-  app.get('/admin/ai-providers', admin, async () => {
+  app.get('/admin/ai-providers', readAi, async () => {
     const providers = await prisma.aiProvider.findMany({ orderBy: { name: 'asc' } })
     return {
       providers: providers.map((p) => ({
@@ -105,7 +108,7 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/admin/ai-providers', admin, async (request) => {
+  app.post('/admin/ai-providers', writeAi, async (request) => {
     const body = aiSchema.parse(request.body)
     const provider = await prisma.aiProvider.create({
       data: {
@@ -127,7 +130,7 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
     return { provider: { ...provider, apiKeyEnc: undefined, hasKey: Boolean(provider.apiKeyEnc) } }
   })
 
-  app.patch('/admin/ai-providers/:id', admin, async (request, reply) => {
+  app.patch('/admin/ai-providers/:id', writeAi, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = aiSchema.partial().parse(request.body)
     const existing = await prisma.aiProvider.findUnique({ where: { id } })
@@ -146,7 +149,7 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
     return { provider: { ...provider, apiKeyEnc: undefined, hasKey: Boolean(provider.apiKeyEnc) } }
   })
 
-  app.delete('/admin/ai-providers/:id', admin, async (request) => {
+  app.delete('/admin/ai-providers/:id', writeAi, async (request) => {
     const { id } = request.params as { id: string }
     await prisma.aiProvider.delete({ where: { id } })
     return { ok: true }

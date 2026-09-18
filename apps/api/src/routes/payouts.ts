@@ -1,11 +1,12 @@
 import type { FastifyInstance } from 'fastify'
 import {
   adminPayoutActionSchema,
+  canImpersonateCreator,
   payoutMethodSchema,
   requestPayoutSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { authenticate, requireAdminCapability, requireCreatorWorkspace } from '../lib/auth-middleware.js'
 import {
   MIN_PAYOUT_USD,
   PayoutError,
@@ -29,13 +30,15 @@ function payError(reply: { code: (n: number) => { send: (b: unknown) => unknown 
 }
 
 export async function payoutRoutes(app: FastifyInstance) {
-  const contributor = { preHandler: requireAccountTypes(app, 'photographer', 'contributor', 'admin') }
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const contributor = { preHandler: requireCreatorWorkspace(app) }
+  const listPayouts = { preHandler: requireAdminCapability(app, 'payouts.list') }
+  const payPayout = { preHandler: requireAdminCapability(app, 'payouts.pay') }
+  const rejectPayoutCap = { preHandler: requireAdminCapability(app, 'payouts.reject') }
 
   app.get('/contributor/earnings', {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
-    if (request.authUser?.accountType !== 'contributor' && request.authUser?.accountType !== 'admin') {
+    if (!canImpersonateCreator(request.authUser)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     const contributorId = request.userId!
@@ -217,7 +220,7 @@ export async function payoutRoutes(app: FastifyInstance) {
     }
   })
 
-  app.get('/admin/payouts', admin, async (request) => {
+  app.get('/admin/payouts', listPayouts, async (request) => {
     const query = request.query as { status?: string }
     const status = query.status && query.status !== 'all' ? query.status : undefined
     const items = await prisma.payout.findMany({
@@ -235,7 +238,7 @@ export async function payoutRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/admin/payouts/:id/pay', admin, async (request, reply) => {
+  app.post('/admin/payouts/:id/pay', payPayout, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = adminPayoutActionSchema.parse(request.body ?? {})
     try {
@@ -258,7 +261,7 @@ export async function payoutRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post('/admin/payouts/:id/reject', admin, async (request, reply) => {
+  app.post('/admin/payouts/:id/reject', rejectPayoutCap, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = adminPayoutActionSchema.parse(request.body ?? {})
     try {

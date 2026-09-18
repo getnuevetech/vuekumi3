@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify'
+import type { AuthUser } from '@vuekumi/shared'
+import { adminHas } from '@vuekumi/shared'
 import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
 import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { prisma } from '../lib/prisma.js'
@@ -7,11 +9,11 @@ import { streamObject } from '../lib/storage.js'
 async function canSeePreview(
   photo: { id: string; status: string; contributorId: string },
   userId?: string,
-  accountType?: string,
+  user?: AuthUser | null,
 ) {
   if (photo.status === 'active' || photo.status === 'pending') return true
   if (!userId) return false
-  if (accountType === 'admin' || photo.contributorId === userId) return true
+  if (adminHas(user, 'content.read') || photo.contributorId === userId) return true
   const grant = await prisma.licenseGrant.findFirst({
     where: { photoId: photo.id, buyerId: userId },
     select: { id: true },
@@ -43,7 +45,7 @@ export async function mediaRoutes(app: FastifyInstance) {
       include: { assets: true },
     })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (!(await canSeePreview(photo, request.userId, request.authUser?.accountType))) {
+    if (!(await canSeePreview(photo, request.userId, request.authUser))) {
       return reply.code(404).send({ error: 'Photo not found' })
     }
 
@@ -64,7 +66,7 @@ export async function mediaRoutes(app: FastifyInstance) {
       include: { assets: true },
     })
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
-    if (!(await canSeePreview(photo, request.userId, request.authUser?.accountType))) {
+    if (!(await canSeePreview(photo, request.userId, request.authUser))) {
       return reply.code(404).send({ error: 'Photo not found' })
     }
 
@@ -88,7 +90,7 @@ export async function mediaRoutes(app: FastifyInstance) {
     if (!photo) return reply.code(404).send({ error: 'Photo not found' })
 
     const isOwner = photo.contributorId === request.userId
-    const isAdmin = request.authUser?.accountType === 'admin'
+    const isAdmin = adminHas(request.authUser, 'content.read')
     const grant = await prisma.licenseGrant.findFirst({
       where: { photoId: id, buyerId: request.userId! },
       select: { id: true },

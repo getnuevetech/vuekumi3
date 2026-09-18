@@ -2,18 +2,18 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { PermissionState } from '@vuekumi/shared'
 import { MODEL_APPEARANCE_LABEL, LIKENESS_CHECK_LABEL } from '@vuekumi/shared'
-import { PortalShell, StatusPill } from '../components/shared'
+import { StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { api, ApiError, type AdminContentDetail, type AdminContentRow } from '../api/client'
 import { AiSuggestPanel } from '../components/AiSuggestPanel'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell title="Admin portal" subtitle="Content library and four-layer rights." links={adminLinks}>
+    <AdminShell subtitle="Content library and four-layer rights.">
       {children}
-    </PortalShell>
+    </AdminShell>
   )
 }
 

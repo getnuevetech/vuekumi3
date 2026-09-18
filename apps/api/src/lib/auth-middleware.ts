@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
-import type { AccountType } from '@vuekumi/shared'
+import type { AccountType, AdminCapability } from '@vuekumi/shared'
+import { adminHas, canImpersonateCreator } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { authUserInclude, serializeUser } from './serialize.js'
 
@@ -56,6 +57,27 @@ export function requireAccountTypes(fastify: FastifyInstance, ...types: AccountT
       types.includes(request.authUser.accountType)
       || (types.includes('model') && Boolean(request.authUser.hasModelProfile))
     if (!allowed) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+  }
+}
+
+export function requireAdminCapability(fastify: FastifyInstance, key: AdminCapability) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    await authenticate(fastify, request, reply)
+    if (reply.sent) return
+    if (!adminHas(request.authUser, key)) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+  }
+}
+
+/** Photographers, community contributors, and staff with content.impersonate_creator. */
+export function requireCreatorWorkspace(fastify: FastifyInstance) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    await authenticate(fastify, request, reply)
+    if (reply.sent) return
+    if (!canImpersonateCreator(request.authUser)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
   }

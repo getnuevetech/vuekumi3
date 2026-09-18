@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { PartnerKeyDto } from '@vuekumi/shared'
-import { PortalShell, SectionHead, StatusPill } from '../components/shared'
+import { SectionHead, StatusPill } from '../components/shared'
 import { api, ApiError } from '../api/client'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 export default function AdminPartnerKeys() {
   const [items, setItems] = useState<PartnerKeyDto[]>([])
@@ -20,11 +20,7 @@ export default function AdminPartnerKeys() {
   useEffect(() => { load() }, [])
 
   return (
-    <PortalShell
-      title="Admin portal"
-      subtitle="Partner distribution API. Authenticated, licensed, rate-limited — cleared inventory only."
-      links={adminLinks}
-    >
+    <AdminShell subtitle="Partner distribution API. Authenticated, licensed, rate-limited — cleared inventory only.">
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Distribution</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Partner API keys.</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
@@ -147,6 +143,6 @@ export default function AdminPartnerKeys() {
           ))}
         </div>
       </div>
-    </PortalShell>
+    </AdminShell>
   )
 }

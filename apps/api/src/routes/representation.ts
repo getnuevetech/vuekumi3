@@ -14,7 +14,7 @@ import type {
 } from '@vuekumi/shared'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
-import { optionalAuthenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { optionalAuthenticate, requireAccountTypes, requireAdminCapability } from '../lib/auth-middleware.js'
 import {
   DEFAULT_OPS_ADDRESS,
   representationDecisionEmail,
@@ -65,7 +65,9 @@ async function revertProtectedPhotos(contributorId: string): Promise<number> {
 
 export async function representationRoutes(app: FastifyInstance) {
   const contributor = { preHandler: requireAccountTypes(app, 'photographer', 'contributor') }
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const listRep = { preHandler: requireAdminCapability(app, 'representation.list') }
+  const decideRep = { preHandler: requireAdminCapability(app, 'representation.decide') }
+  const manageInquiry = { preHandler: requireAdminCapability(app, 'representation.inquiry.manage') }
 
   app.get('/representation', contributor, async (request) => {
     const row = await prisma.representation.findUnique({
@@ -223,7 +225,7 @@ export async function representationRoutes(app: FastifyInstance) {
     return { ok: true as const }
   })
 
-  app.get('/admin/representation', admin, async () => {
+  app.get('/admin/representation', listRep, async () => {
     const [rows, inquiries] = await Promise.all([
       prisma.representation.findMany({
         where: { status: { in: ['requested', 'represented'] } },
@@ -270,7 +272,7 @@ export async function representationRoutes(app: FastifyInstance) {
     return { items, inquiries: inquiryItems }
   })
 
-  app.post('/admin/representation/:id/decide', admin, async (request, reply) => {
+  app.post('/admin/representation/:id/decide', decideRep, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = decideRepresentationSchema.parse(request.body)
     const row = await prisma.representation.findUnique({
@@ -322,7 +324,7 @@ export async function representationRoutes(app: FastifyInstance) {
     return { representation: serializeRepresentation(updated), revertedPhotos: reverted }
   })
 
-  app.post('/admin/inquiries/:id', admin, async (request, reply) => {
+  app.post('/admin/inquiries/:id', manageInquiry, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = decideInquirySchema.parse(request.body)
     const inquiry = await prisma.representationInquiry.findUnique({ where: { id } })

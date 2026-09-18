@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import type { RightsReportDto } from '@vuekumi/shared'
-import { PortalShell, StatusPill } from '../components/shared'
+import { StatusPill } from '../components/shared'
 import { api, ApiError } from '../api/client'
 import { relativeAge } from '../lib/format'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 const FILTERS = ['queue', 'open', 'reviewing', 'all', 'dismissed', 'resolved'] as const
 type Filter = (typeof FILTERS)[number]
@@ -19,13 +19,9 @@ const REASON_LABEL: Record<RightsReportDto['reason'], string> = {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell
-      title="Admin portal"
-      subtitle="Public rights reports. Freeze new licensing without delisting the photograph."
-      links={adminLinks}
-    >
+    <AdminShell subtitle="Public rights reports. Freeze new licensing without delisting the photograph.">
       {children}
-    </PortalShell>
+    </AdminShell>
   )
 }
 

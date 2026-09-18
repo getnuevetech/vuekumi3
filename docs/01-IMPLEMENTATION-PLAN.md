@@ -103,7 +103,8 @@ Locked product rules already in the running system:
 | 31 | VueQuatro representation — opt-in request → staff approve/decline, revocable by either side. `agency_protected` becomes real handling: only settable while represented, licensed through staff-routed inquiries, reverts to portfolio-only when representation ends. Staff queue at `/admin/representation`. **No representation commission** (undecided) and **no second public app** — VueQuatro is a staff mode. |
 | 32 | Brand production — campaign-shaped sourcing at `/campaigns`: buyer/agency accounts post campaign briefs (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts/declines, contributors withdraw pending pitches, owner or staff close campaigns. **No production commission** (undecided), settlement off-platform, campaign money never touches the earnings ledger, and accepting a pitch licenses nothing — photographs still go through checkout with all rights guards. |
 | 33 | Partner / distribution API — authenticated (admin-issued bearer keys, hash-stored, shown once, revocable), licensed (cleared stock inventory only; licence flags computed with the same guards as checkout; licences granted on VueKumi, not by the API), rate-limited (120 req/min per key). Read-only `GET /api/partner/v1/photos[/:id]` with attribution and terms. **AI training explicitly not permitted** — no AI-training consent exists (that is Phase 34). Staff key management at `/admin/partner-api`. |
-| **35** | Admin user management from the portal: create members, photographers, community contributors, agencies, and models; dedicated photographers list; activate/suspend the **agency entity** (not only the user). Admin *staff* creation waits for Phase 36 ACL. |
+| **35** | Admin user management from the portal: create members, photographers, community contributors, agencies, and models; dedicated photographers list; activate/suspend the **agency entity** (not only the user). |
+| **36** | Super-admin creates staff; `AdminRole` is a preset; authorization is `AdminProfile.capabilities[]`. Nav and every admin API route are gated. `content.impersonate_creator` is off for support/moderator/finance. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -212,7 +213,7 @@ Approve **one** remaining phase at a time.
 | Phase | Work |
 | --- | --- |
 | **35** | Admin user management from the portal: create/edit every account type, photographers list, agency activation — **shipped** |
-| **36** | Super-admin creates admins; granular capability ACL (roles are presets) |
+| **36** | Super-admin creates admins; granular capability ACL (roles are presets) — **shipped** |
 | **37** | Symmetric rights quality (`claimed → documented → verified`); tighten commercial eligibility; Rights Ledger; guardian write |
 | **38** | Model public registration + model upload; VueKumi contacts the photographer (mirror of Route B) |
 | **39** | DMCA notice path, repeat-infringer strikes, payout holds |
@@ -235,7 +236,7 @@ Do **not** start from this slice:
 ## 6. Cross-cutting (still in force)
 
 - Contract-first DTOs in `packages/shared`
-- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos. `amara-okafor@vuekumi.demo` is seeded as the demo **photo influencer** (Phase 29); the other four contributors are photographers.
+- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos. `amara-okafor@vuekumi.demo` is seeded as the demo **photo influencer** (Phase 29); the other four contributors are photographers. Staff presets: `support@vuekumi.demo`, `moderator@vuekumi.demo`, `finance@vuekumi.demo` (`User12345!`); super-admin remains `admin@vuekumi.com` / `Admin123!`.
 - CI seeds the database before the API test suite (the seeded demo constellation is test fixture data).
 - Vertical slices (schema → API → UI → tests)
 - Africa-only contributors; keys in Admin Settings; Docker-only Lightsail
@@ -265,7 +266,7 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **Phase 36** (super-admin creates staff with granular capability ACL).
+3. Default next slice: **Phase 37** (rights quality: claimed → documented → verified, commercial eligibility tighten, Rights Ledger).
    Phase 34 (AI-training) stays parked. Dataset pricing remains **undecided**.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.

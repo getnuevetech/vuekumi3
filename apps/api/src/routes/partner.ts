@@ -5,7 +5,7 @@ import type { PartnerKeyDto, PartnerPhotoDto } from '@vuekumi/shared'
 import { z } from 'zod'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
-import { requireAccountTypes } from '../lib/auth-middleware.js'
+import { requireAdminCapability } from '../lib/auth-middleware.js'
 import {
   catalogPhotoInclude,
   normalizeQuery,
@@ -91,14 +91,16 @@ function serializePartnerPhoto(photo: CatalogPhoto, products: LicenseProduct[]):
 }
 
 export async function partnerRoutes(app: FastifyInstance) {
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const listKeys = { preHandler: requireAdminCapability(app, 'partner.keys.list') }
+  const createKey = { preHandler: requireAdminCapability(app, 'partner.keys.create') }
+  const revokeKey = { preHandler: requireAdminCapability(app, 'partner.keys.revoke') }
 
-  app.get('/admin/partner-keys', admin, async () => {
+  app.get('/admin/partner-keys', listKeys, async () => {
     const keys = await prisma.partnerApiKey.findMany({ orderBy: { createdAt: 'desc' } })
     return { items: keys.map(serializePartnerKey) }
   })
 
-  app.post('/admin/partner-keys', admin, async (request) => {
+  app.post('/admin/partner-keys', createKey, async (request) => {
     const body = createPartnerKeySchema.parse(request.body)
     const { key, hash, prefix } = generatePartnerKey()
     const row = await prisma.partnerApiKey.create({
@@ -122,7 +124,7 @@ export async function partnerRoutes(app: FastifyInstance) {
     return { key, partnerKey: serializePartnerKey(row) }
   })
 
-  app.post('/admin/partner-keys/:id/revoke', admin, async (request, reply) => {
+  app.post('/admin/partner-keys/:id/revoke', revokeKey, async (request, reply) => {
     const { id } = request.params as { id: string }
     const row = await prisma.partnerApiKey.findUnique({ where: { id } })
     if (!row) return reply.code(404).send({ error: 'Key not found' })

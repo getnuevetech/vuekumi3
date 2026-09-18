@@ -27,7 +27,7 @@ import { hashPassword, createToken, hashToken, verifyPassword } from '../lib/pas
 import { prisma } from '../lib/prisma.js'
 import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 import { serializeUser, authUserInclude } from '../lib/serialize.js'
-import { authenticate, requireAccountTypes } from '../lib/auth-middleware.js'
+import { authenticate, requireAdminCapability } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
 import { clearAuthCookies, issueTokens } from '../lib/session.js'
 
@@ -478,7 +478,7 @@ export async function authRoutes(app: FastifyInstance) {
   })
 
   app.post('/auth/admin/send-password-reset/:userId', {
-    preHandler: requireAccountTypes(app, 'admin'),
+    preHandler: requireAdminCapability(app, 'accounts.password_reset'),
   }, async (request, reply) => {
     const { userId } = request.params as { userId: string }
     const target = await prisma.user.findUnique({ where: { id: userId } })

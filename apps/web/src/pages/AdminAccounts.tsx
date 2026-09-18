@@ -1,19 +1,31 @@
-import { useEffect, useState } from 'react'
-import { creatorKindLabel, type CreatorKind } from '@vuekumi/shared'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ADMIN_CAPABILITY_GROUPS,
+  accountWriteCapability,
+  adminHas,
+  capabilitiesForPreset,
+  creatorKindLabel,
+  sameCapabilities,
+  type AdminCapability,
+  type AdminRole,
+  type CreatorKind,
+} from '@vuekumi/shared'
 import { toast } from 'sonner'
-import { PortalShell, StatusPill } from '../components/shared'
+import { StatusPill } from '../components/shared'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { api, ApiError, type AdminAccount, type GeoCountry } from '../api/client'
-import { adminLinks } from './Admin'
+import { useAuth } from '../context/AuthContext'
+import { AdminShell } from './Admin'
 
 type Kind = 'users' | 'contributors' | 'photographers' | 'agencies' | 'admins' | 'models'
+type StaffPreset = Exclude<AdminRole, never>
 
 const copy: Record<Kind, { kicker: string; title: string; blurb: string }> = {
   users: { kicker: 'Users', title: 'Members.', blurb: 'Individual buyers — one row per account.' },
   photographers: { kicker: 'Photographers', title: 'Photographers.', blurb: 'Professional commercial inventory and photo influencers. Click a row to edit.' },
   contributors: { kicker: 'Contributors', title: 'Community.', blurb: 'Portfolio and editorial sharing — not commercial stock. Click a row to edit.' },
   agencies: { kicker: 'Agencies', title: 'Enterprise.', blurb: 'Corporate accounts. Activate the agency entity to unlock licensing.' },
-  admins: { kicker: 'Admins', title: 'Staff.', blurb: 'Platform administrators. Creating staff with feature access is the next ACL slice.' },
+  admins: { kicker: 'Admins', title: 'Staff.', blurb: 'Roles are presets. Super-admin assigns the capability matrix. You cannot edit your own access.' },
   models: { kicker: 'Models', title: 'People in photographs.', blurb: 'Invite-only models and self-shot photographers. Confirm likeness per image. They do not earn in this phase.' },
 }
 
@@ -25,16 +37,56 @@ const createType: Record<Exclude<Kind, 'admins'>, 'user' | 'photographer' | 'con
   models: 'model',
 }
 
+const PRESETS: { value: StaffPreset; label: string }[] = [
+  { value: 'super_admin', label: 'Super-admin' },
+  { value: 'moderator', label: 'Moderator' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'support', label: 'Support' },
+]
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell title="Admin portal" subtitle="Separated account types — create, edit, and activate from here." links={adminLinks}>
+    <AdminShell subtitle="Separated account types — create, edit, and activate from here.">
       {children}
-    </PortalShell>
+    </AdminShell>
+  )
+}
+
+function CapabilityMatrix({
+  selected,
+  onToggle,
+}: {
+  selected: AdminCapability[]
+  onToggle: (key: AdminCapability) => void
+}) {
+  const set = useMemo(() => new Set(selected), [selected])
+  return (
+    <div className="max-h-72 space-y-3 overflow-y-auto rounded-xl border border-sand-soft p-3">
+      {ADMIN_CAPABILITY_GROUPS.map((group) => (
+        <div key={group.label}>
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">{group.label}</p>
+          <div className="mt-1 space-y-1">
+            {group.keys.map((key) => (
+              <label key={key} className="flex items-start gap-2 text-[12px] text-ink">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={set.has(key)}
+                  onChange={() => onToggle(key)}
+                />
+                <span className="font-mono-tech text-[11px]">{key}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 
 export function AdminAccountList({ kind }: { kind: Kind }) {
   const meta = copy[kind]
+  const { user } = useAuth()
   const [q, setQ] = useState('')
   const [items, setItems] = useState<AdminAccount[]>([])
   const [total, setTotal] = useState(0)
@@ -49,11 +101,19 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
     country: '',
     creatorKind: 'photographer' as CreatorKind,
   })
+  const [preset, setPreset] = useState<StaffPreset>('support')
+  const [caps, setCaps] = useState<AdminCapability[]>(capabilitiesForPreset('support'))
   const [countries, setCountries] = useState<GeoCountry[]>([])
   const [saving, setSaving] = useState(false)
-  const canCreate = kind !== 'admins'
+
+  const writeCap = kind === 'admins' ? 'accounts.admins.manage' : accountWriteCapability(createType[kind])
+  const canCreate = adminHas(user, writeCap)
+  const canWrite = canCreate
+  const canReset = adminHas(user, 'accounts.password_reset')
+  const canActivate = adminHas(user, 'accounts.agencies.activate')
   const creatorCountry = kind === 'photographers' || kind === 'contributors'
   const creatorColumns = kind === 'contributors' || kind === 'photographers'
+  const customized = !sameCapabilities(caps, capabilitiesForPreset(preset))
 
   const load = () => {
     api.adminAccounts(kind, { q }).then((data) => {
@@ -71,10 +131,22 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
       .catch(() => setCountries([]))
   }, [creating, creatorCountry])
 
+  const applyPreset = (next: StaffPreset) => {
+    setPreset(next)
+    setCaps(capabilitiesForPreset(next))
+  }
+
+  const toggleCap = (key: AdminCapability) => {
+    setCaps((current) => current.includes(key) ? current.filter((k) => k !== key) : [...current, key])
+  }
+
   const openRow = async (u: AdminAccount) => {
     setDraft({ name: u.name, email: u.email, country: u.country ?? '', status: u.status })
     setAgencyStatus(u.agencyStatus ?? 'pending')
     setSelected(u)
+    const nextPreset = (u.adminRole as StaffPreset | null) ?? 'support'
+    setPreset(nextPreset)
+    setCaps(u.adminCapabilities?.length ? u.adminCapabilities : capabilitiesForPreset(nextPreset))
     try {
       const detail = await api.adminAccount(u.id)
       setSelected(detail.user)
@@ -85,6 +157,9 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
         status: detail.user.status,
       })
       setAgencyStatus(detail.user.agencyStatus ?? 'pending')
+      const role = (detail.user.adminRole as StaffPreset | null) ?? nextPreset
+      setPreset(role)
+      setCaps(detail.user.adminCapabilities?.length ? detail.user.adminCapabilities : capabilitiesForPreset(role))
     } catch {
       /* list row is enough if detail fails */
     }
@@ -97,7 +172,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
       : kind === 'agencies'
         ? ['ID', 'Name', 'Email', 'Agency', 'Agency status', 'Country', 'Joined', 'Status']
         : kind === 'admins'
-          ? ['ID', 'Name', 'Email', 'Role', 'Country', 'Joined', 'Status']
+          ? ['ID', 'Name', 'Email', 'Role', 'Access', 'Country', 'Joined', 'Status']
           : ['ID', 'Name', 'Email', 'Country', 'Plan', 'Downloads', 'Joined', 'Status']
 
   return (
@@ -118,11 +193,12 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
             type="button"
             onClick={() => {
               setCreateDraft({ name: '', email: '', password: '', country: '', creatorKind: 'photographer' })
+              applyPreset('support')
               setCreating(true)
             }}
             className="rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper hover:bg-terra"
           >
-            Create account
+            {kind === 'admins' ? 'Create staff' : 'Create account'}
           </button>
         )}
       </div>
@@ -153,7 +229,12 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                 {kind === 'agencies' && (
                   <td className="px-4 py-3"><StatusPill status={u.agencyStatus ?? 'pending'} /></td>
                 )}
-                {kind === 'admins' && <td className="px-4 py-3 capitalize">{u.adminRole}</td>}
+                {kind === 'admins' && <td className="px-4 py-3 capitalize">{(u.adminRole ?? 'support').replace('_', ' ')}</td>}
+                {kind === 'admins' && (
+                  <td className="px-4 py-3 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+                    {u.adminCapabilitiesCustomized ? 'Custom' : 'Preset'}
+                  </td>
+                )}
                 <td className="px-4 py-3">{u.country ?? '—'}</td>
                 {kind === 'users' && <td className="px-4 py-3 capitalize">{u.plan ?? 'free'}</td>}
                 {creatorColumns && <td className="px-4 py-3">{u.photos}</td>}
@@ -195,7 +276,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                   <option value="pending">pending</option>
                 </select>
               </label>
-              {selected.agencyId && (
+              {selected.agencyId && canActivate && (
                 <label className="block text-sm">Agency licensing
                   <select value={agencyStatus} onChange={(e) => setAgencyStatus(e.target.value)} className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm">
                     <option value="pending">pending</option>
@@ -204,42 +285,71 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                   </select>
                 </label>
               )}
+              {kind === 'admins' && canWrite && selected.id !== user?.id && (
+                <>
+                  <label className="block text-sm">Preset
+                    <select
+                      value={preset}
+                      onChange={(e) => applyPreset(e.target.value as StaffPreset)}
+                      className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm"
+                    >
+                      {PRESETS.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+                    {customized ? 'Custom capabilities' : 'Preset capabilities'}
+                  </p>
+                  <CapabilityMatrix selected={caps} onToggle={toggleCap} />
+                </>
+              )}
               <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  disabled={saving}
-                  onClick={async () => {
-                    setSaving(true)
-                    try {
-                      await api.patchAccount(selected.id, draft)
-                      if (selected.agencyId && agencyStatus !== (selected.agencyStatus ?? 'pending')) {
-                        await api.setAgencyStatus(selected.agencyId, agencyStatus as 'pending' | 'active' | 'suspended')
+                {canWrite && (
+                  <button
+                    disabled={saving}
+                    onClick={async () => {
+                      setSaving(true)
+                      try {
+                        await api.patchAccount(selected.id, draft)
+                        if (kind === 'admins' && selected.id !== user?.id) {
+                          await api.patchAdmin(selected.id, {
+                            preset,
+                            capabilities: customized ? caps : undefined,
+                          })
+                        }
+                        if (selected.agencyId && canActivate && agencyStatus !== (selected.agencyStatus ?? 'pending')) {
+                          await api.setAgencyStatus(selected.agencyId, agencyStatus as 'pending' | 'active' | 'suspended')
+                        }
+                        toast.success('Account updated')
+                        setSelected(null)
+                        load()
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Update failed')
+                      } finally {
+                        setSaving(false)
                       }
-                      toast.success('Account updated')
-                      setSelected(null)
-                      load()
-                    } catch (err) {
-                      toast.error(err instanceof ApiError ? err.message : 'Update failed')
-                    } finally {
-                      setSaving(false)
-                    }
-                  }}
-                  className="rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper hover:bg-terra"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      await api.sendPasswordReset(selected.id)
-                      toast.success('Reset link sent')
-                    } catch (err) {
-                      toast.error(err instanceof ApiError ? err.message : 'Could not send reset')
-                    }
-                  }}
-                  className="rounded-full border border-sand px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-soft hover:border-terra"
-                >
-                  Send password reset
-                </button>
+                    }}
+                    className="rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper hover:bg-terra"
+                  >
+                    Save
+                  </button>
+                )}
+                {canReset && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await api.sendPasswordReset(selected.id)
+                        toast.success('Reset link sent')
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Could not send reset')
+                      }
+                    }}
+                    className="rounded-full border border-sand px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-soft hover:border-terra"
+                  >
+                    Send password reset
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -249,7 +359,9 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
       <Sheet open={creating} onOpenChange={(open) => !open && setCreating(false)}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle className="font-serif-display text-2xl font-light">Create account</SheetTitle>
+            <SheetTitle className="font-serif-display text-2xl font-light">
+              {kind === 'admins' ? 'Create staff' : 'Create account'}
+            </SheetTitle>
           </SheetHeader>
           {canCreate && (
             <form
@@ -258,15 +370,26 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                 e.preventDefault()
                 setSaving(true)
                 try {
-                  await api.createAccount({
-                    email: createDraft.email,
-                    name: createDraft.name,
-                    password: createDraft.password,
-                    accountType: createType[kind],
-                    country: createDraft.country || undefined,
-                    creatorKind: kind === 'photographers' ? createDraft.creatorKind : undefined,
-                  })
-                  toast.success('Account created')
+                  if (kind === 'admins') {
+                    await api.createAdmin({
+                      email: createDraft.email,
+                      name: createDraft.name,
+                      password: createDraft.password,
+                      country: createDraft.country || undefined,
+                      preset,
+                      capabilities: customized ? caps : undefined,
+                    })
+                  } else {
+                    await api.createAccount({
+                      email: createDraft.email,
+                      name: createDraft.name,
+                      password: createDraft.password,
+                      accountType: createType[kind],
+                      country: createDraft.country || undefined,
+                      creatorKind: kind === 'photographers' ? createDraft.creatorKind : undefined,
+                    })
+                  }
+                  toast.success(kind === 'admins' ? 'Staff created' : 'Account created')
                   setCreating(false)
                   load()
                 } catch (err) {
@@ -288,19 +411,21 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
               <label className="block text-sm">Temporary password
                 <input required minLength={8} type="password" value={createDraft.password} onChange={(e) => setCreateDraft({ ...createDraft, password: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
               </label>
-              <label className="block text-sm">{creatorCountry ? 'African country' : 'Country (optional)'}
-                <select
-                  required={creatorCountry}
-                  value={createDraft.country}
-                  onChange={(e) => setCreateDraft({ ...createDraft, country: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm"
-                >
-                  <option value="">{creatorCountry ? 'Select country' : 'None'}</option>
-                  {countries.map((c) => (
-                    <option key={c.code} value={c.code}>{c.name} · {c.code}</option>
-                  ))}
-                </select>
-              </label>
+              {kind !== 'admins' && (
+                <label className="block text-sm">{creatorCountry ? 'African country' : 'Country (optional)'}
+                  <select
+                    required={creatorCountry}
+                    value={createDraft.country}
+                    onChange={(e) => setCreateDraft({ ...createDraft, country: e.target.value })}
+                    className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="">{creatorCountry ? 'Select country' : 'None'}</option>
+                    {countries.map((c) => (
+                      <option key={c.code} value={c.code}>{c.name} · {c.code}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {kind === 'photographers' && (
                 <label className="block text-sm">Creator kind
                   <select
@@ -317,6 +442,25 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                 <p className="font-mono-tech text-[10px] text-ink-faint">
                   New agencies start pending. Open the row after create to activate licensing.
                 </p>
+              )}
+              {kind === 'admins' && (
+                <>
+                  <label className="block text-sm">Preset
+                    <select
+                      value={preset}
+                      onChange={(e) => applyPreset(e.target.value as StaffPreset)}
+                      className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm"
+                    >
+                      {PRESETS.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+                    {customized ? 'Custom capabilities' : 'Preset capabilities — tick to customise'}
+                  </p>
+                  <CapabilityMatrix selected={caps} onToggle={toggleCap} />
+                </>
               )}
               <button
                 type="submit"

@@ -1,14 +1,28 @@
 import type { FastifyInstance } from 'fastify'
 import type { Prisma } from '@prisma/client'
 import {
+  accountListCapability,
+  accountWriteCapability,
   adminAgencyStatusSchema,
   adminCreateAccountBlocked,
   adminCreateAccountSchema,
+  adminCreateAdminSchema,
+  adminHas,
   adminPatchAccountSchema,
+  adminPatchAdminSchema,
+  lastSuperAdminBlocked,
+  selfCapabilityEditBlocked,
+  storedAdminCapabilities,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { adminAccountInclude, provisionStaffCreatedUser, serializeAdminAccount } from '../lib/admin-accounts.js'
-import { requireAccountTypes } from '../lib/auth-middleware.js'
+import {
+  adminAccountInclude,
+  isLastActiveSuperAdmin,
+  provisionStaffCreatedAdmin,
+  provisionStaffCreatedUser,
+  serializeAdminAccount,
+} from '../lib/admin-accounts.js'
+import { requireAdminCapability, requireAccountTypes } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
@@ -36,7 +50,10 @@ function searchWhere(query: z.infer<typeof listQuery>) {
 }
 
 export async function adminAccountRoutes(app: FastifyInstance) {
-  const admin = { preHandler: requireAccountTypes(app, 'admin') }
+  const staff = { preHandler: requireAccountTypes(app, 'admin') }
+  const cap = (key: Parameters<typeof requireAdminCapability>[1]) => ({
+    preHandler: requireAdminCapability(app, key),
+  })
 
   async function list(where: Prisma.UserWhereInput, request: { query: unknown }) {
     const query = listQuery.parse(request.query)
@@ -54,24 +71,39 @@ export async function adminAccountRoutes(app: FastifyInstance) {
     return { items: users.map(serializeAdminAccount), total, page: query.page, limit: query.limit }
   }
 
-  app.get('/admin/users', admin, async (request) => list({ accountType: 'user' }, request))
-  app.get('/admin/contributors', admin, async (request) => list({ accountType: 'contributor' }, request))
-  app.get('/admin/photographers', admin, async (request) => list({ accountType: 'photographer' }, request))
-  app.get('/admin/agencies', admin, async (request) => list({ accountType: 'agency' }, request))
-  app.get('/admin/admins', admin, async (request) => list({ accountType: 'admin' }, request))
-  app.get('/admin/models', admin, async (request) => list({ modelProfile: { isNot: null } }, request))
+  app.get('/admin/users', cap(accountListCapability('users')), async (request) =>
+    list({ accountType: 'user' }, request),
+  )
+  app.get('/admin/contributors', cap(accountListCapability('contributors')), async (request) =>
+    list({ accountType: 'contributor' }, request),
+  )
+  app.get('/admin/photographers', cap(accountListCapability('photographers')), async (request) =>
+    list({ accountType: 'photographer' }, request),
+  )
+  app.get('/admin/agencies', cap(accountListCapability('agencies')), async (request) =>
+    list({ accountType: 'agency' }, request),
+  )
+  app.get('/admin/admins', cap(accountListCapability('admins')), async (request) =>
+    list({ accountType: 'admin' }, request),
+  )
+  app.get('/admin/models', cap(accountListCapability('models')), async (request) =>
+    list({ modelProfile: { isNot: null } }, request),
+  )
 
-  app.get('/admin/accounts/:id', admin, async (request, reply) => {
+  app.get('/admin/accounts/:id', cap('accounts.read'), async (request, reply) => {
     const { id } = request.params as { id: string }
     const user = await prisma.user.findUnique({ where: { id }, include: adminAccountInclude })
     if (!user) return reply.code(404).send({ error: 'Account not found' })
     return { user: serializeAdminAccount(user) }
   })
 
-  app.post('/admin/accounts', admin, async (request, reply) => {
+  app.post('/admin/accounts', staff, async (request, reply) => {
     const body = adminCreateAccountSchema.parse(request.body)
     const blocked = adminCreateAccountBlocked(body.accountType)
     if (blocked) return reply.code(blocked.status).send({ error: blocked.error })
+    if (!adminHas(request.authUser, accountWriteCapability(body.accountType))) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
 
     const existing = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } })
     if (existing) return reply.code(409).send({ error: 'Email already registered' })
@@ -100,11 +132,105 @@ export async function adminAccountRoutes(app: FastifyInstance) {
     return { user: serializeAdminAccount(user) }
   })
 
-  app.patch('/admin/accounts/:id', admin, async (request, reply) => {
+  app.post('/admin/admins', cap('accounts.admins.manage'), async (request, reply) => {
+    const body = adminCreateAdminSchema.parse(request.body)
+    const existing = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } })
+    if (existing) return reply.code(409).send({ error: 'Email already registered' })
+
+    const stored = storedAdminCapabilities(body.preset, body.capabilities)
+    const id = await provisionStaffCreatedAdmin(body)
+    const user = await prisma.user.findUniqueOrThrow({ where: { id }, include: adminAccountInclude })
+
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.create_admin',
+      entityType: 'user',
+      entityId: id,
+      metadata: {
+        email: user.email,
+        preset: body.preset,
+        customized: stored.capabilitiesCustomized,
+      },
+      ipAddress: request.ip,
+    })
+
+    return { user: serializeAdminAccount(user) }
+  })
+
+  app.patch('/admin/admins/:id', cap('accounts.admins.manage'), async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const selfBlocked = selfCapabilityEditBlocked(request.userId!, id)
+    if (selfBlocked) return reply.code(selfBlocked.status).send({ error: selfBlocked.error })
+
+    const body = adminPatchAdminSchema.parse(request.body)
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      include: { adminProfile: true },
+    })
+    if (!existing || existing.accountType !== 'admin' || !existing.adminProfile) {
+      return reply.code(404).send({ error: 'Admin not found' })
+    }
+
+    const nextRole = body.preset ?? existing.adminProfile.adminRole
+    const stored = body.capabilities !== undefined
+      ? storedAdminCapabilities(nextRole, body.capabilities)
+      : body.preset
+        ? storedAdminCapabilities(body.preset)
+        : storedAdminCapabilities(
+            existing.adminProfile.adminRole,
+            existing.adminProfile.capabilitiesCustomized
+              ? existing.adminProfile.capabilities
+              : undefined,
+          )
+
+    const lastBlocked = lastSuperAdminBlocked({
+      isLastSuperAdmin: await isLastActiveSuperAdmin(id),
+      nextRole,
+      nextCustomized: stored.capabilitiesCustomized,
+      nextCapabilities: stored.capabilities,
+    })
+    if (lastBlocked) return reply.code(lastBlocked.status).send({ error: lastBlocked.error })
+
+    await prisma.adminProfile.update({
+      where: { userId: id },
+      data: {
+        adminRole: nextRole,
+        capabilities: stored.capabilities,
+        capabilitiesCustomized: stored.capabilitiesCustomized,
+      },
+    })
+    const user = await prisma.user.findUniqueOrThrow({ where: { id }, include: adminAccountInclude })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.update_admin_capabilities',
+      entityType: 'user',
+      entityId: id,
+      metadata: {
+        preset: nextRole,
+        customized: stored.capabilitiesCustomized,
+        capabilities: stored.capabilities,
+      },
+      ipAddress: request.ip,
+    })
+    return { user: serializeAdminAccount(user) }
+  })
+
+  app.patch('/admin/accounts/:id', staff, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = adminPatchAccountSchema.parse(request.body)
     const existing = await prisma.user.findUnique({ where: { id } })
     if (!existing) return reply.code(404).send({ error: 'Account not found' })
+    if (!adminHas(request.authUser, accountWriteCapability(existing.accountType))) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+
+    if (existing.accountType === 'admin' && body.status) {
+      const lastBlocked = lastSuperAdminBlocked({
+        isLastSuperAdmin: await isLastActiveSuperAdmin(id),
+        nextStatus: body.status,
+      })
+      if (lastBlocked) return reply.code(lastBlocked.status).send({ error: lastBlocked.error })
+    }
 
     if (body.email && body.email.toLowerCase() !== existing.email) {
       const taken = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } })
@@ -148,7 +274,7 @@ export async function adminAccountRoutes(app: FastifyInstance) {
     return { user: serializeAdminAccount(user) }
   })
 
-  app.post('/admin/agencies/:id/status', admin, async (request, reply) => {
+  app.post('/admin/agencies/:id/status', cap('accounts.agencies.activate'), async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = adminAgencyStatusSchema.parse(request.body)
     const agency = await prisma.agency.findUnique({ where: { id } })

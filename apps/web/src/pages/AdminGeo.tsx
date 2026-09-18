@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { PortalShell, StatusPill } from '../components/shared'
+import { StatusPill } from '../components/shared'
 import { api, ApiError, type FxRate, type GeoCountry } from '../api/client'
-import { adminLinks } from './Admin'
+import { AdminShell } from './Admin'
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <PortalShell title="Admin portal" subtitle="Countries and live FX — admin can add or override any time." links={adminLinks}>
+    <AdminShell subtitle="Countries and live FX — admin can add or override any time.">
       {children}
-    </PortalShell>
+    </AdminShell>
   )
 }
 
