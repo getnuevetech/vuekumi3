@@ -246,6 +246,8 @@ model User {
   country         String?
   avatarUrl       String?
   emailVerifiedAt DateTime?
+  rightsStrikeCount Int       @default(0)
+  repeatInfringerAt DateTime?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -299,6 +301,9 @@ model User {
   rightsLedgerEvents    RightsLedgerEvent[]  @relation("LedgerActor")
   copyrightAuthorizations CopyrightAuthorization[] @relation("CopyrightHolder")
   copyrightInvitesSent    CopyrightAuthorization[] @relation("CopyrightInviter")
+  dmcaNoticesReviewed     DmcaNotice[]             @relation("DmcaReviewer")
+  rightsStrikes           RightsStrike[]           @relation("StrikeSubject")
+  rightsStrikesRecorded   RightsStrike[]           @relation("StrikeActor")
 
   @@index([accountType])
   @@index([status])
@@ -643,6 +648,8 @@ model Photo {
   appearances      PhotoAppearance[]
   copyrightAuthorizations CopyrightAuthorization[]
   ledgerEvents     RightsLedgerEvent[]
+  dmcaNotices      DmcaNotice[]
+  rightsStrikes    RightsStrike[]
 
   @@index([status])
   @@index([category])
@@ -1138,6 +1145,8 @@ model EarningsLedger {
   source        String
   amountUsd     Float
   status        String   @default("available")
+  holdReason    String?
+  heldAt        DateTime?
   createdAt     DateTime @default(now())
 
   contributor User     @relation("ContributorEarnings", fields: [contributorId], references: [id], onDelete: Cascade)
@@ -1225,6 +1234,94 @@ model RightsReport {
 
   @@index([photoId])
   @@index([status])
+  @@index([createdAt])
+}
+
+enum DmcaNoticeStatus {
+  received
+  processing
+  waiting_counter
+  counter_received
+  waiting_restore
+  restored
+  rejected
+  closed
+}
+
+enum RightsStrikeReason {
+  fake_release
+  fake_photographer
+  false_creation_claim
+  upheld_copyright_fraud
+  upheld_likeness_fraud
+}
+
+model DmcaNotice {
+  id                  String           @id @default(cuid())
+  photoId             String?
+  photoUrl            String?
+  claimantName        String
+  claimantEmail       String
+  claimantAddress     String
+  claimantPhone       String?
+  workDescription     String
+  originalLocation    String
+  infringingLocation  String
+  goodFaith           Boolean          @default(true)
+  perjury             Boolean          @default(true)
+  signature           String
+  status              DmcaNoticeStatus @default(received)
+  restoreEligibleAt   DateTime?
+  reviewerId          String?
+  reviewedAt          DateTime?
+  staffNotes          String?
+  ipAddress           String?
+  userAgent           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  photo    Photo?             @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  reviewer User?              @relation("DmcaReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  counter  DmcaCounterNotice?
+
+  @@index([photoId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DmcaCounterNotice {
+  id                     String   @id @default(cuid())
+  noticeId               String   @unique
+  senderName             String
+  senderEmail            String
+  senderAddress          String
+  senderPhone            String?
+  statement              String
+  consentToJurisdiction  Boolean  @default(true)
+  perjury                Boolean  @default(true)
+  signature              String
+  ipAddress              String?
+  createdAt              DateTime @default(now())
+
+  notice DmcaNotice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+}
+
+model RightsStrike {
+  id        String             @id @default(cuid())
+  userId    String
+  reason    RightsStrikeReason
+  photoId   String?
+  noticeId  String?
+  notes     String
+  actorId   String?
+  createdAt DateTime           @default(now())
+
+  user  User   @relation("StrikeSubject", fields: [userId], references: [id], onDelete: Cascade)
+  actor User?  @relation("StrikeActor", fields: [actorId], references: [id], onDelete: SetNull)
+  photo Photo? @relation(fields: [photoId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([photoId])
   @@index([createdAt])
 }
 

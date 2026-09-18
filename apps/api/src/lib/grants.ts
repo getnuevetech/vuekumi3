@@ -3,6 +3,7 @@ import { prisma } from './prisma.js'
 import { assertCanGrant, certificateCode } from './rights.js'
 import { getContributorShare } from './payments-config.js'
 import { appendRightsLedgerEvent } from './ledger.js'
+import { decideGrantEarningsStatus } from './holds.js'
 import { isCommerciallyEligible, thirdPartyCopyright } from '@vuekumi/shared'
 
 type Tx = Prisma.TransactionClient
@@ -32,7 +33,7 @@ export async function issueGrant(
 
   const photo = await client.photo.findUnique({
     where: { id: input.photoId },
-    include: { rightsRecord: true, appearances: true, copyrightAuthorizations: true },
+    include: { rightsRecord: true, appearances: true, copyrightAuthorizations: true, contributor: true },
   })
   if (!photo) throw new Error('Photo not found')
   const product = await client.licenseProduct.findUnique({ where: { id: input.productId } })
@@ -116,6 +117,13 @@ export async function issueGrant(
   if (input.amountUsd > 0) {
     const share = await getContributorShare()
     const amount = Math.round(input.amountUsd * share * 100) / 100
+    const hold = await decideGrantEarningsStatus({
+      contributorId: photo.contributorId,
+      contributorCreatedAt: photo.contributor.createdAt,
+      amountUsd: amount,
+      commercialLocked: photo.commercialLocked,
+      copyrightStatus: photo.rightsRecord?.copyrightStatus ?? null,
+    })
     await client.earningsLedger.create({
       data: {
         contributorId: photo.contributorId,
@@ -124,7 +132,9 @@ export async function issueGrant(
         grantId: created.id,
         source: 'licence_sale',
         amountUsd: amount,
-        status: 'available',
+        status: hold.status,
+        holdReason: hold.holdReason,
+        heldAt: hold.status === 'held' ? new Date() : undefined,
       },
     })
     await client.contributorProfile.updateMany({

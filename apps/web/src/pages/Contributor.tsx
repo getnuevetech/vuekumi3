@@ -672,8 +672,9 @@ export function ContributorEarnings() {
         Vuekumi sends it over mobile money or bank transfer.
       </p>
 
-      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label="Available balance" value={money(ledger?.availableUsd ?? 0)} sub="cleared and unpaid" />
+        <StatCard label="Held" value={money(ledger?.heldUsd ?? 0)} sub="dispute or new-seller hold" />
         <StatCard label="In payout" value={money(ledger?.pendingUsd ?? 0)} sub="requested, not yet sent" />
         <StatCard label="Paid out" value={money(ledger?.paidUsd ?? 0)} sub="already transferred" />
         <StatCard label="All time" value={money(ledger?.allTimeUsd ?? 0)} sub={`${money(ledger?.thisMonthUsd ?? 0)} this month`} />

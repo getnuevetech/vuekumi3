@@ -291,3 +291,11 @@ export function rightsReportOpsEmail(input: {
 }): string {
   return `<p>A public rights report was filed.</p><p><strong>${input.photoTitle}</strong></p><p>Reason: ${input.reason}</p><p>Reporter: ${input.reporterEmail}</p><p>Staff can freeze new licensing without delisting the photograph.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
 }
+
+export function dmcaNoticeOpsEmail(input: {
+  photoTitle: string
+  claimantEmail: string
+  queueUrl: string
+}): string {
+  return `<p>A DMCA copyright notice was filed. Someone needs to read it.</p><p><strong>${input.photoTitle}</strong></p><p>Claimant: ${input.claimantEmail}</p><p>DMCA is copyright only. Likeness and privacy complaints stay on the rights-report queue.</p><p>New licensing on the named photograph is frozen. Unpaid earnings are held. This does not revoke existing certificates.</p><p><a href="${input.queueUrl}">${input.queueUrl}</a></p>`
+}

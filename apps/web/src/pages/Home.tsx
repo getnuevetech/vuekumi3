@@ -804,6 +804,7 @@ function NoirFooter() {
           { label: 'Creators', href: '/creators' },
           { label: 'Models', href: '/models' },
           { label: 'License & Pricing', href: '/pricing' },
+          { label: 'DMCA', href: '/dmca' },
           { label: 'Contribute', href: SELL_HREF },
           { label: 'Account', href: '/account' },
         ].map((s) => (

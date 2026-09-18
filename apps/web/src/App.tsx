@@ -25,6 +25,8 @@ import { AdminQuotes } from './pages/AdminQuotes'
 import AdminRepresentation from './pages/AdminRepresentation'
 import AdminPartnerKeys from './pages/AdminPartnerKeys'
 import { AdminReports } from './pages/AdminReports'
+import { AdminDmca } from './pages/AdminDmca'
+import DmcaPage from './pages/Dmca'
 import { AdminSettings } from './pages/AdminSettings'
 import { AdminAdmins, AdminAgencies, AdminContributors, AdminInfluencers, AdminModels, AdminPhotographers, AdminUsers } from './pages/AdminAccounts'
 import { AdminCountries, AdminRates } from './pages/AdminGeo'
@@ -74,6 +76,8 @@ export default function App() {
         <Route path="/campaigns" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Campaigns /></ProtectedRoute>} />
         <Route path="/photo/:id" element={<PhotoDetail />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/dmca" element={<DmcaPage />} />
+        <Route path="/dmca/:id" element={<DmcaPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -116,6 +120,7 @@ export default function App() {
         <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']} capability="content.list"><AdminContent /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']} capability="moderation.list"><AdminModeration /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']} capability="reports.list"><AdminReports /></ProtectedRoute>} />
+        <Route path="/admin/dmca" element={<ProtectedRoute allowed={['admin']} capability="dmca.manage"><AdminDmca /></ProtectedRoute>} />
         <Route path="/admin/quotes" element={<ProtectedRoute allowed={['admin']} capability="quotes.list"><AdminQuotes /></ProtectedRoute>} />
         <Route path="/admin/representation" element={<ProtectedRoute allowed={['admin']} capability="representation.list"><AdminRepresentation /></ProtectedRoute>} />
         <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']} capability="partner.keys.list"><AdminPartnerKeys /></ProtectedRoute>} />

@@ -107,6 +107,7 @@ Locked product rules already in the running system:
 | **36** | Super-admin creates staff; `AdminRole` is a preset; authorization is `AdminProfile.capabilities[]`. Nav and every admin API route are gated. `content.impersonate_creator` is off for support/moderator/finance. |
 | **37** | Symmetric rights quality (`claimed → documented → verified`); third-party copyright never commercially cleared by declaration; Rights Ledger; guardian write. |
 | **38** | Model public registration + model upload; VueKumi contacts the photographer (copyright authorization, guest rights page). Self-shot commercial requires photographer agreement on the same email; `accountType` stays `model`. Models still do not earn. |
+| **39** | DMCA notice path, repeat-infringer strikes, payout holds. `GET /contributor/earnings` is open to photographers. DMCA is copyright only. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -127,7 +128,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Permission states (private / portfolio / editorial / restricted / commercial / exclusive / agency-protected) | Shipped (Phase 23) — orthogonal to moderation status; catalog is stock states only |
 | Self-shot dual role | Shipped (Phase 26) — photographer identifies themselves on their own photo; `accountType` stays `photographer` |
 | Visual verification with biometric safeguards | Shipped (Phase 28) — opt-in per photograph, discrete result only, selfie discarded immediately. No embedding store or public face database. Similarity cannot grant rights. |
-| Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
+| Report / takedown / dispute trail | Shipped (Phase 22 report + Phase 39 DMCA). Public report, staff freeze, DMCA notices, strikes, payout holds. DMCA is copyright only. |
 | Photo influencer role | Shipped — first-class `accountType: photo_influencer`. Separate registration, admin list, and terms from photographers. Not commercial stock. One type per email. |
 | Talent booking | Shipped (Phase 30) — briefs, quotes, accept/decline/withdraw with availability on profiles. Off-platform settlement; no commission (rate undecided). |
 | VueQuatro representation / agency-protected inventory | Shipped (Phase 31) — opt-in, revocable, no commission (rate undecided), copyright unchanged. Agency-protected inventory routes to staff inquiries instead of checkout. Staff mode only, no second public brand. |
@@ -218,7 +219,7 @@ Approve **one** remaining phase at a time.
 | **36** | Super-admin creates admins; granular capability ACL (roles are presets) — **shipped** |
 | **37** | Symmetric rights quality (`claimed → documented → verified`); tighten commercial eligibility; Rights Ledger; guardian write — **shipped** |
 | **38** | Model public registration + model upload; VueKumi contacts the photographer (mirror of Route B) — **shipped** |
-| **39** | DMCA notice path, repeat-infringer strikes, payout holds |
+| **39** | DMCA notice path, repeat-infringer strikes, payout holds — **shipped** |
 | **40** | VueKumi Global Rights Standard hooks + country overlays (agreement copy remains counsel-gated) |
 
 ---
@@ -268,7 +269,7 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **Phase 39** (DMCA notice path, repeat-infringer strikes, payout holds).
+3. Default next slice: **Phase 40** (Global Rights Standard hooks + country overlays; agreement copy remains counsel-gated).
    Phase 34 (AI-training) stays parked. Dataset pricing remains **undecided**.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.

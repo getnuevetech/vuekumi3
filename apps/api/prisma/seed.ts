@@ -47,6 +47,11 @@ async function main() {
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()
   await prisma.rightsReport.deleteMany()
+  await prisma.dmcaCounterNotice.deleteMany()
+  await prisma.dmcaNotice.deleteMany()
+  await prisma.rightsStrike.deleteMany()
+  await prisma.copyrightAuthorization.deleteMany()
+  await prisma.rightsLedgerEvent.deleteMany()
   await prisma.photoFavorite.deleteMany()
   await prisma.photographerFollow.deleteMany()
   await prisma.collectionPhoto.deleteMany()
@@ -424,6 +429,54 @@ async function main() {
     await prisma.contributorProfile.update({
       where: { userId: amaraId },
       data: { payoutMethod: 'Mobile money (MTN MoMo)', earnings: 90 },
+    })
+  }
+
+  const kofiSeedId = contributorUsers.get('kofi-mensah')
+  if (kofiSeedId) {
+    await prisma.earningsLedger.createMany({
+      data: [
+        { contributorId: kofiSeedId, photoId: 'afr-017', source: 'licence_sale', amountUsd: 24, status: 'available' },
+        { contributorId: kofiSeedId, photoId: 'afr-019', source: 'licence_sale', amountUsd: 18, status: 'available' },
+      ],
+    })
+    await prisma.platformSetting.createMany({
+      data: [
+        { key: 'dmca.agent_name', value: 'VueKumi DMCA Agent', secret: false, label: 'DMCA designated agent name', group: 'DMCA', updatedAt: new Date() },
+        { key: 'dmca.agent_email', value: 'dmca@vuekumi.com', secret: false, label: 'DMCA designated agent email', group: 'DMCA', updatedAt: new Date() },
+        { key: 'dmca.agent_address', value: 'Counsel sets the street address. Copyright Office filing is ops/counsel.', secret: false, label: 'DMCA designated agent address', group: 'DMCA', updatedAt: new Date() },
+        { key: 'dmca.repeat_infringer_threshold', value: '3', secret: false, label: 'Repeat-infringer strike threshold', group: 'DMCA', updatedAt: new Date() },
+        { key: 'dmca.counter_wait_days', value: '14', secret: false, label: 'Counter-notice wait (business days)', group: 'DMCA', updatedAt: new Date() },
+        { key: 'payouts.new_seller_hold_days', value: '14', secret: false, label: 'New-seller payout hold (days)', group: 'Payouts', updatedAt: new Date() },
+        { key: 'payouts.high_value_hold_usd', value: '500', secret: false, label: 'High-value grant hold threshold (USD)', group: 'Payouts', updatedAt: new Date() },
+      ],
+      skipDuplicates: true,
+    })
+    await prisma.dmcaNotice.create({
+      data: {
+        id: 'seed-dmca-afr-019',
+        photoId: 'afr-019',
+        claimantName: 'Kwame Rights Holder',
+        claimantEmail: 'kwame-rights@example.com',
+        claimantAddress: '12 Independence Ave, Accra, Ghana',
+        workDescription: 'Original photograph of a wax-print shop interior taken on assignment in Accra.',
+        originalLocation: 'Photographer archive, Accra',
+        infringingLocation: '/photo/afr-019',
+        signature: 'Kwame Rights Holder',
+        status: 'processing',
+      },
+    })
+    await prisma.photo.update({
+      where: { id: 'afr-019' },
+      data: { commercialLocked: true, commercialLockedAt: new Date() },
+    })
+    await prisma.rightsRecord.updateMany({
+      where: { photoId: 'afr-019' },
+      data: { copyrightStatus: 'disputed', commercialEligible: false },
+    })
+    await prisma.earningsLedger.updateMany({
+      where: { photoId: 'afr-019', status: 'available' },
+      data: { status: 'held', holdReason: 'dmca_notice', heldAt: new Date() },
     })
   }
 

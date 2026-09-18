@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
-import type { AdminOverviewDto, LicenseQuoteDto, PayoutDto, RightsReportDto } from '@vuekumi/shared';
+import type { AdminOverviewDto, EarningsHoldDto, LicenseQuoteDto, PayoutDto, RightsReportDto } from '@vuekumi/shared';
 import { adminHas, ADMIN_NAV_CAPABILITY } from '@vuekumi/shared';
 import { api, ApiError, type AdminModerationRow } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -82,6 +82,7 @@ export const adminLinks: PortalLink[] = [
       { to: '/admin/content', label: 'Content', icon: icons.grid },
       { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
       { to: '/admin/reports', label: 'Reports', icon: icons.shield },
+      { to: '/admin/dmca', label: 'DMCA', icon: icons.rights },
       { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
     ],
   },
@@ -392,6 +393,8 @@ export function AdminModeration() {
 
 export function AdminPayouts() {
   const [items, setItems] = useState<PayoutDto[]>([])
+  const [holds, setHolds] = useState<EarningsHoldDto[]>([])
+  const [heldTotal, setHeldTotal] = useState(0)
   const [pendingCount, setPendingCount] = useState(0)
   const [pendingTotal, setPendingTotal] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
@@ -404,6 +407,15 @@ export function AdminPayouts() {
         setPendingTotal(d.pendingTotalUsd)
       })
       .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load payouts'))
+    api.adminEarningsHolds()
+      .then((d) => {
+        setHolds(d.items)
+        setHeldTotal(d.totalUsd)
+      })
+      .catch(() => {
+        setHolds([])
+        setHeldTotal(0)
+      })
   }
   useEffect(() => { load() }, [])
 
@@ -412,7 +424,8 @@ export function AdminPayouts() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Payouts</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Contributor payouts.</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        {pendingCount} pending · {money(pendingTotal)} to send. Mark paid after you transfer over mobile money or bank rails.
+        {pendingCount} pending · {money(pendingTotal)} to send. {holds.length} held · {money(heldTotal)}.
+        Held rows do not pay out until staff release them. Trusted-creator fast path is not in this phase.
       </p>
 
       <div className="mt-8 overflow-hidden rounded-2xl border border-sand-soft bg-white">
@@ -488,6 +501,46 @@ export function AdminPayouts() {
       <p className="mt-4 font-mono-tech text-[10px] text-ink-faint">
         Manual payouts for now — record the transfer, then mark paid. Earnings return to the contributor if you reject.
       </p>
+
+      {holds.length > 0 && (
+        <div className="mt-10">
+          <h2 className="font-serif-display text-2xl font-light">Payout holds</h2>
+          <div className="mt-4 overflow-hidden rounded-2xl border border-sand-soft bg-white">
+            {holds.map((row) => (
+              <div key={row.id} className="flex items-center justify-between border-b border-sand-soft px-4 py-3 last:border-0">
+                <div>
+                  <p className="text-sm font-medium">{row.photoTitle}</p>
+                  <p className="font-mono-tech text-[10px] text-ink-faint">
+                    @{row.contributorHandle ?? row.contributorName} · {row.holdReason ?? 'held'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm font-medium">{money(row.amountUsd)}</p>
+                  <button
+                    type="button"
+                    disabled={busy === row.id}
+                    onClick={async () => {
+                      setBusy(row.id)
+                      try {
+                        await api.releaseEarningsHold(row.id)
+                        toast.success('Hold released')
+                        load()
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Could not release hold')
+                      } finally {
+                        setBusy(null)
+                      }
+                    }}
+                    className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] hover:border-ink disabled:opacity-50"
+                  >
+                    Release
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }

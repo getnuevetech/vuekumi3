@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: Phases 35–38 shipped. Remaining phases still require approval before implementation.**
+**Status: Phases 35–39 shipped. Remaining phases still require approval before implementation.**
 
 This is the implementation procedure for three product decisions:
 
@@ -58,7 +58,7 @@ Do **not** build a parallel rights system or a parallel admin app.
 | Photographer upload | Screening → Route A PDF / Route B VueKumi contacts model | No mirror for model upload |
 | Model account | Invite-only; appearances + public `/m/:handle`; no upload | — |
 | Dual-role | Photographer + `ModelProfile`; `accountType` stays photographer | No model-primary + photographer profile |
-| Reports | Public report + staff commercial lock + `AuditLog` | Not a DMCA process; no repeat-infringer; no payout hold |
+| Reports | Public report + staff commercial lock + `AuditLog` | Shipped (Phase 22); DMCA / strikes / holds are Phase 39 |
 | Earnings | `available → reserved → paid` | No dispute hold / reserve |
 | Rights record | `RightsRecord` + `PhotoAppearance` + `ModelRelease` + grants + audit | No unified Rights Ledger API |
 | Legal | Africa-only creators; photographer / community agreements in `apps/api/src/data/licenses.ts` | No model uploader agreement; no Global Rights Standard module; no country overlay engine |
@@ -210,8 +210,8 @@ Complaint path: any qualifying copyright/likeness complaint sets the relevant tr
 - `CopyrightAuthorization` (mirror of `PhotoAppearance`): named person, email, mobile, token hash, decision, scopes, quality, document keys
 - `RightsRecord.copyrightQuality` — or fold `documented` into `CopyrightStatus` and add `copyrightMethod`: `attestation | document | vuekumi_direct`
 - `PhotoAppearance.consentQuality`: `claimed | documented | verified`
-- `User.rightsStrikeCount`, `User.repeatInfringerAt` (Phase 39)
-- `EarningsLedger.status` adds `held` (Phase 39)
+- `User.rightsStrikeCount`, `User.repeatInfringerAt` (shipped Phase 39)
+- `EarningsLedger.status` adds `held` (shipped Phase 39)
 
 Earnings on a commercially sold model-uploaded photo: photographer share pays **`contributorId`** (copyright owner), never the model, unless they are the same user via dual-role.
 
@@ -418,7 +418,7 @@ Token not consumed on GET. PII of the model limited. First email/SMS explains th
 
 ## 6. Enforcement, money, legal overlays (Phases 39–40)
 
-### Phase 39 — DMCA, repeat infringer, payout holds
+### Phase 39 — DMCA, repeat infringer, payout holds — shipped
 
 | Piece | Plan |
 | --- | --- |
@@ -427,7 +427,7 @@ Token not consumed on GET. PII of the model limited. First email/SMS explains th
 | Counter-notice | Stored; restore only after statutory wait **and** staff action — do not auto-relitigate |
 | Repeat infringer | Strike on upheld copyright/likeness fraud (fake release, fake photographer, false “I created this”); thresholds in settings; termination of account; seed a documented policy |
 | Payout holds | New ledger `held`; auto-hold on disputed photos’ unpaid earnings; hold window/settings for new/unverified sellers and high-value grants; trusted-creator fast path later, not v1 |
-| Fix | `GET /contributor/earnings` must allow `photographer` (today 403) |
+| Fix | `GET /contributor/earnings` allows photographer / community / influencer (Phase 39) |
 
 DMCA is **copyright only**. Likeness/privacy/contract complaints stay on the existing rights-report path. Do not tell staff “DMCA covers everything.”
 
@@ -471,7 +471,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
         │
 38 Model public register + model upload + photographer contact mirror — shipped
         │
-39 DMCA + strikes + payout holds
+39 DMCA + strikes + payout holds — shipped
         │
 40 Overlay module + versioned agreement hooks (copy still counsel)
 ```
@@ -481,7 +481,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice after approval: Phase 39.**
+**Default next slice after approval: Phase 40.**
 
 ---
 

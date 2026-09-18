@@ -3,6 +3,7 @@ import {
   adminPayoutActionSchema,
   canImpersonateCreator,
   payoutMethodSchema,
+  releaseEarningsHoldSchema,
   requestPayoutSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
@@ -19,6 +20,7 @@ import {
   serializePayoutMethod,
   upsertDefaultMethod,
 } from '../lib/payouts.js'
+import { releaseEarningsHold, serializeEarningsHold } from '../lib/holds.js'
 import { prisma } from '../lib/prisma.js'
 import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 
@@ -34,6 +36,7 @@ export async function payoutRoutes(app: FastifyInstance) {
   const listPayouts = { preHandler: requireAdminCapability(app, 'payouts.list') }
   const payPayout = { preHandler: requireAdminCapability(app, 'payouts.pay') }
   const rejectPayoutCap = { preHandler: requireAdminCapability(app, 'payouts.reject') }
+  const manageHolds = { preHandler: requireAdminCapability(app, 'payouts.holds.manage') }
 
   app.get('/contributor/earnings', {
     preHandler: (request, reply) => authenticate(app, request, reply),
@@ -46,13 +49,17 @@ export async function payoutRoutes(app: FastifyInstance) {
     monthStart.setUTCDate(1)
     monthStart.setUTCHours(0, 0, 0, 0)
 
-    const [available, reserved, paid, month, items, methods, payouts, seriesRows] = await Promise.all([
+    const [available, reserved, held, paid, month, items, methods, payouts, seriesRows] = await Promise.all([
       prisma.earningsLedger.aggregate({
         where: { contributorId, status: 'available' },
         _sum: { amountUsd: true },
       }),
       prisma.earningsLedger.aggregate({
         where: { contributorId, status: 'reserved' },
+        _sum: { amountUsd: true },
+      }),
+      prisma.earningsLedger.aggregate({
+        where: { contributorId, status: 'held' },
         _sum: { amountUsd: true },
       }),
       prisma.earningsLedger.aggregate({
@@ -86,14 +93,16 @@ export async function payoutRoutes(app: FastifyInstance) {
     ])
 
     const availableUsd = available._sum.amountUsd ?? 0
+    const heldUsd = held._sum.amountUsd ?? 0
     const pendingCount = payouts.filter((p) => p.status === 'requested').length
 
     return {
       availableUsd,
       pendingUsd: reserved._sum.amountUsd ?? 0,
+      heldUsd,
       paidUsd: paid._sum.amountUsd ?? 0,
       thisMonthUsd: month._sum.amountUsd ?? 0,
-      allTimeUsd: (available._sum.amountUsd ?? 0) + (reserved._sum.amountUsd ?? 0) + (paid._sum.amountUsd ?? 0),
+      allTimeUsd: (available._sum.amountUsd ?? 0) + (reserved._sum.amountUsd ?? 0) + heldUsd + (paid._sum.amountUsd ?? 0),
       minPayoutUsd: MIN_PAYOUT_USD,
       canRequest: !canRequestPayout({
         availableUsd,
@@ -113,6 +122,7 @@ export async function payoutRoutes(app: FastifyInstance) {
         amountUsd: row.amountUsd,
         source: row.source,
         status: row.status,
+        holdReason: row.holdReason,
         createdAt: row.createdAt.toISOString(),
       })),
       series: earningsMonthSeries(seriesRows),
@@ -281,5 +291,34 @@ export async function payoutRoutes(app: FastifyInstance) {
     } catch (err) {
       return payError(reply, err)
     }
+  })
+
+  app.get('/admin/earnings/holds', manageHolds, async () => {
+    const items = await prisma.earningsLedger.findMany({
+      where: { status: 'held' },
+      include: {
+        photo: { select: { title: true } },
+        contributor: { include: { contributorProfile: true } },
+      },
+      orderBy: { heldAt: 'desc' },
+      take: 100,
+    })
+    const totalUsd = items.reduce((sum, row) => sum + row.amountUsd, 0)
+    return { totalUsd, items: items.map(serializeEarningsHold) }
+  })
+
+  app.post('/admin/earnings/holds/:id/release', manageHolds, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    releaseEarningsHoldSchema.parse(request.body ?? {})
+    const row = await releaseEarningsHold(id)
+    if (!row) return reply.code(404).send({ error: 'Ledger row not found' })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'payout.hold_release',
+      entityType: 'earnings_ledger',
+      entityId: id,
+      ipAddress: request.ip,
+    })
+    return { ok: true as const, status: row.status }
   })
 }

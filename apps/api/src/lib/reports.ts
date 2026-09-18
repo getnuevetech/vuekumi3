@@ -1,7 +1,8 @@
 import type { Photo, Prisma, RightsReport, User } from '@prisma/client'
-import type { RightsReportDto, RightsReportStatus } from '@vuekumi/shared'
+import type { EarningsHoldReason, RightsReportDto, RightsReportStatus } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { COMMERCIAL_LOCK_REASON } from './rights.js'
+import { holdAvailableEarnings } from './holds.js'
 
 export { COMMERCIAL_LOCK_REASON }
 
@@ -93,8 +94,9 @@ export async function applyCommercialLock(input: {
   locked: boolean
   actorId?: string | null
   notes?: string | null
+  holdReason?: EarningsHoldReason
 }): Promise<Photo> {
-  return prisma.photo.update({
+  const photo = await prisma.photo.update({
     where: { id: input.photoId },
     data: input.locked
       ? {
@@ -108,4 +110,11 @@ export async function applyCommercialLock(input: {
           commercialLockedById: null,
         },
   })
+  if (input.locked) {
+    await holdAvailableEarnings({
+      photoIds: [input.photoId],
+      reason: input.holdReason ?? 'copyright_dispute',
+    })
+  }
+  return photo
 }

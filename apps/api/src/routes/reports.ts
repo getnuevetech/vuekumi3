@@ -84,6 +84,7 @@ export async function reportRoutes(app: FastifyInstance) {
       photoId: photo.id,
       locked: true,
       actorId: request.userId,
+      holdReason: body.reason === 'likeness' ? 'likeness_dispute' : 'copyright_dispute',
     })
     const rightsPatch =
       body.reason === 'copyright' || body.reason === 'unauthorized_use'

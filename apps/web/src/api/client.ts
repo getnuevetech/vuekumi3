@@ -42,6 +42,12 @@ import type {
   RightsReportDto,
   PublicReportResult,
   CreateRightsReportInput,
+  CreateDmcaNoticeInput,
+  CreateDmcaCounterNoticeInput,
+  DmcaNoticeDto,
+  DmcaPublicPageDto,
+  RightsStrikeDto,
+  EarningsHoldDto,
   PhotoAppearanceDto,
   ModelInvitePreviewDto,
   IdentifyAppearanceInput,
@@ -371,6 +377,22 @@ export const api = {
 
   reportPhoto: (id: string, body: CreateRightsReportInput) =>
     request<PublicReportResult>(`/api/photos/${id}/report`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  dmcaPage: () => request<DmcaPublicPageDto>('/api/dmca'),
+
+  fileDmcaNotice: (body: CreateDmcaNoticeInput) =>
+    request<{ notice: DmcaNoticeDto }>('/api/dmca/notices', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  dmcaNotice: (id: string) => request<{ notice: DmcaNoticeDto }>(`/api/dmca/notices/${id}`),
+
+  fileDmcaCounter: (id: string, body: CreateDmcaCounterNoticeInput) =>
+    request<{ notice: DmcaNoticeDto }>(`/api/dmca/notices/${id}/counter`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
@@ -759,6 +781,32 @@ export const api = {
     request<{ report: RightsReportDto }>(`/api/admin/reports/${id}/decide`, {
       method: 'POST',
       body: JSON.stringify({ action, notes }),
+    }),
+
+  adminDmca: (status?: string) =>
+    request<{ items: DmcaNoticeDto[] }>(`/api/admin/dmca${status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''}`),
+
+  decideDmcaNotice: (id: string, action: 'process' | 'reject' | 'close' | 'restore', notes?: string) =>
+    request<{ notice: DmcaNoticeDto }>(`/api/admin/dmca/${id}/decide`, {
+      method: 'POST',
+      body: JSON.stringify({ action, notes }),
+    }),
+
+  adminStrikes: (userId?: string) =>
+    request<{ items: RightsStrikeDto[] }>(`/api/admin/strikes${userId ? `?userId=${encodeURIComponent(userId)}` : ''}`),
+
+  createRightsStrike: (body: { userId: string; reason: RightsStrikeDto['reason']; notes: string; photoId?: string; noticeId?: string }) =>
+    request<{ strike: RightsStrikeDto }>('/api/admin/strikes', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  adminEarningsHolds: () => request<{ totalUsd: number; items: EarningsHoldDto[] }>('/api/admin/earnings/holds'),
+
+  releaseEarningsHold: (id: string, notes?: string) =>
+    request<{ ok: boolean; status: string }>(`/api/admin/earnings/holds/${id}/release`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
     }),
 
   setCommercialLock: (photoId: string, locked: boolean, notes?: string) =>

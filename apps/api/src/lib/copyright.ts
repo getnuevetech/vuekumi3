@@ -9,6 +9,7 @@ import { COPYRIGHT_AUTHORIZATION_TERMS_VERSION } from '@vuekumi/shared'
 import type { CopyrightAuthorization } from '@prisma/client'
 import { prisma } from './prisma.js'
 import { appendRightsLedgerEvent } from './ledger.js'
+import { holdAvailableEarnings } from './holds.js'
 import { MODEL_INVITE_DAYS, ModelError, appearanceStatusForDecision, syncVerifiedRightsRecord } from './models.js'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { config } from '../config.js'
@@ -188,6 +189,7 @@ export async function applyCopyrightDecision(input: {
       where: { id: row.photoId },
       data: { commercialLocked: true, commercialLockedAt: new Date() },
     })
+    await holdAvailableEarnings({ photoIds: [row.photoId], reason: 'copyright_dispute' })
   }
 
   await syncVerifiedRightsRecord(row.photoId)

@@ -547,6 +547,7 @@ export default function PhotoDetail() {
                 >
                   <p className="text-sm text-ink-soft">
                     Copyright, likeness, or unauthorized use. Staff can freeze new licences without taking the image down.
+                    Statutory copyright takedown is a separate <Link to={`/dmca?photo=${view.id}`} className="text-terra">DMCA notice</Link> — not for likeness or privacy.
                   </p>
                   <select
                     value={report.reason}

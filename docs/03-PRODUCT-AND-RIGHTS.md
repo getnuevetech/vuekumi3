@@ -266,7 +266,7 @@ Those are Phase-gate decisions immediately before the relevant build, not this d
 Staff ACL, model-as-uploader, claimed/documented/verified quality, Rights Ledger, DMCA,
 and the U.S. + Global Rights Standard + country-overlay legal philosophy are **proposed**
 in [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md).
-Phases 35–38 are shipped. Nothing in Phases 39–40 starts until you approve a phase. Models may public-register and upload; VueKumi contacts named photographers. `AdminRole` is a capability preset (Phase 36).
+Phases 35–39 are shipped. Nothing in Phase 40 starts until you approve a phase. Models may public-register and upload; VueKumi contacts named photographers. `AdminRole` is a capability preset (Phase 36).
 Third-party copyright at `claimed` or `documented` never unlocks commercial licensing.
 Staff can create and edit members, photographers, community contributors,
 agencies, models, and **admins** from the portal; each staff user is limited to selected

@@ -54,13 +54,22 @@ export interface PayoutDto {
 export interface EarningsSummaryDto {
   availableUsd: number
   pendingUsd: number
+  heldUsd: number
   paidUsd: number
   thisMonthUsd: number
   allTimeUsd: number
   minPayoutUsd: number
   canRequest: boolean
   requestBlocker: string | null
-  items: { id: string; photoTitle: string; amountUsd: number; source: string; status: string; createdAt: string }[]
+  items: {
+    id: string
+    photoTitle: string
+    amountUsd: number
+    source: string
+    status: string
+    holdReason?: string | null
+    createdAt: string
+  }[]
   series: { month: string; earnings: number }[]
   methods: PayoutMethodDto[]
   payouts: PayoutDto[]
