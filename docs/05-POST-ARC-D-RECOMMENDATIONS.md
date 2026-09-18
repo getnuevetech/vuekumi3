@@ -235,7 +235,7 @@ Do not number these as phases until Dec-* closes and work is approved.
 | Representation fee / agency billing | Dec-Fee + Dec-VQ | Staff-mode billing vs entity invoices |
 | Stage 3 vendor + retention | Dec-Bio | Still: voluntary, similarity ≠ release, no public face DB |
 | AI dataset product | Dec-AI | Separate SKU; minors never eligible; partner API terms update only if sold |
-| Admin booking/campaign queues | **Shipped (Phase 42)** — staff visibility + campaign close; no fees |
+| Admin booking/campaign queues | — | **Shipped (Phase 42)** — staff visibility + campaign close; no fees |
 | Creator impersonation UI | ACL already has capability | Support tooling |
 
 ---
