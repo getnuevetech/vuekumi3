@@ -273,3 +273,7 @@ agencies, models, and **admins** from the portal; each staff user is limited to 
 features. Support cannot enter the photographer workspace unless given
 `content.impersonate_creator`.
 
+Post–Arc D recommendations (ops redeploy, decision gates, optional Phase 41 homepage
+curation review): [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md).
+Still not a build ticket until explicitly approved.
+
