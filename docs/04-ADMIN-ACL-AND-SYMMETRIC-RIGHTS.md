@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: Phases 35–40 shipped. Arc D is complete. Phase 34 (AI-training opt-in) is shipped; dataset pricing stays undecided.**
+**Status: Phases 35–40 shipped. Arc D is complete. Phase 34 (AI-training opt-in) is shipped; dataset pricing stays undecided. Phase 41 (homepage featured slots) is shipped.**
 
 This is the implementation procedure for three product decisions:
 
@@ -290,6 +290,7 @@ Super-admin always has all capabilities (`*` internally). Super-admin may tick a
 | `content.model_release.review` | Route A PDF review |
 | `content.commercial_lock` | freeze/unlock licensing |
 | `content.rights_ledger.read` | ledger view (Phase 37) |
+| `content.featured` | pin homepage featured slots (Phase 41) |
 | `moderation.list` | publish queue |
 | `moderation.decide` | approve/reject |
 | `reports.list` | rights reports |
@@ -481,7 +482,7 @@ Phase 34 (AI-training opt-in) shipped after this arc as a consent engine. Datase
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice: none scheduled.** Dataset pricing for AI-training remains undecided.
+**Default next slice: none scheduled.** Phase 41 (admin-curated homepage featured slots) is shipped. Dataset pricing for AI-training remains undecided.
 
 ---
 
