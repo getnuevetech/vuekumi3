@@ -52,6 +52,7 @@ async function main() {
   await prisma.rightsStrike.deleteMany()
   await prisma.copyrightAuthorization.deleteMany()
   await prisma.rightsLedgerEvent.deleteMany()
+  await prisma.homeFeaturedPin.deleteMany()
   await prisma.photoFavorite.deleteMany()
   await prisma.photographerFollow.deleteMany()
   await prisma.collectionPhoto.deleteMany()
@@ -860,6 +861,10 @@ async function main() {
       data: { profileViews: 128 },
     })
   }
+
+  await prisma.homeFeaturedPin.create({
+    data: { slot: 'hero', position: 0, photoId: 'afr-014' },
+  })
 
   console.log('Seed complete.')
   console.log('Admin: admin@vuekumi.com / Admin123!')

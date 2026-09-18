@@ -26,6 +26,8 @@ test('capability helpers: presets, last super-admin, self-edit', () => {
   assert.equal(capabilitiesForPreset('support').includes('payouts.pay'), false)
   assert.equal(capabilitiesForPreset('moderator').includes('accounts.admins.manage'), false)
   assert.equal(capabilitiesForPreset('moderator').includes('dmca.manage'), true)
+  assert.equal(capabilitiesForPreset('moderator').includes('content.featured'), true)
+  assert.equal(capabilitiesForPreset('finance').includes('content.featured'), false)
   assert.equal(capabilitiesForPreset('finance').includes('payouts.holds.manage'), true)
   assert.equal(capabilitiesForPreset('finance').includes('dmca.manage'), false)
   assert.equal(capabilitiesForPreset('super_admin').includes('accounts.admins.manage'), true)

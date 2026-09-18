@@ -142,6 +142,14 @@ export const api = {
 
   home: () => request<HomePageDto>('/api/public/home'),
 
+  adminHomepage: () => request<import('@vuekumi/shared').HomeFeaturedAdminDto>('/api/admin/homepage'),
+
+  saveHomepage: (body: import('@vuekumi/shared').PatchHomeFeaturedInput) =>
+    request<import('@vuekumi/shared').HomeFeaturedAdminDto>('/api/admin/homepage', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+
   adminOverview: () => request<AdminOverviewDto>('/api/admin/metrics/overview'),
 
   me: () => request<{ user: AuthUser }>('/api/auth/me'),

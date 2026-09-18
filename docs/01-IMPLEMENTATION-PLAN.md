@@ -111,6 +111,8 @@ Locked product rules already in the running system:
 | **37** | Symmetric rights quality (`claimed → documented → verified`); third-party copyright never commercially cleared by declaration; Rights Ledger; guardian write. |
 | **38** | Model public registration + model upload; VueKumi contacts the photographer (copyright authorization, guest rights page). Self-shot commercial requires photographer agreement on the same email; `accountType` stays `model`. Models still do not earn. |
 | **39** | DMCA notice path, repeat-infringer strikes, payout holds. `GET /contributor/earnings` is open to photographers. DMCA is copyright only. |
+| **40** | VueKumi Global Rights Standard hooks + country overlays (agreement copy remains counsel-gated). |
+| **41** | Admin-curated homepage featured slots (hero, edge, editorial, pricing, stats background). Unfilled positions keep live ranking. Featuring is not a licence. Private / portfolio / agency-protected cannot be pinned. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -142,7 +144,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 Marketplace leftovers that still matter for a honest live site, but are **not** the
 differentiator:
 
-- Featured homepage slots are query-driven, not admin-editable
+- Featured homepage slots are **staff-pinnable** (Phase 41); unfilled positions stay query-driven
 
 ---
 
@@ -159,6 +161,7 @@ Keep vuekumi.com truthful while the identity graph is designed.
 | **20** | Contributor photo editor — **shipped** | |
 | **21** | Honest pricing economics (no fake 32% pool) — **shipped** | |
 | **22** | Public rights **report** + staff takedown queue (temporary commercial lock, audit trail) — **shipped** | |
+| **41** | Admin-curated homepage featured slots — **shipped** | The last Arc A leftover: staff pin live stock photographs; empty slots keep ranking. |
 
 ### Arc B — Rights 2.0 (the original differentiator)
 
@@ -273,15 +276,15 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled**. Phase 34 (AI-training consent) is shipped as an opt-in engine; dataset pricing remains **undecided**.
-   Arc D (Phases 35–40) is shipped. For ops redeploy, marketplace leftovers, and
+3. Default next slice: **none scheduled**. Phase 41 (admin-curated homepage featured slots)
+   is shipped. Phase 34 (AI-training consent) is shipped as an opt-in engine; dataset
+   pricing remains **undecided**. Arc D (Phases 35–40) is shipped. For ops redeploy and
    decision gates, see
    [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md) — still
    requires explicit approval before any numbered phase.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.
 5. **Ops, not a phase:** production Lightsail still needs a redeploy of the HTTP
-   admin cookie fix plus Phases 23–28 (prefer full `main` through 40). Featured
-   homepage slots on `main` remain query-driven, not admin-picked. Do not invent
+   admin cookie fix plus Phases 23–28 (prefer full `main` through 41). Do not invent
    undecided splits, commissions, biometric vendors/retention, or a VueQuatro
    entity form.

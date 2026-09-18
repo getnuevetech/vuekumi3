@@ -1,5 +1,5 @@
-import type { HomePageDto } from '@vuekumi/shared'
-import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
+import type { HomePageDto, HomeSlotPins } from '@vuekumi/shared'
+import { HOME_FEATURED_SLOT_KEYS, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares } from './home.js'
 import {
   catalogPhotoInclude,
@@ -22,8 +22,22 @@ function mapSlot(ids: string[], lookup: Map<string, CatalogPhoto>) {
   return ids.map((id) => lookup.get(id)).filter((photo): photo is CatalogPhoto => Boolean(photo)).map((p) => serializeCatalogPhoto(p))
 }
 
+export async function loadHomePins(): Promise<HomeSlotPins> {
+  const rows = await prisma.homeFeaturedPin.findMany({ orderBy: [{ slot: 'asc' }, { position: 'asc' }] })
+  const pins: HomeSlotPins = {}
+  for (const slot of HOME_FEATURED_SLOT_KEYS) pins[slot] = []
+  for (const row of rows) {
+    if (!HOME_FEATURED_SLOT_KEYS.includes(row.slot as (typeof HOME_FEATURED_SLOT_KEYS)[number])) continue
+    const slot = row.slot as (typeof HOME_FEATURED_SLOT_KEYS)[number]
+    const list = pins[slot] ?? []
+    list[row.position] = row.photoId
+    pins[slot] = list
+  }
+  return pins
+}
+
 export async function loadHomePage(): Promise<HomePageDto> {
-  const [photosLive, contributorGroups, countryGroups, downloadAgg, categoryGroups, byDownloads, byNewest, byLikes] =
+  const [photosLive, contributorGroups, countryGroups, downloadAgg, categoryGroups, byDownloads, byNewest, byLikes, pins] =
     await Promise.all([
       prisma.photo.count({ where: LIVE }),
       prisma.photo.groupBy({ by: ['contributorId'], where: LIVE, _count: { _all: true } }),
@@ -48,13 +62,26 @@ export async function loadHomePage(): Promise<HomePageDto> {
         orderBy: [{ likes: 'desc' }, { createdAt: 'desc' }],
         take: 8,
       }),
+      loadHomePins(),
     ])
 
-  const lookup = byId([...byDownloads, ...byNewest, ...byLikes])
+  const pinIds = HOME_FEATURED_SLOT_KEYS.flatMap((slot) => (pins[slot] ?? []).filter((id): id is string => Boolean(id)))
+  const missingIds = pinIds.filter((id) => ![...byDownloads, ...byNewest, ...byLikes].some((photo) => photo.id === id))
+  const pinnedPhotos = missingIds.length
+    ? await prisma.photo.findMany({
+        where: { id: { in: missingIds }, ...LIVE },
+        include: catalogPhotoInclude,
+      })
+    : []
+
+  const lookup = byId([...byDownloads, ...byNewest, ...byLikes, ...pinnedPhotos])
+  const liveIds = new Set(lookup.keys())
   const slots = assignHomeSlots({
     byDownloads: byDownloads.map(ranked),
     byNewest: byNewest.map(ranked),
     byLikes: byLikes.map(ranked),
+    pins,
+    liveIds,
   })
   const statsPhoto = slots.statsBackground ? lookup.get(slots.statsBackground) : undefined
 
