@@ -521,7 +521,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     payload: { permissionState: 'commercial' },
   })
   assert.equal(stillBlocked.statusCode, 400)
-  assert.match((stillBlocked.json() as { error: string }).error, /photographer and model approval/i)
+  assert.match((stillBlocked.json() as { error: string }).error, /Photo influencers cannot enter commercial inventory/)
 
   const nomsaClaim = await app.inject({
     method: 'POST',
