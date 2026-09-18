@@ -30,6 +30,7 @@ import type {
   PublicConfigDto,
   HomePageDto,
   AdminOverviewDto,
+  AdminAccountDto,
   EarningsSummaryDto,
   PayoutDto,
   PayoutMethodDto,
@@ -753,7 +754,7 @@ export const api = {
   pricing: (country?: string) =>
     request<PricingQuote>(`/api/geo/pricing${country ? `?country=${country}` : ''}`),
 
-  adminAccounts: (type: 'users' | 'contributors' | 'agencies' | 'admins' | 'models', params?: { q?: string; page?: number }) => {
+  adminAccounts: (type: 'users' | 'contributors' | 'photographers' | 'agencies' | 'admins' | 'models', params?: { q?: string; page?: number }) => {
     const qs = new URLSearchParams()
     if (params?.q) qs.set('q', params.q)
     if (params?.page) qs.set('page', String(params.page))
@@ -761,8 +762,27 @@ export const api = {
     return request<{ items: AdminAccount[]; total: number }>(`/api/admin/${type}${q ? `?${q}` : ''}`)
   },
 
-  patchAccount: (id: string, body: Partial<AdminAccount>) =>
+  adminAccount: (id: string) =>
+    request<{ user: AdminAccount }>(`/api/admin/accounts/${id}`),
+
+  createAccount: (body: {
+    email: string
+    name: string
+    accountType: 'user' | 'photographer' | 'contributor' | 'agency' | 'model'
+    password: string
+    country?: string
+    creatorKind?: 'photographer' | 'photo_influencer'
+  }) =>
+    request<{ user: AdminAccount }>('/api/admin/accounts', { method: 'POST', body: JSON.stringify(body) }),
+
+  patchAccount: (id: string, body: Partial<Pick<AdminAccount, 'name' | 'email' | 'country' | 'status'>>) =>
     request<{ user: AdminAccount }>(`/api/admin/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  setAgencyStatus: (agencyId: string, status: 'pending' | 'active' | 'suspended') =>
+    request<{ agency: { id: string; name: string; status: string }; user: AdminAccount }>(
+      `/api/admin/agencies/${agencyId}/status`,
+      { method: 'POST', body: JSON.stringify({ status }) },
+    ),
 
   adminCountries: () => request<{ countries: GeoCountry[] }>('/api/admin/countries'),
   upsertCountry: (body: Partial<GeoCountry> & { code: string; name: string; currency: string; currencyName: string; region: string }) =>
@@ -813,27 +833,7 @@ export interface PricingQuote {
   fetchedAt: string | null
 }
 
-export interface AdminAccount {
-  id: string
-  email: string
-  name: string
-  accountType: string
-  status: string
-  country: string | null
-  joined: string
-  emailVerified: boolean
-  handle: string | null
-  creatorKind: 'photographer' | 'photo_influencer' | null
-  photos: number
-  earnings: number
-  downloads: number
-  plan: string | null
-  adminRole: string | null
-  agencyName: string | null
-  agencyStatus: string | null
-  appearances?: number
-  dualRole?: boolean
-}
+export type AdminAccount = AdminAccountDto
 
 export interface FxRate {
   currency: string

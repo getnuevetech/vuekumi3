@@ -23,7 +23,7 @@ import AdminRepresentation from './pages/AdminRepresentation'
 import AdminPartnerKeys from './pages/AdminPartnerKeys'
 import { AdminReports } from './pages/AdminReports'
 import { AdminSettings } from './pages/AdminSettings'
-import { AdminAdmins, AdminAgencies, AdminContributors, AdminModels, AdminUsers } from './pages/AdminAccounts'
+import { AdminAdmins, AdminAgencies, AdminContributors, AdminModels, AdminPhotographers, AdminUsers } from './pages/AdminAccounts'
 import { AdminCountries, AdminRates } from './pages/AdminGeo'
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
@@ -101,6 +101,7 @@ export default function App() {
 
         <Route path="/admin" element={<ProtectedRoute allowed={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']}><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin/photographers" element={<ProtectedRoute allowed={['admin']}><AdminPhotographers /></ProtectedRoute>} />
         <Route path="/admin/contributors" element={<ProtectedRoute allowed={['admin']}><AdminContributors /></ProtectedRoute>} />
         <Route path="/admin/agencies" element={<ProtectedRoute allowed={['admin']}><AdminAgencies /></ProtectedRoute>} />
         <Route path="/admin/models" element={<ProtectedRoute allowed={['admin']}><AdminModels /></ProtectedRoute>} />

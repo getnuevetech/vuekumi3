@@ -103,6 +103,7 @@ Locked product rules already in the running system:
 | 31 | VueQuatro representation — opt-in request → staff approve/decline, revocable by either side. `agency_protected` becomes real handling: only settable while represented, licensed through staff-routed inquiries, reverts to portfolio-only when representation ends. Staff queue at `/admin/representation`. **No representation commission** (undecided) and **no second public app** — VueQuatro is a staff mode. |
 | 32 | Brand production — campaign-shaped sourcing at `/campaigns`: buyer/agency accounts post campaign briefs (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts/declines, contributors withdraw pending pitches, owner or staff close campaigns. **No production commission** (undecided), settlement off-platform, campaign money never touches the earnings ledger, and accepting a pitch licenses nothing — photographs still go through checkout with all rights guards. |
 | 33 | Partner / distribution API — authenticated (admin-issued bearer keys, hash-stored, shown once, revocable), licensed (cleared stock inventory only; licence flags computed with the same guards as checkout; licences granted on VueKumi, not by the API), rate-limited (120 req/min per key). Read-only `GET /api/partner/v1/photos[/:id]` with attribution and terms. **AI training explicitly not permitted** — no AI-training consent exists (that is Phase 34). Staff key management at `/admin/partner-api`. |
+| **35** | Admin user management from the portal: create members, photographers, community contributors, agencies, and models; dedicated photographers list; activate/suspend the **agency entity** (not only the user). Admin *staff* creation waits for Phase 36 ACL. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -203,6 +204,20 @@ Only after commercially cleared images have real people behind them.
 | **33** | Partner / Unsplash-style **distribution API** (authenticated, licensed, rate-limited). Cleared inventory only; no AI-training use — **shipped** |
 | **34** | **AI-training** licence as an explicit opt-in, separate from RF/commercial grants, payable if we sell datasets |
 
+### Arc D — Staff ACL and symmetric rights
+
+Full procedure: [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md).
+Approve **one** remaining phase at a time.
+
+| Phase | Work |
+| --- | --- |
+| **35** | Admin user management from the portal: create/edit every account type, photographers list, agency activation — **shipped** |
+| **36** | Super-admin creates admins; granular capability ACL (roles are presets) |
+| **37** | Symmetric rights quality (`claimed → documented → verified`); tighten commercial eligibility; Rights Ledger; guardian write |
+| **38** | Model public registration + model upload; VueKumi contacts the photographer (mirror of Route B) |
+| **39** | DMCA notice path, repeat-infringer strikes, payout holds |
+| **40** | VueKumi Global Rights Standard hooks + country overlays (agreement copy remains counsel-gated) |
+
 ---
 
 ## 5. Explicitly out of the next slice
@@ -247,7 +262,10 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 ## 8. How to use this plan
 
 1. Read [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md).
-2. Approve **one** phase at a time (same “next” cadence as Phases 16–19).
-3. Default next slice when work resumes: **Phase 34** (AI-training licence as an explicit
-   opt-in, separate from RF/commercial grants) unless you redirect. Dataset pricing is
-   **undecided** — consent plumbing can ship, but do not invent a price or sell datasets.
+2. For staff ACL + model upload + symmetric rights, read
+   [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
+   approve **one** phase at a time.
+3. Default next slice: **Phase 36** (super-admin creates staff with granular capability ACL).
+   Phase 34 (AI-training) stays parked. Dataset pricing remains **undecided**.
+4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
+   source of truth — do not leave a finished phase only on a feature branch.
