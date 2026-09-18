@@ -42,29 +42,35 @@ Counsel still owns: governing-law clause wording, indemnity/clawback language, D
 
 ---
 
-## 1. What already exists (map new work here)
+## 1. What already exists (map — historical)
 
 Do **not** build a parallel rights system or a parallel admin app.
 
-| Surface | Today | Gap |
-| --- | --- | --- |
-| `AccountType` | `admin`, `photographer`, `photo_influencer`, `contributor`, `user`, `agency`, `model` | Models cannot public-register or upload |
-| `PUBLIC_REGISTER_ACCOUNT_TYPES` | photographer, photo_influencer, contributor, user, agency | Model excluded |
-| `AdminRole` | `super_admin`, `moderator`, `finance`, `support` | **Decorative** — any `accountType=admin` has full access |
-| Admin portal accounts | List/edit name, email, country, status for users, **community** contributors, agencies, models, admins | No create. No photographers list. No role/capability assignment. No agency activation. `GET /admin/accounts/:id` unused |
-| Admin auth | `requireAccountTypes(app, 'admin')` | No `requireAdminCapability` |
-| Copyright status | `claimed \| verified \| disputed \| restricted` | No `documented`. **`claimed` currently clears commercial** |
-| Likeness status | workflow enum (`required`, `invitation_sent`, `pending`, `approved`, …) | Verification **quality** (claimed / documented / verified) is not a first-class field |
-| Photographer upload | Screening → Route A PDF / Route B VueKumi contacts model | No mirror for model upload |
-| Model account | Invite-only; appearances + public `/m/:handle`; no upload | — |
-| Dual-role | Photographer + `ModelProfile`; `accountType` stays photographer | No model-primary + photographer profile |
-| Reports | Public report + staff commercial lock + `AuditLog` | Shipped (Phase 22); DMCA / strikes / holds are Phase 39 |
-| Earnings | `available → reserved → paid` | No dispute hold / reserve |
-| Rights record | `RightsRecord` + `PhotoAppearance` + `ModelRelease` + grants + audit | No unified Rights Ledger API |
-| Legal | Africa-only creators; photographer / community / model / influencer agreements; Global Rights Standard + country overlays | Counsel-gated copy (signed sentences, DMCA Copyright Office filing, insurance, VueQuatro entity split) |
-| Guardian | Schema fields exist | `guardianAuthorizedAt` is never written |
+The table below was the Arc D starting map. **Phases 35–40 are shipped**; use the
+**After** column as current truth. Do not re-open rows marked shipped as backlog.
 
-Agency RBAC (`AgencyRole`, `canManageTeam`) is the pattern to copy for admin capabilities.
+| Surface | Before Arc D | After (Phases 35–40) |
+| --- | --- | --- |
+| `AccountType` | `admin`, `photographer`, `photo_influencer`, `contributor`, `user`, `agency`, `model` | Unchanged set |
+| `PUBLIC_REGISTER_ACCOUNT_TYPES` | Model excluded | Model included (Phase 38) |
+| `AdminRole` | Decorative — any admin had full access | Preset only; auth is `AdminProfile.capabilities[]` (Phase 36) |
+| Admin portal accounts | List/edit; no create; no photographers list; no ACL | Create/edit members, photographers, contributors, agencies, models, admins; agency activate/suspend (Phase 35–36) |
+| Admin auth | `requireAccountTypes(app, 'admin')` | `requireAdminCapability` on routes + nav (Phase 36) |
+| Copyright status | `claimed` cleared commercial; no `documented` | `claimed → documented → verified`; claimed/documented third-party never clears commercial (Phase 37) |
+| Likeness quality | Workflow enum only | Quality rung + workflow; public verified mark only at verified (Phase 37) |
+| Photographer upload | Route A PDF / Route B contact model | Unchanged; still the photographer path |
+| Model upload | None | Model public register + upload; VueKumi contacts photographer (Phase 38) |
+| Dual-role | Photographer + `ModelProfile` | Plus model-primary + photographer agreement path (Phase 38); `accountType` stays model when model-primary |
+| Reports / DMCA | Public report + commercial freeze | + DMCA notices, strikes, payout holds (Phase 39) |
+| Earnings | `available → reserved → paid` | + dispute/DMCA holds (Phase 39). Models still do not earn |
+| Rights record | Scattered tables + audit | Rights Ledger API/events (Phase 37) |
+| Legal | Agreements + Africa-only creators | + Global Rights Standard hooks + country overlays; counsel-gated copy remains (Phase 40) |
+| Guardian | Schema fields; `guardianAuthorizedAt` never written | Guardian write path shipped with minors flow (Phase 37) |
+
+Agency RBAC (`AgencyRole`, `canManageTeam`) remains the pattern admin capabilities copied.
+
+Remaining non-Arc-D leftovers (ops / marketplace / undecided economics): see
+[`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md).
 
 ---
 
