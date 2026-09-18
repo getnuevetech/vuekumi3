@@ -166,6 +166,44 @@ bash deploy/lightsail/deploy.sh
 Do **not** pass `SEED_DEMO=1` on a live site. Seed deletes users, grants,
 payments, and photos before recreating the demo library.
 
+### Catch-up redeploy (Track O2 — Phases 23–41 + cookie fix)
+
+Use this when production is behind `main` (HTTP admin cookie fix, Rights 2.0,
+Arc C/D, Phase 41 homepage pins). Run on the Lightsail host as `ubuntu`.
+
+```bash
+cd /opt/vuekumi
+
+# 1. Backup first
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  pg_dump -U vuekumi vuekumi > backup-$(date +%Y%m%d-%H%M).sql
+
+# 2. Confirm you will NOT seed
+grep -E '^SEED_DEMO=' .env || true
+# Ensure SEED_DEMO is unset or 0
+
+# 3. Pull and redeploy (migrations run via API entrypoint; seed skipped)
+git fetch origin main
+git checkout main
+git pull origin main
+bash deploy/lightsail/deploy.sh
+
+# 4. Confirm SHA and health
+git rev-parse --short HEAD
+curl -sf "${WEB_URL}/api/health" && echo
+```
+
+Smoke after deploy:
+
+1. Admin login at `${WEB_URL}/admin` (HTTP cookie Secure fix if TLS is not live yet)
+2. Public home loads; `/admin/homepage` reachable for a staff user with `content.featured`
+3. A people photo without two-party commercial clearance is not sold as commercial
+4. Model guest rights / invite page still loads for a known invite token
+5. `/admin/representation` queue loads for staff
+
+Then set `WEB_URL=https://…` and re-run `ssl-init.sh` if the domain already has certs.
+Rotate the demo admin password if seed ever ran on this instance.
+
 ### Database backup
 
 ```bash
