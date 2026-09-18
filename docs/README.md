@@ -6,13 +6,20 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–28, gaps vs the concept, remaining Phases 29–34 in three arcs
-   (honest marketplace → Rights 2.0 → talent / VueQuatro / distribution).
-3. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
+   shipped Phases 0–40 (Arcs A–D complete). Default next slice: none scheduled until
+   explicitly approved.
+3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
+   review, recommendations, and ops/decision execution tracks (including Lightsail
+   redeploy). Not a licence to start work without approval.
+4. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
+   Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
+   and the shipped status header.
+5. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
    actually deployed (Docker on AWS Lightsail).
-4. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
+6. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
    template before the backend existed.
-5. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
+7. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
    Original NestJS/Lightsail sketch; superseded by the deploy README.
 
 **Do not start a new implementation phase until it is explicitly approved.**
+**Do not invent undecided economics, biometric vendors/retention, or a VueQuatro entity form.**

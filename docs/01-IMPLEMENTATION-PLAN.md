@@ -12,7 +12,9 @@ Companion documents:
 **Status: plan only for work that has not shipped. Do not start a new phase until
 explicitly approved.**
 
-Updated 17 September 2026 against `main` after merging photographer / likeness-rights with Phases 29–33.
+Updated 18 September 2026 against `main` after Arc D (Phases 35–40). Post–Arc D
+recommendations and ops/decision tracks:
+[`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md).
 
 ---
 
@@ -272,6 +274,14 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
 3. Default next slice: **none scheduled**. Phase 34 (AI-training consent) is shipped as an opt-in engine; dataset pricing remains **undecided**.
-   Arc D (Phases 35–40) is shipped.
+   Arc D (Phases 35–40) is shipped. For ops redeploy, marketplace leftovers, and
+   decision gates, see
+   [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md) — still
+   requires explicit approval before any numbered phase.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.
+5. **Ops, not a phase:** production Lightsail still needs a redeploy of the HTTP
+   admin cookie fix plus Phases 23–28 (prefer full `main` through 40). Featured
+   homepage slots on `main` remain query-driven, not admin-picked. Do not invent
+   undecided splits, commissions, biometric vendors/retention, or a VueQuatro
+   entity form.
