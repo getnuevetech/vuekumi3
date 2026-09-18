@@ -88,9 +88,9 @@ Arcs A–D (Phases 0–40) are on `main`. See `01` §2 table. Notable locks:
 | --- | --- | --- |
 | Production not redeployed with cookie fix + Rights 2.0+ | Ops note; cookie fix is on `main`, Phases 23–40 on `main` | **Critical (ops)** |
 | `deploy/lightsail/deploy.sh` always runs `prisma/seed.ts` | Destructive wipe + recreate on every deploy | **Critical (ops)** |
-| Featured homepage slots query-driven, not admin-picked | `apps/api/src/lib/home-queries.ts`; leftover in `01` §3. Branch `cursor/homepage-featured-slots-9c19` (Phase 41) exists off `main` | Medium (marketplace honesty) |
-| Homepage copy overclaims “curated weekly / human review” | `apps/web/src/pages/Home.tsx` IconRow vs algorithmic slots | Medium (honesty) |
-| `/models` says booking not offered; `/m/:handle` shows Book when available | `Models.tsx` vs `ModelProfile.tsx`; docs `01` Phase 27 vs `03` §9 | Low–medium (consistency) |
+| Featured homepage slots staff-pinnable (Phase 41); empty slots ranking | Shipped on `main` — `/admin/homepage` | Closed (A1) |
+| Homepage copy overclaims “curated weekly / human review” | Was `Home.tsx` IconRow | Closed (A2) — copy now staff-featured |
+| `/models` says booking not offered; `/m/:handle` shows Book | Was `Models.tsx` vs `ModelProfile.tsx` | Closed (A3) |
 | No dedicated admin queues for bookings/campaigns | Admin nav has representation/partner; bookings/campaigns share public UI | Low (ops tooling) |
 | `content.impersonate_creator` API-only | Capability exists; no admin impersonation UI | Low |
 | Seed lacks booking/campaign/representation/partner fixtures | Weak demos for Phases 30–33 | Low (demo/CI) |
@@ -194,16 +194,17 @@ were approved.
 | **O3** | Post-deploy: rotate demo admin password if seed ever ran; confirm Admin Settings keys; TLS/`WEB_URL=https://…` when certs exist | Live secrets and cookie Secure flag match scheme |
 | **O4** | Smoke: report queue, commercial freeze, model invite guest page, representation queue | Ops checklist signed off |
 
-**Note:** Featured homepage slots remaining query-driven is **current fact**, not
-an O-track failure. Promotion to admin-picked is Track A below, only if approved.
+**Note:** Phase 41 shipped admin-pinnable featured slots; empty positions stay
+ranking-driven. Track A honesty copy (A2/A3) is shipped. Live Lightsail redeploy
+remains Track O2.
 
 ### Track A — Marketplace honesty (optional thin slice)
 
 | Step | Work | Gate |
 | --- | --- | --- |
 | **A1** | Review existing Phase 41 branch; merge — admin-pinned featured slots with ranking fallback — **shipped** | Explicit approve as Phase 41 (or equivalent) |
-| **A2** | Homepage marketing copy matches reality (algorithmic vs staff-curated) | Ships with or immediately after A1 |
-| **A3** | Resolve `/models` vs `/m/:handle` booking CTA contradiction + doc drift in `01` / `03` | Product one-liner: booking on or off from index |
+| **A2** | Homepage marketing copy matches reality (staff-pinned featured + ranking fallback) — **shipped** | Ships with or immediately after A1 |
+| **A3** | Resolve `/models` vs `/m/:handle` booking CTA contradiction + doc drift in `01` / `03` — **shipped** | Product one-liner: booking on profile when available |
 
 ### Track Dox — Documentation hygiene (can run anytime)
 
