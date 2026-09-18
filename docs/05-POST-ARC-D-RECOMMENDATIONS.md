@@ -209,9 +209,9 @@ an O-track failure. Promotion to admin-picked is Track A below, only if approved
 
 | Step | Work |
 | --- | --- |
-| **D1** | Update `docs/README.md` read order: Phases 0–40 shipped; Arc D complete; point here for post–Arc D plan |
-| **D2** | Align `01` §8 “next slice” with Tracks O / A / Decision; keep “do not start until approved” |
-| **D3** | Rewrite `04` §1 Gap table to “was / now” so it cannot be misread as current backlog |
+| **D1** | Update `docs/README.md` read order: Phases 0–40 shipped; Arc D complete; point here for post–Arc D plan — **shipped** |
+| **D2** | Align `01` §8 “next slice” with Tracks O / A / Decision; keep “do not start until approved” — **shipped** |
+| **D3** | Rewrite `04` §1 Gap table to “before / after” so it cannot be misread as current backlog — **shipped** |
 
 ### Track Decision — Human gates (no code until closed)
 
