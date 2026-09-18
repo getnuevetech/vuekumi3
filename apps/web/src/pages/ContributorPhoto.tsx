@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { PHOTO_CATEGORIES, SCREENING_KIND_LABEL, creatorPortalLabel, isCommunityContributor, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
+import { PHOTO_CATEGORIES, SCREENING_KIND_LABEL, creatorPortalLabel, isNonCommercialCreator, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
 import { PortalShell, StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { api, ApiError, type GeoCountry } from '../api/client'
@@ -13,7 +13,7 @@ import { useAuth } from '../context/AuthContext'
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
-  const community = isCommunityContributor(user?.accountType)
+  const community = isNonCommercialCreator(user?.accountType)
   return (
     <PortalShell
       title={`${creatorPortalLabel(user?.accountType)} portal`}
@@ -31,7 +31,7 @@ export function ContributorPhotoEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const community = isCommunityContributor(user?.accountType)
+  const community = isNonCommercialCreator(user?.accountType)
   const [photo, setPhoto] = useState<PhotoDto | null>(null)
   const [countries, setCountries] = useState<GeoCountry[]>([])
   const [title, setTitle] = useState('')

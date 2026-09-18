@@ -1,7 +1,7 @@
 import type { GrantLicenseType, LicenseProduct, Photo, PlatformAgreement, RightsRecord } from '@prisma/client'
 import type { PermissionState, TwoPartyAppearanceInput } from '@vuekumi/shared'
 import { copyrightCleared, commercialEligibilityBlock, permissionBlocksLicense, thirdPartyCopyright, twoPartyBlocksLicense } from '@vuekumi/shared'
-import { COMMUNITY_AGREEMENT_VERSION, CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
+import { COMMUNITY_AGREEMENT_VERSION, CURRENT_AGREEMENT_VERSION, PHOTO_INFLUENCER_AGREEMENT_VERSION } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 
 export class RightsError extends Error {
@@ -17,7 +17,12 @@ export function hasCurrentAgreement(
   agreements: Pick<PlatformAgreement, 'version' | 'status'>[],
   accountType?: string,
 ): boolean {
-  const needed = accountType === 'contributor' ? COMMUNITY_AGREEMENT_VERSION : CURRENT_AGREEMENT_VERSION
+  const needed =
+    accountType === 'contributor'
+      ? COMMUNITY_AGREEMENT_VERSION
+      : accountType === 'photo_influencer'
+        ? PHOTO_INFLUENCER_AGREEMENT_VERSION
+        : CURRENT_AGREEMENT_VERSION
   return agreements.some((a) => a.version === needed && a.status === 'accepted')
 }
 

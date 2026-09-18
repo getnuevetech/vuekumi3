@@ -40,7 +40,7 @@ function toPhotographer(
   extras?: { following?: boolean; profileViews?: number },
 ): PhotographerDto | null {
   if (!user.contributorProfile) return null
-  const hireable = user.accountType !== 'contributor'
+  const hireable = user.accountType === 'photographer'
   return {
     handle: user.contributorProfile.handle,
     name: user.name,
@@ -68,7 +68,6 @@ export async function photographerRoutes(app: FastifyInstance) {
     const q = normalizeQuery(query.q)
 
     const where: Prisma.UserWhereInput = {
-      accountType: 'photographer',
       status: 'active',
       photos: { some: PROFILE_PHOTO_FILTER },
       ...creatorKindWhere(query.kind),
@@ -190,7 +189,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       },
     })
 
-    if (!profile || (profile.user.accountType !== 'photographer' && profile.user.accountType !== 'contributor') || profile.user.status !== 'active') {
+    if (!profile || (profile.user.accountType !== 'photographer' && profile.user.accountType !== 'photo_influencer' && profile.user.accountType !== 'contributor') || profile.user.status !== 'active') {
       return reply.code(404).send({ error: 'Photographer not found' })
     }
 

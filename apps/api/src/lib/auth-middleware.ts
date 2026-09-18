@@ -72,7 +72,7 @@ export function requireAdminCapability(fastify: FastifyInstance, key: AdminCapab
   }
 }
 
-/** Photographers, community contributors, and staff with content.impersonate_creator. */
+/** Photographers, photo influencers, community contributors, and staff with content.impersonate_creator. */
 export function requireCreatorWorkspace(fastify: FastifyInstance) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     await authenticate(fastify, request, reply)

@@ -48,8 +48,8 @@ Do **not** build a parallel rights system or a parallel admin app.
 
 | Surface | Today | Gap |
 | --- | --- | --- |
-| `AccountType` | `admin`, `photographer`, `contributor`, `user`, `agency`, `model` | Models cannot public-register or upload |
-| `PUBLIC_REGISTER_ACCOUNT_TYPES` | photographer, contributor, user, agency | Model excluded |
+| `AccountType` | `admin`, `photographer`, `photo_influencer`, `contributor`, `user`, `agency`, `model` | Models cannot public-register or upload |
+| `PUBLIC_REGISTER_ACCOUNT_TYPES` | photographer, photo_influencer, contributor, user, agency | Model excluded |
 | `AdminRole` | `super_admin`, `moderator`, `finance`, `support` | **Decorative** — any `accountType=admin` has full access |
 | Admin portal accounts | List/edit name, email, country, status for users, **community** contributors, agencies, models, admins | No create. No photographers list. No role/capability assignment. No agency activation. `GET /admin/accounts/:id` unused |
 | Admin auth | `requireAccountTypes(app, 'admin')` | No `requireAdminCapability` |
@@ -232,7 +232,7 @@ Earnings on a commercially sold model-uploaded photo: photographer share pays **
 
 Create flow: email, name, account type, country (required for creators), temporary password **or** invite email, optional send-reset. Every create writes `AuditLog`.
 
-Photographers vs community contributors stay separate lists. The current Contributors page copy (“photographers and photo influencers”) is wrong against the API filter.
+Photographers, photo influencers, and community contributors stay separate lists. They are different account types and cannot be mixed.
 
 ### 4.2 Capability catalog (Phase 36)
 
@@ -263,8 +263,10 @@ Super-admin always has all capabilities (`*` internally). Super-admin may tick a
 | --- | --- |
 | `accounts.users.list` | `/admin/users` |
 | `accounts.users.write` | create/update members |
-| `accounts.photographers.list` | `/admin/photographers` (new) |
+| `accounts.photographers.list` | `/admin/photographers` |
 | `accounts.photographers.write` | create/update photographers |
+| `accounts.influencers.list` | `/admin/influencers` |
+| `accounts.influencers.write` | create/update photo influencers |
 | `accounts.contributors.list` | `/admin/contributors` |
 | `accounts.contributors.write` | create/update community contributors |
 | `accounts.agencies.list` | `/admin/agencies` |

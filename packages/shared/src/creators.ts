@@ -1,12 +1,11 @@
 import { z } from 'zod'
 
 /**
- * Phase 29 — creator kind on contributor accounts.
+ * Presentation label for public creator profiles.
  *
- * A photo influencer is still a `contributor`: same copyright, same platform
- * agreement, same 50% share of paid licences. The kind only changes how the
- * creator is presented and discovered, so the directory does not pretend every
- * creator is a studio photographer.
+ * Photographers and photo influencers are separate `AccountType`s. This kind is
+ * derived from account type for directory labels — it is not a signup sub-choice
+ * and cannot convert one type into the other.
  */
 export const creatorKindSchema = z.enum(['photographer', 'photo_influencer'])
 export type CreatorKind = z.infer<typeof creatorKindSchema>
@@ -20,4 +19,10 @@ export const CREATOR_KIND_LABELS: Record<CreatorKind, string> = {
 
 export function creatorKindLabel(kind: CreatorKind | null | undefined): string {
   return CREATOR_KIND_LABELS[kind ?? 'photographer']
+}
+
+export function creatorKindFromAccountType(accountType: string | null | undefined): CreatorKind | null {
+  if (accountType === 'photo_influencer') return 'photo_influencer'
+  if (accountType === 'photographer') return 'photographer'
+  return null
 }

@@ -64,7 +64,7 @@ async function revertProtectedPhotos(contributorId: string): Promise<number> {
 }
 
 export async function representationRoutes(app: FastifyInstance) {
-  const contributor = { preHandler: requireAccountTypes(app, 'photographer', 'contributor') }
+  const contributor = { preHandler: requireAccountTypes(app, 'photographer', 'photo_influencer', 'contributor') }
   const listRep = { preHandler: requireAdminCapability(app, 'representation.list') }
   const decideRep = { preHandler: requireAdminCapability(app, 'representation.decide') }
   const manageInquiry = { preHandler: requireAdminCapability(app, 'representation.inquiry.manage') }

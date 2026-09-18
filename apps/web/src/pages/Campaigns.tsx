@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import type { CampaignDto, CampaignPitchDto } from '@vuekumi/shared'
+import { isCreatorWorkspaceAccount } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { SiteHeader, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
@@ -259,7 +260,7 @@ export default function Campaigns() {
   const [items, setItems] = useState<CampaignDto[]>([])
   const [loading, setLoading] = useState(true)
   const isBrand = user?.accountType === 'user' || user?.accountType === 'agency'
-  const isContributor = user?.accountType === 'photographer' || user?.accountType === 'contributor'
+  const isContributor = isCreatorWorkspaceAccount(user?.accountType)
 
   const load = () => {
     api.campaigns()

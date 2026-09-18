@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { paidLicenceSplit, isPhotographerAccount } from '@vuekumi/shared'
+import { paidLicenceSplit, isCreatorAccount } from '@vuekumi/shared'
 import { Reveal, SectionHead, SiteHeader, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
@@ -38,7 +38,7 @@ export default function Pricing() {
   const [share, setShare] = useState(0.5)
   const plusActive = user?.subscriptionPlan === 'plus'
   const split = paidLicenceSplit(share)
-  const earnHref = isPhotographerAccount(user?.accountType) || user?.accountType === 'admin'
+  const earnHref = isCreatorAccount(user?.accountType)
     ? '/contributor'
     : '/login?redirect=/contributor'
 

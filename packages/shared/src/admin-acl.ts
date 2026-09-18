@@ -7,6 +7,8 @@ export const ADMIN_CAPABILITIES = [
   'accounts.users.write',
   'accounts.photographers.list',
   'accounts.photographers.write',
+  'accounts.influencers.list',
+  'accounts.influencers.write',
   'accounts.contributors.list',
   'accounts.contributors.write',
   'accounts.agencies.list',
@@ -70,6 +72,8 @@ export const ADMIN_CAPABILITY_GROUPS: { label: string; keys: AdminCapability[] }
       'accounts.users.write',
       'accounts.photographers.list',
       'accounts.photographers.write',
+      'accounts.influencers.list',
+      'accounts.influencers.write',
       'accounts.contributors.list',
       'accounts.contributors.write',
       'accounts.agencies.list',
@@ -144,6 +148,8 @@ const SUPPORT: AdminCapability[] = [
   'accounts.users.write',
   'accounts.photographers.list',
   'accounts.photographers.write',
+  'accounts.influencers.list',
+  'accounts.influencers.write',
   'accounts.contributors.list',
   'accounts.contributors.write',
   'accounts.agencies.list',
@@ -251,7 +257,7 @@ export function canImpersonateCreator(
   user: Pick<AuthUser, 'accountType' | 'adminRole' | 'adminCapabilities' | 'adminCapabilitiesCustomized'> | null | undefined,
 ): boolean {
   if (!user) return false
-  if (user.accountType === 'photographer' || user.accountType === 'contributor') return true
+  if (user.accountType === 'photographer' || user.accountType === 'photo_influencer' || user.accountType === 'contributor') return true
   return adminHas(user, 'content.impersonate_creator')
 }
 
@@ -261,12 +267,14 @@ export function sameCapabilities(a: readonly string[], b: readonly string[]): bo
   return b.every((k) => set.has(k))
 }
 
-export function accountListCapability(kind: 'users' | 'contributors' | 'photographers' | 'agencies' | 'admins' | 'models'): AdminCapability {
+export function accountListCapability(kind: 'users' | 'contributors' | 'photographers' | 'influencers' | 'agencies' | 'admins' | 'models'): AdminCapability {
   switch (kind) {
     case 'users':
       return 'accounts.users.list'
     case 'photographers':
       return 'accounts.photographers.list'
+    case 'influencers':
+      return 'accounts.influencers.list'
     case 'contributors':
       return 'accounts.contributors.list'
     case 'agencies':
@@ -284,6 +292,8 @@ export function accountWriteCapability(accountType: AuthUser['accountType']): Ad
       return 'accounts.users.write'
     case 'photographer':
       return 'accounts.photographers.write'
+    case 'photo_influencer':
+      return 'accounts.influencers.write'
     case 'contributor':
       return 'accounts.contributors.write'
     case 'agency':
@@ -342,6 +352,7 @@ export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin': 'metrics.view',
   '/admin/users': 'accounts.users.list',
   '/admin/photographers': 'accounts.photographers.list',
+  '/admin/influencers': 'accounts.influencers.list',
   '/admin/contributors': 'accounts.contributors.list',
   '/admin/agencies': 'accounts.agencies.list',
   '/admin/models': 'accounts.models.list',

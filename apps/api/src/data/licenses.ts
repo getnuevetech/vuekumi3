@@ -2,6 +2,7 @@ import type { GrantLicenseType } from '@prisma/client'
 
 export const CURRENT_AGREEMENT_VERSION = '1.0'
 export const COMMUNITY_AGREEMENT_VERSION = '1.0-community'
+export const PHOTO_INFLUENCER_AGREEMENT_VERSION = '1.0-photo-influencer'
 
 export const VUEKUMI_AGREEMENT = {
   version: CURRENT_AGREEMENT_VERSION,
@@ -43,8 +44,27 @@ export const COMMUNITY_CONTRIBUTOR_AGREEMENT = {
 5. Usage permission. Vuekumi hosts and displays community work under these terms. A download is not ownership.`,
 }
 
+export const PHOTO_INFLUENCER_AGREEMENT = {
+  version: PHOTO_INFLUENCER_AGREEMENT_VERSION,
+  title: 'VueKumi Photo Influencer Terms',
+  body: `Vuekumi photo influencers are social and discovery creators. This is not the professional photographer commercial inventory path, and it is not a community contributor account.
+
+1. Separate account type. Photographers and photo influencers cannot be mixed or converted on the same email. Requirements, agreements, and admin surfaces are distinct.
+
+2. Photo copyright rights. You retain copyright in work you upload and warrant that you created it or have the right to share it.
+
+3. No commercial stock. Photo influencer uploads are for portfolio, editorial, and discovery. They cannot be commercially licensed as VueKumi stock. Do not invent a new earnings share for this role.
+
+4. Likeness. If a photograph shows a recognisable person, it stays out of commercial inventory. VueKumi does not treat an upload as consent from anyone depicted.
+
+5. Africa-only. Photo influencers must be based in African Union member states.
+
+6. Usage permission. Vuekumi hosts and displays this work under these terms. A download is not ownership.`,
+}
+
 export function agreementForAccountType(accountType: string) {
   if (accountType === 'contributor') return COMMUNITY_CONTRIBUTOR_AGREEMENT
+  if (accountType === 'photo_influencer') return PHOTO_INFLUENCER_AGREEMENT
   return VUEKUMI_AGREEMENT
 }
 

@@ -82,12 +82,22 @@ async function loadPhotoForLicense(id: string) {
 export async function licenseRoutes(app: FastifyInstance) {
   app.get('/agreements/current', async (request) => {
     const kind = (request.query as { kind?: string }).kind
-    const version = kind === 'contributor' ? '1.0-community' : '1.0'
+    const version =
+      kind === 'contributor'
+        ? '1.0-community'
+        : kind === 'photo_influencer'
+          ? '1.0-photo-influencer'
+          : '1.0'
     const row = await prisma.agreementVersion.findUnique({ where: { version } })
     if (!row) {
       return {
         version,
-        title: kind === 'contributor' ? 'VueKumi Community Contributor Terms' : 'VueKumi Photographer Licensing Agreement',
+        title:
+          kind === 'contributor'
+            ? 'VueKumi Community Contributor Terms'
+            : kind === 'photo_influencer'
+              ? 'VueKumi Photo Influencer Terms'
+              : 'VueKumi Photographer Licensing Agreement',
         body: '',
       }
     }

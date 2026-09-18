@@ -66,7 +66,7 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
     await Promise.all([
       prisma.user.count(),
       prisma.user.count({
-        where: { accountType: { in: ['photographer', 'contributor'] satisfies AccountType[] } },
+        where: { accountType: { in: ['photographer', 'photo_influencer', 'contributor'] satisfies AccountType[] } },
       }),
       prisma.photo.count({ where: LIVE }),
       prisma.moderationItem.count({ where: { status: 'pending' } }),

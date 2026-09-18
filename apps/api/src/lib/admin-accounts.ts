@@ -138,14 +138,14 @@ export async function provisionStaffCreatedUser(body: AdminCreateAccountInput) {
       },
     })
 
-    if (accountType === 'photographer' || accountType === 'contributor') {
+    if (accountType === 'photographer' || accountType === 'photo_influencer' || accountType === 'contributor') {
       const handle = await uniqueStaffHandle(body.name, created.id)
       await tx.contributorProfile.create({
         data: {
           userId: created.id,
           handle,
           location: country ?? null,
-          creatorKind: registrationCreatorKind(accountType, body.creatorKind) ?? 'photographer',
+          creatorKind: registrationCreatorKind(accountType) ?? 'photographer',
         },
       })
       await tx.platformAgreement.create({

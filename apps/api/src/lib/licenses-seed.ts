@@ -1,4 +1,4 @@
-import { COMMUNITY_CONTRIBUTOR_AGREEMENT, LICENSE_CATALOG, VUEKUMI_AGREEMENT } from '../data/licenses.js'
+import { COMMUNITY_CONTRIBUTOR_AGREEMENT, LICENSE_CATALOG, PHOTO_INFLUENCER_AGREEMENT, VUEKUMI_AGREEMENT } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 
 export async function seedLicenseCatalog() {
@@ -38,6 +38,15 @@ export async function seedLicenseCatalog() {
     update: {
       title: COMMUNITY_CONTRIBUTOR_AGREEMENT.title,
       body: COMMUNITY_CONTRIBUTOR_AGREEMENT.body,
+      current: false,
+    },
+  })
+  await prisma.agreementVersion.upsert({
+    where: { version: PHOTO_INFLUENCER_AGREEMENT.version },
+    create: { ...PHOTO_INFLUENCER_AGREEMENT, current: false },
+    update: {
+      title: PHOTO_INFLUENCER_AGREEMENT.title,
+      body: PHOTO_INFLUENCER_AGREEMENT.body,
       current: false,
     },
   })

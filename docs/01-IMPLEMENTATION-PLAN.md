@@ -98,7 +98,7 @@ Locked product rules already in the running system:
 | 27 | Public model portfolio (`/m/:handle`, `/models`) from approved likeness photographs. Model does not gain copyright. |
 | 28 | Opt-in visual likeness check (result only; selfie discarded; similarity ≠ release) |
 | — | **Photographer vs community contributor** + two-rights engine (photo copyright vs likeness/model release). Automatic AI person screening. Route A photographer-provided release vs Route B VueKumi contacts the model. Guest approve/reject/not-me/unauthorized. Minors need guardian authorization. Commercial eligibility = copyright cleared + required likeness rights cleared. |
-| 29 | Creator kind on photographers (photographer / photo influencer) — honest labels, `/creators` directory with kind filter, signup + account choice. Presentation only: rights, copyright, and the 50% share are unchanged. |
+| 29 | Photo influencer as a **separate account type** (`photo_influencer`) — own signup, own admin list, own terms. Not a photographer sub-choice. Not commercial stock. Africa-only. Cannot convert to photographer on the same email. |
 | 30 | Booking: hire photographer / book model — briefs, quotes, accept/decline/withdraw, availability + indicative day rate on profiles. Payment is settled off-platform; Vuekumi takes **no booking commission** (rate undecided — do not invent one). Booking money never touches the earnings ledger. |
 | 31 | VueQuatro representation — opt-in request → staff approve/decline, revocable by either side. `agency_protected` becomes real handling: only settable while represented, licensed through staff-routed inquiries, reverts to portfolio-only when representation ends. Staff queue at `/admin/representation`. **No representation commission** (undecided) and **no second public app** — VueQuatro is a staff mode. |
 | 32 | Brand production — campaign-shaped sourcing at `/campaigns`: buyer/agency accounts post campaign briefs (deliverables, usage, dates, indicative budget), contributors pitch with an optional rate, the brand accepts/declines, contributors withdraw pending pitches, owner or staff close campaigns. **No production commission** (undecided), settlement off-platform, campaign money never touches the earnings ledger, and accepting a pitch licenses nothing — photographs still go through checkout with all rights guards. |
@@ -126,7 +126,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Self-shot dual role | Shipped (Phase 26) — photographer identifies themselves on their own photo; `accountType` stays `photographer` |
 | Visual verification with biometric safeguards | Shipped (Phase 28) — opt-in per photograph, discrete result only, selfie discarded immediately. No embedding store or public face database. Similarity cannot grant rights. |
 | Report / takedown / dispute trail | Shipped (Phase 22) — public report, staff freeze of new licensing, audit log |
-| Photo influencer role | Shipped (Phase 29) — a `creatorKind` on the contributor profile, not a sixth account type. Same agreement, same earnings; only presentation and discovery change. |
+| Photo influencer role | Shipped — first-class `accountType: photo_influencer`. Separate registration, admin list, and terms from photographers. Not commercial stock. One type per email. |
 | Talent booking | Shipped (Phase 30) — briefs, quotes, accept/decline/withdraw with availability on profiles. Off-platform settlement; no commission (rate undecided). |
 | VueQuatro representation / agency-protected inventory | Shipped (Phase 31) — opt-in, revocable, no commission (rate undecided), copyright unchanged. Agency-protected inventory routes to staff inquiries instead of checkout. Staff mode only, no second public brand. |
 | Partner API | Shipped (Phase 33) — read-only distribution of cleared inventory with honest licence flags, per-key rate limits, and explicit no-AI-training terms. Licences are still granted on VueKumi. |
@@ -198,7 +198,7 @@ Only after commercially cleared images have real people behind them.
 
 | Phase | Work |
 | --- | --- |
-| **29** | Photo influencer as a contributor creator kind — discovery without pretending every creator is a studio photographer — **shipped** |
+| **29** | Photo influencer as a **separate account type** (not a photographer kind). Own signup, ACL, and terms. Discovery without mixing commercial-stock photographers — **shipped** |
 | **30** | Booking: hire photographer / book model (briefs, availability, quotes). VueKumi stays the marketplace. Off-platform settlement, no commission — **shipped** |
 | **31** | VueQuatro representation: agency-protected inventory, opt-in enforcement/admin of rights, staff tools. Not a second public brand required on day one. No representation commission (undecided) — **shipped** |
 | **32** | Brand production (campaign-shaped sourcing, not only single-image checkout). Off-platform settlement, no commission — **shipped** |
@@ -236,7 +236,7 @@ Do **not** start from this slice:
 ## 6. Cross-cutting (still in force)
 
 - Contract-first DTOs in `packages/shared`
-- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos. `amara-okafor@vuekumi.demo` is seeded as the demo **photo influencer** (Phase 29); the other four contributors are photographers. Staff presets: `support@vuekumi.demo`, `moderator@vuekumi.demo`, `finance@vuekumi.demo` (`User12345!`); super-admin remains `admin@vuekumi.com` / `Admin123!`.
+- Demo stays runnable; seed remains the 29-photo African library (stock + portfolio/private states) plus demo accounts, including invite-only models `ada@vuekumi.demo` (approved editorial on afr-001, public `/m/ada-molefe`) and pending invite `nomsa@vuekumi.demo` (afr-011 exclusive lock demo), and self-shot dual-role `kofi-mensah@vuekumi.demo` (approved commercial on afr-027, public `/p/kofi-mensah` and `/m/kofi-mensah`). People photos without two-party commercial clearance are editorial except the exclusive/portfolio/private/self-shot demos. `amara-okafor@vuekumi.demo` is seeded as `accountType: photo_influencer` (not a photographer). Staff presets: `support@vuekumi.demo`, `moderator@vuekumi.demo`, `finance@vuekumi.demo` (`User12345!`); super-admin remains `admin@vuekumi.com` / `Admin123!`.
 - CI seeds the database before the API test suite (the seeded demo constellation is test fixture data).
 - Vertical slices (schema → API → UI → tests)
 - Africa-only contributors; keys in Admin Settings; Docker-only Lightsail

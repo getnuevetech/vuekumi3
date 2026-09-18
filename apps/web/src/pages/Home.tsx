@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import type { HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
-import { hasModelAccess, isCreatorAccount, isPhotographerAccount } from '@vuekumi/shared';
+import { hasModelAccess, isCreatorAccount, isPhotographerAccount, creatorPortalLabel } from '@vuekumi/shared';
 import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -39,7 +39,7 @@ function NoirHeader() {
     ...(user && user.accountType !== 'model' ? [{ label: 'Licences', to: '/licenses' }] : []),
     ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
     ...(user && hasModelAccess(user) ? [{ label: 'Model', to: '/model' }] : []),
-    ...((isCreatorAccount(user?.accountType)) ? [{ label: isPhotographerAccount(user?.accountType) || user?.accountType === 'admin' ? 'Photographer' : 'Contributor', to: '/contributor' }] : []),
+    ...((isCreatorAccount(user?.accountType)) ? [{ label: creatorPortalLabel(user?.accountType), to: '/contributor' }] : []),
     ...(user?.accountType === 'admin' ? [{ label: 'Admin', to: '/admin' }] : []),
   ];
 
@@ -376,7 +376,7 @@ function CtaBand() {
           to={contributorPortalHref(user?.accountType)}
           className="shrink-0 bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
         >
-          {isPhotographerAccount(user?.accountType) ? 'Open photographer portal' : isCreatorAccount(user?.accountType) ? 'Open contributor portal' : 'Become a photographer'}
+          {isPhotographerAccount(user?.accountType) ? 'Open photographer portal' : user?.accountType === 'photo_influencer' ? 'Open photo influencer portal' : isCreatorAccount(user?.accountType) ? 'Open contributor portal' : 'Become a photographer'}
         </Link>
       </div>
     </section>

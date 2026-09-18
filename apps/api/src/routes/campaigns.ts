@@ -107,7 +107,7 @@ export async function campaignRoutes(app: FastifyInstance) {
     preHandler: (request: FastifyRequest, reply: FastifyReply) => authenticate(app, request, reply),
   }
   const brand = { preHandler: requireAccountTypes(app, 'user', 'agency') }
-  const contributor = { preHandler: requireAccountTypes(app, 'photographer', 'contributor') }
+  const contributor = { preHandler: requireAccountTypes(app, 'photographer', 'photo_influencer', 'contributor') }
 
   app.post('/campaigns', brand, async (request) => {
     const body = createCampaignSchema.parse(request.body)

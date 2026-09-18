@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError, homeForUser, type GeoCountry } from '../api/client'
-import type { CreatorKind, PublicConfigDto } from '@vuekumi/shared'
+import type { PublicConfigDto } from '@vuekumi/shared'
 
 function oauthErrorMessage(code: string): string {
   if (code === 'denied') return 'Google sign-in was cancelled.'
@@ -19,12 +19,11 @@ function safeRedirect(value: string | null): string | null {
 }
 
 type Mode = 'signin' | 'signup'
-type Role = 'member' | 'photographer' | 'contributor' | 'agency'
+type Role = 'member' | 'photographer' | 'photo_influencer' | 'contributor' | 'agency'
 
 export default function Login() {
   const [mode, setMode] = useState<Mode>('signin')
   const [role, setRole] = useState<Role>('member')
-  const [creatorKind, setCreatorKind] = useState<CreatorKind>('photographer')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,8 +39,13 @@ export default function Login() {
   const { login, register, completeSession } = useAuth()
 
   const redirect = safeRedirect(searchParams.get('redirect'))
-  const wantsPhotographer = searchParams.get('signup') === 'photographer' || searchParams.get('signup') === 'contributor' || Boolean(redirect?.startsWith('/contributor'))
-  const creatorRole = role === 'photographer' || role === 'contributor'
+  const signupRole = searchParams.get('signup')
+  const wantsCreator =
+    signupRole === 'photographer'
+    || signupRole === 'photo_influencer'
+    || signupRole === 'contributor'
+    || Boolean(redirect?.startsWith('/contributor'))
+  const creatorRole = role === 'photographer' || role === 'photo_influencer' || role === 'contributor'
   const showOauth = oauth.google || oauth.dev
   const oauthAllowed = mode === 'signin' || role === 'member'
 
@@ -57,10 +61,16 @@ export default function Login() {
   }, [searchParams])
 
   useEffect(() => {
-    if (!wantsPhotographer) return
+    if (!wantsCreator) return
     setMode('signup')
-    setRole(searchParams.get('signup') === 'contributor' ? 'contributor' : 'photographer')
-  }, [wantsPhotographer, searchParams])
+    setRole(
+      signupRole === 'contributor'
+        ? 'contributor'
+        : signupRole === 'photo_influencer'
+          ? 'photo_influencer'
+          : 'photographer',
+    )
+  }, [wantsCreator, signupRole])
 
   useEffect(() => {
     if (searchParams.get('oauth') !== 'ok') return
@@ -80,7 +90,8 @@ export default function Login() {
       .then((d) => setCountries(d.countries))
       .catch(() => setCountries([]))
     if (creatorRole) {
-      api.agreement(role === 'contributor' ? 'contributor' : 'photographer').then((a) => setAgreementTitle(a.title)).catch(() => undefined)
+      const kind = role === 'contributor' ? 'contributor' : role === 'photo_influencer' ? 'photo_influencer' : 'photographer'
+      api.agreement(kind).then((a) => setAgreementTitle(a.title)).catch(() => undefined)
     }
   }, [mode, role, creatorRole])
 
@@ -120,6 +131,7 @@ export default function Login() {
                 [
                   { id: 'member' as Role, label: 'Member', note: 'License photos' },
                   { id: 'photographer' as Role, label: 'Photographer', note: 'Commercial stock' },
+                  { id: 'photo_influencer' as Role, label: 'Photo influencer', note: 'Social & discovery' },
                   { id: 'contributor' as Role, label: 'Contributor', note: 'Portfolio / community' },
                   { id: 'agency' as Role, label: 'Agency', note: 'Enterprise' },
                 ]
@@ -134,29 +146,6 @@ export default function Login() {
                 >
                   <span className="block text-sm font-medium">{r.label}</span>
                   <span className="mt-0.5 block font-mono-tech text-[9px] text-ink-faint">{r.note}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {mode === 'signup' && role === 'photographer' && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {(
-                [
-                  { id: 'photographer' as CreatorKind, label: 'Photographer', note: 'Studio & field work' },
-                  { id: 'photo_influencer' as CreatorKind, label: 'Photo influencer', note: 'Social & discovery creator' },
-                ]
-              ).map((k) => (
-                <button
-                  key={k.id}
-                  type="button"
-                  onClick={() => setCreatorKind(k.id)}
-                  className={`rounded-2xl border p-3 text-left transition-colors ${
-                    creatorKind === k.id ? 'border-terra bg-terra/5' : 'border-sand-soft hover:border-terra/50'
-                  }`}
-                >
-                  <span className="block text-sm font-medium">{k.label}</span>
-                  <span className="mt-0.5 block font-mono-tech text-[9px] text-ink-faint">{k.note}</span>
                 </button>
               ))}
             </div>
@@ -181,7 +170,6 @@ export default function Login() {
                         accountType,
                         country: country || undefined,
                         acceptAgreement: creatorRole ? acceptAgreement : undefined,
-                        creatorKind: role === 'photographer' ? creatorKind : undefined,
                       })
                 const dest = redirect ?? homeForUser(user)
                 navigate(dest)
@@ -216,7 +204,9 @@ export default function Login() {
                   <p className="font-mono-tech text-[10px] text-ink-faint">
                     {role === 'photographer'
                       ? 'Professional photographers must be based in an African country.'
-                      : 'Community contributors must be based in an African country.'}
+                      : role === 'photo_influencer'
+                        ? 'Photo influencers must be based in an African country. This is not a photographer account.'
+                        : 'Community contributors must be based in an African country.'}
                   </p>
                 )}
               </>

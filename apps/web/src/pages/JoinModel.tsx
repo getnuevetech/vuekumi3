@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import type { AppearanceDecisionKind, ModelInvitePreviewDto, ModelUsagePreference } from '@vuekumi/shared'
+import { isCreatorWorkspaceAccount } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
@@ -145,7 +146,7 @@ export default function JoinModel() {
             )}
             <p className="mt-8 text-sm text-ink-soft">
               Optional: create or claim a VueKumi model profile to manage future photographs. Models do not earn.
-              {(user?.accountType === 'contributor' || user?.accountType === 'photographer') && signedInMatch
+              {isCreatorWorkspaceAccount(user?.accountType) && signedInMatch
                 ? ' You keep this photographer account and add a model profile on the same email.'
                 : ''}
             </p>
