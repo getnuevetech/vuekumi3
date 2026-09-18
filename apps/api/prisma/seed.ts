@@ -436,8 +436,8 @@ async function main() {
   if (kofiSeedId) {
     await prisma.earningsLedger.createMany({
       data: [
-        { contributorId: kofiSeedId, photoId: 'afr-017', source: 'licence_sale', amountUsd: 24, status: 'available' },
-        { contributorId: kofiSeedId, photoId: 'afr-019', source: 'licence_sale', amountUsd: 18, status: 'available' },
+        { contributorId: kofiSeedId, photoId: 'afr-017', source: 'licence_sale', amountUsd: 24, status: 'available', createdAt: new Date('2026-08-01T00:00:00Z') },
+        { contributorId: kofiSeedId, photoId: 'afr-019', source: 'licence_sale', amountUsd: 18, status: 'available', createdAt: new Date('2026-08-01T00:00:00Z') },
       ],
     })
     await prisma.platformSetting.createMany({
