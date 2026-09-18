@@ -49,6 +49,7 @@ const icons = {
 export const adminLinks: PortalLink[] = [
   { to: '/admin', label: 'Overview', icon: icons.dash },
   { to: '/admin/users', label: 'Users', icon: icons.users },
+  { to: '/admin/photographers', label: 'Photographers', icon: icons.users },
   { to: '/admin/contributors', label: 'Contributors', icon: icons.users },
   { to: '/admin/agencies', label: 'Agencies', icon: icons.users },
   { to: '/admin/models', label: 'Models', icon: icons.users },

@@ -1,6 +1,6 @@
 # VueKumi — Admin ACL, model upload, and symmetric rights
 
-**Status: proposed. Do not implement until this document is approved, one phase at a time.**
+**Status: Phase 35 shipped. Remaining phases still require approval before implementation.**
 
 This is the implementation procedure for three product decisions:
 
@@ -471,7 +471,7 @@ Phase 34 (AI-training) remains after this arc unless redirected.
 39 can overlap 38’s UI but should land before model upload is advertised as commercial.  
 40 can be drafted in parallel as docs; engine hooks land with 37–38.
 
-**Default next slice after approval: Phase 35 only.**
+**Default next slice after approval: Phase 36.**
 
 ---
 

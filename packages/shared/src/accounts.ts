@@ -6,6 +6,11 @@ export const accountTypeSchema = z.enum(ACCOUNT_TYPES)
 export const PUBLIC_REGISTER_ACCOUNT_TYPES = ['photographer', 'contributor', 'user', 'agency'] as const
 export const publicRegisterAccountTypeSchema = z.enum(PUBLIC_REGISTER_ACCOUNT_TYPES)
 
+/** Account types staff may create from the admin portal (Phase 35). Admin users wait for Phase 36. */
+export const STAFF_CREATE_ACCOUNT_TYPES = ['user', 'photographer', 'contributor', 'agency', 'model'] as const
+export const staffCreateAccountTypeSchema = z.enum(STAFF_CREATE_ACCOUNT_TYPES)
+export type StaffCreateAccountType = (typeof STAFF_CREATE_ACCOUNT_TYPES)[number]
+
 export const CREATOR_ACCOUNT_TYPES = ['photographer', 'contributor'] as const
 export type CreatorAccountType = (typeof CREATOR_ACCOUNT_TYPES)[number]
 

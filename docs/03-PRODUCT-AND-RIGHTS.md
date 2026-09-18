@@ -266,7 +266,10 @@ Those are Phase-gate decisions immediately before the relevant build, not this d
 Staff ACL, model-as-uploader, claimed/documented/verified quality, Rights Ledger, DMCA,
 and the U.S. + Global Rights Standard + country-overlay legal philosophy are **proposed**
 in [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md).
-Nothing in that document is live until a phase is explicitly approved. Models remain
+Nothing in Phases 36–40 starts until you approve a phase. Models remain
 invite-only and cannot upload until Phase 38. `AdminRole` remains decorative until
 Phase 36. `claimed` copyright still commercially clears until Phase 37 tightens it.
+Staff can already create and edit members, photographers, community contributors,
+agencies, and models from the admin portal, and can activate or suspend the agency
+entity (Phase 35).
 
