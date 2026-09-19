@@ -9,9 +9,10 @@ import {
   type AdminRole,
 } from '@vuekumi/shared'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router'
 import { StatusPill } from '../components/shared'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
-import { api, ApiError, type AdminAccount, type GeoCountry } from '../api/client'
+import { api, ApiError, setActAsCreator, type AdminAccount, type GeoCountry } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { AdminShell } from './Admin'
 
@@ -87,6 +88,7 @@ function CapabilityMatrix({
 export function AdminAccountList({ kind }: { kind: Kind }) {
   const meta = copy[kind]
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [items, setItems] = useState<AdminAccount[]>([])
   const [total, setTotal] = useState(0)
@@ -110,6 +112,8 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
   const canWrite = canCreate
   const canReset = adminHas(user, 'accounts.password_reset')
   const canActivate = adminHas(user, 'accounts.agencies.activate')
+  const canActAs = adminHas(user, 'content.impersonate_creator')
+    && (kind === 'photographers' || kind === 'influencers' || kind === 'contributors')
   const creatorCountry = kind === 'photographers' || kind === 'influencers' || kind === 'contributors'
   const creatorColumns = kind === 'contributors' || kind === 'photographers' || kind === 'influencers'
   const customized = !sameCapabilities(caps, capabilitiesForPreset(preset))
@@ -346,6 +350,22 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                     className="rounded-full border border-sand px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-soft hover:border-terra"
                   >
                     Send password reset
+                  </button>
+                )}
+                {canActAs && selected.status === 'active' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const label = selected.handle
+                        ? `${selected.name} (@${selected.handle})`
+                        : selected.name
+                      setActAsCreator({ id: selected.id, label })
+                      toast.success(`Acting as ${label}`)
+                      navigate('/contributor')
+                    }}
+                    className="rounded-full border border-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink hover:bg-ink hover:text-paper"
+                  >
+                    Open as creator
                   </button>
                 )}
               </div>

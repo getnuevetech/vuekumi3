@@ -182,9 +182,17 @@ test('admin ACL: finance cannot settings.write; support cannot payouts.pay; mode
   assert.equal(promoted.user.adminRole, 'finance')
   assert.equal(promoted.user.adminCapabilities.includes('payouts.pay'), true)
 
-  const superImpersonate = await app.inject({
+  const kofiLogin = await login(app, 'kofi-mensah@vuekumi.demo', 'User12345!')
+  const superImpersonateMissing = await app.inject({
     method: 'GET',
     url: '/api/contributor/stats',
+    headers: { cookie: superAdmin.cookie },
+  })
+  assert.equal(superImpersonateMissing.statusCode, 400, superImpersonateMissing.body)
+
+  const superImpersonate = await app.inject({
+    method: 'GET',
+    url: `/api/contributor/stats?userId=${kofiLogin.user.user.id}`,
     headers: { cookie: superAdmin.cookie },
   })
   assert.equal(superImpersonate.statusCode, 200, superImpersonate.body)
