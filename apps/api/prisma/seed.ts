@@ -950,8 +950,16 @@ async function main() {
         decidedAt: new Date(),
       },
     })
+    // Pin to afr-018 — do not findFirst commercial inventory. That non-deterministic
+    // pick stole afr-002 and broke models.test.ts (expects commercial offered there).
+    const lekanProtectedId = 'afr-018'
     const lekanPhoto = await prisma.photo.findFirst({
-      where: { contributorId: lekanUserId, status: 'active', permissionState: 'commercial' },
+      where: {
+        id: lekanProtectedId,
+        contributorId: lekanUserId,
+        status: 'active',
+        permissionState: 'commercial',
+      },
     })
     if (lekanPhoto) {
       await prisma.photo.update({
