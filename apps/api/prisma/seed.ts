@@ -53,6 +53,12 @@ async function main() {
   await prisma.copyrightAuthorization.deleteMany()
   await prisma.rightsLedgerEvent.deleteMany()
   await prisma.homeFeaturedPin.deleteMany()
+  await prisma.representationInquiry.deleteMany()
+  await prisma.representation.deleteMany()
+  await prisma.campaignPitch.deleteMany()
+  await prisma.campaign.deleteMany()
+  await prisma.bookingRequest.deleteMany()
+  await prisma.partnerApiKey.deleteMany()
   await prisma.photoFavorite.deleteMany()
   await prisma.photographerFollow.deleteMany()
   await prisma.collectionPhoto.deleteMany()
@@ -921,6 +927,65 @@ async function main() {
     })
   }
 
+  // Phase 31/33 demo fixtures — representation queue + partner key (no commissions).
+  // Keep kofi free of representation so representation.test.ts can exercise the full lifecycle.
+  const thandiweUserIdForRep = contributorUsers.get('thandiwe-nkosi')
+  if (thandiweUserIdForRep) {
+    await prisma.representation.create({
+      data: {
+        contributorId: thandiweUserIdForRep,
+        status: 'requested',
+        note: 'Interested in agency-protected handling for select Cape Town inventory.',
+      },
+    })
+  }
+  const lekanUserId = contributorUsers.get('lekan-adeyemi')
+  if (lekanUserId) {
+    await prisma.representation.create({
+      data: {
+        contributorId: lekanUserId,
+        status: 'represented',
+        note: 'Seed represented photographer for agency-protected demos.',
+        staffNote: 'Approved for seed. No representation commission.',
+        decidedAt: new Date(),
+      },
+    })
+    const lekanPhoto = await prisma.photo.findFirst({
+      where: { contributorId: lekanUserId, status: 'active', permissionState: 'commercial' },
+    })
+    if (lekanPhoto) {
+      await prisma.photo.update({
+        where: { id: lekanPhoto.id },
+        data: { permissionState: 'agency_protected', exclusiveAvailable: false },
+      })
+      await prisma.representationInquiry.create({
+        data: {
+          photoId: lekanPhoto.id,
+          requesterId: member.id,
+          name: 'Zuri Hassan',
+          email: 'member@vuekumi.demo',
+          company: 'Demo Brand Co',
+          message: 'Can we license this frame for a limited social campaign? Prefer staff-handled clearance.',
+          status: 'new',
+        },
+      })
+    }
+  }
+
+  const { hashPartnerKey } = await importApp('lib/partner.js') as {
+    hashPartnerKey: (key: string) => string
+  }
+  const DEMO_PARTNER_KEY = 'vk_live_seed_demo_partner_key_for_local_ci'
+  await prisma.partnerApiKey.create({
+    data: {
+      name: 'Seed demo distributor',
+      note: 'Local/CI only. Raw key printed once in seed log — not for production.',
+      keyHash: hashPartnerKey(DEMO_PARTNER_KEY),
+      keyPrefix: DEMO_PARTNER_KEY.slice(0, 15),
+      createdById: admin.id,
+    },
+  })
+
   await prisma.homeFeaturedPin.create({
     data: { slot: 'hero', position: 0, photoId: 'afr-014' },
   })
@@ -937,6 +1002,7 @@ async function main() {
   console.log('Model invite: nomsa@vuekumi.demo → /invite/model/seed-nomsa-model-invite')
   console.log('Agency: agency@vuekumi.demo / User12345!')
   console.log('Agency manager: kemi@vuekumi.demo / User12345!')
+  console.log('Partner API demo key (local/CI):', DEMO_PARTNER_KEY)
   console.log('Agency ID:', agency.id)
   console.log('Admin ID:', admin.id)
 }

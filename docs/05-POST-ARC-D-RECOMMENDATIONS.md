@@ -86,16 +86,16 @@ Arcs A–D (Phases 0–40) are on `main`. See `01` §2 table. Notable locks:
 
 | Gap | Evidence | Severity |
 | --- | --- | --- |
-| Production not redeployed with cookie fix + Rights 2.0+ | Ops note; cookie fix is on `main`, Phases 23–40 on `main` | **Critical (ops)** |
-| `deploy/lightsail/deploy.sh` always runs `prisma/seed.ts` | Destructive wipe + recreate on every deploy | **Critical (ops)** |
+| Production not redeployed with cookie fix + Rights 2.0+ | Ops note; cookie fix is on `main`, Phases 23–43 on `main` | **Critical (ops)** — O2 runbook ready |
+| `deploy/lightsail/deploy.sh` always runs `prisma/seed.ts` | Was destructive on every deploy | **Closed (O1)** — `SEED_DEMO=1` opt-in |
 | Featured homepage slots staff-pinnable (Phase 41); empty slots ranking | Shipped on `main` — `/admin/homepage` | Closed (A1) |
 | Homepage copy overclaims “curated weekly / human review” | Was `Home.tsx` IconRow | Closed (A2) — copy now staff-featured |
 | `/models` says booking not offered; `/m/:handle` shows Book | Was `Models.tsx` vs `ModelProfile.tsx` | Closed (A3) |
-| No dedicated admin queues for bookings/campaigns | Admin nav has representation/partner; bookings/campaigns share public UI | Low (ops tooling) |
-| `content.impersonate_creator` API-only | Capability exists; no admin impersonation UI | Low |
-| Seed lacks booking/campaign/representation/partner fixtures | Weak demos for Phases 30–33 | Low (demo/CI) |
+| No dedicated admin queues for bookings/campaigns | Was public UI only | Closed (Phase 42) |
+| `content.impersonate_creator` API-only | Was capability without UI | Closed (Phase 43) |
+| Seed lacks booking/campaign/representation/partner fixtures | Was weak Arc C demos | Closed (Phases 42 + 44) |
 | No web/UI tests | CI runs API tests + web typecheck/lint/build only | Medium (quality) |
-| Docs drift | `docs/README.md` still says 0–28 / 29–34 remaining; `04` §1 Gap table describes pre–Arc D state | Medium (process) |
+| Docs drift | Was stale Arc D gap table / README | Closed (Dox) |
 | Counsel placeholders still labelled placeholder | Legal overlays force `counselStatus: 'placeholder'` | Expected until counsel |
 
 ### 3.4 What is intentionally incomplete (not bugs)
