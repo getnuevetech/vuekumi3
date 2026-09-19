@@ -8,10 +8,11 @@ import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionSta
 import { creatorPortalLabel, isNonCommercialCreator, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
 import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
-import { api, ApiError } from '../api/client';
+import { api, ApiError, getActAsCreatorId, getActAsCreatorLabel, setActAsCreator } from '../api/client';
 import { AiSuggestPanel } from '../components/AiSuggestPanel';
 import { PermissionStateField } from '../components/PermissionStateField';
 import { useAuth } from '../context/AuthContext';
+import { adminHas } from '@vuekumi/shared';
 
 const icons = {
   dash: (
@@ -62,15 +63,40 @@ export function contributorPortalLinks(hasModelProfile?: boolean): PortalLink[] 
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const community = isNonCommercialCreator(user?.accountType);
+  const actAsId = getActAsCreatorId();
+  const actAsLabel = getActAsCreatorLabel();
+  const staffActing = Boolean(user?.accountType === 'admin' && actAsId && adminHas(user, 'content.impersonate_creator'));
+  const community = isNonCommercialCreator(user?.accountType) && !staffActing;
   return (
     <PortalShell
-      title={`${creatorPortalLabel(user?.accountType)} portal`}
-      subtitle={community
-        ? 'Portfolio and editorial sharing. Commercial stock is reserved for professional photographers.'
-        : 'Upload, rights, and 50% of every paid licence.'}
-      links={contributorPortalLinks(user?.hasModelProfile)}
+      title={staffActing ? 'Creator portal (staff)' : `${creatorPortalLabel(user?.accountType)} portal`}
+      subtitle={staffActing
+        ? 'Acting as a creator. Staff JWT stays — payouts cannot be changed from here.'
+        : community
+          ? 'Portfolio and editorial sharing. Commercial stock is reserved for professional photographers.'
+          : 'Upload, rights, and 50% of every paid licence.'}
+      links={contributorPortalLinks(staffActing ? false : user?.hasModelProfile)}
     >
+      {staffActing && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-terra/40 bg-terra/5 px-4 py-3">
+          <p className="text-sm text-ink">
+            Acting as <span className="font-medium">{actAsLabel ?? actAsId}</span>
+            <span className="ml-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+              no cookie swap · no payout writes
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setActAsCreator(null);
+              window.location.href = '/admin/photographers';
+            }}
+            className="border border-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] hover:bg-ink hover:text-paper"
+          >
+            Exit
+          </button>
+        </div>
+      )}
       {children}
     </PortalShell>
   );
@@ -172,15 +198,57 @@ function RepresentationCard() {
 
 export function ContributorDashboard() {
   const { user } = useAuth()
-  const community = isNonCommercialCreator(user?.accountType)
+  const actAsId = getActAsCreatorId()
+  const staffNeedsTarget = user?.accountType === 'admin' && adminHas(user, 'content.impersonate_creator') && !actAsId
+  const community = isNonCommercialCreator(user?.accountType) && !actAsId
   const [stats, setStats] = useState<ContributorStatsDto | null>(null)
+  const [statsError, setStatsError] = useState<string | null>(null)
   useEffect(() => {
-    api.contributorStats().then(setStats).catch(() => setStats(null))
-  }, [])
+    if (staffNeedsTarget) {
+      setStats(null)
+      setStatsError(null)
+      return
+    }
+    api.contributorStats()
+      .then((d) => {
+        setStats(d)
+        setStatsError(null)
+        if (d.actingAsUserId && d.handle) {
+          setActAsCreator({
+            id: d.actingAsUserId,
+            label: d.handle ? `${d.name} (@${d.handle})` : d.name,
+          })
+        }
+      })
+      .catch((err) => {
+        setStats(null)
+        setStatsError(err instanceof ApiError ? err.message : 'Failed to load')
+      })
+  }, [actAsId, staffNeedsTarget])
   const firstName = (stats?.name ?? 'there').split(' ')[0]
   const chartData = stats?.series?.length ? stats.series : [{ month: '—', earnings: 0 }]
   return (
     <Shell>
+      {staffNeedsTarget && (
+        <div className="mb-8 rounded-2xl border border-sand bg-white p-6">
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Act as creator</p>
+          <h1 className="font-serif-display mt-2 text-3xl font-light tracking-tight">Choose a creator.</h1>
+          <p className="mt-2 max-w-xl text-sm text-ink-soft">
+            Open a photographer, photo influencer, or community contributor from Admin → Users,
+            then use <span className="font-medium">Open as creator</span>. Your staff session stays;
+            payouts cannot be changed while acting as.
+          </p>
+          <Link
+            to="/admin/photographers"
+            className="mt-4 inline-block bg-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra"
+          >
+            Admin photographers
+          </Link>
+        </div>
+      )}
+      {statsError && (
+        <p className="mb-4 text-sm text-[#b3382e]">{statsError}</p>
+      )}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Dashboard</p>
@@ -270,7 +338,7 @@ export function ContributorDashboard() {
         )}
       </div>
 
-      {!community && <RepresentationCard />}
+      {!community && !getActAsCreatorId() && <RepresentationCard />}
     </Shell>
   );
 }

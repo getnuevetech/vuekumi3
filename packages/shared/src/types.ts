@@ -312,6 +312,9 @@ export interface ContributorStatsDto {
   thisMonthUsd: number
   series: { month: string; earnings: number }[]
   topPhotos: PhotoDto[]
+  /** Set when staff with content.impersonate_creator is acting as this creator. */
+  actingAsUserId?: string | null
+  actingAsAccountType?: string | null
 }
 
 export interface PhotographerProfileDto extends PaginatedPhotos {

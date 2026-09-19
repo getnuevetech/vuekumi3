@@ -7,6 +7,7 @@ import {
   requestPayoutSchema,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
+import { isImpersonatingStaff, resolveCreatorWorkspaceId, staffPayoutWriteBlocked } from '../lib/act-as-creator.js'
 import { authenticate, requireAdminCapability, requireCreatorWorkspace } from '../lib/auth-middleware.js'
 import {
   MIN_PAYOUT_USD,
@@ -44,7 +45,8 @@ export async function payoutRoutes(app: FastifyInstance) {
     if (!canImpersonateCreator(request.authUser)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
-    const contributorId = request.userId!
+    const contributorId = await resolveCreatorWorkspaceId(request, reply)
+    if (!contributorId) return
     const monthStart = new Date()
     monthStart.setUTCDate(1)
     monthStart.setUTCHours(0, 0, 0, 0)
@@ -95,6 +97,7 @@ export async function payoutRoutes(app: FastifyInstance) {
     const availableUsd = available._sum.amountUsd ?? 0
     const heldUsd = held._sum.amountUsd ?? 0
     const pendingCount = payouts.filter((p) => p.status === 'requested').length
+    const staffActing = isImpersonatingStaff(request.authUser)
 
     return {
       availableUsd,
@@ -104,18 +107,22 @@ export async function payoutRoutes(app: FastifyInstance) {
       thisMonthUsd: month._sum.amountUsd ?? 0,
       allTimeUsd: (available._sum.amountUsd ?? 0) + (reserved._sum.amountUsd ?? 0) + heldUsd + (paid._sum.amountUsd ?? 0),
       minPayoutUsd: MIN_PAYOUT_USD,
-      canRequest: !canRequestPayout({
-        availableUsd,
-        minUsd: MIN_PAYOUT_USD,
-        pendingCount,
-        hasMethod: methods.length > 0,
-      }),
-      requestBlocker: canRequestPayout({
-        availableUsd,
-        minUsd: MIN_PAYOUT_USD,
-        pendingCount,
-        hasMethod: methods.length > 0,
-      }),
+      canRequest: staffActing
+        ? false
+        : !canRequestPayout({
+            availableUsd,
+            minUsd: MIN_PAYOUT_USD,
+            pendingCount,
+            hasMethod: methods.length > 0,
+          }),
+      requestBlocker: staffActing
+        ? 'Staff cannot request payouts while acting as a creator'
+        : canRequestPayout({
+            availableUsd,
+            minUsd: MIN_PAYOUT_USD,
+            pendingCount,
+            hasMethod: methods.length > 0,
+          }),
       items: items.map((row) => ({
         id: row.id,
         photoTitle: row.photo.title,
@@ -135,6 +142,7 @@ export async function payoutRoutes(app: FastifyInstance) {
     ...contributor,
     config: { rateLimit: AUTH_RATE_LIMIT },
   }, async (request, reply) => {
+    if (await staffPayoutWriteBlocked(request, reply)) return
     const body = payoutMethodSchema.parse(request.body)
     try {
       const created = await prisma.$transaction(async (tx) => {
@@ -170,6 +178,7 @@ export async function payoutRoutes(app: FastifyInstance) {
   })
 
   app.post('/contributor/payout-methods/:id/default', contributor, async (request, reply) => {
+    if (await staffPayoutWriteBlocked(request, reply)) return
     const { id } = request.params as { id: string }
     const method = await prisma.payoutMethod.findFirst({
       where: { id, userId: request.userId! },
@@ -184,6 +193,7 @@ export async function payoutRoutes(app: FastifyInstance) {
   })
 
   app.delete('/contributor/payout-methods/:id', contributor, async (request, reply) => {
+    if (await staffPayoutWriteBlocked(request, reply)) return
     const { id } = request.params as { id: string }
     const method = await prisma.payoutMethod.findFirst({
       where: { id, userId: request.userId! },
@@ -210,6 +220,7 @@ export async function payoutRoutes(app: FastifyInstance) {
     ...contributor,
     config: { rateLimit: AUTH_RATE_LIMIT },
   }, async (request, reply) => {
+    if (await staffPayoutWriteBlocked(request, reply)) return
     const body = requestPayoutSchema.parse(request.body ?? {})
     try {
       const payout = await requestPayout({

@@ -82,6 +82,48 @@ import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput,
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
+/** Phase 43 — staff act-as target (sessionStorage). Staff JWT stays; APIs get ?userId=. */
+const ACT_AS_KEY = 'vuekumi.actAsCreatorId'
+const ACT_AS_LABEL_KEY = 'vuekumi.actAsCreatorLabel'
+
+export function getActAsCreatorId(): string | null {
+  try {
+    return sessionStorage.getItem(ACT_AS_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function getActAsCreatorLabel(): string | null {
+  try {
+    return sessionStorage.getItem(ACT_AS_LABEL_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setActAsCreator(target: { id: string; label: string } | null) {
+  try {
+    if (!target) {
+      sessionStorage.removeItem(ACT_AS_KEY)
+      sessionStorage.removeItem(ACT_AS_LABEL_KEY)
+      return
+    }
+    sessionStorage.setItem(ACT_AS_KEY, target.id)
+    sessionStorage.setItem(ACT_AS_LABEL_KEY, target.label)
+  } catch {
+    /* ignore */
+  }
+}
+
+function withActAs(path: string): string {
+  if (!path.startsWith('/api/contributor')) return path
+  const id = getActAsCreatorId()
+  if (!id) return path
+  if (/[?&]userId=/.test(path)) return path
+  return `${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(id)}`
+}
+
 export class ApiError extends Error {
   status: number
 
@@ -116,7 +158,8 @@ function refreshAccessCookie(): Promise<boolean> {
 }
 
 async function request<T>(path: string, init?: RequestInit, retried = false): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const resolved = withActAs(path)
+  const res = await fetch(`${API_BASE}${resolved}`, {
     credentials: 'include',
     headers: {
       ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
@@ -592,7 +635,8 @@ export const api = {
     }),
 
   async putUpload(uploadUrl: string, file: File, headers: Record<string, string>) {
-    const target = uploadUrl.startsWith('http') ? uploadUrl : `${API_BASE}${uploadUrl}`
+    const pathOrUrl = uploadUrl.startsWith('http') ? uploadUrl : withActAs(uploadUrl)
+    const target = pathOrUrl.startsWith('http') ? pathOrUrl : `${API_BASE}${pathOrUrl}`
     const res = await fetch(target, {
       method: 'PUT',
       headers,

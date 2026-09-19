@@ -1,10 +1,9 @@
 import type { FastifyInstance } from 'fastify'
-import type { AuthUser, PermissionState } from '@vuekumi/shared'
+import type { PermissionState } from '@vuekumi/shared'
 import {
   CONSENT_VERSION,
   applyScreeningToPeopleFlag,
   canEnterCommercialInventory,
-  canImpersonateCreator,
   commercialInventoryBlocked,
   declareSubjectAgeSchema,
   identifyAppearanceSchema,
@@ -25,6 +24,7 @@ import {
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { syncAiTrainingEligible } from '../lib/ai-training.js'
+import { isImpersonatingStaff, resolveCreatorWorkspaceId } from '../lib/act-as-creator.js'
 import { requireCreatorWorkspace } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
 import { processPhotoAssets } from '../lib/process-photo.js'
@@ -79,15 +79,12 @@ const photoInclude = {
   contributor: { include: { contributorProfile: true, platformAgreements: true } },
 } as const
 
-function isImpersonatingStaff(user: AuthUser | null | undefined): boolean {
-  return Boolean(user && user.accountType === 'admin' && canImpersonateCreator(user))
-}
-
 export async function contributorRoutes(app: FastifyInstance) {
   const gate = { preHandler: requireCreatorWorkspace(app) }
 
-  app.get('/contributor/stats', gate, async (request) => {
-    const contributorId = request.userId!
+  app.get('/contributor/stats', gate, async (request, reply) => {
+    const contributorId = await resolveCreatorWorkspaceId(request, reply)
+    if (!contributorId) return
     const monthStart = new Date()
     monthStart.setUTCDate(1)
     monthStart.setUTCHours(0, 0, 0, 0)
@@ -146,17 +143,21 @@ export async function contributorRoutes(app: FastifyInstance) {
       thisMonthUsd: month._sum.amountUsd ?? 0,
       series: earningsMonthSeries(seriesRows),
       topPhotos: top.map((p) => serializePhoto(p, handle, true)),
+      actingAsUserId: isImpersonatingStaff(request.authUser) ? contributorId : null,
+      actingAsAccountType: isImpersonatingStaff(request.authUser) ? user?.accountType ?? null : null,
     }
   })
 
   app.post('/contributor/uploads/presign', gate, async (request, reply) => {
+    const contributorId = await resolveCreatorWorkspaceId(request, reply)
+    if (!contributorId) return
     const body = presignUploadSchema.parse(request.body)
     const contentType = body.contentType.toLowerCase()
     if (!ALLOWED_IMAGE_TYPES.has(contentType)) {
       return reply.code(400).send({ error: 'Only JPEG, PNG, WebP and TIFF images are accepted' })
     }
     const ext = extensionFor(body.filename, contentType)
-    const key = originalKeyFor(request.userId!, ext)
+    const key = originalKeyFor(contributorId, ext)
     const signed = await presignPut(key, contentType)
     return signed
   })
@@ -170,11 +171,13 @@ export async function contributorRoutes(app: FastifyInstance) {
       preHandler: requireCreatorWorkspace(app),
       bodyLimit: 55 * 1024 * 1024,
     }, async (request, reply) => {
+      const contributorId = await resolveCreatorWorkspaceId(request, reply)
+      if (!contributorId) return
       const { token } = request.params as { token: string }
       const key = verifyLocalToken(token)
       if (!key) return reply.code(400).send({ error: 'Upload token is invalid or expired' })
       try {
-        assertOwnedOriginalKey(key, request.userId!)
+        assertOwnedOriginalKey(key, contributorId)
       } catch {
         return reply.code(403).send({ error: 'Invalid storage key' })
       }
@@ -183,10 +186,9 @@ export async function contributorRoutes(app: FastifyInstance) {
     })
   })
 
-  app.get('/contributor/photos', gate, async (request) => {
-    const contributorId = isImpersonatingStaff(request.authUser) && (request.query as { userId?: string }).userId
-      ? (request.query as { userId: string }).userId
-      : request.userId!
+  app.get('/contributor/photos', gate, async (request, reply) => {
+    const contributorId = await resolveCreatorWorkspaceId(request, reply)
+    if (!contributorId) return
 
     const photos = await prisma.photo.findMany({
       where: { contributorId },
@@ -241,14 +243,21 @@ export async function contributorRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
 
+    const contributorId = await resolveCreatorWorkspaceId(request, reply)
+    if (!contributorId) return
+
     const body = submitPhotoSchema.parse(request.body)
-    const contributorId = request.userId!
+    const target = await prisma.user.findUnique({
+      where: { id: contributorId },
+      select: { accountType: true },
+    })
+    const targetAccountType = target?.accountType ?? accountType
     const hasAgreement = await contributorHasAgreement(contributorId)
     if (!hasAgreement) {
       return reply.code(400).send({
-        error: isCommunityContributor(accountType)
+        error: isCommunityContributor(targetAccountType)
           ? 'Accept the VueKumi community contributor terms before submitting'
-          : isNonCommercialCreator(accountType)
+          : isNonCommercialCreator(targetAccountType)
             ? 'Accept the VueKumi photo influencer terms before submitting'
             : 'Accept the current VueKumi photographer licensing agreement before submitting',
       })
@@ -274,10 +283,10 @@ export async function contributorRoutes(app: FastifyInstance) {
       image,
     })
     const people = applyScreeningToPeopleFlag({ declaredPeople: body.hasRecognizablePeople, screening })
-    const commercialUploader = canEnterCommercialInventory(accountType)
+    const commercialUploader = canEnterCommercialInventory(targetAccountType)
     if (!commercialUploader && (body.licenseType === 'premium' || body.permissionState === 'commercial' || body.permissionState === 'exclusive')) {
       return reply.code(400).send({
-        error: commercialInventoryBlocked(accountType)
+        error: commercialInventoryBlocked(targetAccountType)
           ?? 'This account type cannot enter commercial inventory.',
       })
     }
@@ -294,7 +303,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       exclusiveAvailable: commercialUploader ? body.exclusiveAvailable : false,
       hasRecognizablePeople: people,
     })
-    const communityBlock = nonCommercialCreatorBlocksState(accountType, permissionState)
+    const communityBlock = nonCommercialCreatorBlocksState(targetAccountType, permissionState)
     if (communityBlock) {
       return reply.code(400).send({ error: communityBlock })
     }
