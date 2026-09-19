@@ -78,6 +78,7 @@ Production refuses weak `JWT_SECRET` / `COOKIE_SECRET` values. Liveness is `GET 
 ```bash
 npm run ci        # typecheck, lint, API tests, Vite build
 npm test          # API unit tests
+npm run test:e2e  # Playwright web smoke (needs seeded DB + Chromium)
 npm run lint      # web ESLint
 ```
 

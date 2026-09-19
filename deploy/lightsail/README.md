@@ -166,10 +166,11 @@ bash deploy/lightsail/deploy.sh
 Do **not** pass `SEED_DEMO=1` on a live site. Seed deletes users, grants,
 payments, and photos before recreating the demo library.
 
-### Catch-up redeploy (Track O2 — Phases 23–41 + cookie fix)
+### Catch-up redeploy (Track O2 — Phases 23–45 + cookie fix)
 
 Use this when production is behind `main` (HTTP admin cookie fix, Rights 2.0,
-Arc C/D, Phase 41 homepage pins). Run on the Lightsail host as `ubuntu`.
+Arc C/D, Phase 41 homepage pins, staff queues, act-as, seed fixtures, Phase 45
+smoke). Run on the Lightsail host as `ubuntu`.
 
 ```bash
 cd /opt/vuekumi
