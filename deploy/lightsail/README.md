@@ -224,9 +224,9 @@ git rev-parse --short origin/main
 
 ### Post-deploy secrets + TLS (Track O3)
 
-1. ~~If seed ever ran (or demo admin still works): change `admin@vuekumi.com`
-   password~~ **Done 19 Sep 2026** — live demo password `Admin123!` rejected;
-   operator holds the new secret (not stored in git).
+1. Live demo password `Admin123!` for `admin@vuekumi.com` was rotated on
+   **19 Sep 2026** and no longer works. If you do not have the current secret,
+   use **Admin password recovery** below (Lightsail browser SSH).
 2. Confirm Admin Settings → payment / AI / email keys are production values (not
    empty placeholders).
 3. Fix TLS before flipping scheme:
@@ -238,6 +238,29 @@ git rev-parse --short origin/main
    - set `WEB_URL=https://vuekumi.com` in `.env`
    - redeploy **without** `SEED_DEMO=1`
 5. Re-check login cookies over HTTPS include `Secure`.
+6. Rotate or disable remaining seed staff logins on live if they still use
+   `User12345!` (`support@`, `moderator@`, `finance@` `@vuekumi.demo`).
+
+### Admin password recovery (on-host)
+
+Use when `admin@vuekumi.com` is locked and you have Lightsail SSH (browser or
+key). Replace `NEW_HASH` with a bcrypt hash (cost 12) of your chosen password:
+
+```bash
+# On any machine with Node + bcryptjs:
+node -e "require('bcryptjs').hash('YOUR_CHOSEN_PASSWORD',12).then(console.log)"
+```
+
+```bash
+ssh ubuntu@YOUR_STATIC_IP   # or Lightsail browser SSH
+cd /opt/vuekumi
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  psql -U vuekumi vuekumi -c \
+  "UPDATE \"User\" SET \"passwordHash\" = 'NEW_HASH' WHERE email = 'admin@vuekumi.com';"
+```
+
+Then sign in at `http://vuekumi.com/login` (until TLS works) and change the
+password again from Account settings so the SQL value is not the long-term secret.
 
 ### Production smoke sign-off (Track O4)
 

@@ -71,9 +71,11 @@ Suggested next ops order (still needs host access for redeploy/TLS):
 
 1. SSH → `git rev-parse --short HEAD` and compare to `main`
 2. If behind: Catch-up redeploy (**no** `SEED_DEMO=1`)
-3. ~~Rotate demo admin password~~ **done 19 Sep 2026** (demo `Admin123!` no longer works on live); confirm Admin Settings keys
+3. ~~Rotate demo admin password~~ **`Admin123!` disabled on live 19 Sep 2026**;
+   confirm you can sign in (recover on-host if needed); confirm Admin Settings keys
 4. Fix TLS (`ssl-init.sh` / certs) then set `WEB_URL=https://vuekumi.com` and redeploy
 5. Sign O4 smoke on the live URL
+6. Rotate remaining `@vuekumi.demo` staff passwords on live (`User12345!`)
 
 Details: [`deploy/lightsail/README.md`](../deploy/lightsail/README.md) § O3/O4.
 
