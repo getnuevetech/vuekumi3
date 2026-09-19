@@ -53,12 +53,12 @@ Rough live counts from admin overview: **15 users**, **6 contributors**,
 
 | Gap | Severity | Owner |
 | --- | --- | --- |
-| Host git SHA / migration head unknown (needs SSH) | High (ops truth) | O2 on-host |
-| HTTPS broken while DNS points at the instance | **Critical** | O3 TLS |
-| Demo admin `admin@vuekumi.com` / `Admin123!` still works | **Critical** | O3 rotate |
+| Demo admin `admin@vuekumi.com` / `Admin123!` still works | **Closed (O3 password — 19 Sep 2026)** — rotated via `PATCH /api/auth/me/password`; old demo password rejected | Operator holds the new secret |
 | Booking / campaign / representation queues empty (Phase 44 seed fixtures are local/CI only — correct for prod) | Info | — |
 | No production partner live key (only revoked AGTest) | Info | Staff when a real partner needs access |
 | Playwright smoke is CI-only; not a substitute for O4 on the live URL | Medium | O4 |
+| HTTPS broken while DNS points at the instance | **Critical** | O3 TLS |
+| Host git SHA / migration head unknown (needs SSH) | High (ops truth) | O2 on-host |
 
 ### 1.4 O0 conclusion
 
@@ -71,7 +71,7 @@ Suggested next ops order (still needs host access for redeploy/TLS):
 
 1. SSH → `git rev-parse --short HEAD` and compare to `main`
 2. If behind: Catch-up redeploy (**no** `SEED_DEMO=1`)
-3. Rotate demo admin password; confirm Admin Settings keys
+3. ~~Rotate demo admin password~~ **done 19 Sep 2026** (demo `Admin123!` no longer works on live); confirm Admin Settings keys
 4. Fix TLS (`ssl-init.sh` / certs) then set `WEB_URL=https://vuekumi.com` and redeploy
 5. Sign O4 smoke on the live URL
 

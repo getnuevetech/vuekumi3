@@ -210,8 +210,8 @@ Rotate the demo admin password if seed ever ran on this instance.
 External probe of `http://vuekumi.com` (no SSH): API health/ready OK; HTTPS TLS
 handshake fails; HTTP admin login sets cookies **without** `Secure`; admin
 homepage / bookings / campaigns / representation / partner-keys routes respond
-(Phases 31–43 shapes present). Demo admin password still worked at probe time —
-**rotate before treating the host as hardened**. Full write-up:
+(Phases 31–43 shapes present). Demo admin password **was** still `Admin123!` at
+the O0 probe — **rotated 19 Sep 2026** (O3 password step). Full write-up:
 [`docs/06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](../../docs/06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
 
 On-host SHA confirm is still required before marking O2 done:
@@ -224,9 +224,9 @@ git rev-parse --short origin/main
 
 ### Post-deploy secrets + TLS (Track O3)
 
-1. If seed ever ran (or demo admin still works): change `admin@vuekumi.com`
-   password from the Admin accounts UI or a one-shot SQL/`bcrypt` reset — do not
-   leave `Admin123!` on a public host.
+1. ~~If seed ever ran (or demo admin still works): change `admin@vuekumi.com`
+   password~~ **Done 19 Sep 2026** — live demo password `Admin123!` rejected;
+   operator holds the new secret (not stored in git).
 2. Confirm Admin Settings → payment / AI / email keys are production values (not
    empty placeholders).
 3. Fix TLS before flipping scheme:
@@ -254,7 +254,7 @@ ops ticket — Playwright CI smoke is not a substitute.
 | 6 | People photo without two-party clearance: commercial not offered | |
 | 7 | Model guest invite / rights page loads for a known token | |
 | 8 | Partner key read fails without key (401); succeeds with a live key if issued | |
-| 9 | Demo admin password no longer `Admin123!` | |
+| 9 | Demo admin password no longer `Admin123!` | **Done 19 Sep 2026** |
 | 10 | If `WEB_URL` is https: browser cookie Secure; HTTP→HTTPS redirect sane | |
 
 Signer / date: _______________
