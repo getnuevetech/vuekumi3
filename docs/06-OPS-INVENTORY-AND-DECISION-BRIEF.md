@@ -53,7 +53,7 @@ Rough live counts from admin overview: **15 users**, **6 contributors**,
 
 | Gap | Severity | Owner |
 | --- | --- | --- |
-| Demo admin `admin@vuekumi.com` / `Admin123!` still works | **Closed (O3 password — 19 Sep 2026)** — rotated via `PATCH /api/auth/me/password`; old demo password rejected | Operator holds the new secret |
+| Demo admin `admin@vuekumi.com` / `Admin123!` | **O3 password step 19 Sep 2026** — `Admin123!` rejected on live. If the operator does not have the new secret, reset on-host (Lightsail browser SSH) — see Lightsail README § Admin password recovery | Operator / on-host |
 | Booking / campaign / representation queues empty (Phase 44 seed fixtures are local/CI only — correct for prod) | Info | — |
 | No production partner live key (only revoked AGTest) | Info | Staff when a real partner needs access |
 | Playwright smoke is CI-only; not a substitute for O4 on the live URL | Medium | O4 |
@@ -63,9 +63,9 @@ Rough live counts from admin overview: **15 users**, **6 contributors**,
 ### 1.4 O0 conclusion
 
 Production is **not** stuck on a pre–Rights-2.0 binary. Public and admin API
-shapes for Phases 31–43 (and homepage pins) are responding on HTTP. The
-remaining ops bottleneck is **TLS + secret hygiene + on-host SHA confirm**,
-not missing feature code on the box.
+shapes for Phases 31–43 (and homepage pins) are responding on HTTP. Demo admin
+password hygiene is done. The remaining ops bottleneck is **TLS + on-host SHA
+confirm + O4 sign-off**, not missing feature code on the box.
 
 Suggested next ops order (still needs host access for redeploy/TLS):
 
