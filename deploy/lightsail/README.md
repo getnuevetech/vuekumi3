@@ -238,13 +238,16 @@ git rev-parse --short origin/main
    - set `WEB_URL=https://vuekumi.com` in `.env`
    - redeploy **without** `SEED_DEMO=1`
 5. Re-check login cookies over HTTPS include `Secure`.
-6. Rotate or disable remaining seed staff logins on live if they still use
-   `User12345!` (`support@`, `moderator@`, `finance@` `@vuekumi.demo`).
+6. ~~Rotate remaining seed staff logins~~ **Phase 47:** `support@` and
+   `moderator@` `@vuekumi.demo` no longer accept `User12345!`. **`finance@`**
+   was rotated but the new secret was lost to API rate-limit — apply the finance
+   recovery SQL below, then change the password again from Account settings.
 
 ### Admin password recovery (on-host)
 
-Use when `admin@vuekumi.com` is locked and you have Lightsail SSH (browser or
-key). Replace `NEW_HASH` with a bcrypt hash (cost 12) of your chosen password:
+Use when `admin@vuekumi.com` (or another staff account) is locked and you have
+Lightsail SSH (browser or key). Replace `NEW_HASH` with a bcrypt hash (cost 12)
+of your chosen password:
 
 ```bash
 # On any machine with Node + bcryptjs:
@@ -259,6 +262,19 @@ docker compose -f docker-compose.prod.yml exec -T postgres \
   "UPDATE \"User\" SET \"passwordHash\" = 'NEW_HASH' WHERE email = 'admin@vuekumi.com';"
 ```
 
+**Finance recovery (Phase 47)** — `finance@vuekumi.demo` was rotated but the new
+secret was lost to API rate-limit. On the host, set a bcrypt hash you control:
+
+```bash
+node -e "require('bcryptjs').hash('YOUR_CHOSEN_PASSWORD',12).then(console.log)"
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  psql -U vuekumi vuekumi -c \
+  "UPDATE \"User\" SET \"passwordHash\" = 'NEW_HASH' WHERE email = 'finance@vuekumi.demo';"
+```
+
+A ready-made hash/password pair was delivered in the Phase 47 operator message
+(not stored in git). Prefer generating your own.
+
 Then sign in at `http://vuekumi.com/login` (until TLS works) and change the
 password again from Account settings so the SQL value is not the long-term secret.
 
@@ -267,20 +283,22 @@ password again from Account settings so the SQL value is not the long-term secre
 Run against the live `WEB_URL` after O2/O3. Check boxes on the host or in an
 ops ticket — Playwright CI smoke is not a substitute.
 
+External API smoke **19 Sep 2026 (Phase 47)** against `http://vuekumi.com`:
+
 | # | Check | Pass? |
 | --- | --- | --- |
-| 1 | `GET ${WEB_URL}/api/health` and `/api/ready` → 200 | |
-| 2 | Public home loads; featured slots API shape present | |
-| 3 | Admin login works on the **actual** scheme (HTTP or HTTPS) | |
-| 4 | `/admin` overview + `/admin/homepage` for `content.featured` | |
-| 5 | `/admin/bookings`, `/admin/campaigns`, `/admin/representation` load | |
-| 6 | People photo without two-party clearance: commercial not offered | |
-| 7 | Model guest invite / rights page loads for a known token | |
-| 8 | Partner key read fails without key (401); succeeds with a live key if issued | |
-| 9 | Demo admin password no longer `Admin123!` | **Done 19 Sep 2026** |
-| 10 | If `WEB_URL` is https: browser cookie Secure; HTTP→HTTPS redirect sane | |
+| 1 | `GET ${WEB_URL}/api/health` and `/api/ready` → 200 | **Pass** |
+| 2 | Public home loads; featured slots API shape present | **Pass** |
+| 3 | Admin login works on the **actual** scheme (HTTP or HTTPS) | **Pass** (HTTP) |
+| 4 | `/admin` overview + `/admin/homepage` for `content.featured` | **Pass** (API) |
+| 5 | `/admin/bookings`, `/admin/campaigns`, `/admin/representation` load | **Pass** (API) |
+| 6 | People photo without two-party clearance: commercial not offered | **Pass** |
+| 7 | Model guest invite / rights page loads for a known token | **Pass** (`seed-nomsa-model-invite`) |
+| 8 | Partner key read fails without key (401); succeeds with a live key if issued | **Pass** (401 only) |
+| 9 | Demo admin password no longer `Admin123!` | **Pass** (+ support/moderator `User12345!` rejected) |
+| 10 | If `WEB_URL` is https: browser cookie Secure; HTTP→HTTPS redirect sane | **Fail** — HTTPS TLS still broken |
 
-Signer / date: _______________
+Signer / date: Phase 47 cloud agent / 19 Sep 2026 (API-only; re-sign after TLS)
 
 ### Database backup
 

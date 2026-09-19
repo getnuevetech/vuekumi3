@@ -53,10 +53,11 @@ Rough live counts from admin overview: **15 users**, **6 contributors**,
 
 | Gap | Severity | Owner |
 | --- | --- | --- |
-| Demo admin `admin@vuekumi.com` / `Admin123!` | **O3 password step 19 Sep 2026** — `Admin123!` rejected on live. If the operator does not have the new secret, reset on-host (Lightsail browser SSH) — see Lightsail README § Admin password recovery | Operator / on-host |
+| Demo admin `admin@vuekumi.com` / `Admin123!` | **Closed (O3 — 19 Sep 2026, reconfirmed Phase 47)** — demo rejected; live secret held by operator (not in git) | Operator |
+| Demo staff `support@` / `moderator@` / `finance@` `@vuekumi.demo` / `User12345!` | **Mostly closed (Phase 47)** — support + moderator rotated; finance rotated but secret lost to rate-limit — apply on-host recovery SQL (Lightsail README) | Operator / on-host |
 | Booking / campaign / representation queues empty (Phase 44 seed fixtures are local/CI only — correct for prod) | Info | — |
 | No production partner live key (only revoked AGTest) | Info | Staff when a real partner needs access |
-| Playwright smoke is CI-only; not a substitute for O4 on the live URL | Medium | O4 |
+| Playwright smoke is CI-only; not a substitute for O4 on the live URL | **Narrowed (Phase 47)** — external O4 API smoke signed in `06` §1.5; browser UI still optional | — |
 | HTTPS broken while DNS points at the instance | **Critical** | O3 TLS |
 | Host git SHA / migration head unknown (needs SSH) | High (ops truth) | O2 on-host |
 
@@ -71,13 +72,31 @@ Suggested next ops order (still needs host access for redeploy/TLS):
 
 1. SSH → `git rev-parse --short HEAD` and compare to `main`
 2. If behind: Catch-up redeploy (**no** `SEED_DEMO=1`)
-3. ~~Rotate demo admin password~~ **`Admin123!` disabled on live 19 Sep 2026**;
-   confirm you can sign in (recover on-host if needed); confirm Admin Settings keys
+3. Demo passwords: admin/support/moderator rotated (Phase 47); **finance** needs
+   on-host recovery SQL (secret lost after rate-limit); then confirm Admin Settings keys
 4. Fix TLS (`ssl-init.sh` / certs) then set `WEB_URL=https://vuekumi.com` and redeploy
-5. Sign O4 smoke on the live URL
-6. Rotate remaining `@vuekumi.demo` staff passwords on live (`User12345!`)
+5. Re-sign O4 after HTTPS works (browser + Secure cookies)
 
 Details: [`deploy/lightsail/README.md`](../deploy/lightsail/README.md) § O3/O4.
+
+### 1.5 Track O4 — external API smoke (19 September 2026, Phase 47)
+
+Signed against `http://vuekumi.com` (no SSH, no browser). HTTPS check expected fail.
+
+| # | Check | Result |
+| --- | --- | --- |
+| 1 | `GET /api/health` + `/api/ready` | Pass |
+| 2 | Public home featured slot shape | Pass |
+| 3 | Admin login over HTTP; cookies without `Secure` | Pass |
+| 4 | Admin overview + `/api/admin/homepage` | Pass |
+| 5 | Admin bookings / campaigns / representation | Pass |
+| 6 | `afr-007` commercial not offered; editorial offered | Pass |
+| 7 | Model invite `seed-nomsa-model-invite` | Pass (token still live — seed ran on this host historically) |
+| 8 | Partner API without key → 401 | Pass |
+| 9 | `Admin123!` and support `User12345!` rejected | Pass |
+| 10 | HTTPS health | **Fail** (TLS still broken) — blocks O3 TLS close |
+
+Signer: cloud agent Phase 47 / 19 Sep 2026. Browser walkthrough of `/admin` UI not run.
 
 ---
 
