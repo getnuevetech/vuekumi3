@@ -8,3 +8,7 @@ dist-old
 docker/nginx/nginx.runtime.conf
 apps/api/storage
 storage
+test-results
+playwright-report
+blob-report
+playwright/.cache

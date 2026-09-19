@@ -86,7 +86,7 @@ Arcs A–D (Phases 0–40) are on `main`. See `01` §2 table. Notable locks:
 
 | Gap | Evidence | Severity |
 | --- | --- | --- |
-| Production not redeployed with cookie fix + Rights 2.0+ | Ops note; cookie fix is on `main`, Phases 23–43 on `main` | **Critical (ops)** — O2 runbook ready |
+| Production not redeployed with cookie fix + Rights 2.0+ | Ops note; cookie fix is on `main`, Phases 23–45 on `main` | **Critical (ops)** — O2 runbook ready |
 | `deploy/lightsail/deploy.sh` always runs `prisma/seed.ts` | Was destructive on every deploy | **Closed (O1)** — `SEED_DEMO=1` opt-in |
 | Featured homepage slots staff-pinnable (Phase 41); empty slots ranking | Shipped on `main` — `/admin/homepage` | Closed (A1) |
 | Homepage copy overclaims “curated weekly / human review” | Was `Home.tsx` IconRow | Closed (A2) — copy now staff-featured |
@@ -94,7 +94,7 @@ Arcs A–D (Phases 0–40) are on `main`. See `01` §2 table. Notable locks:
 | No dedicated admin queues for bookings/campaigns | Was public UI only | Closed (Phase 42) |
 | `content.impersonate_creator` API-only | Was capability without UI | Closed (Phase 43) |
 | Seed lacks booking/campaign/representation/partner fixtures | Was weak Arc C demos | Closed (Phases 42 + 44) |
-| No web/UI tests | CI runs API tests + web typecheck/lint/build only | Medium (quality) |
+| No web/UI tests | Was API-only CI | Closed (Phase 45) — Playwright smoke in CI |
 | Docs drift | Was stale Arc D gap table / README | Closed (Dox) |
 | Counsel placeholders still labelled placeholder | Legal overlays force `counselStatus: 'placeholder'` | Expected until counsel |
 
@@ -165,7 +165,8 @@ UI without a decided rate recreates the trap Arcs B/C avoided.
 - Consider a smoke checklist: admin login over HTTP and HTTPS, commercial
   checkout on a two-approved people photo, guest model rights page, partner key
   read, representation inquiry
-- Optional later: Playwright smoke on web; keep API tests as the contract suite
+- **Shipped (Phase 45):** Playwright smoke on web (`npm run test:e2e`); keep API
+  tests as the contract suite
 
 ### R7 — Explicitly do not schedule
 
@@ -190,7 +191,7 @@ were approved.
 | --- | --- | --- |
 | **O0** | Inventory live instance: git SHA, migration head, whether admin login works on current `WEB_URL` scheme | Written note of live vs `main` delta |
 | **O1** | Change `deploy.sh` so seed is **opt-in** on production (`SEED_DEMO=1` / first-boot only); document migrate-only redeploy — **shipped** | Redeploy cannot wipe live users/grants |
-| **O2** | Redeploy Lightsail from `main` (cookie fix + Phases 23–41). Runbook in `deploy/lightsail/README.md` § Catch-up redeploy. **Code ready; needs host access** | Admin sessions work on HTTP if TLS not yet live; Rights 2.0+ and Phase 41 behave as on `main` |
+| **O2** | Redeploy Lightsail from `main` (cookie fix + Phases 23–45). Runbook in `deploy/lightsail/README.md` § Catch-up redeploy. **Code ready; needs host access** | Admin sessions work on HTTP if TLS not yet live; Rights 2.0+ and Phase 41 behave as on `main` |
 | **O3** | Post-deploy: rotate demo admin password if seed ever ran; confirm Admin Settings keys; TLS/`WEB_URL=https://…` when certs exist | Live secrets and cookie Secure flag match scheme |
 | **O4** | Smoke: report queue, commercial freeze, model invite guest page, representation queue | Ops checklist signed off |
 
@@ -237,6 +238,7 @@ Do not number these as phases until Dec-* closes and work is approved.
 | AI dataset product | Dec-AI | Separate SKU; minors never eligible; partner API terms update only if sold |
 | Admin booking/campaign queues | — | **Shipped (Phase 42)** — staff visibility + campaign close; no fees |
 | Creator impersonation UI | — | **Shipped (Phase 43)** — staff JWT + `?userId=`; payout writes blocked |
+| Playwright web smoke | — | **Shipped (Phase 45)** — home/catalog/models/admin/member bookings |
 
 ---
 
