@@ -192,12 +192,12 @@ were approved.
 | **O0** | Inventory live instance: git SHA, migration head, whether admin login works on current `WEB_URL` scheme — **partial (Phase 46)** external probe in `docs/06`; on-host SHA still needed | Written note of live vs `main` delta |
 | **O1** | Change `deploy.sh` so seed is **opt-in** on production (`SEED_DEMO=1` / first-boot only); document migrate-only redeploy — **shipped** | Redeploy cannot wipe live users/grants |
 | **O2** | Redeploy Lightsail from `main` (cookie fix + Phases 23–45). Runbook in `deploy/lightsail/README.md` § Catch-up redeploy. **Public API shapes for 31–43 look live on HTTP; SHA unconfirmed; needs host access** | Admin sessions work on HTTP if TLS not yet live; Rights 2.0+ and Phase 41 behave as on `main` |
-| **O3** | Post-deploy: rotate demo admin password if seed ever ran; confirm Admin Settings keys; TLS/`WEB_URL=https://…` when certs exist — **`Admin123!` disabled 19 Sep 2026**; TLS + Settings keys + remaining demo staff passwords still open | Live secrets and cookie Secure flag match scheme |
-| **O4** | Smoke: report queue, commercial freeze, model invite guest page, representation queue — **checklist shipped in Lightsail README; not signed off** | Ops checklist signed off |
+| **O3** | Post-deploy: rotate demo admin password; confirm Admin Settings keys; TLS/`WEB_URL=https://…` — **admin/support/moderator demo passwords closed (Phase 47)**; finance needs on-host recovery; TLS + Settings keys still open | Live secrets and cookie Secure flag match scheme |
+| **O4** | Smoke: report queue, commercial freeze, model invite guest page, representation queue — **external API smoke signed Phase 47** (`docs/06` §1.5); HTTPS + browser UI still open | Ops checklist signed off |
 
 **Note:** Phase 41 shipped admin-pinnable featured slots; empty positions stay
 ranking-driven. Track A honesty copy (A2/A3) is shipped. Live Lightsail work
-remaining is primarily **O2 SHA confirm + O3 TLS/password + O4 sign-off**.
+remaining is primarily **O2 SHA confirm + O3 TLS + finance recovery + HTTPS O4 re-sign**.
 Decision workshop brief (no invented answers):
 [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
 
