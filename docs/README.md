@@ -6,21 +6,23 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–45 (Arcs A–D complete; Phase 41 homepage featured slots; Phase 42
+   shipped Phases 0–46 (Arcs A–D complete; Phase 41 homepage featured slots; Phase 42
    staff booking/campaign queues; Phase 43 staff act-as creator; Phase 44 Arc C seed
-   fixtures; Phase 45 Playwright web smoke). Default next slice: none scheduled until
-   explicitly approved.
+   fixtures; Phase 45 Playwright web smoke; Phase 46 ops inventory + decision brief).
+   Default next slice: none scheduled until explicitly approved.
 3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
    redeploy). Not a licence to start work without approval.
-4. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
+4. **[06-OPS-INVENTORY-AND-DECISION-BRIEF.md](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md)** —
+   O0 live probe (19 Sep 2026) and Dec-* workshop blanks (no invented answers).
+5. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
    Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
    and the shipped status header.
-5. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
-   actually deployed (Docker on AWS Lightsail).
-6. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
+6. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
+   actually deployed (Docker on AWS Lightsail); O3/O4 checklists.
+7. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
    template before the backend existed.
-7. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
+8. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
    Original NestJS/Lightsail sketch; superseded by the deploy README.
 
 **Do not start a new implementation phase until it is explicitly approved.**

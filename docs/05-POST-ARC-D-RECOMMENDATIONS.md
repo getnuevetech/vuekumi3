@@ -86,7 +86,7 @@ Arcs A–D (Phases 0–40) are on `main`. See `01` §2 table. Notable locks:
 
 | Gap | Evidence | Severity |
 | --- | --- | --- |
-| Production not redeployed with cookie fix + Rights 2.0+ | Ops note; cookie fix is on `main`, Phases 23–45 on `main` | **Critical (ops)** — O2 runbook ready |
+| Production not redeployed with cookie fix + Rights 2.0+ | Was critical ops lag | **Narrowed (O0 Phase 46)** — HTTP live shows Phases 31–43 shapes; HTTPS broken; demo admin still worked; on-host SHA unconfirmed |
 | `deploy/lightsail/deploy.sh` always runs `prisma/seed.ts` | Was destructive on every deploy | **Closed (O1)** — `SEED_DEMO=1` opt-in |
 | Featured homepage slots staff-pinnable (Phase 41); empty slots ranking | Shipped on `main` — `/admin/homepage` | Closed (A1) |
 | Homepage copy overclaims “curated weekly / human review” | Was `Home.tsx` IconRow | Closed (A2) — copy now staff-featured |
@@ -189,15 +189,17 @@ were approved.
 
 | Step | Work | Done when |
 | --- | --- | --- |
-| **O0** | Inventory live instance: git SHA, migration head, whether admin login works on current `WEB_URL` scheme | Written note of live vs `main` delta |
+| **O0** | Inventory live instance: git SHA, migration head, whether admin login works on current `WEB_URL` scheme — **partial (Phase 46)** external probe in `docs/06`; on-host SHA still needed | Written note of live vs `main` delta |
 | **O1** | Change `deploy.sh` so seed is **opt-in** on production (`SEED_DEMO=1` / first-boot only); document migrate-only redeploy — **shipped** | Redeploy cannot wipe live users/grants |
-| **O2** | Redeploy Lightsail from `main` (cookie fix + Phases 23–45). Runbook in `deploy/lightsail/README.md` § Catch-up redeploy. **Code ready; needs host access** | Admin sessions work on HTTP if TLS not yet live; Rights 2.0+ and Phase 41 behave as on `main` |
-| **O3** | Post-deploy: rotate demo admin password if seed ever ran; confirm Admin Settings keys; TLS/`WEB_URL=https://…` when certs exist | Live secrets and cookie Secure flag match scheme |
-| **O4** | Smoke: report queue, commercial freeze, model invite guest page, representation queue | Ops checklist signed off |
+| **O2** | Redeploy Lightsail from `main` (cookie fix + Phases 23–45). Runbook in `deploy/lightsail/README.md` § Catch-up redeploy. **Public API shapes for 31–43 look live on HTTP; SHA unconfirmed; needs host access** | Admin sessions work on HTTP if TLS not yet live; Rights 2.0+ and Phase 41 behave as on `main` |
+| **O3** | Post-deploy: rotate demo admin password if seed ever ran; confirm Admin Settings keys; TLS/`WEB_URL=https://…` when certs exist — **`Admin123!` disabled 19 Sep 2026**; TLS + Settings keys + remaining demo staff passwords still open | Live secrets and cookie Secure flag match scheme |
+| **O4** | Smoke: report queue, commercial freeze, model invite guest page, representation queue — **checklist shipped in Lightsail README; not signed off** | Ops checklist signed off |
 
 **Note:** Phase 41 shipped admin-pinnable featured slots; empty positions stay
-ranking-driven. Track A honesty copy (A2/A3) is shipped. Live Lightsail redeploy
-remains Track O2.
+ranking-driven. Track A honesty copy (A2/A3) is shipped. Live Lightsail work
+remaining is primarily **O2 SHA confirm + O3 TLS/password + O4 sign-off**.
+Decision workshop brief (no invented answers):
+[`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
 
 ### Track A — Marketplace honesty (optional thin slice)
 
@@ -216,6 +218,9 @@ remains Track O2.
 | **D3** | Rewrite `04` §1 Gap table to “before / after” so it cannot be misread as current backlog — **shipped** |
 
 ### Track Decision — Human gates (no code until closed)
+
+Workshop blanks (options only; Chosen left pending):
+[`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md) §2.
 
 | Decision ID | Question | Unblocks |
 | --- | --- | --- |
@@ -247,13 +252,13 @@ Do not number these as phases until Dec-* closes and work is approved.
 If only one stream of work is approved next, prefer this order:
 
 ```
-O1 (safe deploy) → O2 (Lightsail redeploy to main) → O3/O4 (smoke)
+O0 inventory (Phase 46 note) → O2 SHA confirm + redeploy if needed → O3 TLS/password → O4 smoke
         ↓
-   Dox D1–D3 (cheap, prevents rework)
+   Dox D1–D3 (shipped) + Decision workshop brief (Phase 46 — fill Chosen blanks)
         ↓
-   Decision workshop (Dec-VQ / Dec-Split / Dec-Fee at minimum)
+   Decision workshop meeting (Dec-VQ / Dec-Split / Dec-Fee at minimum)
         ↓
-   Optional A1–A3 (Phase 41 + honesty) if marketplace polish is wanted
+   Optional A1–A3 (shipped) if marketplace polish is wanted
         ↓
    Only then: any Track E money or biometric work
 ```

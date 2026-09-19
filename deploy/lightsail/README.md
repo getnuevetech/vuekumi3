@@ -205,6 +205,83 @@ Smoke after deploy:
 Then set `WEB_URL=https://…` and re-run `ssl-init.sh` if the domain already has certs.
 Rotate the demo admin password if seed ever ran on this instance.
 
+### Live inventory note (Track O0 — 19 Sep 2026)
+
+External probe of `http://vuekumi.com` (no SSH): API health/ready OK; HTTPS TLS
+handshake fails; HTTP admin login sets cookies **without** `Secure`; admin
+homepage / bookings / campaigns / representation / partner-keys routes respond
+(Phases 31–43 shapes present). Demo admin password **was** still `Admin123!` at
+the O0 probe — **rotated 19 Sep 2026** (O3 password step). Full write-up:
+[`docs/06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](../../docs/06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
+
+On-host SHA confirm is still required before marking O2 done:
+
+```bash
+ssh ubuntu@YOUR_STATIC_IP
+cd /opt/vuekumi && git fetch origin main && git rev-parse --short HEAD
+git rev-parse --short origin/main
+```
+
+### Post-deploy secrets + TLS (Track O3)
+
+1. Live demo password `Admin123!` for `admin@vuekumi.com` was rotated on
+   **19 Sep 2026** and no longer works. If you do not have the current secret,
+   use **Admin password recovery** below (Lightsail browser SSH).
+2. Confirm Admin Settings → payment / AI / email keys are production values (not
+   empty placeholders).
+3. Fix TLS before flipping scheme:
+   ```bash
+   cd /opt/vuekumi
+   bash deploy/lightsail/ssl-init.sh   # or renew existing certs
+   ```
+4. Only after `curl -sf https://vuekumi.com/api/health` succeeds:
+   - set `WEB_URL=https://vuekumi.com` in `.env`
+   - redeploy **without** `SEED_DEMO=1`
+5. Re-check login cookies over HTTPS include `Secure`.
+6. Rotate or disable remaining seed staff logins on live if they still use
+   `User12345!` (`support@`, `moderator@`, `finance@` `@vuekumi.demo`).
+
+### Admin password recovery (on-host)
+
+Use when `admin@vuekumi.com` is locked and you have Lightsail SSH (browser or
+key). Replace `NEW_HASH` with a bcrypt hash (cost 12) of your chosen password:
+
+```bash
+# On any machine with Node + bcryptjs:
+node -e "require('bcryptjs').hash('YOUR_CHOSEN_PASSWORD',12).then(console.log)"
+```
+
+```bash
+ssh ubuntu@YOUR_STATIC_IP   # or Lightsail browser SSH
+cd /opt/vuekumi
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  psql -U vuekumi vuekumi -c \
+  "UPDATE \"User\" SET \"passwordHash\" = 'NEW_HASH' WHERE email = 'admin@vuekumi.com';"
+```
+
+Then sign in at `http://vuekumi.com/login` (until TLS works) and change the
+password again from Account settings so the SQL value is not the long-term secret.
+
+### Production smoke sign-off (Track O4)
+
+Run against the live `WEB_URL` after O2/O3. Check boxes on the host or in an
+ops ticket — Playwright CI smoke is not a substitute.
+
+| # | Check | Pass? |
+| --- | --- | --- |
+| 1 | `GET ${WEB_URL}/api/health` and `/api/ready` → 200 | |
+| 2 | Public home loads; featured slots API shape present | |
+| 3 | Admin login works on the **actual** scheme (HTTP or HTTPS) | |
+| 4 | `/admin` overview + `/admin/homepage` for `content.featured` | |
+| 5 | `/admin/bookings`, `/admin/campaigns`, `/admin/representation` load | |
+| 6 | People photo without two-party clearance: commercial not offered | |
+| 7 | Model guest invite / rights page loads for a known token | |
+| 8 | Partner key read fails without key (401); succeeds with a live key if issued | |
+| 9 | Demo admin password no longer `Admin123!` | **Done 19 Sep 2026** |
+| 10 | If `WEB_URL` is https: browser cookie Secure; HTTP→HTTPS redirect sane | |
+
+Signer / date: _______________
+
 ### Database backup
 
 ```bash

@@ -276,5 +276,7 @@ features. Support cannot enter the photographer workspace unless given
 
 Post–Arc D recommendations (ops redeploy, decision gates, optional Phase 41 homepage
 curation review): [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md).
+Live inventory + decision workshop blanks:
+[`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
 Still not a build ticket until explicitly approved.
 
