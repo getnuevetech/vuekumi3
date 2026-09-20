@@ -182,6 +182,34 @@ export function AdminRates() {
 }
 
 const GATE_STATUSES = ['NOT_STARTED', 'RESEARCHING', 'BLOCKED', 'APPROVED', 'NOT_APPLICABLE'] as const
+const FEATURE_SCOPE_STATES = ['ON', 'HOLD', 'CONDITIONAL'] as const
+
+function downloadActivationCsv(rows: CountryActivationRow[]) {
+  const header = ['code', 'name', 'region', 'policy_status', 'gates_ready', 'gates_approved', 'gates_na', 'gates_open', 'gates_blocked', 'last_transition']
+  const lines = [header.join(',')]
+  for (const c of rows) {
+    const p = c.policy
+    lines.push([
+      c.code,
+      JSON.stringify(c.name),
+      c.region,
+      p?.status ?? '',
+      p?.gatesReady ? 'yes' : 'no',
+      String(p?.gateCounts.approved ?? ''),
+      String(p?.gateCounts.notApplicable ?? ''),
+      String(p?.gateCounts.open ?? ''),
+      String(p?.gateCounts.blocked ?? ''),
+      p?.lastTransitionKind ?? '',
+    ].join(','))
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `country-activation-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 export function AdminCountryActivation() {
   const [rows, setRows] = useState<CountryActivationRow[]>([])
@@ -195,6 +223,7 @@ export function AdminCountryActivation() {
     policy: CountryPolicyDetail
   } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [gateDrafts, setGateDrafts] = useState<Record<string, { rationale: string; evidenceUrl: string; evidenceLabel: string }>>({})
 
   const load = () => {
     api.adminCountryActivation().then((d) => setRows(d.countries)).catch((e) => toast.error(e.message))
@@ -206,6 +235,15 @@ export function AdminCountryActivation() {
     try {
       const d = await api.adminCountryActivationDetail(code)
       setDetail(d)
+      const drafts: Record<string, { rationale: string; evidenceUrl: string; evidenceLabel: string }> = {}
+      for (const g of d.policy.gates) {
+        drafts[g.id] = {
+          rationale: g.rationale ?? '',
+          evidenceUrl: '',
+          evidenceLabel: '',
+        }
+      }
+      setGateDrafts(drafts)
       requestAnimationFrame(() => {
         document.getElementById('country-policy-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
@@ -215,6 +253,7 @@ export function AdminCountryActivation() {
   }
 
   const visible = rows.filter((c) => regionFilter === 'all' || c.region === regionFilter)
+  const immutable = detail?.policy.status === 'ACTIVE' || detail?.policy.status === 'OFFBOARDING'
 
   const detailPanel = detail ? (
     <div id="country-policy-detail" className="mt-6 space-y-4 rounded-2xl border border-sand-soft bg-white p-4">
@@ -224,6 +263,9 @@ export function AdminCountryActivation() {
             {detail.country.code} · v{detail.policy.version} · {detail.policy.status}
           </p>
           <h2 className="font-serif-display text-2xl font-light">{detail.country.name}</h2>
+          <p className="mt-1 text-xs text-ink-soft">
+            Attach evidence URLs and rationale per gate. Do not invent counsel clearance — G16 stays counsel-owned.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -288,59 +330,173 @@ export function AdminCountryActivation() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-              {['Gate', 'Title', 'Status', 'Update'].map((h) => (
-                <th key={h} className="px-2 py-2 font-medium">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {detail.policy.gates.map((g) => (
-              <tr key={g.id} className="border-b border-sand-soft last:border-0">
-                <td className="px-2 py-2 font-mono-tech text-xs">{g.code}</td>
-                <td className="px-2 py-2 text-xs text-ink-soft">{g.title}</td>
-                <td className="px-2 py-2 font-mono-tech text-[10px] uppercase">{g.status}</td>
-                <td className="px-2 py-2">
-                  <select
-                    disabled={busy || detail.policy.status === 'ACTIVE'}
-                    value={g.status}
-                    onChange={async (e) => {
-                      const status = e.target.value
-                      setBusy(true)
-                      try {
-                        await api.patchCountryGate(g.id, {
-                          status,
-                          rationale: status === 'NOT_APPLICABLE' ? (g.rationale || 'N/A rationale (staff)') : g.rationale,
-                          evidence: { label: `Status → ${status}` },
-                        })
-                        await openDetail(detail.country.code)
-                      } catch (err) {
-                        toast.error(err instanceof ApiError ? err.message : 'Gate update failed')
-                      } finally {
-                        setBusy(false)
-                      }
-                    }}
-                    className="rounded border border-sand-soft bg-white px-2 py-1 text-xs"
-                  >
-                    {GATE_STATUSES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
+      <div className="space-y-3">
+        {detail.policy.gates.map((g) => {
+          const draft = gateDrafts[g.id] ?? { rationale: g.rationale ?? '', evidenceUrl: '', evidenceLabel: '' }
+          return (
+            <div key={g.id} className="rounded-xl border border-sand-soft p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono-tech text-xs">{g.code} · {g.status}</p>
+                  <p className="text-sm text-ink-soft">{g.title}</p>
+                </div>
+                <select
+                  disabled={busy || immutable}
+                  value={g.status}
+                  onChange={async (e) => {
+                    const status = e.target.value
+                    setBusy(true)
+                    try {
+                      await api.patchCountryGate(g.id, {
+                        status,
+                        rationale:
+                          status === 'NOT_APPLICABLE'
+                            ? (draft.rationale.trim() || g.rationale || 'N/A rationale (staff)')
+                            : (draft.rationale.trim() || g.rationale),
+                        evidence: draft.evidenceLabel.trim()
+                          ? {
+                              label: draft.evidenceLabel.trim(),
+                              ...(draft.evidenceUrl.trim() ? { url: draft.evidenceUrl.trim() } : {}),
+                            }
+                          : { label: `Status → ${status}` },
+                      })
+                      toast.success(`${g.code} → ${status}`)
+                      await openDetail(detail.country.code)
+                    } catch (err) {
+                      toast.error(err instanceof ApiError ? err.message : 'Gate update failed')
+                    } finally {
+                      setBusy(false)
+                    }
+                  }}
+                  className="rounded border border-sand-soft bg-white px-2 py-1 text-xs"
+                >
+                  {GATE_STATUSES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <input
+                  disabled={busy || immutable}
+                  value={draft.rationale}
+                  onChange={(e) => setGateDrafts((s) => ({ ...s, [g.id]: { ...draft, rationale: e.target.value } }))}
+                  placeholder="Rationale (required for N/A)"
+                  className="rounded-lg border border-sand-soft px-2 py-1.5 text-xs sm:col-span-1"
+                />
+                <input
+                  disabled={busy || immutable}
+                  value={draft.evidenceLabel}
+                  onChange={(e) => setGateDrafts((s) => ({ ...s, [g.id]: { ...draft, evidenceLabel: e.target.value } }))}
+                  placeholder="Evidence label"
+                  className="rounded-lg border border-sand-soft px-2 py-1.5 text-xs"
+                />
+                <input
+                  disabled={busy || immutable}
+                  value={draft.evidenceUrl}
+                  onChange={(e) => setGateDrafts((s) => ({ ...s, [g.id]: { ...draft, evidenceUrl: e.target.value } }))}
+                  placeholder="https://evidence…"
+                  className="rounded-lg border border-sand-soft px-2 py-1.5 text-xs"
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={busy || immutable || (!draft.rationale.trim() && !draft.evidenceLabel.trim())}
+                  onClick={async () => {
+                    setBusy(true)
+                    try {
+                      await api.patchCountryGate(g.id, {
+                        rationale: draft.rationale.trim() || null,
+                        evidence: draft.evidenceLabel.trim()
+                          ? {
+                              label: draft.evidenceLabel.trim(),
+                              ...(draft.evidenceUrl.trim() ? { url: draft.evidenceUrl.trim() } : {}),
+                            }
+                          : undefined,
+                      })
+                      toast.success('Evidence / rationale saved')
+                      await openDetail(detail.country.code)
+                    } catch (err) {
+                      toast.error(err instanceof ApiError ? err.message : 'Save failed')
+                    } finally {
+                      setBusy(false)
+                    }
+                  }}
+                  className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[9px] uppercase tracking-[0.12em] disabled:opacity-40"
+                >
+                  Save notes
+                </button>
+                {g.evidence.length > 0 && (
+                  <ul className="flex flex-wrap gap-2 text-[11px] text-ink-faint">
+                    {g.evidence.map((e) => (
+                      <li key={e.id}>
+                        {e.url ? (
+                          <a href={e.url} target="_blank" rel="noreferrer" className="text-terra underline">
+                            {e.label}
+                          </a>
+                        ) : (
+                          e.label
+                        )}
+                      </li>
                     ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </ul>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-      {detail.policy.featureScopes.length > 0 && (
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-          Feature scopes:{' '}
-          {detail.policy.featureScopes.map((s) => `${s.action}=${s.state}`).join(' · ')}
+      <div className="rounded-xl border border-sand-soft p-3">
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">Feature scopes</p>
+        <p className="mt-1 text-xs text-ink-soft">
+          Editable on HOLD / REVIEW / SUSPENDED. Activation still applies default ACTIVE scopes.
         </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {detail.policy.featureScopes.map((s) => (
+            <label key={s.action} className="flex items-center justify-between gap-2 rounded-lg border border-sand-soft px-3 py-2 text-xs">
+              <span className="font-mono-tech uppercase tracking-[0.08em]">{s.action}</span>
+              <select
+                disabled={busy || immutable}
+                value={s.state}
+                onChange={async (e) => {
+                  const state = e.target.value
+                  setBusy(true)
+                  try {
+                    await api.patchCountryFeatureScope(detail.policy.id, s.action, { state })
+                    toast.success(`${s.action} → ${state}`)
+                    await openDetail(detail.country.code)
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Scope update failed')
+                  } finally {
+                    setBusy(false)
+                  }
+                }}
+                className="rounded border border-sand-soft bg-white px-2 py-1"
+              >
+                {FEATURE_SCOPE_STATES.map((st) => (
+                  <option key={st} value={st}>{st}</option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {detail.policy.transitions.length > 0 && (
+        <div className="rounded-xl border border-sand-soft p-3">
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">Transitions</p>
+          <ul className="mt-2 space-y-1 text-xs text-ink-soft">
+            {detail.policy.transitions.map((t) => (
+              <li key={t.id} className="flex flex-wrap gap-x-2">
+                <span className="font-mono-tech uppercase text-ink-faint">{t.kind}</span>
+                <span>{t.fromStatus} → {t.toStatus}</span>
+                <span className="text-ink-faint">{t.createdAt.slice(0, 19).replace('T', ' ')} UTC</span>
+                {t.notes && <span>· {t.notes}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   ) : null
@@ -353,6 +509,7 @@ export function AdminCountryActivation() {
         All markets default HOLD. ACTIVE requires G01–G16 complete and a second staff authorizer.
         Signup still uses Africa-list until Settings flips{' '}
         <code className="font-mono-tech text-xs">geo.contributor_onboarding_policy</code>.
+        Phase 53: evidence URLs, feature scopes, transition history, CSV register export.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -373,6 +530,13 @@ export function AdminCountryActivation() {
           className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em] text-paper"
         >
           Seed HOLD policies
+        </button>
+        <button
+          type="button"
+          onClick={() => downloadActivationCsv(visible)}
+          className="rounded-full border border-sand-soft px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em]"
+        >
+          Export CSV
         </button>
         <a href="/admin/countries" className="rounded-full border border-sand-soft px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em]">
           Markets list

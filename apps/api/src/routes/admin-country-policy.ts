@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
+  featureScopeActionSchema,
+  featureScopeStateSchema,
   gateStatusSchema,
   policyEvaluateInputSchema,
 } from '@vuekumi/shared'
@@ -12,6 +14,7 @@ import {
   evaluatePolicy,
   getCountryActivationDetail,
   listCountryActivationRegister,
+  patchFeatureScope,
   patchGate,
   seedHoldPoliciesForAllCountries,
   submitPolicyForReview,
@@ -28,6 +31,11 @@ const gatePatchSchema = z.object({
       notes: z.string().max(2000).optional(),
     })
     .optional(),
+})
+
+const featureScopePatchSchema = z.object({
+  state: featureScopeStateSchema,
+  notes: z.string().max(2000).nullable().optional(),
 })
 
 const notesSchema = z.object({
@@ -112,6 +120,32 @@ export async function adminCountryPolicyRoutes(app: FastifyInstance) {
         entityType: 'country_gate',
         entityId: gateId,
         metadata: { status: body.status },
+      })
+      return { policy: policy ? serializePolicy(policy) : null }
+    } catch (err) {
+      const status = err && typeof err === 'object' && 'statusCode' in err ? Number(err.statusCode) : 500
+      return reply.code(status).send({ error: err instanceof Error ? err.message : 'Failed' })
+    }
+  })
+
+  app.patch('/admin/countries/activation/:policyId/scopes/:action', gateApprove, async (request, reply) => {
+    const { policyId, action: rawAction } = request.params as { policyId: string; action: string }
+    const action = featureScopeActionSchema.parse(rawAction)
+    const body = featureScopePatchSchema.parse(request.body)
+    try {
+      const policy = await patchFeatureScope({
+        policyVersionId: policyId,
+        action,
+        state: body.state,
+        notes: body.notes,
+        actorId: request.userId!,
+      })
+      await writeAuditLog({
+        actorId: request.userId,
+        action: 'admin.country_policy.patch_feature_scope',
+        entityType: 'country_policy',
+        entityId: policyId,
+        metadata: { scopeAction: action, state: body.state },
       })
       return { policy: policy ? serializePolicy(policy) : null }
     } catch (err) {
