@@ -36,6 +36,7 @@ import { adminMetricsRoutes } from './routes/admin-metrics.js'
 import { reportRoutes } from './routes/reports.js'
 import { modelProfileRoutes } from './routes/model-profiles.js'
 import { modelRoutes } from './routes/models.js'
+import { rightsRoutes } from './routes/rights.js'
 import { modelUploadRoutes } from './routes/model-upload.js'
 import { bookingRoutes } from './routes/bookings.js'
 import { adminBookingRoutes } from './routes/admin-bookings.js'
@@ -123,6 +124,7 @@ export async function buildApp() {
     await api.register(legalRoutes)
     await api.register(modelRoutes)
     await api.register(modelUploadRoutes)
+    await api.register(rightsRoutes)
     await api.register(bookingRoutes)
     await api.register(adminBookingRoutes)
     await api.register(representationRoutes)

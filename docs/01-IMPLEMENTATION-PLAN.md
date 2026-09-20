@@ -288,7 +288,8 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled**. Phase 51 (T2 rights ops SOP — preserve /
+3. Default next slice: **none scheduled**. Phase 52 (T4 public `/rights` hub — token +
+   auth review/approve, no compensation) is shipped. Phase 51 (T2 rights ops SOP — preserve /
    notify / escalate, DMCA unlock separation, `docs/runbooks/rights-ops.md`) is
    shipped. Phase 50 (T1 public `/report-content` hub + expanded taxonomy + safety
    fast-path) is shipped. Phase 49 (P0 country policy + PDS) is shipped. Phase 48
@@ -301,6 +302,6 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.
 5. **Ops, not a phase:** production still needs on-host SHA confirm (O2), TLS (O3),
-   and HTTPS O4 re-sign. Prefer full `main` through 51. Do not invent undecided
+   and HTTPS O4 re-sign. Prefer full `main` through 52. Do not invent undecided
    splits, commissions, biometric vendors/retention, or a VueQuatro entity form.
    Do not start P1 negotiation payouts before **Dec-PayBase**.

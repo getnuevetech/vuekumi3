@@ -28,7 +28,7 @@ today either photo-detail-only, counsel-placeholder, or missing entirely.
 | Memo ask | Shipped today (`main`) | Gap |
 | --- | --- | --- |
 | Public image-rights / takedown page | Per-photo report on `/photo/:id` (`POST /api/photos/:id/report`); reasons: `copyright`, `likeness`, `unauthorized_use`, `other` | No dedicated `/report-content`; categories thinner than memo; no guest-first hub |
-| Secure rights-holder dashboard | Guest invite pages + model portal + rights ledger APIs | No public `/rights` product hub |
+| Secure rights-holder dashboard | Guest invite pages + model portal + **`/rights` hub (Phase 52)** | Compensation negotiation still deferred (T5 / Dec-PayBase) |
 | Formal DMCA notice / counter-notice | Phase 39: `/dmca`, notices, counters, freezes, earnings holds | Agent filing + public policy copy still counsel/ops; counter restore waits staff |
 | Repeat-infringer policy | Strikes + threshold (default 3) + serious-fraud strike reasons | Needs documented public policy + staff SOP UI, not only settings |
 | Separate safety / likeness vs DMCA | Code comment and separate report vs DMCA routes | Product UX must enforce: counter-notice ≠ likeness/safety override |
@@ -231,7 +231,7 @@ Suggested order minimizes counsel blockers and avoids inventing money.
 | **T1** | Public `/report-content` + category taxonomy | T0 | **Shipped Phase 50.** Guest hub live; deep-link from photo; queues + safety fast-path |
 | **T2** | Rights ops SOP in admin | T1 | **Shipped Phase 51.** Preserve / notify / escalate on `/admin/reports`; DMCA unlock separation; `docs/runbooks/rights-ops.md` |
 | **T3** | Public DMCA/repeat-infringer policy hardening | Counsel copy | `/dmca` policy matches entity + agent; counter-notice clock documented; repeat policy public |
-| **T4** | `/rights` hub (consolidate guest + model) | T1 | Token/auth dashboard for review/approve without compensation yet |
+| **T4** | `/rights` hub (consolidate guest + model) | T1 | **Shipped Phase 52.** Token/auth dashboard for review/approve without compensation |
 | **T5** | Compensation negotiation (commercial lock) | **Dec-PayBase signed**; T4 | Propose/counter/agree; commercial off until agree or explicit zero; multi-model cap validation; **no payout yet** if pay rails unreadiness |
 | **T6** | Model likeness payouts in ledger | T5 + finance | Ledger lines from Dec-PayBase; certificates stamp agreed terms; Africa nonmember fee OK |
 | **T7** | Country Activation Matrix admin | T0 | 54×16 gates, HOLD default, ACTIVE only with sign-off; no conflict with overlays |
@@ -281,6 +281,6 @@ Document in `docs/runbooks/rights-ops.md` (new) when T2 starts:
 2. Sign **Dec-PayBase** (and revisit Dec-Split / Dec-Bio / Dec-VQ in `06`).  
 3. Counsel: DMCA agent filing, public policy copy, first-wave country gate evidence.  
 4. Ops: keep Lightsail TLS + SHA work on Track O; do not block T0–T1 docs/UI on TLS.  
-5. **P0–T2 shipped (Phases 49–51).** Optional next: **T4** `/rights` hub when
-   approved. Do not start negotiation payouts before **Dec-PayBase**. Pilot ACTIVE
-   countries (T8) still need counsel evidence.
+5. **P0–T2 + T4 shipped (Phases 49–52).** Optional next: **T3** DMCA policy (counsel),
+   or **T7** matrix ops polish. Do not start negotiation payouts before **Dec-PayBase**.
+   Pilot ACTIVE countries (T8) still need counsel evidence.

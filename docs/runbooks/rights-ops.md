@@ -89,5 +89,6 @@ Escalation does **not** invent strikes. Strikes remain upheld-fraud only (`/admi
 | Track | Surface | Clears likeness/safety? |
 | --- | --- | --- |
 | Rights report | `/admin/reports` | Own resolve/dismiss only |
+| Holder review | `/rights` (Phase 52 / T4) | Guest/model approve/reject only |
 | DMCA | `/admin/dmca` | **Never** |
 | Strikes | `/admin/dmca` strike form | N/A — fraud only |

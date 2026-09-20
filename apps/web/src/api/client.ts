@@ -695,6 +695,9 @@ export const api = {
   modelInvitePreview: (token: string) =>
     request<{ invite: ModelInvitePreviewDto }>(`/api/model/invite/${token}`),
 
+  rightsPreview: (token: string) =>
+    request<import('@vuekumi/shared').RightsPreviewDto>(`/api/rights/preview/${encodeURIComponent(token)}`),
+
   acceptModelInvite: (token: string, body?: AcceptModelInviteInput) =>
     request<{ user: AuthUser }>(`/api/model/invite/${token}`, {
       method: 'POST',

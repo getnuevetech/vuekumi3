@@ -28,6 +28,7 @@ import { AdminReports } from './pages/AdminReports'
 import { AdminDmca } from './pages/AdminDmca'
 import DmcaPage from './pages/Dmca'
 import ReportContentPage from './pages/ReportContent'
+import RightsHubPage from './pages/RightsHub'
 import LegalPage from './pages/Legal'
 import { AdminLegal } from './pages/AdminLegal'
 import { AdminSettings } from './pages/AdminSettings'
@@ -85,6 +86,8 @@ export default function App() {
         <Route path="/dmca" element={<DmcaPage />} />
         <Route path="/dmca/:id" element={<DmcaPage />} />
         <Route path="/report-content" element={<ReportContentPage />} />
+        <Route path="/rights" element={<RightsHubPage />} />
+        <Route path="/rights/invite/:token" element={<RightsHubPage />} />
         <Route path="/legal" element={<LegalPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
