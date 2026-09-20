@@ -17,7 +17,9 @@ recommendations and ops/decision tracks:
 [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md).
 Trust, report hub, likeness compensation negotiation, and Country Activation Matrix:
 [`07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)
-(**plan only** until approved).
+(**plan only** until approved). Admin portal engineering adoption (PDS, eight
+modules, P0–P2):
+[`08-ADMIN-PORTAL-ENGINEERING-SPEC.md`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md).
 
 ---
 

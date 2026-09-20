@@ -13,6 +13,9 @@ Source inputs reviewed for this plan:
    clearance, and a secure rights-holder surface.
 2. [`assets/VueKumi_Country_Activation_Matrix_2026-09-19.pdf`](./assets/VueKumi_Country_Activation_Matrix_2026-09-19.pdf)
    — internal planning draft. **No country is legally cleared or ACTIVE.**
+3. Admin portal memo + [`assets/VueKumi_Admin_Portal_Engineering_Specification_v1_2.pdf`](./assets/VueKumi_Admin_Portal_Engineering_Specification_v1_2.pdf)
+   — three control layers, eight modules, Policy Decision Service. Engineering
+   adoption: [`08-ADMIN-PORTAL-ENGINEERING-SPEC.md`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md).
 
 ---
 
@@ -235,8 +238,12 @@ Suggested order minimizes counsel blockers and avoids inventing money.
 | **T8** | Pilot country activation (ops) | T7 + counsel | First ACTIVE country(ies) with evidence; optional flip `contributorOnboardingPolicy` |
 | **T9** | Buyer market overlays + sanctions checklist | Counsel | US/EU/UK overlay status in admin; OFAC screening SOP linked |
 
-**Parallelisation that is safe:** T7 (country matrix admin) can run beside T1–T4.
-**T5/T6 must wait** on Dec-PayBase. **T3/T8** wait on counsel artifacts.
+**Parallelisation that is safe:** T7 / **P0 policy core** (`08`) can run beside
+T1–T4. **T5/T6 must wait** on Dec-PayBase. **T3/T8** wait on counsel artifacts.
+
+When the engineering spec is the build authority, prefer tranche labels **P0 →
+P1 → P2** in [`08`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md) §8; keep T1–T9 as the
+product surface map.
 
 ---
 
@@ -274,5 +281,7 @@ Document in `docs/runbooks/rights-ops.md` (new) when T2 starts:
 2. Sign **Dec-PayBase** (and revisit Dec-Split / Dec-Bio / Dec-VQ in `06`).  
 3. Counsel: DMCA agent filing, public policy copy, first-wave country gate evidence.  
 4. Ops: keep Lightsail TLS + SHA work on Track O; do not block T0–T1 docs/UI on TLS.  
-5. When approved to build, start **T1** (report hub) and **T7** (country activation
-   admin) in parallel.
+5. When approved to build, start **P0** (country policy + PDS + signup
+   enforcement) per [`08`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md); optionally
+   parallel **T1** (`/report-content`). Do not start negotiation payouts before
+   **Dec-PayBase**.
