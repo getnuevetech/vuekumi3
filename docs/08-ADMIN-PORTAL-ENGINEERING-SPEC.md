@@ -276,7 +276,10 @@ admin SOP actions (preserve / notify / escalate), DMCA hold blocks report unfree
 activation UI evidence URLs, editable feature scopes, transition history, CSV export.
 **Phase 54:** PDS `license.issue` legacy ALLOW while markets HOLD; DENY at grant/checkout
 when ACTIVE/SUSPENDED holds `new_license` (historical grants kept).
+**Phase 55:** Playwright covers `/report-content` + `/rights`.
+**Phase 56:** PDS `contributor.upload` mirrors Phase 54 — DENY at
+presign/bin/submit when ACTIVE/SUSPENDED holds `contributor_upload`.
 
 **Next (when approved):** T3 DMCA policy hardening (counsel copy).
 **P1 Rights & revenue** (T5/T6) only after **Dec-PayBase**.
-Do not invent rates, vendors, or entity. **Phase 55:** Playwright covers `/report-content` + `/rights`.
+Do not invent rates, vendors, or entity.

@@ -289,7 +289,9 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled**. Phase 55 (Playwright smoke for `/report-content`
+3. Default next slice: **none scheduled**. Phase 56 (PDS `contributor.upload` — legacy ALLOW
+   while markets HOLD; DENY when ACTIVE/SUSPENDED holds `contributor_upload`) is shipped.
+   Phase 55 (Playwright smoke for `/report-content`
    + `/rights` + legacy invite redirect) is shipped. Phase 54 (PDS `license.issue` — legacy ALLOW
    while markets HOLD; DENY when ACTIVE/SUSPENDED holds `new_license`) is shipped.
    Phase 53 (T7 country matrix ops — evidence URLs,
@@ -308,6 +310,6 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.
 5. **Ops, not a phase:** production still needs on-host SHA confirm (O2), TLS (O3),
-   and HTTPS O4 re-sign. Prefer full `main` through 55. Do not invent undecided
+   and HTTPS O4 re-sign. Prefer full `main` through 56. Do not invent undecided
    splits, commissions, biometric vendors/retention, or a VueQuatro entity form.
    Do not start P1 negotiation payouts before **Dec-PayBase**.

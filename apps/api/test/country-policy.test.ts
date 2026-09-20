@@ -316,3 +316,76 @@ test('Phase 54: license.issue legacy ALLOW; ACTIVE hold DENY; suspend DENY; ON A
 
   await prisma.countryPolicyVersion.delete({ where: { id: policy.id } }).catch(() => undefined)
 })
+
+test('Phase 56: contributor.upload legacy ALLOW; ACTIVE ON; suspend DENY; route 403', async () => {
+  const legacy = await evaluatePolicy({ action: 'contributor.upload', countryCode: 'NG' })
+  assert.equal(legacy.decision, 'ALLOW')
+  assert.ok(legacy.reasonCodes.includes('legacy_pass_through_no_active_policy'))
+
+  const admin = await prisma.user.findFirst({ where: { email: 'admin@vuekumi.com' } })
+  assert.ok(admin)
+  const policy = await freshHoldPolicy('GH', admin.id)
+  for (const gate of policy.gates) {
+    await patchGate({
+      gateId: gate.id,
+      actorId: admin.id,
+      status: 'APPROVED',
+      evidence: { label: 'Phase 56 gate' },
+    })
+  }
+  await submitPolicyForReview(policy.id, admin.id)
+  const other = await prisma.user.findFirst({
+    where: { email: 'support@vuekumi.demo', accountType: 'admin' },
+  })
+  const authorizerId = other?.id && other.id !== admin.id ? other.id : 'authorizer-phase56'
+  await authorizeActivation({
+    policyVersionId: policy.id,
+    authorizerId,
+    notes: 'Phase 56 activate',
+  })
+
+  // Default ACTIVE scopes turn contributor_upload ON
+  const open = await evaluatePolicy({ action: 'contributor.upload', countryCode: 'GH' })
+  assert.equal(open.decision, 'ALLOW')
+  assert.ok(open.reasonCodes.includes('contributor_upload_on'))
+
+  await prisma.countryFeatureScope.update({
+    where: { policyVersionId_action: { policyVersionId: policy.id, action: 'contributor_upload' } },
+    data: { state: 'HOLD' },
+  })
+  const held = await evaluatePolicy({ action: 'contributor.upload', countryCode: 'GH' })
+  assert.equal(held.decision, 'DENY')
+  assert.ok(held.reasonCodes.includes('feature_scope_not_on:contributor_upload'))
+
+  // Put scopes back ON then suspend — suspend holds upload
+  await prisma.countryFeatureScope.update({
+    where: { policyVersionId_action: { policyVersionId: policy.id, action: 'contributor_upload' } },
+    data: { state: 'ON' },
+  })
+  await suspendPolicy({ policyVersionId: policy.id, actorId: admin.id, notes: 'Phase 56 suspend' })
+  const suspended = await evaluatePolicy({ action: 'contributor.upload', countryCode: 'GH' })
+  assert.equal(suspended.decision, 'DENY')
+  assert.ok(suspended.reasonCodes.includes('market_suspended'))
+
+  // Route: set a Ghana photographer and expect presign 403
+  const photographer = await prisma.user.findFirst({
+    where: { email: 'amara-okafor@vuekumi.demo' },
+  })
+  assert.ok(photographer)
+  await prisma.user.update({ where: { id: photographer.id }, data: { country: 'GH' } })
+
+  const app = await buildApp()
+  const jar = await login(app, 'amara-okafor@vuekumi.demo', 'User12345!')
+  const denied = await app.inject({
+    method: 'POST',
+    url: '/api/contributor/uploads/presign',
+    headers: { cookie: jar },
+    payload: { filename: 'test.jpg', contentType: 'image/jpeg' },
+  })
+  assert.equal(denied.statusCode, 403, denied.body)
+  assert.match(denied.json().error ?? '', /upload|suspended|market/i)
+
+  await prisma.user.update({ where: { id: photographer.id }, data: { country: 'NG' } }).catch(() => undefined)
+  await prisma.countryPolicyVersion.delete({ where: { id: policy.id } }).catch(() => undefined)
+  await app.close()
+})

@@ -78,6 +78,7 @@ export type FeatureScopeState = z.infer<typeof featureScopeStateSchema>
 
 export const POLICY_ACTIONS = [
   'contributor.create',
+  'contributor.upload',
   'rights.invite',
   'asset.commercialize',
   'license.issue',
