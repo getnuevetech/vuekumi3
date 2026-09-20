@@ -128,7 +128,7 @@ test('parsePhotoRef accepts page links and bare ids', async () => {
 
 test('guest hub accepts photograph page URL, not only bare id', async () => {
   const app = await buildApp()
-  const live = await app.inject({ method: 'GET', url: '/api/photos/afr-001' })
+  const live = await app.inject({ method: 'GET', url: '/api/photos/afr-002' })
   if (live.statusCode !== 200) {
     await app.close()
     return
@@ -138,7 +138,7 @@ test('guest hub accepts photograph page URL, not only bare id', async () => {
     method: 'POST',
     url: '/api/report-content',
     payload: {
-      photoUrl: 'https://vuekumi.com/photo/afr-001',
+      photoUrl: 'https://vuekumi.com/photo/afr-002',
       reason: 'copyright',
       details: 'This photograph was uploaded without my permission as the copyright holder.',
       reporterEmail: 'link-guest@example.com',
@@ -151,7 +151,7 @@ test('guest hub accepts photograph page URL, not only bare id', async () => {
     method: 'POST',
     url: '/api/report-content',
     payload: {
-      photoUrl: '/photo/afr-001',
+      photoUrl: '/photo/afr-002',
       reason: 'copyright',
       details: 'Duplicate path-based report should return alreadyReported for same guest.',
       reporterEmail: 'link-guest@example.com',
