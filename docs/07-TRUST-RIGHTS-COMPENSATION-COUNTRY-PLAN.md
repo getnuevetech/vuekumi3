@@ -229,7 +229,7 @@ Suggested order minimizes counsel blockers and avoids inventing money.
 | --- | --- | --- | --- |
 | **T0** | Doctrine + Dec workshop update | — | This doc accepted; `06` Dec-Split / Dec-PayBase blanks updated; matrix PDF in repo |
 | **T1** | Public `/report-content` + category taxonomy | T0 | **Shipped Phase 50.** Guest hub live; deep-link from photo; queues + safety fast-path |
-| **T2** | Rights ops SOP in admin | T1 | Unified intake UI: urgency, preserve, freeze, notify, escalate, close; DMCA vs likeness separation enforced in code |
+| **T2** | Rights ops SOP in admin | T1 | **Shipped Phase 51.** Preserve / notify / escalate on `/admin/reports`; DMCA unlock separation; `docs/runbooks/rights-ops.md` |
 | **T3** | Public DMCA/repeat-infringer policy hardening | Counsel copy | `/dmca` policy matches entity + agent; counter-notice clock documented; repeat policy public |
 | **T4** | `/rights` hub (consolidate guest + model) | T1 | Token/auth dashboard for review/approve without compensation yet |
 | **T5** | Compensation negotiation (commercial lock) | **Dec-PayBase signed**; T4 | Propose/counter/agree; commercial off until agree or explicit zero; multi-model cap validation; **no payout yet** if pay rails unreadiness |
@@ -281,6 +281,6 @@ Document in `docs/runbooks/rights-ops.md` (new) when T2 starts:
 2. Sign **Dec-PayBase** (and revisit Dec-Split / Dec-Bio / Dec-VQ in `06`).  
 3. Counsel: DMCA agent filing, public policy copy, first-wave country gate evidence.  
 4. Ops: keep Lightsail TLS + SHA work on Track O; do not block T0–T1 docs/UI on TLS.  
-5. **P0 shipped (Phase 49). T1 shipped (Phase 50).** Optional next: **T2** rights
-   ops SOP / **T4** `/rights` hub when approved. Do not start negotiation payouts
-   before **Dec-PayBase**. Pilot ACTIVE countries (T8) still need counsel evidence.
+5. **P0–T2 shipped (Phases 49–51).** Optional next: **T4** `/rights` hub when
+   approved. Do not start negotiation payouts before **Dec-PayBase**. Pilot ACTIVE
+   countries (T8) still need counsel evidence.

@@ -1249,6 +1249,13 @@ model RightsReport {
   status         RightsReportStatus @default(open)
   urgent         Boolean            @default(false)
   queue          String             @default("general")
+  /// Phase 51 / T2 SOP stage (docs/07 §8).
+  sopStage       String             @default("intake")
+  evidencePreservedAt DateTime?
+  evidenceNotes  String?
+  notifiedAt     DateTime?
+  escalateTo     String?
+  escalatedAt    DateTime?
   reporterUserId String?
   reporterEmail  String?
   reporterName   String?
@@ -1269,6 +1276,7 @@ model RightsReport {
   @@index([createdAt])
   @@index([urgent])
   @@index([queue])
+  @@index([sopStage])
 }
 
 enum DmcaNoticeStatus {

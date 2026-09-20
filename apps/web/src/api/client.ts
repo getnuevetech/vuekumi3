@@ -861,10 +861,15 @@ export const api = {
   adminReports: (status?: string) =>
     request<{ items: RightsReportDto[] }>(`/api/admin/reports${status ? `?status=${encodeURIComponent(status)}` : ''}`),
 
-  decideRightsReport: (id: string, action: 'lock' | 'unlock' | 'dismiss' | 'resolve', notes?: string) =>
+  decideRightsReport: (
+    id: string,
+    action: 'lock' | 'unlock' | 'dismiss' | 'resolve' | 'preserve' | 'notify' | 'escalate',
+    notes?: string,
+    escalateTo?: 'legal' | 'law_enforcement' | 'counsel' | 'other',
+  ) =>
     request<{ report: RightsReportDto }>(`/api/admin/reports/${id}/decide`, {
       method: 'POST',
-      body: JSON.stringify({ action, notes }),
+      body: JSON.stringify({ action, notes, escalateTo }),
     }),
 
   adminDmca: (status?: string) =>

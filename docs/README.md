@@ -6,9 +6,8 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–50 (Arcs A–D complete; through Phase 50 / T1 public
-   `/report-content` hub). Default next slice: none scheduled until explicitly
-   approved.
+   shipped Phases 0–51 (Arcs A–D complete; through Phase 51 / T2 rights ops SOP).
+   Default next slice: none scheduled until explicitly approved.
 3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
    redeploy). Not a licence to start work without approval.
@@ -16,11 +15,14 @@ Read in this order:
    O0 live probe and Dec-* workshop blanks (no invented answers).
 5. **[07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)** —
    Trust & Markets plan: `/report-content`, `/rights`, DMCA/repeat ops, likeness
-   compensation negotiation, Country Activation Matrix admin. Plan only until approved.
+   compensation negotiation, Country Activation Matrix admin. T0–T2 foundations
+   shipped (Phases 49–51); remainder plan until approved.
 6. **[08-ADMIN-PORTAL-ENGINEERING-SPEC.md](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md)** —
    Engineering adoption of Admin Portal & Country Activation spec v1.2: three
    control layers, eight modules, Policy Decision Service, P0–P2 tranches.
-   **P0 (Phase 49) shipped**; P1–P2 remain plan until approved.
+   **P0 (Phase 49) shipped**; T1–T2 (Phases 50–51) shipped; P1–P2 remain plan until approved.
+11. **[runbooks/rights-ops.md](./runbooks/rights-ops.md)** — staff rights-ops SOP
+   (Phase 51 / T2).
 7. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
    Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
    and the shipped status header.
