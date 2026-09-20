@@ -168,10 +168,61 @@ export const decideRightsReportSchema = z.object({
   escalateTo: z.enum(['legal', 'law_enforcement', 'counsel', 'other']).optional(),
 })
 
-export const setCommercialLockSchema = z.object({
-  locked: z.boolean(),
-  notes: z.string().trim().max(2000).optional(),
-})
+export const setCommercialLockSchema = z
+  .object({
+    locked: z.boolean(),
+    notes: z.string().trim().max(2000).optional(),
+    /** Required when locking. Machine-readable quarantine reason. */
+    reason: z
+      .enum([
+        'rights_report',
+        'dmca_hold',
+        'safety_urgent',
+        'likeness_dispute',
+        'fraud_review',
+        'staff_quarantine',
+        'policy_suspend',
+      ])
+      .optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.locked && !value.reason) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'A quarantine reason is required when freezing licensing',
+        path: ['reason'],
+      })
+    }
+  })
+
+export const COMMERCIAL_LOCK_REASON_CODES = [
+  'rights_report',
+  'dmca_hold',
+  'safety_urgent',
+  'likeness_dispute',
+  'fraud_review',
+  'staff_quarantine',
+  'policy_suspend',
+] as const
+export type CommercialLockReasonCode = (typeof COMMERCIAL_LOCK_REASON_CODES)[number]
+
+export const COMMERCIAL_LOCK_REASON_LABEL: Record<CommercialLockReasonCode, string> = {
+  rights_report: 'Open rights report',
+  dmca_hold: 'Open DMCA hold',
+  safety_urgent: 'Safety / urgent review',
+  likeness_dispute: 'Likeness / consent dispute',
+  fraud_review: 'Fraud / strikes review',
+  staff_quarantine: 'Staff quarantine',
+  policy_suspend: 'Country policy suspend',
+}
+
+export function commercialLockReasonForReport(reason: RightsReportReason): CommercialLockReasonCode {
+  if (reason === 'safety_urgent') return 'safety_urgent'
+  if (reason === 'likeness' || reason === 'unauthorized_use') return 'likeness_dispute'
+  if (reason === 'fraudulent_release') return 'fraud_review'
+  if (reason === 'copyright') return 'rights_report'
+  return 'rights_report'
+}
 
 export const RIGHTS_SOP_STAGES = [
   'intake',
@@ -222,6 +273,7 @@ export interface RightsReportDto {
   staffNotes: string | null
   commercialLocked: boolean
   openDmcaHold: boolean
+  commercialLockReason?: string | null
 }
 
 export interface PublicReportResult {

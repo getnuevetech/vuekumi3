@@ -482,7 +482,11 @@ async function main() {
     })
     await prisma.photo.update({
       where: { id: 'afr-019' },
-      data: { commercialLocked: true, commercialLockedAt: new Date() },
+      data: {
+        commercialLocked: true,
+        commercialLockedAt: new Date(),
+        commercialLockReason: 'dmca_hold',
+      },
     })
     await prisma.rightsRecord.updateMany({
       where: { photoId: 'afr-019' },

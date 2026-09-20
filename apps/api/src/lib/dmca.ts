@@ -41,6 +41,7 @@ export function resolveNoticePhotoId(input: { photoId?: string; photoUrl?: strin
 export function serializeDmcaNotice(
   notice: DmcaNotice & {
     photo?: (Pick<Photo, 'id' | 'title' | 'src' | 'storageKey' | 'processingStatus' | 'commercialLocked'> & {
+      commercialLockReason?: string | null
       contributor?: User & { contributorProfile?: { handle: string } | null }
     }) | null
     counter?: DmcaCounterNotice | null
@@ -74,6 +75,7 @@ export function serializeDmcaNotice(
     reviewedAt: notice.reviewedAt?.toISOString() ?? null,
     staffNotes: notice.staffNotes,
     commercialLocked: notice.photo?.commercialLocked ?? false,
+    commercialLockReason: notice.photo?.commercialLockReason ?? null,
     counter: notice.counter
       ? {
           id: notice.counter.id,
@@ -133,6 +135,7 @@ export async function fileDmcaNotice(input: {
       photoId: photo.id,
       locked: true,
       holdReason: 'dmca_notice',
+      lockReason: 'dmca_hold',
     })
     await prisma.rightsRecord.updateMany({
       where: { photoId: photo.id },
@@ -317,6 +320,7 @@ export async function recordRightsStrike(input: {
         locked: true,
         actorId: input.actorId,
         holdReason: 'repeat_infringer',
+        lockReason: 'fraud_review',
       })
     }
     await holdContributorAvailableEarnings({
