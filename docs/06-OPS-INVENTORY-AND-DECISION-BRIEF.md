@@ -179,10 +179,12 @@ Dec-AI.
 ### Workshop output rule
 
 After the meeting, paste Chosen + signer into this file (or link a counsel memo)
-and only then promote related Track E work into
+and only then promote related Track E / Trust & Markets work into
 [`01-IMPLEMENTATION-PLAN.md`](./01-IMPLEMENTATION-PLAN.md) as a numbered phase.
-Until then, keep 50/50, zero booking/campaign/representation fees, discard-selfie
-Stage 3, and VueQuatro as staff mode in product UI and marketing.
+Until then, keep 50/50 photographer ledger, zero booking/campaign/representation
+fees, discard-selfie Stage 3, and VueQuatro as staff mode in product UI and
+marketing — unless Dec-Split option (A) from [`07`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)
+is signed, in which case negotiation may be scheduled without inventing a %.
 
 ---
 
