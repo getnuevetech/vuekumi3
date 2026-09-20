@@ -62,7 +62,8 @@ test.describe('Phase 45 + 55 web smoke', () => {
   })
 
   test('Phase 55: seed likeness invite opens on rights hub', async ({ page }) => {
-    await page.goto('/rights?token=seed-nomsa-model-invite')
+    // Use seed-e2e-rights-invite — API tests claim seed-nomsa-model-invite.
+    await page.goto('/rights?token=seed-e2e-rights-invite')
     await expect(page.getByRole('heading', { name: 'Your rights.' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Likeness consent' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Approve selected' })).toBeVisible()
@@ -71,8 +72,8 @@ test.describe('Phase 45 + 55 web smoke', () => {
   })
 
   test('Phase 55: legacy model invite URL redirects into rights hub', async ({ page }) => {
-    await page.goto('/invite/model/seed-nomsa-model-invite')
-    await expect(page).toHaveURL(/\/rights\?token=seed-nomsa-model-invite/)
+    await page.goto('/invite/model/seed-e2e-rights-invite')
+    await expect(page).toHaveURL(/\/rights\?token=seed-e2e-rights-invite/)
     await expect(page.getByRole('heading', { name: 'Likeness consent' })).toBeVisible()
   })
 

@@ -46,6 +46,8 @@ jobs:
       - run: npm exec -w @vuekumi/web -- vite build
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
+      - name: Re-seed before web smoke
+        run: npm run db:seed -w @vuekumi/api
       - name: Web smoke (Phases 45 + 55)
         run: npm run test:e2e
 

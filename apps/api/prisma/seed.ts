@@ -548,6 +548,23 @@ async function main() {
         invitedAt: new Date(),
       },
     })
+    // Dedicated Playwright smoke token — models.test claims seed-nomsa-model-invite.
+    const e2eRightsToken = 'seed-e2e-rights-invite'
+    await prisma.photoAppearance.create({
+      data: {
+        photoId: 'afr-003',
+        displayName: 'E2E Rights Guest',
+        inviteEmail: 'e2e-rights@vuekumi.demo',
+        invitedById: amaraId,
+        status: 'invited',
+        consentStatus: 'invitation_sent',
+        ageClass: 'adult',
+        usage: 'none',
+        inviteTokenHash: createHash('sha256').update(e2eRightsToken).digest('hex'),
+        inviteExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        invitedAt: new Date(),
+      },
+    })
   }
 
   const kofiId = contributorUsers.get('kofi-mensah')
@@ -1008,6 +1025,7 @@ async function main() {
   console.log('Contributor (self-shot dual role): kofi-mensah@vuekumi.demo / User12345!')
   console.log('Model (claimed): ada@vuekumi.demo / User12345!')
   console.log('Model invite: nomsa@vuekumi.demo → /rights?token=seed-nomsa-model-invite (legacy /invite/model/… redirects)')
+  console.log('E2E rights invite (Playwright): /rights?token=seed-e2e-rights-invite')
   console.log('Agency: agency@vuekumi.demo / User12345!')
   console.log('Agency manager: kemi@vuekumi.demo / User12345!')
   console.log('Partner API demo key (local/CI):', DEMO_PARTNER_KEY)
