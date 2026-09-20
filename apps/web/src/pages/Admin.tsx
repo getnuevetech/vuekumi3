@@ -110,6 +110,7 @@ export const adminLinks: PortalLink[] = [
     icon: icons.gear,
     children: [
       { to: '/admin/countries', label: 'Countries', icon: icons.gear },
+      { to: '/admin/countries/activation', label: 'Activation', icon: icons.gear },
       { to: '/admin/legal', label: 'Legal overlays', icon: icons.rights },
       { to: '/admin/gateways', label: 'Gateways', icon: icons.money },
       { to: '/admin/ai', label: 'AI APIs', icon: icons.gear },

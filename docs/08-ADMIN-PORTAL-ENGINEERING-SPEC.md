@@ -206,7 +206,7 @@ Integrate with `07` §7; **do not rebuild** working asset/account/payout service
 
 | Tranche | Spec meaning | Maps to `07` | Acceptance (from spec §14–15, condensed) |
 | --- | --- | --- | --- |
-| **P0 Policy core** | 54 HOLD import, PDS, country detail, 16 gates, dual approval, signup enforcement, nonmember independence, audit, expiry alerts | **T0 + T7** (+ wire `contributor.create` to PDS) | HOLD default; activation fails if any gate missing; same staff cannot prepare+authorize; Canada contributor DENY but invited consent ALLOW |
+| **P0 Policy core** | 54 HOLD import, PDS, country detail, 16 gates, dual approval, signup enforcement, nonmember independence, audit, expiry alerts | **T0 + T7** (+ wire `contributor.create` to PDS) | **Shipped Phase 49.** HOLD default; activation fails if any gate missing; same staff cannot prepare+authorize; Canada contributor DENY but invited consent ALLOW; `contributorOnboardingPolicy` defaults `africa_list` |
 | **P1 Rights & revenue** | Quarantine, AI subjects, reciprocal invites, ID/face provider, releases, negotiation, license recheck | **T4 + T5 + T6** (T5/T6 need Dec-PayBase) | NG photographer + CA model + JP buyer path; unsigned negotiation keeps LOCKED; over-allocation blocked |
 | **P2 Global operations** | Complaints/enforcement, tax/payee, buyer overlays, suspend/offboard, vendor deletion evidence, monitoring | **T1 + T2 + T3 + T8 + T9** | Suspension mid-checkout blocks new licence; DMCA counter ≠ likeness hold clear; fail-closed if PDS down |
 
@@ -267,12 +267,12 @@ Track in `06` workshop; do not invent answers:
 
 ---
 
-## 12. Immediate engineering next step (when approved)
+## 12. Immediate engineering next step
 
-1. Mark **P0** as the next numbered build slice in `01` (explicit approve).  
-2. Implement `CountryPolicyVersion` + gates + PDS stub returning DENY with
-   `policy_unavailable` for regulated actions until ACTIVE policies exist.  
-3. Import 54 countries as HOLD; keep current AU signup list behind
-   `contributorOnboardingPolicy=africa_list` until product flips to
-   `africa_list_and_country_active`.  
-4. Do not start P1 negotiation payouts before **Dec-PayBase**.
+**P0 shipped (Phase 49):** `CountryPolicyVersion` + G01–G16 gates + PDS
+(`POST /policy/evaluate`), admin `/admin/countries/activation`, signup via PDS,
+HOLD seed, `geo.contributor_onboarding_policy=africa_list` default.
+
+**Next (when approved):** P1 Rights & revenue — only after **Dec-PayBase**. Do not
+invent rates, vendors, or entity. Parallel safe UI: public `/report-content` (T1)
+once taxonomy is agreed.

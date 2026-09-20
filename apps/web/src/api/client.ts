@@ -987,6 +987,41 @@ export const api = {
   patchCountry: (code: string, body: Partial<GeoCountry>) =>
     request<{ country: GeoCountry }>(`/api/admin/countries/${code}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
+  adminCountryActivation: () =>
+    request<{ countries: CountryActivationRow[] }>('/api/admin/countries/activation'),
+  seedCountryPolicyHold: () =>
+    request<{ ok: boolean; countries: number; created: number }>('/api/admin/countries/activation/seed-hold', { method: 'POST' }),
+  adminCountryActivationDetail: (code: string) =>
+    request<{ country: GeoCountry; policy: CountryPolicyDetail }>(`/api/admin/countries/${code}/activation`),
+  patchCountryGate: (gateId: string, body: { status?: string; rationale?: string | null; evidence?: { label: string; url?: string; notes?: string } }) =>
+    request<{ policy: CountryPolicyDetail | null }>(`/api/admin/countries/activation/gates/${gateId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  submitCountryPolicy: (policyId: string, notes?: string) =>
+    request<{ policyId: string; status: string }>(`/api/admin/countries/activation/${policyId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
+  activateCountryPolicy: (policyId: string, notes?: string) =>
+    request<{ policyId: string; status: string }>(`/api/admin/countries/activation/${policyId}/activate`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
+  suspendCountryPolicy: (policyId: string, notes?: string) =>
+    request<{ policyId: string; status: string }>(`/api/admin/countries/activation/${policyId}/suspend`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
+  policyEvaluate: (body: { action: string; countryCode?: string; role?: string }) =>
+    request<{
+      decision: string
+      reasonCodes: string[]
+      policyVersion: string | null
+      expiresAt: string | null
+      evidenceRequired: string[]
+    }>('/api/policy/evaluate', { method: 'POST', body: JSON.stringify(body) }),
+
   adminRates: () => request<{ rates: FxRate[] }>('/api/admin/exchange-rates'),
   syncRates: () => request<{ updated: number; currencies: string[] }>('/api/admin/exchange-rates/sync', { method: 'POST' }),
   overrideRate: (currency: string, overrideRate: number | null) =>
@@ -1021,6 +1056,65 @@ export interface GeoCountry {
   overlayKind?: string | null
   biometricForbidden?: boolean
   counselStatus?: string
+}
+
+export interface CountryActivationRow {
+  code: string
+  name: string
+  region: string
+  contributorEligible: boolean
+  enabled: boolean
+  overlayKind: string | null
+  counselStatus: string
+  policy: {
+    id: string
+    version: number
+    status: string
+    preparedById: string | null
+    publishedAt: string | null
+    gatesReady: boolean
+    gatesMissing: string[]
+    gateCounts: {
+      total: number
+      approved: number
+      notApplicable: number
+      blocked: number
+      open: number
+    }
+    lastTransitionKind: string | null
+  } | null
+}
+
+export interface CountryPolicyDetail {
+  id: string
+  countryCode: string
+  version: number
+  status: string
+  preparedById: string | null
+  publishedAt: string | null
+  effectiveFrom: string | null
+  effectiveTo: string | null
+  notes: string | null
+  gates: Array<{
+    id: string
+    code: string
+    title: string
+    status: string
+    rationale: string | null
+    evidence: Array<{ id: string; label: string; url: string | null; notes: string | null; createdAt: string }>
+    approvals: Array<{ id: string; approverId: string; decision: string; createdAt: string }>
+  }>
+  featureScopes: Array<{ action: string; state: string; notes: string | null }>
+  transitions: Array<{
+    id: string
+    kind: string
+    fromStatus: string
+    toStatus: string
+    actorId: string
+    authorizeId: string | null
+    notes: string | null
+    createdAt: string
+  }>
 }
 
 export interface PricingQuote {

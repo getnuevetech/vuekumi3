@@ -1,22 +1,10 @@
 import { prisma } from './prisma.js'
 import { ALL_COUNTRIES } from '../data/countries.js'
+import { assertContributorCountryViaPds } from './policy-decision.js'
 
+/** Contributor signup / create — delegates to Policy Decision Service (Phase 49 / P0). */
 export async function assertContributorCountry(countryCode?: string) {
-  if (!countryCode) {
-    throw Object.assign(new Error('Contributors must select an African country'), { statusCode: 400 })
-  }
-  const country = await prisma.country.findUnique({
-    where: { code: countryCode.toUpperCase() },
-    include: { legalOverlay: true },
-  })
-  const overlayAllows = country?.legalOverlay ? country.legalOverlay.contributorAllowed : true
-  if (!country?.enabled || !country.contributorEligible || country.region !== 'africa' || !overlayAllows) {
-    throw Object.assign(
-      new Error('Vuekumi only accepts contributors from African countries'),
-      { statusCode: 400 },
-    )
-  }
-  return country
+  return assertContributorCountryViaPds(countryCode)
 }
 
 export async function seedCountries() {

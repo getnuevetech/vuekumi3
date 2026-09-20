@@ -31,7 +31,7 @@ import LegalPage from './pages/Legal'
 import { AdminLegal } from './pages/AdminLegal'
 import { AdminSettings } from './pages/AdminSettings'
 import { AdminAdmins, AdminAgencies, AdminContributors, AdminInfluencers, AdminModels, AdminPhotographers, AdminUsers } from './pages/AdminAccounts'
-import { AdminCountries, AdminRates } from './pages/AdminGeo'
+import { AdminCountries, AdminCountryActivation, AdminRates } from './pages/AdminGeo'
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
 import AdminHomepage from './pages/AdminHomepage'
@@ -135,6 +135,7 @@ export default function App() {
         <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']} capability="partner.keys.list"><AdminPartnerKeys /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']} capability="payouts.list"><AdminPayouts /></ProtectedRoute>} />
         <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminCountries /></ProtectedRoute>} />
+        <Route path="/admin/countries/activation" element={<ProtectedRoute allowed={['admin']} capability="geo.activation.research"><AdminCountryActivation /></ProtectedRoute>} />
         <Route path="/admin/legal" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminLegal /></ProtectedRoute>} />
         <Route path="/admin/rates" element={<ProtectedRoute allowed={['admin']} capability="geo.fx.list"><AdminRates /></ProtectedRoute>} />
         <Route path="/admin/gateways" element={<ProtectedRoute allowed={['admin']} capability="integrations.gateways.read"><AdminGateways /></ProtectedRoute>} />

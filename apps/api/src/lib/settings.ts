@@ -69,6 +69,13 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'auth.google_client_id', label: 'Google OAuth client ID', group: 'Auth — Google', secret: false, envFallback: 'GOOGLE_CLIENT_ID', placeholder: 'xxxx.apps.googleusercontent.com' },
   { key: 'auth.google_client_secret', label: 'Google OAuth client secret', group: 'Auth — Google', secret: true, envFallback: 'GOOGLE_CLIENT_SECRET' },
   { key: 'ops.sentry_dsn', label: 'Sentry DSN', group: 'Observability', secret: false, envFallback: 'SENTRY_DSN', placeholder: 'https://...@....ingest.sentry.io/...' },
+  {
+    key: 'geo.contributor_onboarding_policy',
+    label: 'Contributor onboarding policy (africa_list | africa_list_and_country_active)',
+    group: 'Geo / Country policy',
+    secret: false,
+    placeholder: 'africa_list',
+  },
 ]
 
 export function envSetting(key: string): string | null {

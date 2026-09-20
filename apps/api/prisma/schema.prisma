@@ -1433,7 +1433,8 @@ model Country {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  legalOverlay LegalOverlay?
+  legalOverlay   LegalOverlay?
+  policyVersions CountryPolicyVersion[]
 
   @@index([region])
   @@index([contributorEligible])
@@ -1454,6 +1455,108 @@ model LegalOverlay {
   country Country @relation(fields: [countryCode], references: [code], onDelete: Cascade)
 
   @@index([overlayKind])
+}
+
+/// Phase 49 / P0 — country policy version. Status changes only via CountryTransition.
+model CountryPolicyVersion {
+  id            String   @id @default(cuid())
+  countryCode   String
+  version       Int
+  status        String   @default("HOLD")
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  publishedAt   DateTime?
+  preparedById  String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  country      Country               @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+  gates        CountryGate[]
+  featureScopes CountryFeatureScope[]
+  transitions  CountryTransition[]
+
+  @@unique([countryCode, version])
+  @@index([countryCode, status])
+  @@index([status])
+}
+
+model CountryGate {
+  id              String   @id @default(cuid())
+  policyVersionId String
+  code            String
+  title           String
+  status          String   @default("NOT_STARTED")
+  rationale       String?
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  policyVersion CountryPolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+  evidence      GateEvidence[]
+  approvals     GateApproval[]
+
+  @@unique([policyVersionId, code])
+  @@index([status])
+}
+
+model GateEvidence {
+  id        String   @id @default(cuid())
+  gateId    String
+  label     String
+  url       String?
+  notes     String?
+  addedById String?
+  createdAt DateTime @default(now())
+
+  gate CountryGate @relation(fields: [gateId], references: [id], onDelete: Cascade)
+
+  @@index([gateId])
+}
+
+model GateApproval {
+  id         String   @id @default(cuid())
+  gateId     String
+  approverId String
+  decision   String
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  gate CountryGate @relation(fields: [gateId], references: [id], onDelete: Cascade)
+
+  @@index([gateId])
+  @@index([approverId])
+}
+
+model CountryFeatureScope {
+  id              String   @id @default(cuid())
+  policyVersionId String
+  action          String
+  state           String   @default("HOLD")
+  notes           String?
+  updatedAt       DateTime @updatedAt
+
+  policyVersion CountryPolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([policyVersionId, action])
+}
+
+model CountryTransition {
+  id              String   @id @default(cuid())
+  policyVersionId String
+  kind            String
+  fromStatus      String
+  toStatus        String
+  actorId         String
+  authorizeId     String?
+  notes           String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  policyVersion CountryPolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+
+  @@index([policyVersionId])
+  @@index([kind])
+  @@index([createdAt])
 }
 
 model ExchangeRate {
