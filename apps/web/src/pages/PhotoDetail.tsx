@@ -501,7 +501,7 @@ export default function PhotoDetail() {
             </p>
             <div className="mt-4 border-t border-sand pt-4">
               <Link
-                to={`/report-content?photoId=${view.id}`}
+                to={`/report-content?photoUrl=${encodeURIComponent(`/photo/${view.id}`)}`}
                 className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft hover:text-terra"
               >
                 Report a rights or safety issue →

@@ -114,6 +114,54 @@ test('T1 taxonomy maps categories to queues; safety is urgent', () => {
   assert.equal(holdReasonForReport('likeness'), 'likeness_dispute')
 })
 
+test('parsePhotoRef accepts page links and bare ids', async () => {
+  const { parsePhotoRef, resolveReportPhotoId } = await import('@vuekumi/shared')
+  assert.equal(parsePhotoRef('afr-001'), 'afr-001')
+  assert.equal(parsePhotoRef('/photo/afr-001'), 'afr-001')
+  assert.equal(parsePhotoRef('https://vuekumi.com/photo/afr-001'), 'afr-001')
+  assert.equal(parsePhotoRef('https://vuekumi.com/photo/afr-001?x=1'), 'afr-001')
+  assert.equal(parsePhotoRef('https://vuekumi.com/report-content?photoId=afr-002'), 'afr-002')
+  assert.equal(resolveReportPhotoId({ photoUrl: '/photo/afr-003' }), 'afr-003')
+  assert.equal(resolveReportPhotoId({ photoId: 'afr-004' }), 'afr-004')
+  assert.equal(parsePhotoRef('not a link'), null)
+})
+
+test('guest hub accepts photograph page URL, not only bare id', async () => {
+  const app = await buildApp()
+  const live = await app.inject({ method: 'GET', url: '/api/photos/afr-002' })
+  if (live.statusCode !== 200) {
+    await app.close()
+    return
+  }
+
+  const byUrl = await app.inject({
+    method: 'POST',
+    url: '/api/report-content',
+    payload: {
+      photoUrl: 'https://vuekumi.com/photo/afr-002',
+      reason: 'copyright',
+      details: 'This photograph was uploaded without my permission as the copyright holder.',
+      reporterEmail: 'link-guest@example.com',
+    },
+  })
+  assert.equal(byUrl.statusCode, 200, byUrl.body)
+  assert.equal((byUrl.json() as { ok: boolean }).ok, true)
+
+  const byPath = await app.inject({
+    method: 'POST',
+    url: '/api/report-content',
+    payload: {
+      photoUrl: '/photo/afr-002',
+      reason: 'copyright',
+      details: 'Duplicate path-based report should return alreadyReported for same guest.',
+      reporterEmail: 'link-guest@example.com',
+    },
+  })
+  assert.equal(byPath.statusCode, 200, byPath.body)
+  assert.equal((byPath.json() as { alreadyReported?: boolean }).alreadyReported, true)
+  await app.close()
+})
+
 test('guest hub POST /report-content files a safety report onto the fast-path', async () => {
   const app = await buildApp()
   const live = await app.inject({ method: 'GET', url: '/api/photos/afr-001' })
@@ -137,7 +185,7 @@ test('guest hub POST /report-content files a safety report onto the fast-path', 
     method: 'POST',
     url: '/api/report-content',
     payload: {
-      photoId: 'afr-001',
+      photoUrl: '/photo/afr-001',
       reason: 'safety_urgent',
       details: 'This listing appears to involve a minor in an unsafe context and needs urgent review.',
       reporterEmail: 'safety-guest@example.com',
