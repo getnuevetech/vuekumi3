@@ -269,10 +269,9 @@ Track in `06` workshop; do not invent answers:
 
 ## 12. Immediate engineering next step
 
-**P0 shipped (Phase 49):** `CountryPolicyVersion` + G01–G16 gates + PDS
-(`POST /policy/evaluate`), admin `/admin/countries/activation`, signup via PDS,
-HOLD seed, `geo.contributor_onboarding_policy=africa_list` default.
+**P0 shipped (Phase 49).** **T1 shipped (Phase 50):** public `/report-content`,
+expanded taxonomy (fraud / safety / compensation), queue + urgency routing,
+photo deep-link, admin safety filter.
 
-**Next (when approved):** P1 Rights & revenue — only after **Dec-PayBase**. Do not
-invent rates, vendors, or entity. Parallel safe UI: public `/report-content` (T1)
-once taxonomy is agreed.
+**Next (when approved):** T2 rights ops SOP, or T4 `/rights` hub. **P1 Rights &
+revenue** only after **Dec-PayBase**. Do not invent rates, vendors, or entity.

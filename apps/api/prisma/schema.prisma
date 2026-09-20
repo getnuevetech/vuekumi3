@@ -1228,6 +1228,9 @@ enum RightsReportReason {
   copyright
   likeness
   unauthorized_use
+  fraudulent_release
+  safety_urgent
+  compensation_dispute
   other
 }
 
@@ -1244,6 +1247,8 @@ model RightsReport {
   reason         RightsReportReason
   details        String
   status         RightsReportStatus @default(open)
+  urgent         Boolean            @default(false)
+  queue          String             @default("general")
   reporterUserId String?
   reporterEmail  String?
   reporterName   String?
@@ -1262,6 +1267,8 @@ model RightsReport {
   @@index([photoId])
   @@index([status])
   @@index([createdAt])
+  @@index([urgent])
+  @@index([queue])
 }
 
 enum DmcaNoticeStatus {

@@ -4,11 +4,17 @@ import { buildApp } from '../src/app.js'
 import {
   duplicateReportWhere,
   guestReportMissingContact,
+  holdReasonForReport,
   nextReportStatus,
   normalizeReporterEmail,
   parseReportQueueStatus,
   reportQueueWhere,
 } from '../src/lib/reports.js'
+import {
+  reportIsUrgent,
+  reportQueueForReason,
+  RIGHTS_REPORT_REASONS,
+} from '@vuekumi/shared'
 import { COMMERCIAL_LOCK_REASON, isLicenseOffered } from '../src/lib/rights.js'
 import { rightsReportOpsEmail } from '../src/lib/email.js'
 
@@ -58,11 +64,16 @@ test('staff actions move a report through reviewing, dismiss, and resolve', () =
   assert.equal(nextReportStatus('resolve', 'reviewing'), 'resolved')
 })
 
-test('queue filter is open plus reviewing', () => {
+test('queue filter is open plus reviewing; safety and category filters work', () => {
   assert.deepEqual(reportQueueWhere('queue'), { status: { in: ['open', 'reviewing'] } })
   assert.deepEqual(reportQueueWhere('open'), { status: 'open' })
   assert.equal(reportQueueWhere('all'), undefined)
   assert.equal(parseReportQueueStatus('nope'), undefined)
+  assert.deepEqual(reportQueueWhere('safety'), { urgent: true, status: { in: ['open', 'reviewing'] } })
+  assert.deepEqual(reportQueueWhere('dmca_copyright'), {
+    queue: 'dmca_copyright',
+    status: { in: ['open', 'reviewing'] },
+  })
 })
 
 test('duplicate matching uses the reporter, email, or IP on an open case', () => {
@@ -88,6 +99,74 @@ test('commercial lock blocks every offered licence without delisting', () => {
   assert.equal(locked.reason, COMMERCIAL_LOCK_REASON)
   const stillVisible = isLicenseOffered(product, { ...livePhoto, status: 'active', commercialLocked: true })
   assert.equal(stillVisible.offered, false)
+})
+
+test('T1 taxonomy maps categories to queues; safety is urgent', () => {
+  assert.equal(RIGHTS_REPORT_REASONS.length, 7)
+  assert.equal(reportQueueForReason('copyright'), 'dmca_copyright')
+  assert.equal(reportQueueForReason('likeness'), 'likeness_consent')
+  assert.equal(reportQueueForReason('fraudulent_release'), 'fraud_strikes')
+  assert.equal(reportQueueForReason('safety_urgent'), 'safety')
+  assert.equal(reportQueueForReason('compensation_dispute'), 'commercial_dispute')
+  assert.equal(reportIsUrgent('safety_urgent'), true)
+  assert.equal(reportIsUrgent('copyright'), false)
+  assert.equal(holdReasonForReport('safety_urgent'), 'safety_urgent')
+  assert.equal(holdReasonForReport('likeness'), 'likeness_dispute')
+})
+
+test('guest hub POST /report-content files a safety report onto the fast-path', async () => {
+  const app = await buildApp()
+  const live = await app.inject({ method: 'GET', url: '/api/photos/afr-001' })
+  if (live.statusCode !== 200) {
+    await app.close()
+    return
+  }
+
+  const missingPhoto = await app.inject({
+    method: 'POST',
+    url: '/api/report-content',
+    payload: {
+      reason: 'safety_urgent',
+      details: 'This listing appears to involve a minor in an unsafe context and needs urgent review.',
+      reporterEmail: 'safety-guest@example.com',
+    },
+  })
+  assert.equal(missingPhoto.statusCode, 400)
+
+  const filed = await app.inject({
+    method: 'POST',
+    url: '/api/report-content',
+    payload: {
+      photoId: 'afr-001',
+      reason: 'safety_urgent',
+      details: 'This listing appears to involve a minor in an unsafe context and needs urgent review.',
+      reporterEmail: 'safety-guest@example.com',
+    },
+  })
+  assert.equal(filed.statusCode, 200, filed.body)
+  const body = filed.json() as { ok: boolean; urgent?: boolean; queue?: string }
+  assert.equal(body.ok, true)
+  assert.equal(body.urgent, true)
+  assert.equal(body.queue, 'safety')
+
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'admin@vuekumi.com', password: 'Admin123!' },
+  })
+  assert.equal(login.statusCode, 200)
+  const raw = login.headers['set-cookie']
+  const cookie = (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
+
+  const safety = await app.inject({
+    method: 'GET',
+    url: '/api/admin/reports?status=safety',
+    headers: { cookie },
+  })
+  assert.equal(safety.statusCode, 200)
+  const items = (safety.json() as { items: { photoId: string; urgent: boolean; queue: string }[] }).items
+  assert.ok(items.some((row) => row.photoId === 'afr-001' && row.urgent && row.queue === 'safety'))
+  await app.close()
 })
 
 test('ops email for a rights report points at the staff queue', () => {

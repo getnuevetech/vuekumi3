@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
-import type { RightsReportDto } from '@vuekumi/shared'
+import { RIGHTS_REPORT_CATEGORY_META, type RightsReportDto } from '@vuekumi/shared'
 import { StatusPill } from '../components/shared'
 import { api, ApiError } from '../api/client'
 import { relativeAge } from '../lib/format'
 import { AdminShell } from './Admin'
 
-const FILTERS = ['queue', 'open', 'reviewing', 'all', 'dismissed', 'resolved'] as const
+const FILTERS = [
+  'queue',
+  'safety',
+  'dmca_copyright',
+  'likeness_consent',
+  'fraud_strikes',
+  'commercial_dispute',
+  'open',
+  'reviewing',
+  'all',
+  'dismissed',
+  'resolved',
+] as const
 type Filter = (typeof FILTERS)[number]
-
-const REASON_LABEL: Record<RightsReportDto['reason'], string> = {
-  copyright: 'Copyright',
-  likeness: 'Likeness',
-  unauthorized_use: 'Unauthorized use',
-  other: 'Other',
-}
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -25,9 +30,30 @@ function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
+function filterLabel(key: Filter): string {
+  switch (key) {
+    case 'queue':
+      return 'open queue'
+    case 'safety':
+      return 'safety fast-path'
+    case 'dmca_copyright':
+      return 'copyright'
+    case 'likeness_consent':
+      return 'likeness'
+    case 'fraud_strikes':
+      return 'fraud'
+    case 'commercial_dispute':
+      return 'compensation'
+    default:
+      return key
+  }
+}
+
 export function AdminReports() {
+  const [params] = useSearchParams()
+  const initial = (params.get('status') as Filter | null) ?? 'queue'
   const [items, setItems] = useState<RightsReportDto[]>([])
-  const [filter, setFilter] = useState<Filter>('queue')
+  const [filter, setFilter] = useState<Filter>(FILTERS.includes(initial as Filter) ? (initial as Filter) : 'queue')
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
 
@@ -65,8 +91,8 @@ export function AdminReports() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Reports</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Rights & takedown.</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Anyone can report a listing. Locking pauses new licences and quotes; the photograph stays visible.
-        Existing certificates are not revoked.
+        Intake from <Link to="/report-content" className="text-terra">/report-content</Link>.
+        Safety reports sort first. Locking pauses new licences; the photograph stays visible.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -79,7 +105,7 @@ export function AdminReports() {
               filter === key ? 'bg-ink text-paper' : 'border border-sand text-ink-soft hover:border-ink'
             }`}
           >
-            {key === 'queue' ? 'open queue' : key}
+            {filterLabel(key)}
           </button>
         ))}
       </div>
@@ -98,72 +124,68 @@ export function AdminReports() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Link to={`/photo/${r.photoId}`} className="font-medium hover:text-terra">{r.photoTitle}</Link>
                   <StatusPill status={r.status} />
-                  {r.commercialLocked && <StatusPill status="locked" />}
+                  {r.urgent && (
+                    <span className="rounded-full bg-[#b3382e]/10 px-2 py-0.5 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-[#b3382e]">
+                      Safety
+                    </span>
+                  )}
+                  <span className="font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-faint">
+                    {RIGHTS_REPORT_CATEGORY_META[r.reason]?.label ?? r.reason}
+                  </span>
                 </div>
-                <p className="mt-0.5 font-mono-tech text-[10px] text-ink-faint">
-                  {REASON_LABEL[r.reason]} · @{r.photographer || 'unknown'} · {relativeAge(r.createdAt)}
+                <p className="mt-1 text-xs text-ink-soft">
+                  {r.photographer ? `@${r.photographer}` : 'Unknown creator'} · {relativeAge(r.createdAt)}
+                  {r.reporterEmail ? ` · ${r.reporterEmail}` : ''}
                 </p>
-                <p className="mt-2 max-w-xl text-sm text-ink-soft">{r.details}</p>
-                <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
-                  Reporter {r.reporterName || '—'} · {r.reporterEmail || 'no email'}
-                </p>
+                <p className="mt-2 max-w-xl whitespace-pre-wrap text-sm text-ink-soft">{r.details}</p>
                 {r.staffNotes && (
-                  <p className="mt-1 text-[13px] text-ink-soft">Staff: {r.staffNotes}</p>
+                  <p className="mt-2 text-xs text-ink-faint">Staff: {r.staffNotes}</p>
                 )}
                 <input
                   value={notes[r.id] ?? ''}
-                  onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
-                  placeholder="Staff notes"
-                  className="mt-2 w-full max-w-md border border-sand px-3 py-1.5 text-sm outline-none focus:border-terra"
+                  onChange={(e) => setNotes((s) => ({ ...s, [r.id]: e.target.value }))}
+                  placeholder="Staff notes (optional)"
+                  className="mt-3 w-full max-w-md rounded-lg border border-sand-soft px-3 py-1.5 text-sm"
                 />
               </div>
             </div>
-            <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col">
-              {!r.commercialLocked ? (
+            <div className="flex flex-wrap gap-2">
+              {!r.commercialLocked && (
                 <button
                   type="button"
-                  disabled={busy?.startsWith(r.id)}
+                  disabled={busy === `${r.id}:lock`}
                   onClick={() => void decide(r.id, 'lock')}
-                  className="rounded-full bg-ink px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-paper disabled:opacity-40"
+                  className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
                 >
-                  Freeze licensing
+                  Freeze
                 </button>
-              ) : (
+              )}
+              {r.commercialLocked && (
                 <button
                   type="button"
-                  disabled={busy?.startsWith(r.id)}
+                  disabled={busy === `${r.id}:unlock`}
                   onClick={() => void decide(r.id, 'unlock')}
-                  className="rounded-full border border-sand px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40"
+                  className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
                 >
-                  Unlock
+                  Unfreeze
                 </button>
               )}
-              {r.status !== 'dismissed' && r.status !== 'resolved' && (
-                <>
-                  <button
-                    type="button"
-                    disabled={busy?.startsWith(r.id)}
-                    onClick={() => void decide(r.id, 'dismiss')}
-                    className="rounded-full border border-sand px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40"
-                  >
-                    Dismiss
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy?.startsWith(r.id)}
-                    onClick={() => void decide(r.id, 'resolve')}
-                    className="rounded-full border border-sand px-4 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40"
-                  >
-                    Resolve
-                  </button>
-                </>
-              )}
-              <Link
-                to={`/admin/content`}
-                className="rounded-full border border-sand px-4 py-1.5 text-center font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft hover:border-ink hover:text-ink"
+              <button
+                type="button"
+                disabled={busy === `${r.id}:dismiss`}
+                onClick={() => void decide(r.id, 'dismiss')}
+                className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
               >
-                Content →
-              </Link>
+                Dismiss
+              </button>
+              <button
+                type="button"
+                disabled={busy === `${r.id}:resolve`}
+                onClick={() => void decide(r.id, 'resolve')}
+                className="rounded-full bg-ink px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-paper"
+              >
+                Resolve
+              </button>
             </div>
           </div>
         ))}
