@@ -6,9 +6,8 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–48 (Arcs A–D complete; through Phase 48 live demo credential
-   hygiene + Playwright expand). Default next slice: none scheduled until explicitly
-   approved.
+   shipped Phases 0–49 (Arcs A–D complete; through Phase 49 / P0 country policy +
+   PDS). Default next slice: none scheduled until explicitly approved.
 3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
    redeploy). Not a licence to start work without approval.
@@ -19,7 +18,8 @@ Read in this order:
    compensation negotiation, Country Activation Matrix admin. Plan only until approved.
 6. **[08-ADMIN-PORTAL-ENGINEERING-SPEC.md](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md)** —
    Engineering adoption of Admin Portal & Country Activation spec v1.2: three
-   control layers, eight modules, Policy Decision Service, P0–P2 tranches. Plan only.
+   control layers, eight modules, Policy Decision Service, P0–P2 tranches.
+   **P0 (Phase 49) shipped**; P1–P2 remain plan until approved.
 7. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
    Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
    and the shipped status header.

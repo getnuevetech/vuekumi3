@@ -281,7 +281,7 @@ Document in `docs/runbooks/rights-ops.md` (new) when T2 starts:
 2. Sign **Dec-PayBase** (and revisit Dec-Split / Dec-Bio / Dec-VQ in `06`).  
 3. Counsel: DMCA agent filing, public policy copy, first-wave country gate evidence.  
 4. Ops: keep Lightsail TLS + SHA work on Track O; do not block T0–T1 docs/UI on TLS.  
-5. When approved to build, start **P0** (country policy + PDS + signup
-   enforcement) per [`08`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md); optionally
-   parallel **T1** (`/report-content`). Do not start negotiation payouts before
-   **Dec-PayBase**.
+5. **P0 shipped (Phase 49).** Optional next: parallel **T1** (`/report-content`)
+   when approved. Do not start negotiation payouts before **Dec-PayBase**.
+   Pilot ACTIVE countries (T8) still need counsel evidence — do not invent launch
+   markets.

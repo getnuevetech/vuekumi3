@@ -6,6 +6,7 @@ import { prisma } from './lib/prisma.js'
 import { seedLicenseCatalog } from './lib/licenses-seed.js'
 import { startMediaWorker } from './lib/media-worker.js'
 import { initSentry } from './lib/sentry.js'
+import { seedHoldPoliciesForAllCountries } from './lib/policy-decision.js'
 
 const app = await buildApp()
 assertProductionSecrets()
@@ -13,6 +14,9 @@ await initSentry()
 
 try {
   await seedCountries()
+  await seedHoldPoliciesForAllCountries().catch((err) =>
+    app.log.warn({ err }, 'country policy HOLD seed failed'),
+  )
   await seedLicenseCatalog()
   if ((await prisma.exchangeRate.count()) === 0) {
     await syncExchangeRates().catch((err) => app.log.warn({ err }, 'initial FX sync failed'))
