@@ -17,14 +17,17 @@ Read in this order:
 5. **[07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)** —
    Trust & Markets plan: `/report-content`, `/rights`, DMCA/repeat ops, likeness
    compensation negotiation, Country Activation Matrix admin. Plan only until approved.
-6. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
+6. **[08-ADMIN-PORTAL-ENGINEERING-SPEC.md](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md)** —
+   Engineering adoption of Admin Portal & Country Activation spec v1.2: three
+   control layers, eight modules, Policy Decision Service, P0–P2 tranches. Plan only.
+7. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
    Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
    and the shipped status header.
-7. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
+8. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
    actually deployed (Docker on AWS Lightsail); O3/O4 checklists.
-8. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
+9. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
    template before the backend existed.
-9. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
+10. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
    Original NestJS/Lightsail sketch; superseded by the deploy README.
 
 **Do not start a new implementation phase until it is explicitly approved.**

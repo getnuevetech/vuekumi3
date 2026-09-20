@@ -223,6 +223,8 @@ Workshop blanks (options only; Chosen left pending):
 [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md) §2.
 Trust & Markets plan (report hub, compensation negotiation, country activation):
 [`07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md).
+Admin portal engineering (three layers, PDS, P0–P2):
+[`08-ADMIN-PORTAL-ENGINEERING-SPEC.md`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md).
 
 | Decision ID | Question | Unblocks |
 | --- | --- | --- |
