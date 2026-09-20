@@ -586,6 +586,11 @@ export interface CopyrightInvitePreviewDto {
   notice: string
 }
 
+/** Phase 52 / T4 — unified preview for `/rights?token=`. */
+export type RightsPreviewDto =
+  | { kind: 'likeness'; invite: import('./models.js').ModelInvitePreviewDto }
+  | { kind: 'copyright'; invite: CopyrightInvitePreviewDto }
+
 export interface VerifiedRightsRecordDto {
   copyrightStatus: CopyrightStatus
   modelConsentStatus: ModelConsentStatus

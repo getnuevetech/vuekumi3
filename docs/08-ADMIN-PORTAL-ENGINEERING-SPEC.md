@@ -271,7 +271,8 @@ Track in `06` workshop; do not invent answers:
 
 **P0 shipped (Phase 49).** **T1 shipped (Phase 50).** **T2 shipped (Phase 51):**
 admin SOP actions (preserve / notify / escalate), DMCA hold blocks report unfreeze,
-`docs/runbooks/rights-ops.md`.
+`docs/runbooks/rights-ops.md`. **T4 shipped (Phase 52):** public `/rights` hub
+(token + signed-in model review/approve; no compensation UI).
 
-**Next (when approved):** T4 `/rights` hub, or T3 DMCA policy hardening (counsel copy).
-**P1 Rights & revenue** only after **Dec-PayBase**. Do not invent rates, vendors, or entity.
+**Next (when approved):** T3 DMCA policy hardening (counsel copy), or T7/T9 ops.
+**P1 Rights & revenue** (T5/T6) only after **Dec-PayBase**. Do not invent rates, vendors, or entity.

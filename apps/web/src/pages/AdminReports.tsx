@@ -103,7 +103,8 @@ export function AdminReports() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Reports</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Rights ops.</h1>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
-        Intake from <Link to="/report-content" className="text-terra">/report-content</Link>.
+        Intake from <Link to="/report-content" className="text-terra">/report-content</Link>
+        {' '}· holders review on <Link to="/rights" className="text-terra">/rights</Link>.
         Staff SOP: <code className="font-mono-tech text-xs">docs/runbooks/rights-ops.md</code>.
         Copyright statutory notices stay on <Link to="/admin/dmca" className="text-terra">DMCA</Link>
         {' '}— counter-notice never clears likeness or safety.

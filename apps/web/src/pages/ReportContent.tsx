@@ -110,7 +110,8 @@ export default function ReportContentPage() {
           Paste the photograph page link, then choose a category. Guests welcome.
           Statutory copyright takedown is a separate{' '}
           <Link to="/dmca" className="text-terra">DMCA notice</Link>
-          {' '}— not for likeness, privacy, or safety.
+          {' '}— not for likeness, privacy, or safety. Invited models and photographers review usage on{' '}
+          <Link to="/rights" className="text-terra">Your rights</Link>.
         </p>
 
         {done ? (

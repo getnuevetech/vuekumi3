@@ -1007,7 +1007,7 @@ async function main() {
   console.log('Member: member@vuekumi.demo / User12345!')
   console.log('Contributor (self-shot dual role): kofi-mensah@vuekumi.demo / User12345!')
   console.log('Model (claimed): ada@vuekumi.demo / User12345!')
-  console.log('Model invite: nomsa@vuekumi.demo → /invite/model/seed-nomsa-model-invite')
+  console.log('Model invite: nomsa@vuekumi.demo → /rights?token=seed-nomsa-model-invite (legacy /invite/model/… redirects)')
   console.log('Agency: agency@vuekumi.demo / User12345!')
   console.log('Agency manager: kemi@vuekumi.demo / User12345!')
   console.log('Partner API demo key (local/CI):', DEMO_PARTNER_KEY)
