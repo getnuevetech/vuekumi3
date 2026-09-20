@@ -238,10 +238,9 @@ git rev-parse --short origin/main
    - set `WEB_URL=https://vuekumi.com` in `.env`
    - redeploy **without** `SEED_DEMO=1`
 5. Re-check login cookies over HTTPS include `Secure`.
-6. ~~Rotate remaining seed staff logins~~ **Phase 47:** `support@` and
-   `moderator@` `@vuekumi.demo` no longer accept `User12345!`. **`finance@`**
-   was rotated but the new secret was lost to API rate-limit — apply the finance
-   recovery SQL below, then change the password again from Account settings.
+6. ~~Rotate remaining seed staff logins~~ **Phases 47–48:** live `@vuekumi.demo`
+   and admin demo passwords rotated (secrets not in git). Local/CI seed still uses
+   `Admin123!` / `User12345!` by design.
 
 ### Admin password recovery (on-host)
 
@@ -262,21 +261,9 @@ docker compose -f docker-compose.prod.yml exec -T postgres \
   "UPDATE \"User\" SET \"passwordHash\" = 'NEW_HASH' WHERE email = 'admin@vuekumi.com';"
 ```
 
-**Finance recovery (Phase 47)** — `finance@vuekumi.demo` was rotated but the new
-secret was lost to API rate-limit. On the host, set a bcrypt hash you control:
-
-```bash
-node -e "require('bcryptjs').hash('YOUR_CHOSEN_PASSWORD',12).then(console.log)"
-docker compose -f docker-compose.prod.yml exec -T postgres \
-  psql -U vuekumi vuekumi -c \
-  "UPDATE \"User\" SET \"passwordHash\" = 'NEW_HASH' WHERE email = 'finance@vuekumi.demo';"
-```
-
-A ready-made hash/password pair was delivered in the Phase 47 operator message
-(not stored in git). Prefer generating your own.
-
-Then sign in at `http://vuekumi.com/login` (until TLS works) and change the
-password again from Account settings so the SQL value is not the long-term secret.
+**Finance recovery** — if a staff account is locked, use the same bcrypt SQL pattern
+with that account's email. Prefer generating a fresh hash rather than reusing an
+old recovery password from chat history.
 
 ### Production smoke sign-off (Track O4)
 

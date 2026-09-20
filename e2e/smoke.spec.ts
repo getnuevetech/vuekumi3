@@ -33,6 +33,17 @@ test.describe('Phase 45 web smoke', () => {
     await expect(page.getByText('@ada-molefe')).toBeVisible()
   })
 
+  test('pricing, legal, and DMCA public pages load', async ({ page }) => {
+    await page.goto('/pricing')
+    await expect(page.getByText('Vuekumi+').first()).toBeVisible()
+
+    await page.goto('/legal')
+    await expect(page.getByRole('heading', { name: 'Global Rights Standard.' })).toBeVisible()
+
+    await page.goto('/dmca')
+    await expect(page.getByRole('heading', { name: 'DMCA notices.' })).toBeVisible()
+  })
+
   test('admin can sign in and reach platform health', async ({ page }) => {
     await signIn(page, 'admin@vuekumi.com', 'Admin123!')
     await expect(page).toHaveURL(/\/admin/)

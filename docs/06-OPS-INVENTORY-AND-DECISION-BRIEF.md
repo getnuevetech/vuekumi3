@@ -53,13 +53,14 @@ Rough live counts from admin overview: **15 users**, **6 contributors**,
 
 | Gap | Severity | Owner |
 | --- | --- | --- |
-| Demo admin `admin@vuekumi.com` / `Admin123!` | **Closed (O3 — 19 Sep 2026, reconfirmed Phase 47)** — demo rejected; live secret held by operator (not in git) | Operator |
-| Demo staff `support@` / `moderator@` / `finance@` `@vuekumi.demo` / `User12345!` | **Mostly closed (Phase 47)** — support + moderator rotated; finance rotated but secret lost to rate-limit — apply on-host recovery SQL (Lightsail README) | Operator / on-host |
+| Demo admin `admin@vuekumi.com` / `Admin123!` | **Closed (O3 — Phases 46–48)** — demo rejected; live secret held by operator (not in git) | Operator |
+| Demo `@vuekumi.demo` accounts / `User12345!` | **Closed (Phase 48)** — staff, member, agency, models, and seed photographers rotated on live; secrets in operator chat only | Operator |
 | Booking / campaign / representation queues empty (Phase 44 seed fixtures are local/CI only — correct for prod) | Info | — |
 | No production partner live key (only revoked AGTest) | Info | Staff when a real partner needs access |
-| Playwright smoke is CI-only; not a substitute for O4 on the live URL | **Narrowed (Phase 47)** — external O4 API smoke signed in `06` §1.5; browser UI still optional | — |
+| Playwright smoke is CI-only; not a substitute for O4 on the live URL | **Narrowed (Phases 47–48)** — external O4 API smoke + expanded CI smoke (pricing/legal/DMCA); HTTPS + browser UI still open | — |
 | HTTPS broken while DNS points at the instance | **Critical** | O3 TLS |
 | Host git SHA / migration head unknown (needs SSH) | High (ops truth) | O2 on-host |
+| Seed model invite `seed-nomsa-model-invite` still resolves on live | Medium (seed artifact) | Revoke/expire on host when practical |
 
 ### 1.4 O0 conclusion
 
@@ -72,10 +73,10 @@ Suggested next ops order (still needs host access for redeploy/TLS):
 
 1. SSH → `git rev-parse --short HEAD` and compare to `main`
 2. If behind: Catch-up redeploy (**no** `SEED_DEMO=1`)
-3. Demo passwords: admin/support/moderator rotated (Phase 47); **finance** needs
-   on-host recovery SQL (secret lost after rate-limit); then confirm Admin Settings keys
+3. Demo passwords: **rotated on live (Phase 48)** including finance; confirm Admin Settings keys
 4. Fix TLS (`ssl-init.sh` / certs) then set `WEB_URL=https://vuekumi.com` and redeploy
 5. Re-sign O4 after HTTPS works (browser + Secure cookies)
+6. Expire leftover seed invite token `seed-nomsa-model-invite` if still unwanted
 
 Details: [`deploy/lightsail/README.md`](../deploy/lightsail/README.md) § O3/O4.
 
