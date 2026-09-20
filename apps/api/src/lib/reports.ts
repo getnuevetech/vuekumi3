@@ -1,5 +1,6 @@
 import type { Photo, Prisma, RightsReport, User } from '@prisma/client'
-import type { EarningsHoldReason, RightsReportDto, RightsReportStatus } from '@vuekumi/shared'
+import type { EarningsHoldReason, RightsReportDto, RightsReportQueue, RightsReportReason, RightsReportStatus } from '@vuekumi/shared'
+import { reportIsUrgent, reportQueueForReason } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { COMMERCIAL_LOCK_REASON } from './rights.js'
 import { holdAvailableEarnings } from './holds.js'
@@ -36,8 +37,40 @@ export function parseReportQueueStatus(raw?: string): RightsReportStatus | undef
 export function reportQueueWhere(raw?: string): Prisma.RightsReportWhereInput | undefined {
   if (!raw || raw === 'all') return undefined
   if (raw === 'queue') return { status: { in: OPEN_REPORT_STATUSES } }
+  if (raw === 'safety' || raw === 'urgent') return { urgent: true, status: { in: OPEN_REPORT_STATUSES } }
+  if (
+    raw === 'dmca_copyright'
+    || raw === 'likeness_consent'
+    || raw === 'fraud_strikes'
+    || raw === 'commercial_dispute'
+    || raw === 'general'
+  ) {
+    return { queue: raw, status: { in: OPEN_REPORT_STATUSES } }
+  }
   const status = parseReportQueueStatus(raw)
   return status ? { status } : undefined
+}
+
+export function holdReasonForReport(reason: RightsReportReason): EarningsHoldReason {
+  if (reason === 'safety_urgent') return 'safety_urgent'
+  if (reason === 'likeness' || reason === 'unauthorized_use' || reason === 'fraudulent_release') {
+    return 'likeness_dispute'
+  }
+  if (reason === 'compensation_dispute') return 'copyright_dispute'
+  return 'copyright_dispute'
+}
+
+export function rightsPatchForReport(reason: RightsReportReason): {
+  copyrightStatus?: 'disputed'
+  modelConsentStatus?: 'disputed'
+} {
+  if (reason === 'copyright' || reason === 'unauthorized_use' || reason === 'fraudulent_release') {
+    return { copyrightStatus: 'disputed' }
+  }
+  if (reason === 'likeness' || reason === 'safety_urgent') {
+    return { modelConsentStatus: 'disputed' }
+  }
+  return {}
 }
 
 export function duplicateReportWhere(input: {
@@ -69,6 +102,7 @@ export function serializeRightsReport(
     report.photo.storageKey && report.photo.processingStatus === 'ready'
       ? `/api/media/${report.photo.id}/preview`
       : report.photo.src
+  const reason = report.reason as RightsReportReason
   return {
     id: report.id,
     photoId: report.photoId,
@@ -76,7 +110,9 @@ export function serializeRightsReport(
     photoSrc: src,
     photographer:
       report.photo.contributor?.contributorProfile?.handle ?? report.photo.contributor?.name ?? '',
-    reason: report.reason,
+    reason,
+    queue: (report.queue as RightsReportQueue) || reportQueueForReason(reason),
+    urgent: report.urgent || reportIsUrgent(reason),
     details: report.details,
     status: report.status,
     reporterEmail: report.reporterEmail,

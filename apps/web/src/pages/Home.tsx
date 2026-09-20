@@ -805,6 +805,7 @@ function NoirFooter() {
           { label: 'Models', href: '/models' },
           { label: 'License & Pricing', href: '/pricing' },
           { label: 'DMCA', href: '/dmca' },
+          { label: 'Report content', href: '/report-content' },
           { label: 'Legal', href: '/legal' },
           { label: 'Contribute', href: SELL_HREF },
           { label: 'Account', href: '/account' },

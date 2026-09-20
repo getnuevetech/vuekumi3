@@ -30,6 +30,7 @@ export const EARNINGS_HOLD_REASONS = [
   'dmca_notice',
   'copyright_dispute',
   'likeness_dispute',
+  'safety_urgent',
   'new_seller',
   'unverified_seller',
   'high_value',

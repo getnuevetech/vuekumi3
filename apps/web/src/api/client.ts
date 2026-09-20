@@ -446,6 +446,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  reportContent: (body: CreateRightsReportInput & { photoId: string }) =>
+    request<PublicReportResult>('/api/report-content', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   dmcaPage: () => request<DmcaPublicPageDto>('/api/dmca'),
 
