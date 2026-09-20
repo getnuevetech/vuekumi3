@@ -49,10 +49,10 @@ export async function getActivePolicyVersion(countryCode: string) {
 }
 
 /**
- * Phase 54 — policy that regulates new licenses: ACTIVE, or post-ACTIVE SUSPENDED
- * (so suspend mid-checkout still DENYs new grants while historical grants stay).
+ * Phase 54/56 — policy that regulates market write scopes: ACTIVE, or post-ACTIVE
+ * SUSPENDED (so suspend still DENYs new grants/uploads while history stays).
  */
-export async function getRegulatingLicensePolicy(countryCode: string) {
+export async function getRegulatingMarketPolicy(countryCode: string) {
   const code = countryCode.toUpperCase()
   const active = await getActivePolicyVersion(code)
   if (active) return active
@@ -61,6 +61,11 @@ export async function getRegulatingLicensePolicy(countryCode: string) {
     orderBy: { version: 'desc' },
     include: policyInclude,
   })
+}
+
+/** @deprecated alias — prefer getRegulatingMarketPolicy */
+export async function getRegulatingLicensePolicy(countryCode: string) {
+  return getRegulatingMarketPolicy(countryCode)
 }
 
 function emptyGates() {
@@ -577,11 +582,16 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
     }
   }
 
-  // Phase 54: license.issue / asset.commercialize — legacy ALLOW when no ACTIVE/SUSPENDED
-  // regulatory policy (all markets HOLD today). DENY when a regulating policy holds new_license.
+  // Phase 54/56: license.issue, asset.commercialize, contributor.upload —
+  // legacy ALLOW when no ACTIVE/SUSPENDED regulatory policy (HOLD-era markets).
+  // DENY when a regulating policy holds the matching feature scope.
   // payout.authorize stays fail-closed until Dec-PayBase / P1.
-  if (action === 'asset.commercialize' || action === 'license.issue') {
-    const regulating = await getRegulatingLicensePolicy(countryCode)
+  if (
+    action === 'asset.commercialize'
+    || action === 'license.issue'
+    || action === 'contributor.upload'
+  ) {
+    const regulating = await getRegulatingMarketPolicy(countryCode)
     if (!regulating) {
       return {
         decision: 'ALLOW',
@@ -600,13 +610,15 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
         evidenceRequired: [],
       }
     }
-    const state = featureScopeState(regulating, 'new_license')
+    const scopeAction: FeatureScopeAction =
+      action === 'contributor.upload' ? 'contributor_upload' : 'new_license'
+    const state = featureScopeState(regulating, scopeAction)
     if (state !== 'ON') {
       return {
         decision: 'DENY',
         reasonCodes: [
-          'feature_scope_not_on:new_license',
-          regulating.status === 'SUSPENDED' ? 'market_suspended' : 'new_license_hold',
+          `feature_scope_not_on:${scopeAction}`,
+          regulating.status === 'SUSPENDED' ? 'market_suspended' : `${scopeAction}_hold`,
           `scope:${state ?? 'missing'}`,
         ],
         policyVersion: `${regulating.countryCode}:v${regulating.version}`,
@@ -616,7 +628,7 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
     }
     return {
       decision: 'ALLOW',
-      reasonCodes: ['new_license_on', `policy_status:${regulating.status}`],
+      reasonCodes: [`${scopeAction}_on`, `policy_status:${regulating.status}`],
       policyVersion: `${regulating.countryCode}:v${regulating.version}`,
       expiresAt,
       evidenceRequired: [],
@@ -676,6 +688,30 @@ export async function assertNewLicenseAllowed(countryCode?: string | null) {
         suspended
           ? 'New licensing is suspended for this market. Existing certificates are not revoked.'
           : `New licensing is not available for this market (${result.reasonCodes.join(', ')})`,
+      ),
+      {
+        statusCode: 403,
+        reasonCodes: result.reasonCodes,
+        policyVersion: result.policyVersion,
+      },
+    )
+  }
+}
+
+/** Phase 56 — assert contributor uploads allowed for the contributor's market. */
+export async function assertContributorUploadAllowed(countryCode?: string | null) {
+  if (!countryCode?.trim()) return
+  const result = await evaluatePolicy({
+    action: 'contributor.upload',
+    countryCode,
+  })
+  if (result.decision !== 'ALLOW') {
+    const suspended = result.reasonCodes.includes('market_suspended')
+    throw Object.assign(
+      new Error(
+        suspended
+          ? 'New uploads are suspended for this market. Existing photographs stay listed.'
+          : `Uploads are not available for this market (${result.reasonCodes.join(', ')})`,
       ),
       {
         statusCode: 403,

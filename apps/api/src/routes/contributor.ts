@@ -27,6 +27,7 @@ import { syncAiTrainingEligible } from '../lib/ai-training.js'
 import { isImpersonatingStaff, resolveCreatorWorkspaceId } from '../lib/act-as-creator.js'
 import { requireCreatorWorkspace } from '../lib/auth-middleware.js'
 import { prisma } from '../lib/prisma.js'
+import { assertContributorUploadAllowed } from '../lib/policy-decision.js'
 import { processPhotoAssets } from '../lib/process-photo.js'
 import { contributorHasAgreement } from '../lib/rights.js'
 import { serializePhoto } from '../lib/serialize.js'
@@ -78,6 +79,34 @@ const photoInclude = {
   appearances: true,
   contributor: { include: { contributorProfile: true, platformAgreements: true } },
 } as const
+
+async function assertUploadForContributor(
+  contributorId: string,
+  reply: { code: (n: number) => { send: (b: unknown) => unknown } },
+) {
+  const user = await prisma.user.findUnique({
+    where: { id: contributorId },
+    select: { country: true },
+  })
+  try {
+    await assertContributorUploadAllowed(user?.country)
+    return true
+  } catch (err) {
+    const status =
+      err && typeof err === 'object' && 'statusCode' in err
+        ? Number((err as { statusCode: number }).statusCode)
+        : 403
+    const reasonCodes =
+      err && typeof err === 'object' && 'reasonCodes' in err
+        ? (err as { reasonCodes?: string[] }).reasonCodes
+        : undefined
+    reply.code(status).send({
+      error: err instanceof Error ? err.message : 'Upload denied',
+      ...(reasonCodes ? { reasonCodes } : {}),
+    })
+    return false
+  }
+}
 
 export async function contributorRoutes(app: FastifyInstance) {
   const gate = { preHandler: requireCreatorWorkspace(app) }
@@ -151,6 +180,7 @@ export async function contributorRoutes(app: FastifyInstance) {
   app.post('/contributor/uploads/presign', gate, async (request, reply) => {
     const contributorId = await resolveCreatorWorkspaceId(request, reply)
     if (!contributorId) return
+    if (!(await assertUploadForContributor(contributorId, reply))) return
     const body = presignUploadSchema.parse(request.body)
     const contentType = body.contentType.toLowerCase()
     if (!ALLOWED_IMAGE_TYPES.has(contentType)) {
@@ -173,6 +203,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     }, async (request, reply) => {
       const contributorId = await resolveCreatorWorkspaceId(request, reply)
       if (!contributorId) return
+      if (!(await assertUploadForContributor(contributorId, reply))) return
       const { token } = request.params as { token: string }
       const key = verifyLocalToken(token)
       if (!key) return reply.code(400).send({ error: 'Upload token is invalid or expired' })
@@ -245,6 +276,7 @@ export async function contributorRoutes(app: FastifyInstance) {
 
     const contributorId = await resolveCreatorWorkspaceId(request, reply)
     if (!contributorId) return
+    if (!(await assertUploadForContributor(contributorId, reply))) return
 
     const body = submitPhotoSchema.parse(request.body)
     const target = await prisma.user.findUnique({

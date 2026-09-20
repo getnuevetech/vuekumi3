@@ -281,6 +281,6 @@ Document in `docs/runbooks/rights-ops.md` (new) when T2 starts:
 2. Sign **Dec-PayBase** (and revisit Dec-Split / Dec-Bio / Dec-VQ in `06`).  
 3. Counsel: DMCA agent filing, public policy copy, first-wave country gate evidence.  
 4. Ops: keep Lightsail TLS + SHA work on Track O; do not block T0–T1 docs/UI on TLS.  
-5. **P0–T2 + T4 + T7 + Phase 54 shipped (Phases 49–54).** Optional next: **T3** DMCA
+5. **P0–T2 + T4 + T7 + Phases 54–56 shipped (Phases 49–56).** Optional next: **T3** DMCA
    policy (counsel). Do not start negotiation payouts before **Dec-PayBase**.
    Pilot ACTIVE countries (T8) still need counsel evidence.
