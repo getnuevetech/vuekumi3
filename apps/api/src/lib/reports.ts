@@ -1,5 +1,13 @@
 import type { Photo, Prisma, RightsReport, User } from '@prisma/client'
-import type { EarningsHoldReason, RightsReportDto, RightsReportQueue, RightsReportReason, RightsReportStatus } from '@vuekumi/shared'
+import type {
+  EarningsHoldReason,
+  RightsEscalateTarget,
+  RightsReportDto,
+  RightsReportQueue,
+  RightsReportReason,
+  RightsReportStatus,
+  RightsSopStage,
+} from '@vuekumi/shared'
 import { reportIsUrgent, reportQueueForReason } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { COMMERCIAL_LOCK_REASON } from './rights.js'
@@ -8,6 +16,15 @@ import { holdAvailableEarnings } from './holds.js'
 export { COMMERCIAL_LOCK_REASON }
 
 export const OPEN_REPORT_STATUSES: RightsReportStatus[] = ['open', 'reviewing']
+
+/** DMCA statuses that still block unfreeze of the photograph. */
+export const OPEN_DMCA_HOLD_STATUSES = [
+  'received',
+  'processing',
+  'waiting_counter',
+  'counter_received',
+  'waiting_restore',
+] as const
 
 export function normalizeReporterEmail(email?: string | null): string | undefined {
   const trimmed = email?.trim().toLowerCase()
@@ -19,14 +36,40 @@ export function guestReportMissingContact(input: { userId?: string | null; email
 }
 
 export function nextReportStatus(
-  action: 'lock' | 'unlock' | 'dismiss' | 'resolve',
+  action: 'lock' | 'unlock' | 'dismiss' | 'resolve' | 'preserve' | 'notify' | 'escalate',
   current: RightsReportStatus,
 ): RightsReportStatus {
   if (action === 'dismiss') return 'dismissed'
   if (action === 'resolve') return 'resolved'
-  if (action === 'lock' && current === 'open') return 'reviewing'
+  if ((action === 'lock' || action === 'preserve' || action === 'notify' || action === 'escalate') && current === 'open') {
+    return 'reviewing'
+  }
   return current
 }
+
+export function nextSopStage(
+  action: 'lock' | 'unlock' | 'dismiss' | 'resolve' | 'preserve' | 'notify' | 'escalate',
+  current: string,
+): RightsSopStage {
+  if (action === 'dismiss' || action === 'resolve') return 'closed'
+  if (action === 'escalate') return 'escalated'
+  if (action === 'preserve') return 'preserving'
+  if (action === 'notify' || action === 'lock') {
+    if (current === 'intake' || current === 'assessing') return 'investigating'
+    return (current as RightsSopStage) || 'investigating'
+  }
+  if (action === 'unlock') return current === 'closed' ? 'closed' : 'investigating'
+  return (RIGHTS_SOP_FALLBACK.includes(current as RightsSopStage) ? current : 'intake') as RightsSopStage
+}
+
+const RIGHTS_SOP_FALLBACK: RightsSopStage[] = [
+  'intake',
+  'assessing',
+  'preserving',
+  'investigating',
+  'escalated',
+  'closed',
+]
 
 export function parseReportQueueStatus(raw?: string): RightsReportStatus | undefined {
   if (!raw) return undefined
@@ -38,6 +81,7 @@ export function reportQueueWhere(raw?: string): Prisma.RightsReportWhereInput | 
   if (!raw || raw === 'all') return undefined
   if (raw === 'queue') return { status: { in: OPEN_REPORT_STATUSES } }
   if (raw === 'safety' || raw === 'urgent') return { urgent: true, status: { in: OPEN_REPORT_STATUSES } }
+  if (raw === 'escalated') return { sopStage: 'escalated', status: { in: OPEN_REPORT_STATUSES } }
   if (
     raw === 'dmca_copyright'
     || raw === 'likeness_consent'
@@ -91,12 +135,23 @@ export function duplicateReportWhere(input: {
   }
 }
 
+export async function photoHasOpenDmcaHold(photoId: string): Promise<boolean> {
+  const count = await prisma.dmcaNotice.count({
+    where: {
+      photoId,
+      status: { in: [...OPEN_DMCA_HOLD_STATUSES] },
+    },
+  })
+  return count > 0
+}
+
 export function serializeRightsReport(
   report: RightsReport & {
     photo: Pick<Photo, 'id' | 'title' | 'src' | 'storageKey' | 'processingStatus' | 'commercialLocked'> & {
       contributor?: User & { contributorProfile?: { handle: string } | null }
     }
   },
+  opts?: { openDmcaHold?: boolean },
 ): RightsReportDto {
   const src =
     report.photo.storageKey && report.photo.processingStatus === 'ready'
@@ -115,6 +170,12 @@ export function serializeRightsReport(
     urgent: report.urgent || reportIsUrgent(reason),
     details: report.details,
     status: report.status,
+    sopStage: (report.sopStage as RightsSopStage) || 'intake',
+    evidencePreservedAt: report.evidencePreservedAt?.toISOString() ?? null,
+    evidenceNotes: report.evidenceNotes,
+    notifiedAt: report.notifiedAt?.toISOString() ?? null,
+    escalateTo: (report.escalateTo as RightsEscalateTarget | null) ?? null,
+    escalatedAt: report.escalatedAt?.toISOString() ?? null,
     reporterEmail: report.reporterEmail,
     reporterName: report.reporterName,
     reporterUserId: report.reporterUserId,
@@ -122,6 +183,7 @@ export function serializeRightsReport(
     reviewedAt: report.reviewedAt?.toISOString() ?? null,
     staffNotes: report.staffNotes,
     commercialLocked: report.photo.commercialLocked,
+    openDmcaHold: opts?.openDmcaHold ?? false,
   }
 }
 

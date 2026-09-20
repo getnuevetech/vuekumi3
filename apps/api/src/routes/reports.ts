@@ -22,7 +22,10 @@ import {
   guestReportMissingContact,
   holdReasonForReport,
   nextReportStatus,
+  nextSopStage,
   normalizeReporterEmail,
+  OPEN_DMCA_HOLD_STATUSES,
+  photoHasOpenDmcaHold,
   reportQueueWhere,
   rightsPatchForReport,
   serializeRightsReport,
@@ -171,7 +174,17 @@ export async function reportRoutes(app: FastifyInstance) {
       include: { photo: { include: reportPhotoInclude } },
       orderBy: [{ urgent: 'desc' }, { createdAt: 'desc' }],
     })
-    return { items: items.map(serializeRightsReport) }
+    const photoIds = [...new Set(items.map((r) => r.photoId))]
+    const dmcaHolds = photoIds.length
+      ? await prisma.dmcaNotice.findMany({
+          where: { photoId: { in: photoIds }, status: { in: [...OPEN_DMCA_HOLD_STATUSES] } },
+          select: { photoId: true },
+        })
+      : []
+    const holdSet = new Set(dmcaHolds.map((d) => d.photoId))
+    return {
+      items: items.map((row) => serializeRightsReport(row, { openDmcaHold: holdSet.has(row.photoId) })),
+    }
   })
 
   app.post('/admin/reports/:id/decide', decideReports, async (request, reply) => {
@@ -183,6 +196,18 @@ export async function reportRoutes(app: FastifyInstance) {
     })
     if (!report) return reply.code(404).send({ error: 'Report not found' })
 
+    if (body.action === 'escalate' && !body.escalateTo) {
+      return reply.code(400).send({ error: 'Escalate requires a target (legal, law_enforcement, counsel, or other)' })
+    }
+
+    if (body.action === 'unlock') {
+      if (await photoHasOpenDmcaHold(report.photoId)) {
+        return reply.code(400).send({
+          error: 'Cannot unfreeze while an open DMCA notice holds this photograph. Counter-notice does not clear likeness or safety holds — close or restore the DMCA track first.',
+        })
+      }
+    }
+
     if (body.action === 'lock' || body.action === 'unlock') {
       await applyCommercialLock({
         photoId: report.photoId,
@@ -193,14 +218,24 @@ export async function reportRoutes(app: FastifyInstance) {
       })
     }
 
+    const now = new Date()
     const status = nextReportStatus(body.action, report.status)
+    const sopStage = nextSopStage(body.action, report.sopStage)
     const updated = await prisma.rightsReport.update({
       where: { id },
       data: {
         status,
+        sopStage,
         staffNotes: body.notes ?? report.staffNotes,
         reviewerId: request.userId,
-        reviewedAt: new Date(),
+        reviewedAt: now,
+        ...(body.action === 'preserve'
+          ? { evidencePreservedAt: now, evidenceNotes: body.notes ?? report.evidenceNotes }
+          : {}),
+        ...(body.action === 'notify' ? { notifiedAt: now } : {}),
+        ...(body.action === 'escalate'
+          ? { escalateTo: body.escalateTo!, escalatedAt: now }
+          : {}),
       },
       include: { photo: { include: reportPhotoInclude } },
     })
@@ -210,11 +245,21 @@ export async function reportRoutes(app: FastifyInstance) {
       action: `rights.report.${body.action}`,
       entityType: 'photo',
       entityId: report.photoId,
-      metadata: { reportId: id, notes: body.notes ?? null, commercialLocked: updated.photo.commercialLocked },
+      metadata: {
+        reportId: id,
+        notes: body.notes ?? null,
+        escalateTo: body.escalateTo ?? null,
+        sopStage,
+        commercialLocked: updated.photo.commercialLocked,
+      },
       ipAddress: request.ip,
     })
 
-    return { report: serializeRightsReport(updated) }
+    return {
+      report: serializeRightsReport(updated, {
+        openDmcaHold: await photoHasOpenDmcaHold(updated.photoId),
+      }),
+    }
   })
 
   app.post('/admin/content/:id/commercial-lock', commercialLock, async (request, reply) => {

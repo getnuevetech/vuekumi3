@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { buildApp } from '../src/app.js'
+import { prisma } from '../src/lib/prisma.js'
 import {
   duplicateReportWhere,
   guestReportMissingContact,
@@ -11,6 +12,7 @@ import {
   reportQueueWhere,
 } from '../src/lib/reports.js'
 import {
+  dmcaTrackBlockedForReason,
   reportIsUrgent,
   reportQueueForReason,
   RIGHTS_REPORT_REASONS,
@@ -112,6 +114,8 @@ test('T1 taxonomy maps categories to queues; safety is urgent', () => {
   assert.equal(reportIsUrgent('copyright'), false)
   assert.equal(holdReasonForReport('safety_urgent'), 'safety_urgent')
   assert.equal(holdReasonForReport('likeness'), 'likeness_dispute')
+  assert.equal(dmcaTrackBlockedForReason('likeness'), 'DMCA is copyright only. Keep likeness, safety, fraud, and compensation on the rights-report track.')
+  assert.equal(dmcaTrackBlockedForReason('copyright'), null)
 })
 
 test('parsePhotoRef accepts page links and bare ids', async () => {
@@ -215,6 +219,114 @@ test('guest hub POST /report-content files a safety report onto the fast-path', 
   const items = (safety.json() as { items: { photoId: string; urgent: boolean; queue: string }[] }).items
   assert.ok(items.some((row) => row.photoId === 'afr-001' && row.urgent && row.queue === 'safety'))
   await app.close()
+})
+
+test('T2 SOP: preserve / notify / escalate update stage; unlock blocked by open DMCA', async () => {
+  const app = await buildApp()
+  const live = await app.inject({ method: 'GET', url: '/api/photos/afr-003' })
+  if (live.statusCode !== 200) {
+    await app.close()
+    return
+  }
+
+  const filed = await app.inject({
+    method: 'POST',
+    url: '/api/report-content',
+    payload: {
+      photoUrl: '/photo/afr-003',
+      reason: 'likeness',
+      details: 'I am depicted and did not consent; staff must preserve evidence before contact.',
+      reporterEmail: 'sop-guest@example.com',
+    },
+  })
+  assert.equal(filed.statusCode, 200, filed.body)
+
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'admin@vuekumi.com', password: 'Admin123!' },
+  })
+  assert.equal(login.statusCode, 200)
+  const raw = login.headers['set-cookie']
+  const cookie = (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
+
+  const queue = await app.inject({
+    method: 'GET',
+    url: '/api/admin/reports?status=likeness_consent',
+    headers: { cookie },
+  })
+  assert.equal(queue.statusCode, 200)
+  const items = (queue.json() as { items: { id: string; photoId: string; sopStage: string }[] }).items
+  const report = items.find((row) => row.photoId === 'afr-003')
+  assert.ok(report)
+
+  const preserved = await app.inject({
+    method: 'POST',
+    url: `/api/admin/reports/${report.id}/decide`,
+    headers: { cookie },
+    payload: { action: 'preserve', notes: 'Screenshot + original listing captured' },
+  })
+  assert.equal(preserved.statusCode, 200, preserved.body)
+  const preservedBody = preserved.json() as { report: { sopStage: string; evidencePreservedAt: string | null } }
+  assert.equal(preservedBody.report.sopStage, 'preserving')
+  assert.ok(preservedBody.report.evidencePreservedAt)
+
+  const notified = await app.inject({
+    method: 'POST',
+    url: `/api/admin/reports/${report.id}/decide`,
+    headers: { cookie },
+    payload: { action: 'notify', notes: 'Emailed reporter via ops inbox' },
+  })
+  assert.equal(notified.statusCode, 200)
+  assert.ok((notified.json() as { report: { notifiedAt: string | null } }).report.notifiedAt)
+
+  const escalated = await app.inject({
+    method: 'POST',
+    url: `/api/admin/reports/${report.id}/decide`,
+    headers: { cookie },
+    payload: { action: 'escalate', escalateTo: 'counsel', notes: 'Likeness counsel review' },
+  })
+  assert.equal(escalated.statusCode, 200, escalated.body)
+  const esc = escalated.json() as { report: { sopStage: string; escalateTo: string } }
+  assert.equal(esc.report.sopStage, 'escalated')
+  assert.equal(esc.report.escalateTo, 'counsel')
+
+  // Seed an open DMCA hold on the same photo and ensure unlock is blocked
+  const notice = await prisma.dmcaNotice.create({
+    data: {
+      photoId: 'afr-003',
+      claimantName: 'Test Claimant',
+      claimantEmail: 'claimant@example.com',
+      claimantAddress: '123 Test Street, City, ST 00000',
+      workDescription: 'Copyrighted work described for SOP unlock block test case.',
+      originalLocation: 'https://example.com/original',
+      infringingLocation: 'https://vuekumi.com/photo/afr-003',
+      signature: 'Test Claimant',
+      status: 'processing',
+    },
+  })
+
+  try {
+    const unlock = await app.inject({
+      method: 'POST',
+      url: `/api/admin/reports/${report.id}/decide`,
+      headers: { cookie },
+      payload: { action: 'unlock', notes: 'Should fail' },
+    })
+    assert.equal(unlock.statusCode, 400)
+    assert.match(unlock.json().error ?? '', /DMCA/)
+  } finally {
+    await prisma.dmcaNotice.delete({ where: { id: notice.id } }).catch(() => undefined)
+    await prisma.rightsReport.update({
+      where: { id: report.id },
+      data: { status: 'resolved', sopStage: 'closed' },
+    }).catch(() => undefined)
+    await prisma.photo.update({
+      where: { id: 'afr-003' },
+      data: { commercialLocked: false, commercialLockedAt: null, commercialLockedById: null },
+    }).catch(() => undefined)
+    await app.close()
+  }
 })
 
 test('ops email for a rights report points at the staff queue', () => {

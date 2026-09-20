@@ -10,6 +10,7 @@ import { AdminShell } from './Admin'
 const FILTERS = [
   'queue',
   'safety',
+  'escalated',
   'dmca_copyright',
   'likeness_consent',
   'fraud_strikes',
@@ -22,9 +23,11 @@ const FILTERS = [
 ] as const
 type Filter = (typeof FILTERS)[number]
 
+type DecideAction = 'lock' | 'unlock' | 'dismiss' | 'resolve' | 'preserve' | 'notify' | 'escalate'
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <AdminShell subtitle="Public rights reports. Freeze new licensing without delisting the photograph.">
+    <AdminShell subtitle="Rights ops intake — freeze, preserve, notify, escalate. DMCA stays copyright-only.">
       {children}
     </AdminShell>
   )
@@ -36,6 +39,8 @@ function filterLabel(key: Filter): string {
       return 'open queue'
     case 'safety':
       return 'safety fast-path'
+    case 'escalated':
+      return 'escalated'
     case 'dmca_copyright':
       return 'copyright'
     case 'likeness_consent':
@@ -55,6 +60,7 @@ export function AdminReports() {
   const [items, setItems] = useState<RightsReportDto[]>([])
   const [filter, setFilter] = useState<Filter>(FILTERS.includes(initial as Filter) ? (initial as Filter) : 'queue')
   const [notes, setNotes] = useState<Record<string, string>>({})
+  const [escalateTo, setEscalateTo] = useState<Record<string, 'legal' | 'law_enforcement' | 'counsel' | 'other'>>({})
   const [busy, setBusy] = useState<string | null>(null)
 
   const load = () => {
@@ -65,10 +71,10 @@ export function AdminReports() {
 
   useEffect(() => { load() }, [filter])
 
-  async function decide(id: string, action: 'lock' | 'unlock' | 'dismiss' | 'resolve') {
+  async function decide(id: string, action: DecideAction) {
     setBusy(`${id}:${action}`)
     try {
-      await api.decideRightsReport(id, action, notes[id])
+      await api.decideRightsReport(id, action, notes[id], action === 'escalate' ? (escalateTo[id] ?? 'legal') : undefined)
       toast.success(
         action === 'lock'
           ? 'Commercial licensing frozen'
@@ -76,7 +82,13 @@ export function AdminReports() {
             ? 'Licensing restored'
             : action === 'dismiss'
               ? 'Report dismissed'
-              : 'Report resolved',
+              : action === 'resolve'
+                ? 'Report resolved'
+                : action === 'preserve'
+                  ? 'Evidence preserved'
+                  : action === 'notify'
+                    ? 'Notification recorded'
+                    : 'Escalated',
       )
       load()
     } catch (err) {
@@ -89,10 +101,12 @@ export function AdminReports() {
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Reports</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Rights & takedown.</h1>
-      <p className="mt-1 text-sm text-ink-soft">
+      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Rights ops.</h1>
+      <p className="mt-1 max-w-2xl text-sm text-ink-soft">
         Intake from <Link to="/report-content" className="text-terra">/report-content</Link>.
-        Safety reports sort first. Locking pauses new licences; the photograph stays visible.
+        Staff SOP: <code className="font-mono-tech text-xs">docs/runbooks/rights-ops.md</code>.
+        Copyright statutory notices stay on <Link to="/admin/dmca" className="text-terra">DMCA</Link>
+        {' '}— counter-notice never clears likeness or safety.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -124,9 +138,17 @@ export function AdminReports() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Link to={`/photo/${r.photoId}`} className="font-medium hover:text-terra">{r.photoTitle}</Link>
                   <StatusPill status={r.status} />
+                  <span className="rounded-full border border-sand px-2 py-0.5 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-faint">
+                    {r.sopStage}
+                  </span>
                   {r.urgent && (
                     <span className="rounded-full bg-[#b3382e]/10 px-2 py-0.5 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-[#b3382e]">
                       Safety
+                    </span>
+                  )}
+                  {r.openDmcaHold && (
+                    <span className="rounded-full bg-ink/5 px-2 py-0.5 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-soft">
+                      DMCA hold
                     </span>
                   )}
                   <span className="font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-faint">
@@ -138,6 +160,11 @@ export function AdminReports() {
                   {r.reporterEmail ? ` · ${r.reporterEmail}` : ''}
                 </p>
                 <p className="mt-2 max-w-xl whitespace-pre-wrap text-sm text-ink-soft">{r.details}</p>
+                <p className="mt-2 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-ink-faint">
+                  {r.evidencePreservedAt ? `Preserved ${r.evidencePreservedAt.slice(0, 10)} · ` : 'Not preserved · '}
+                  {r.notifiedAt ? `Notified ${r.notifiedAt.slice(0, 10)} · ` : 'Not notified · '}
+                  {r.escalatedAt ? `Escalated → ${r.escalateTo}` : 'Not escalated'}
+                </p>
                 {r.staffNotes && (
                   <p className="mt-2 text-xs text-ink-faint">Staff: {r.staffNotes}</p>
                 )}
@@ -147,45 +174,49 @@ export function AdminReports() {
                   placeholder="Staff notes (optional)"
                   className="mt-3 w-full max-w-md rounded-lg border border-sand-soft px-3 py-1.5 text-sm"
                 />
+                <select
+                  value={escalateTo[r.id] ?? 'legal'}
+                  onChange={(e) => setEscalateTo((s) => ({ ...s, [r.id]: e.target.value as 'legal' | 'law_enforcement' | 'counsel' | 'other' }))}
+                  className="mt-2 rounded-lg border border-sand-soft bg-white px-2 py-1 text-xs"
+                >
+                  <option value="legal">Escalate → legal</option>
+                  <option value="counsel">Escalate → counsel</option>
+                  <option value="law_enforcement">Escalate → law enforcement</option>
+                  <option value="other">Escalate → other</option>
+                </select>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {!r.commercialLocked && (
+            <div className="flex max-w-xs flex-wrap gap-2">
+              {([
+                ['preserve', 'Preserve'],
+                ['lock', 'Freeze'],
+                ['notify', 'Notify'],
+                ['escalate', 'Escalate'],
+                ['unlock', 'Unfreeze'],
+                ['dismiss', 'Dismiss'],
+                ['resolve', 'Resolve'],
+              ] as const).map(([action, label]) => (
                 <button
+                  key={action}
                   type="button"
-                  disabled={busy === `${r.id}:lock`}
-                  onClick={() => void decide(r.id, 'lock')}
-                  className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
+                  disabled={busy === `${r.id}:${action}` || (action === 'unlock' && r.openDmcaHold)}
+                  title={action === 'unlock' && r.openDmcaHold ? 'Blocked while DMCA hold is open' : undefined}
+                  onClick={() => void decide(r.id, action)}
+                  className={`rounded-full px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40 ${
+                    action === 'resolve' ? 'bg-ink text-paper' : 'border border-sand'
+                  }`}
                 >
-                  Freeze
+                  {label}
                 </button>
-              )}
-              {r.commercialLocked && (
-                <button
-                  type="button"
-                  disabled={busy === `${r.id}:unlock`}
-                  onClick={() => void decide(r.id, 'unlock')}
-                  className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
+              ))}
+              {r.reason === 'copyright' && (
+                <Link
+                  to="/admin/dmca"
+                  className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft"
                 >
-                  Unfreeze
-                </button>
+                  DMCA queue
+                </Link>
               )}
-              <button
-                type="button"
-                disabled={busy === `${r.id}:dismiss`}
-                onClick={() => void decide(r.id, 'dismiss')}
-                className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
-              >
-                Dismiss
-              </button>
-              <button
-                type="button"
-                disabled={busy === `${r.id}:resolve`}
-                onClick={() => void decide(r.id, 'resolve')}
-                className="rounded-full bg-ink px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-paper"
-              >
-                Resolve
-              </button>
             </div>
           </div>
         ))}

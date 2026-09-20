@@ -162,14 +162,35 @@ export function resolveReportPhotoId(input: { photoUrl?: string | null; photoId?
 }
 
 export const decideRightsReportSchema = z.object({
-  action: z.enum(['lock', 'unlock', 'dismiss', 'resolve']),
+  action: z.enum(['lock', 'unlock', 'dismiss', 'resolve', 'preserve', 'notify', 'escalate']),
   notes: z.string().trim().max(2000).optional(),
+  /** Required for escalate: legal | law_enforcement | counsel | other */
+  escalateTo: z.enum(['legal', 'law_enforcement', 'counsel', 'other']).optional(),
 })
 
 export const setCommercialLockSchema = z.object({
   locked: z.boolean(),
   notes: z.string().trim().max(2000).optional(),
 })
+
+export const RIGHTS_SOP_STAGES = [
+  'intake',
+  'assessing',
+  'preserving',
+  'investigating',
+  'escalated',
+  'closed',
+] as const
+export type RightsSopStage = (typeof RIGHTS_SOP_STAGES)[number]
+
+export const RIGHTS_ESCALATE_TARGETS = ['legal', 'law_enforcement', 'counsel', 'other'] as const
+export type RightsEscalateTarget = (typeof RIGHTS_ESCALATE_TARGETS)[number]
+
+/** DMCA is copyright only — likeness/safety must stay on the report track. */
+export function dmcaTrackBlockedForReason(reason: RightsReportReason): string | null {
+  if (reason === 'copyright') return null
+  return 'DMCA is copyright only. Keep likeness, safety, fraud, and compensation on the rights-report track.'
+}
 
 export type RightsReportStatus = z.infer<typeof rightsReportStatusSchema>
 export type CreateRightsReportInput = z.infer<typeof createRightsReportSchema>
@@ -187,6 +208,12 @@ export interface RightsReportDto {
   urgent: boolean
   details: string
   status: RightsReportStatus
+  sopStage: RightsSopStage
+  evidencePreservedAt: string | null
+  evidenceNotes: string | null
+  notifiedAt: string | null
+  escalateTo: RightsEscalateTarget | null
+  escalatedAt: string | null
   reporterEmail: string | null
   reporterName: string | null
   reporterUserId: string | null
@@ -194,6 +221,7 @@ export interface RightsReportDto {
   reviewedAt: string | null
   staffNotes: string | null
   commercialLocked: boolean
+  openDmcaHold: boolean
 }
 
 export interface PublicReportResult {
