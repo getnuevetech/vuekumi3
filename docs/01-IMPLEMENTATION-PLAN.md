@@ -119,6 +119,7 @@ Locked product rules already in the running system:
 | **45** | Playwright web smoke (`e2e/smoke.spec.ts`): home, catalog, models, admin login → platform health, member bookings. CI runs after API tests against seeded Postgres. API remains the contract suite. |
 | **46** | Ops inventory (O0 external probe) + decision workshop brief (`docs/06`) + O3/O4 checklists in Lightsail README. No invented rates; does not claim O2 closed. |
 | **47** | Rotate live demo staff passwords (admin re-rotate, support, moderator); external O4 API smoke signed; finance on-host recovery required after rate-limit. TLS still open. |
+| **48** | Finish live `@vuekumi.demo` password rotation (member/agency/models/photographers + finance); expand Playwright smoke to pricing/legal/DMCA. CI still uses seed passwords locally. |
 
 Rights v1 treated model clearance as an admin-verified file. Phase 25 replaces that as the
 commercial path: photographer plus model approval. PDFs remain supporting evidence.
@@ -282,16 +283,14 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled**. Phase 47 (live staff password rotation +
-   O4 API smoke) is shipped. Phase 46 (ops inventory + decision brief) is shipped.
-   Phase 45 (Playwright web smoke) is shipped. Phase 44 (Arc C seed fixtures) is
-   shipped. For ops redeploy and decision gates, see
+3. Default next slice: **none scheduled**. Phase 48 (live demo cred hygiene + Playwright
+   expand) is shipped. Phase 47 (staff password rotation + O4 API smoke) is shipped.
+   For ops redeploy and decision gates, see
    [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md) and
    [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md)
    — still requires explicit approval before any numbered money/biometric phase.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.
 5. **Ops, not a phase:** production still needs on-host SHA confirm (O2), TLS (O3),
-   finance account recovery SQL, and HTTPS O4 re-sign. Prefer full `main` through
-   47. Do not invent undecided splits, commissions, biometric vendors/retention,
-   or a VueQuatro entity form.
+   and HTTPS O4 re-sign. Prefer full `main` through 48. Do not invent undecided
+   splits, commissions, biometric vendors/retention, or a VueQuatro entity form.

@@ -238,10 +238,9 @@ git rev-parse --short origin/main
    - set `WEB_URL=https://vuekumi.com` in `.env`
    - redeploy **without** `SEED_DEMO=1`
 5. Re-check login cookies over HTTPS include `Secure`.
-6. ~~Rotate remaining seed staff logins~~ **Phase 47:** `support@` and
-   `moderator@` `@vuekumi.demo` no longer accept `User12345!`. **`finance@`**
-   was rotated but the new secret was lost to API rate-limit — apply the finance
-   recovery SQL below, then change the password again from Account settings.
+6. ~~Rotate remaining seed staff logins~~ **Phases 47–48:** live `@vuekumi.demo`
+   and admin demo passwords rotated (secrets not in git). Local/CI seed still uses
+   `Admin123!` / `User12345!` by design.
 
 ### Admin password recovery (on-host)
 
