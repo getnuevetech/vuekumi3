@@ -4,6 +4,7 @@ import {
   COUNTRY_GATE_TITLES,
   DEFAULT_CONTRIBUTOR_ONBOARDING_POLICY,
   defaultFeatureScopesForActivation,
+  FEATURE_SCOPE_ACTIONS,
   type ContributorOnboardingPolicy,
   type CountryGateCode,
   type CountryPolicyStatus,
@@ -55,11 +56,35 @@ function emptyGates() {
   }))
 }
 
+function holdFeatureScopeCreates() {
+  return FEATURE_SCOPE_ACTIONS.map((action) => ({
+    action,
+    state: 'HOLD' as FeatureScopeState,
+  }))
+}
+
+/** Backfill HOLD feature scopes so staff can edit scopes before ACTIVE. */
+async function ensureHoldFeatureScopes(policyVersionId: string) {
+  for (const action of FEATURE_SCOPE_ACTIONS) {
+    await prisma.countryFeatureScope.upsert({
+      where: { policyVersionId_action: { policyVersionId, action } },
+      create: { policyVersionId, action, state: 'HOLD' },
+      update: {},
+    })
+  }
+}
+
 /** Ensure every Country has at least one HOLD policy version with G01–G16. */
 export async function ensureCountryPolicyHold(countryCode: string, preparedById?: string) {
   const code = countryCode.toUpperCase()
   const existing = await getLatestPolicyVersion(code)
-  if (existing) return existing
+  if (existing) {
+    if (existing.featureScopes.length < FEATURE_SCOPE_ACTIONS.length) {
+      await ensureHoldFeatureScopes(existing.id)
+      return (await getLatestPolicyVersion(code))!
+    }
+    return existing
+  }
 
   const country = await prisma.country.findUnique({ where: { code } })
   if (!country) {
@@ -74,6 +99,9 @@ export async function ensureCountryPolicyHold(countryCode: string, preparedById?
       preparedById: preparedById ?? null,
       gates: {
         create: emptyGates(),
+      },
+      featureScopes: {
+        create: holdFeatureScopeCreates(),
       },
       transitions: {
         create: {
@@ -223,6 +251,44 @@ export async function patchGate(input: {
   })
 
   return getLatestPolicyVersion(gate.policyVersion.countryCode)
+}
+
+/** Phase 53 / T7 — edit feature scopes on non-ACTIVE drafts (HOLD / REVIEW / SUSPENDED). */
+export async function patchFeatureScope(input: {
+  policyVersionId: string
+  action: FeatureScopeAction
+  state: FeatureScopeState
+  notes?: string | null
+  actorId: string
+}) {
+  const policy = await prisma.countryPolicyVersion.findUnique({
+    where: { id: input.policyVersionId },
+  })
+  if (!policy) throw Object.assign(new Error('Policy version not found'), { statusCode: 404 })
+  if (policy.status === 'ACTIVE' || policy.status === 'OFFBOARDING') {
+    throw Object.assign(
+      new Error('Cannot edit feature scopes on an immutable published policy; draft a new version'),
+      { statusCode: 400 },
+    )
+  }
+
+  await prisma.countryFeatureScope.upsert({
+    where: {
+      policyVersionId_action: { policyVersionId: policy.id, action: input.action },
+    },
+    create: {
+      policyVersionId: policy.id,
+      action: input.action,
+      state: input.state,
+      notes: input.notes ?? null,
+    },
+    update: {
+      state: input.state,
+      ...(input.notes !== undefined ? { notes: input.notes } : {}),
+    },
+  })
+
+  return getLatestPolicyVersion(policy.countryCode)
 }
 
 export async function submitPolicyForReview(policyVersionId: string, actorId: string, notes?: string) {

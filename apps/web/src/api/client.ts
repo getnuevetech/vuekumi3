@@ -1011,6 +1011,15 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+  patchCountryFeatureScope: (
+    policyId: string,
+    action: string,
+    body: { state: string; notes?: string | null },
+  ) =>
+    request<{ policy: CountryPolicyDetail | null }>(
+      `/api/admin/countries/activation/${policyId}/scopes/${encodeURIComponent(action)}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
   submitCountryPolicy: (policyId: string, notes?: string) =>
     request<{ policyId: string; status: string }>(`/api/admin/countries/activation/${policyId}/submit`, {
       method: 'POST',

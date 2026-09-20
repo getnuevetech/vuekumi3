@@ -234,7 +234,7 @@ Suggested order minimizes counsel blockers and avoids inventing money.
 | **T4** | `/rights` hub (consolidate guest + model) | T1 | **Shipped Phase 52.** Token/auth dashboard for review/approve without compensation |
 | **T5** | Compensation negotiation (commercial lock) | **Dec-PayBase signed**; T4 | Propose/counter/agree; commercial off until agree or explicit zero; multi-model cap validation; **no payout yet** if pay rails unreadiness |
 | **T6** | Model likeness payouts in ledger | T5 + finance | Ledger lines from Dec-PayBase; certificates stamp agreed terms; Africa nonmember fee OK |
-| **T7** | Country Activation Matrix admin | T0 | 54×16 gates, HOLD default, ACTIVE only with sign-off; no conflict with overlays |
+| **T7** | Country Activation Matrix admin | T0 | **Shipped Phase 53** (ops polish on Phase 49 P0): evidence URLs, feature scopes, transitions, CSV |
 | **T8** | Pilot country activation (ops) | T7 + counsel | First ACTIVE country(ies) with evidence; optional flip `contributorOnboardingPolicy` |
 | **T9** | Buyer market overlays + sanctions checklist | Counsel | US/EU/UK overlay status in admin; OFAC screening SOP linked |
 
@@ -281,6 +281,6 @@ Document in `docs/runbooks/rights-ops.md` (new) when T2 starts:
 2. Sign **Dec-PayBase** (and revisit Dec-Split / Dec-Bio / Dec-VQ in `06`).  
 3. Counsel: DMCA agent filing, public policy copy, first-wave country gate evidence.  
 4. Ops: keep Lightsail TLS + SHA work on Track O; do not block T0–T1 docs/UI on TLS.  
-5. **P0–T2 + T4 shipped (Phases 49–52).** Optional next: **T3** DMCA policy (counsel),
-   or **T7** matrix ops polish. Do not start negotiation payouts before **Dec-PayBase**.
+5. **P0–T2 + T4 + T7 shipped (Phases 49–53).** Optional next: **T3** DMCA policy (counsel),
+   or PDS `license.issue` suspend enforcement. Do not start negotiation payouts before **Dec-PayBase**.
    Pilot ACTIVE countries (T8) still need counsel evidence.

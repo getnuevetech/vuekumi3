@@ -206,8 +206,47 @@ test('admin activation register + evaluate route', async () => {
     headers: { cookie: jar },
   })
   assert.equal(detail.statusCode, 200, detail.body)
-  const d = detail.json() as { policy: { gates: unknown[] } }
+  const d = detail.json() as {
+    policy: {
+      id: string
+      gates: Array<{ id: string; code: string; evidence: unknown[] }>
+      featureScopes: Array<{ action: string; state: string }>
+      transitions: unknown[]
+    }
+  }
   assert.equal(d.policy.gates.length, 16)
+  assert.ok(d.policy.featureScopes.length >= 7)
+  assert.ok(d.policy.transitions.length >= 1)
+
+  const gate = d.policy.gates.find((g) => g.code === 'G01')
+  assert.ok(gate)
+  const patched = await app.inject({
+    method: 'PATCH',
+    url: `/api/admin/countries/activation/gates/${gate.id}`,
+    headers: { cookie: jar },
+    payload: {
+      status: 'RESEARCHING',
+      rationale: 'Phase 53 evidence polish test',
+      evidence: {
+        label: 'Matrix research note',
+        url: 'https://example.com/country-matrix/ke-g01',
+      },
+    },
+  })
+  assert.equal(patched.statusCode, 200, patched.body)
+  const afterGate = (patched.json() as { policy: { gates: Array<{ code: string; evidence: Array<{ url: string | null }> }> } }).policy
+  const g01 = afterGate.gates.find((g) => g.code === 'G01')
+  assert.ok(g01?.evidence.some((e) => e.url === 'https://example.com/country-matrix/ke-g01'))
+
+  const scope = await app.inject({
+    method: 'PATCH',
+    url: `/api/admin/countries/activation/${d.policy.id}/scopes/new_license`,
+    headers: { cookie: jar },
+    payload: { state: 'CONDITIONAL', notes: 'Staff draft before ACTIVE' },
+  })
+  assert.equal(scope.statusCode, 200, scope.body)
+  const scopes = (scope.json() as { policy: { featureScopes: Array<{ action: string; state: string }> } }).policy.featureScopes
+  assert.equal(scopes.find((s) => s.action === 'new_license')?.state, 'CONDITIONAL')
 
   const evalRes = await app.inject({
     method: 'POST',
