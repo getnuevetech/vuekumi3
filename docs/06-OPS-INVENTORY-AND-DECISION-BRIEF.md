@@ -107,8 +107,8 @@ Fill one row per decision in a product/counsel meeting. **Leave Chosen blank
 until a human signs it.** Do not treat seed copy, README demos, or this file as
 a decision.
 
-Optional meeting order (from `05` R4): Dec-VQ → Dec-Split → Dec-Fee → Dec-Bio →
-Dec-AI.
+Optional meeting order (from `05` / eng spec): Dec-VQ → Dec-AfricaElig →
+Dec-PayBase → Dec-Split → Dec-Fee → Dec-Bio → Dec-AI.
 
 ### Dec-VQ — VueQuatro form
 
@@ -118,6 +118,17 @@ Dec-AI.
 | **Shipped today** | Phase 31 **staff mode** only (`/admin/representation`). No second brand, no public VueQuatro app, **zero** representation fee. |
 | **Options (pick one)** | (A) Confirm staff-mode-only for the foreseeable product. (B) Legal entity / DBA for contracts while UI stays staff mode. (C) Separate public app (requires brand + auth + counsel plan). |
 | **Unblocks** | Contracts, counsel filing, marketing, representation billing shape |
+| **Chosen** | _pending_ |
+| **Signed by / date** | |
+
+### Dec-AfricaElig — Africa-based contributor eligibility
+
+| | |
+| --- | --- |
+| **Question** | What proves Africa-based contributor eligibility (verified residence vs principal creator-business base), what evidence is required, and when does onboarding require country policy ACTIVE? |
+| **Shipped today** | AU 54-state list on signup; birthplace/ethnicity/appearance not used. No ACTIVE-country gate yet. |
+| **Options (pick one)** | (A) Keep AU list only until first pilot ACTIVE. (B) Verified residence in ACTIVE country. (C) Principal creator-business base in ACTIVE country. (D) Other — **write evidence + review cadence**. |
+| **Unblocks** | PDS `contributor.create`; P0 signup enforcement ([`08`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md)) |
 | **Chosen** | _pending_ |
 | **Signed by / date** | |
 
