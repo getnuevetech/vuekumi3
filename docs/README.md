@@ -13,15 +13,18 @@ Read in this order:
    review, recommendations, and ops/decision execution tracks (including Lightsail
    redeploy). Not a licence to start work without approval.
 4. **[06-OPS-INVENTORY-AND-DECISION-BRIEF.md](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md)** —
-   O0 live probe (19 Sep 2026) and Dec-* workshop blanks (no invented answers).
-5. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
+   O0 live probe and Dec-* workshop blanks (no invented answers).
+5. **[07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)** —
+   Trust & Markets plan: `/report-content`, `/rights`, DMCA/repeat ops, likeness
+   compensation negotiation, Country Activation Matrix admin. Plan only until approved.
+6. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
    Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
    and the shipped status header.
-6. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
+7. **[deploy/lightsail/README.md](../deploy/lightsail/README.md)** — how production is
    actually deployed (Docker on AWS Lightsail); O3/O4 checklists.
-7. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
+8. **[00-CODE-REVIEW.md](./00-CODE-REVIEW.md)** — **archive.** Inventory of the static Noir
    template before the backend existed.
-8. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
+9. **[02-DEPLOYMENT-LIGHTSAIL-DOCKER.md](./02-DEPLOYMENT-LIGHTSAIL-DOCKER.md)** — **archive.**
    Original NestJS/Lightsail sketch; superseded by the deploy README.
 
 **Do not start a new implementation phase until it is explicitly approved.**

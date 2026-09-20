@@ -45,7 +45,7 @@ in.”
 
 | Topic | Current shipped behaviour | Decision needed before |
 | --- | --- | --- |
-| Photographer / model / platform split when a model is party to a sale | Models do **not** earn; photographer 50% of paid licences unchanged | Any model payout, likeness royalty, or ledger change |
+| Photographer / model / platform split when a model is party to a sale | Models do **not** earn; photographer 50% of paid licences unchanged | Any model payout, likeness royalty, or ledger change — see reframed Dec-Split / **Dec-PayBase** in [`07`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md) |
 | Booking / production commission | Phases 30 / 32: **zero** fee, off-platform settlement, no ledger touch | Any payment rails or platform fee on briefs/campaigns |
 | Representation commission | Phase 31: **zero** fee | Any VueQuatro agency fee product |
 | Dedicated biometric vendor + numbered selfie-retention window | Phase 28: opt-in check, **result only**, selfie discarded immediately; OpenAI vision when configured | Any Stage 3 vendor swap, embedding store, or retention policy |
@@ -221,13 +221,16 @@ Decision workshop brief (no invented answers):
 
 Workshop blanks (options only; Chosen left pending):
 [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md) §2.
+Trust & Markets plan (report hub, compensation negotiation, country activation):
+[`07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md).
 
 | Decision ID | Question | Unblocks |
 | --- | --- | --- |
 | **Dec-VQ** | VueQuatro: staff mode only vs legal entity vs separate app | Contracts, counsel filing, marketing |
-| **Dec-Split** | Model party-to-sale revenue split (or confirm models never earn) | Ledger, payouts, contributor copy |
+| **Dec-PayBase** | Exact payment base for any likeness %-share (customer price vs photographer distributable vs net after refunds) | Model compensation ledger math (T5/T6) |
+| **Dec-Split** | Default UX for negotiation (optional presets only) + marketing honesty; per-image negotiation supersedes a fixed global model % | Ledger defaults, contributor copy |
 | **Dec-Fee** | Booking / production / representation commission (or confirm forever-zero + off-platform) | Payment rails, invoices |
-| **Dec-Bio** | Biometric vendor + retention days (or confirm discard-forever Stage 3) | Phase 28 hardening / vendor swap |
+| **Dec-Bio** | Biometric vendor + retention days (or confirm discard-forever Stage 3) | Phase 28 hardening / matrix gate K |
 | **Dec-AI** | Dataset pricing / whether to sell training access | SKU, grants, partner terms |
 
 ### Track E — Only after decisions (proposed Arc E shape; not scheduled)

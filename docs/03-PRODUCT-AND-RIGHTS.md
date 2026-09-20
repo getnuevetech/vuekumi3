@@ -278,5 +278,7 @@ Post–Arc D recommendations (ops redeploy, decision gates, optional Phase 41 ho
 curation review): [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md).
 Live inventory + decision workshop blanks:
 [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
+Trust & Markets plan (report hub, compensation negotiation, country activation):
+[`07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md).
 Still not a build ticket until explicitly approved.
 
