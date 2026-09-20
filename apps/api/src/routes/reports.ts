@@ -4,6 +4,7 @@ import {
   decideRightsReportSchema,
   reportIsUrgent,
   reportQueueForReason,
+  resolveReportPhotoId,
   setCommercialLockSchema,
   type RightsReportReason,
 } from '@vuekumi/shared'
@@ -156,10 +157,11 @@ export async function reportRoutes(app: FastifyInstance) {
     config: { rateLimit: REPORT_RATE_LIMIT },
   }, async (request, reply) => {
     const body = createRightsReportSchema.parse(request.body)
-    if (!body.photoId?.trim()) {
-      return reply.code(400).send({ error: 'Photo id is required' })
+    const photoId = resolveReportPhotoId(body)
+    if (!photoId) {
+      return reply.code(400).send({ error: 'Paste the photograph page link (for example /photo/afr-001)' })
     }
-    return fileRightsReport(request, reply, body.photoId.trim())
+    return fileRightsReport(request, reply, photoId)
   })
 
   app.get('/admin/reports', listReports, async (request) => {

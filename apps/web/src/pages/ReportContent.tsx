@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import {
+  parsePhotoRef,
+  photoPagePath,
   RIGHTS_REPORT_CATEGORY_META,
   RIGHTS_REPORT_REASONS,
   type PhotoDto,
@@ -11,12 +13,25 @@ import { SiteHeader } from '../components/shared'
 import { api, ApiError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
+function initialPhotoLink(params: URLSearchParams): string {
+  const fromUrl = params.get('photoUrl') ?? params.get('url')
+  if (fromUrl) return fromUrl
+  const id = params.get('photoId') ?? params.get('photo')
+  if (id) {
+    const path = photoPagePath(id)
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return `${window.location.origin}${path}`
+    }
+    return path
+  }
+  return ''
+}
+
 export default function ReportContentPage() {
   const { user } = useAuth()
   const [params] = useSearchParams()
-  const initialPhotoId = params.get('photoId') ?? params.get('photo') ?? ''
 
-  const [photoId, setPhotoId] = useState(initialPhotoId)
+  const [photoLink, setPhotoLink] = useState(() => initialPhotoLink(params))
   const [photo, setPhoto] = useState<PhotoDto | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [reason, setReason] = useState<RightsReportReason>('copyright')
@@ -27,16 +42,16 @@ export default function ReportContentPage() {
   const [done, setDone] = useState<{ urgent?: boolean; alreadyReported?: boolean } | null>(null)
 
   const meta = RIGHTS_REPORT_CATEGORY_META[reason]
+  const resolvedId = useMemo(() => parsePhotoRef(photoLink), [photoLink])
 
   useEffect(() => {
-    const id = photoId.trim()
-    if (!id) {
+    if (!resolvedId) {
       setPhoto(null)
-      setPhotoError(null)
+      setPhotoError(photoLink.trim() ? 'Paste a photograph page link like /photo/afr-001' : null)
       return
     }
     let cancelled = false
-    api.photo(id)
+    api.photo(resolvedId)
       .then((p) => {
         if (!cancelled) {
           setPhoto(p)
@@ -46,24 +61,25 @@ export default function ReportContentPage() {
       .catch(() => {
         if (!cancelled) {
           setPhoto(null)
-          setPhotoError('Photo not found or not publicly listed.')
+          setPhotoError('Photograph not found or not publicly listed.')
         }
       })
     return () => { cancelled = true }
-  }, [photoId])
+  }, [resolvedId, photoLink])
 
   const canSubmit = useMemo(() => {
-    if (!photoId.trim() || !photo || details.trim().length < 20) return false
+    if (!resolvedId || !photo || details.trim().length < 20) return false
     if (!user && !reporterEmail.trim()) return false
     return true
-  }, [photoId, photo, details, user, reporterEmail])
+  }, [resolvedId, photo, details, user, reporterEmail])
 
   async function submit() {
-    if (!canSubmit) return
+    if (!canSubmit || !resolvedId) return
     setBusy(true)
     try {
       const result = await api.reportContent({
-        photoId: photoId.trim(),
+        photoUrl: photoLink.trim(),
+        photoId: resolvedId,
         reason,
         details,
         reporterEmail: user ? undefined : reporterEmail,
@@ -91,7 +107,7 @@ export default function ReportContentPage() {
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Trust</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Report content.</h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-          Report copyright, likeness, fraud, safety harm, or a licensing dispute. Guests welcome.
+          Paste the photograph page link, then choose a category. Guests welcome.
           Statutory copyright takedown is a separate{' '}
           <Link to="/dmca" className="text-terra">DMCA notice</Link>
           {' '}— not for likeness, privacy, or safety.
@@ -109,7 +125,7 @@ export default function ReportContentPage() {
             </p>
             <div className="flex flex-wrap gap-3">
               {photo && (
-                <Link to={`/photo/${photo.id}`} className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-terra">
+                <Link to={photoPagePath(photo.id)} className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-terra">
                   Back to photograph →
                 </Link>
               )}
@@ -134,21 +150,28 @@ export default function ReportContentPage() {
             }}
           >
             <label className="block space-y-1.5">
-              <span className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">Photograph id</span>
+              <span className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">Photograph link</span>
               <input
-                value={photoId}
-                onChange={(e) => setPhotoId(e.target.value.trim())}
-                placeholder="e.g. afr-001"
+                value={photoLink}
+                onChange={(e) => setPhotoLink(e.target.value)}
+                placeholder="https://…/photo/afr-001 or /photo/afr-001"
                 required
+                inputMode="url"
+                autoComplete="url"
                 className="w-full rounded-xl border border-sand-soft bg-white px-3 py-2.5 text-sm outline-none focus:border-terra"
               />
+              <p className="text-xs text-ink-faint">
+                Use the page URL from the browser address bar — not only the id.
+              </p>
               {photoError && <p className="text-xs text-[#b3382e]">{photoError}</p>}
               {photo && (
-                <Link to={`/photo/${photo.id}`} className="mt-2 flex items-center gap-3 rounded-xl border border-sand-soft bg-white p-2 hover:border-terra">
+                <Link to={photoPagePath(photo.id)} className="mt-2 flex items-center gap-3 rounded-xl border border-sand-soft bg-white p-2 hover:border-terra">
                   <img src={photo.src} alt="" className="h-14 w-16 rounded-lg object-cover" />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">{photo.title}</span>
-                    <span className="font-mono-tech text-[10px] uppercase text-ink-faint">{photo.id}</span>
+                    <span className="block truncate font-mono-tech text-[10px] uppercase text-ink-faint">
+                      {photoPagePath(photo.id)}
+                    </span>
                   </span>
                 </Link>
               )}

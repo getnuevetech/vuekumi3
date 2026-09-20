@@ -80,6 +80,57 @@ export function reportIsUrgent(reason: RightsReportReason): boolean {
   return RIGHTS_REPORT_CATEGORY_META[reason].urgent
 }
 
+/**
+ * Resolve a pasted photograph link or bare id to a photo id.
+ * Accepts: `afr-001`, `/photo/afr-001`, `https://host/photo/afr-001?…`
+ */
+export function parsePhotoRef(raw?: string | null): string | null {
+  const value = raw?.trim()
+  if (!value) return null
+
+  // Absolute or protocol-relative URL
+  if (/^https?:\/\//i.test(value) || value.startsWith('//')) {
+    try {
+      const url = new URL(value.startsWith('//') ? `https:${value}` : value)
+      const fromPath = photoIdFromPath(url.pathname)
+      if (fromPath) return fromPath
+      const fromQuery = url.searchParams.get('photoId') ?? url.searchParams.get('photo')
+      if (fromQuery?.trim()) return fromQuery.trim()
+    } catch {
+      return null
+    }
+    return null
+  }
+
+  // Path or path+query without host
+  if (value.includes('/') || value.includes('?')) {
+    const pathOnly = value.split('?')[0] ?? value
+    const fromPath = photoIdFromPath(pathOnly)
+    if (fromPath) return fromPath
+    try {
+      const url = new URL(value, 'https://vuekumi.local')
+      const q = url.searchParams.get('photoId') ?? url.searchParams.get('photo')
+      if (q?.trim()) return q.trim()
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Bare id
+  if (/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(value)) return value
+  return null
+}
+
+function photoIdFromPath(pathname: string): string | null {
+  const cleaned = pathname.replace(/\/+$/, '')
+  const match = cleaned.match(/\/photo\/([^/]+)\/?$/i)
+  return match?.[1] ? decodeURIComponent(match[1]) : null
+}
+
+export function photoPagePath(photoId: string): string {
+  return `/photo/${photoId}`
+}
+
 export const rightsReportStatusSchema = z.enum(['open', 'reviewing', 'dismissed', 'resolved'])
 
 const optionalEmail = z
@@ -100,8 +151,15 @@ export const createRightsReportSchema = z.object({
     .max(120)
     .optional()
     .transform((value) => (value ? value : undefined)),
+  /** Preferred: photograph page URL or `/photo/:id` path. */
+  photoUrl: z.string().trim().min(1).max(500).optional(),
+  /** Bare id (deep-link / legacy). */
   photoId: z.string().min(1).max(64).optional(),
 })
+
+export function resolveReportPhotoId(input: { photoUrl?: string | null; photoId?: string | null }): string | null {
+  return parsePhotoRef(input.photoUrl) ?? parsePhotoRef(input.photoId)
+}
 
 export const decideRightsReportSchema = z.object({
   action: z.enum(['lock', 'unlock', 'dismiss', 'resolve']),

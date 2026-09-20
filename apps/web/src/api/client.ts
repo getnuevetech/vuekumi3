@@ -446,7 +446,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  reportContent: (body: CreateRightsReportInput & { photoId: string }) =>
+  reportContent: (body: CreateRightsReportInput & { photoUrl?: string; photoId?: string }) =>
     request<PublicReportResult>('/api/report-content', {
       method: 'POST',
       body: JSON.stringify(body),
