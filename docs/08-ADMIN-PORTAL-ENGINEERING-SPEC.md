@@ -279,4 +279,4 @@ when ACTIVE/SUSPENDED holds `new_license` (historical grants kept).
 
 **Next (when approved):** T3 DMCA policy hardening (counsel copy).
 **P1 Rights & revenue** (T5/T6) only after **Dec-PayBase**.
-Do not invent rates, vendors, or entity.
+Do not invent rates, vendors, or entity. **Phase 55:** Playwright covers `/report-content` + `/rights`.

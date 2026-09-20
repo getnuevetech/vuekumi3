@@ -11,7 +11,7 @@ async function signIn(page: Page, email: string, password: string) {
   ])
 }
 
-test.describe('Phase 45 web smoke', () => {
+test.describe('Phase 45 + 55 web smoke', () => {
   test('home shows Vuekumi brand and library CTA', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('link', { name: /Vuekumi/i }).first()).toBeVisible()
@@ -42,6 +42,39 @@ test.describe('Phase 45 web smoke', () => {
 
     await page.goto('/dmca')
     await expect(page.getByRole('heading', { name: 'DMCA notices.' })).toBeVisible()
+  })
+
+  test('Phase 55: report-content and rights hubs load', async ({ page }) => {
+    await page.goto('/report-content')
+    await expect(page.getByRole('heading', { name: 'Report content.' })).toBeVisible()
+    await expect(page.getByText('Photograph link')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'DMCA notice' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Your rights' })).toBeVisible()
+
+    await page.goto('/report-content?photoUrl=/photo/afr-002')
+    await expect(page.getByPlaceholder(/photo\/afr-001/i)).toHaveValue(/afr-002/)
+
+    await page.goto('/rights')
+    await expect(page.getByRole('heading', { name: 'Your rights.' })).toBeVisible()
+    await expect(page.getByText('Open an invite')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Report content →' })).toBeVisible()
+    await expect(page.getByText(/Compensation negotiation is not on this hub/i)).toBeVisible()
+  })
+
+  test('Phase 55: seed likeness invite opens on rights hub', async ({ page }) => {
+    // Use seed-e2e-rights-invite — API tests claim seed-nomsa-model-invite.
+    await page.goto('/rights?token=seed-e2e-rights-invite')
+    await expect(page.getByRole('heading', { name: 'Your rights.' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Likeness consent' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Approve selected' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Reject' })).toBeVisible()
+    await expect(page.getByText(/Models do not earn/i)).toBeVisible()
+  })
+
+  test('Phase 55: legacy model invite URL redirects into rights hub', async ({ page }) => {
+    await page.goto('/invite/model/seed-e2e-rights-invite')
+    await expect(page).toHaveURL(/\/rights\?token=seed-e2e-rights-invite/)
+    await expect(page.getByRole('heading', { name: 'Likeness consent' })).toBeVisible()
   })
 
   test('admin can sign in and reach platform health', async ({ page }) => {

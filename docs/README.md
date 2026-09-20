@@ -6,7 +6,7 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–54 (Arcs A–D complete; through Phase 54 / PDS license.issue enforce).
+   shipped Phases 0–55 (Arcs A–D complete; through Phase 55 / Playwright trust hubs).
    Default next slice: none scheduled until explicitly approved.
 3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
