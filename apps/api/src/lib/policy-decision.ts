@@ -48,6 +48,21 @@ export async function getActivePolicyVersion(countryCode: string) {
   })
 }
 
+/**
+ * Phase 54 — policy that regulates new licenses: ACTIVE, or post-ACTIVE SUSPENDED
+ * (so suspend mid-checkout still DENYs new grants while historical grants stay).
+ */
+export async function getRegulatingLicensePolicy(countryCode: string) {
+  const code = countryCode.toUpperCase()
+  const active = await getActivePolicyVersion(code)
+  if (active) return active
+  return prisma.countryPolicyVersion.findFirst({
+    where: { countryCode: code, status: 'SUSPENDED' },
+    orderBy: { version: 'desc' },
+    include: policyInclude,
+  })
+}
+
 function emptyGates() {
   return COUNTRY_GATE_CODES.map((code) => ({
     code,
@@ -562,25 +577,68 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
     }
   }
 
-  // P0 stub for commercial / payout actions — fail closed until P1.
-  if (action === 'asset.commercialize' || action === 'license.issue' || action === 'payout.authorize') {
+  // Phase 54: license.issue / asset.commercialize — legacy ALLOW when no ACTIVE/SUSPENDED
+  // regulatory policy (all markets HOLD today). DENY when a regulating policy holds new_license.
+  // payout.authorize stays fail-closed until Dec-PayBase / P1.
+  if (action === 'asset.commercialize' || action === 'license.issue') {
+    const regulating = await getRegulatingLicensePolicy(countryCode)
+    if (!regulating) {
+      return {
+        decision: 'ALLOW',
+        reasonCodes: ['legacy_pass_through_no_active_policy'],
+        policyVersion: null,
+        expiresAt,
+        evidenceRequired: [],
+      }
+    }
+    if (!hasValidActivationTransition(regulating)) {
+      return {
+        decision: 'DENY',
+        reasonCodes: ['policy_invalid_no_transition', 'direct_db_status_flip'],
+        policyVersion: `${regulating.countryCode}:v${regulating.version}`,
+        expiresAt,
+        evidenceRequired: [],
+      }
+    }
+    const state = featureScopeState(regulating, 'new_license')
+    if (state !== 'ON') {
+      return {
+        decision: 'DENY',
+        reasonCodes: [
+          'feature_scope_not_on:new_license',
+          regulating.status === 'SUSPENDED' ? 'market_suspended' : 'new_license_hold',
+          `scope:${state ?? 'missing'}`,
+        ],
+        policyVersion: `${regulating.countryCode}:v${regulating.version}`,
+        expiresAt,
+        evidenceRequired: [],
+      }
+    }
+    return {
+      decision: 'ALLOW',
+      reasonCodes: ['new_license_on', `policy_status:${regulating.status}`],
+      policyVersion: `${regulating.countryCode}:v${regulating.version}`,
+      expiresAt,
+      evidenceRequired: [],
+    }
+  }
+
+  if (action === 'payout.authorize') {
     const active = await getActivePolicyVersion(countryCode)
     if (!active || !hasValidActivationTransition(active)) {
       return {
         decision: 'DENY',
-        reasonCodes: ['policy_unavailable'],
+        reasonCodes: ['policy_unavailable', 'payout_fail_closed'],
         policyVersion: active ? `${active.countryCode}:v${active.version}` : null,
         expiresAt,
         evidenceRequired: [],
       }
     }
-    const scopeAction: FeatureScopeAction =
-      action === 'payout.authorize' ? 'payouts' : 'new_license'
-    const state = featureScopeState(active, scopeAction)
+    const state = featureScopeState(active, 'payouts')
     if (state !== 'ON') {
       return {
         decision: 'DENY',
-        reasonCodes: [`feature_scope_not_on:${scopeAction}`, 'p0_commercial_hold'],
+        reasonCodes: ['feature_scope_not_on:payouts', 'p0_commercial_hold'],
         policyVersion: `${active.countryCode}:v${active.version}`,
         expiresAt,
         evidenceRequired: [],
@@ -601,6 +659,30 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
     policyVersion: null,
     expiresAt,
     evidenceRequired: [],
+  }
+}
+
+/** Assert new licenses allowed via PDS for the photograph's contributor market. */
+export async function assertNewLicenseAllowed(countryCode?: string | null) {
+  if (!countryCode?.trim()) return
+  const result = await evaluatePolicy({
+    action: 'license.issue',
+    countryCode,
+  })
+  if (result.decision !== 'ALLOW') {
+    const suspended = result.reasonCodes.includes('market_suspended')
+    throw Object.assign(
+      new Error(
+        suspended
+          ? 'New licensing is suspended for this market. Existing certificates are not revoked.'
+          : `New licensing is not available for this market (${result.reasonCodes.join(', ')})`,
+      ),
+      {
+        statusCode: 403,
+        reasonCodes: result.reasonCodes,
+        policyVersion: result.policyVersion,
+      },
+    )
   }
 }
 

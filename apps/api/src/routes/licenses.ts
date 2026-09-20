@@ -21,6 +21,7 @@ import { issueGrant } from '../lib/grants.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
 import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
 import { assertCanGrant, COMMERCIAL_LOCK_REASON, priceForProduct, RightsError, twoPartyLicenseBlock } from '../lib/rights.js'
+import { assertNewLicenseAllowed } from '../lib/policy-decision.js'
 import { consumeRfQuota, QuotaError } from '../lib/subscriptions.js'
 import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { streamObject } from '../lib/storage.js'
@@ -31,6 +32,13 @@ function rightsError(reply: { code: (n: number) => { send: (b: unknown) => unkno
   }
   if (err instanceof RightsError || err instanceof PaymentError || err instanceof AgencyError) {
     return reply.code(err.statusCode).send({ error: err.message })
+  }
+  if (err && typeof err === 'object' && 'statusCode' in err && typeof (err as { statusCode: unknown }).statusCode === 'number') {
+    const e = err as { statusCode: number; message?: string; reasonCodes?: string[] }
+    return reply.code(e.statusCode).send({
+      error: e.message || (err instanceof Error ? err.message : 'Request failed'),
+      ...(e.reasonCodes ? { reasonCodes: e.reasonCodes } : {}),
+    })
   }
   throw err
 }
@@ -179,6 +187,7 @@ export async function licenseRoutes(app: FastifyInstance) {
     try {
       await assertAgencyAction(request.authUser, 'purchase')
       assertCanGrant(product, photo, photo.rightsRecord, photo.appearances)
+      await assertNewLicenseAllowed(photo.contributor.country)
     } catch (err) {
       return rightsError(reply, err)
     }
