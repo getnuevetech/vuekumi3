@@ -121,14 +121,25 @@ Dec-AI.
 | **Chosen** | _pending_ |
 | **Signed by / date** | |
 
-### Dec-Split — model party-to-sale revenue
+### Dec-PayBase — likeness %-share payment base
 
 | | |
 | --- | --- |
-| **Question** | When a model is party to a sale, do models earn — and if so, how does photographer / model / platform split? |
+| **Question** | What exact money figure is a likeness percentage calculated from? |
+| **Shipped today** | No model earnings; photographer 50% of paid licence revenue to ledger. |
+| **Options (pick one)** | (A) Customer paid licence price (pre-platform cut). (B) Photographer distributable share only (after platform cut). (C) Net after refunds/chargebacks on a defined window. (D) Other — **write one sentence**. |
+| **Unblocks** | Compensation negotiation ledger math (plan T5/T6 in [`07`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)) |
+| **Chosen** | _pending_ |
+| **Signed by / date** | |
+
+### Dec-Split — model party-to-sale revenue (reframed)
+
+| | |
+| --- | --- |
+| **Question** | For *new* commercial releases: confirm per-image negotiation (%, fixed, combo, or zero) with commercial locked until both agree — and what optional UX presets (if any) are shown? Fixed global model % is **not** required. |
 | **Shipped today** | Models **do not earn**. Photographer **50%** of paid licences; platform 50%. Ledger unchanged. |
-| **Options (pick one)** | (A) Confirm models never earn (update marketing only). (B) Introduce a model share — **write the three percentages; they must sum to 100%**. (C) Defer with an explicit “revisit when…” trigger. |
-| **Unblocks** | `EarningsLedger`, payouts UI, contributor/model copy |
+| **Options (pick one)** | (A) Adopt negotiation rule from [`07`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md) §3–5; no default %. (B) Negotiation + optional preset chips (list them). (C) Confirm models never earn (reject memo compensation path). |
+| **Unblocks** | T5/T6 build approval, marketing honesty |
 | **Chosen** | _pending_ |
 | **Signed by / date** | |
 
