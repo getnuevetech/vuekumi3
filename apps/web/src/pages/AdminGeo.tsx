@@ -186,7 +186,14 @@ const GATE_STATUSES = ['NOT_STARTED', 'RESEARCHING', 'BLOCKED', 'APPROVED', 'NOT
 export function AdminCountryActivation() {
   const [rows, setRows] = useState<CountryActivationRow[]>([])
   const [selected, setSelected] = useState<string | null>(null)
-  const [detail, setDetail] = useState<{ country: Pick<GeoCountry, "code" | "name" | "region" | "contributorEligible" | "enabled"> & { overlayKind?: string | null; counselStatus?: string }; policy: CountryPolicyDetail } | null>(null)
+  const [regionFilter, setRegionFilter] = useState('africa')
+  const [detail, setDetail] = useState<{
+    country: Pick<GeoCountry, 'code' | 'name' | 'region' | 'contributorEligible' | 'enabled'> & {
+      overlayKind?: string | null
+      counselStatus?: string
+    }
+    policy: CountryPolicyDetail
+  } | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = () => {
@@ -199,10 +206,144 @@ export function AdminCountryActivation() {
     try {
       const d = await api.adminCountryActivationDetail(code)
       setDetail(d)
+      requestAnimationFrame(() => {
+        document.getElementById('country-policy-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : 'Load failed')
     }
   }
+
+  const visible = rows.filter((c) => regionFilter === 'all' || c.region === regionFilter)
+
+  const detailPanel = detail ? (
+    <div id="country-policy-detail" className="mt-6 space-y-4 rounded-2xl border border-sand-soft bg-white p-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.2em] text-ink-faint">
+            {detail.country.code} · v{detail.policy.version} · {detail.policy.status}
+          </p>
+          <h2 className="font-serif-display text-2xl font-light">{detail.country.name}</h2>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            disabled={busy || detail.policy.status === 'ACTIVE'}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                await api.submitCountryPolicy(detail.policy.id)
+                toast.success('Submitted for review')
+                await openDetail(detail.country.code)
+                load()
+              } catch (e) {
+                toast.error(e instanceof ApiError ? e.message : 'Submit failed')
+              } finally {
+                setBusy(false)
+              }
+            }}
+            className="rounded-full border border-sand-soft px-3 py-1.5 font-mono-tech text-[10px] uppercase"
+          >
+            Submit review
+          </button>
+          <button
+            disabled={busy || detail.policy.status === 'ACTIVE'}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                await api.activateCountryPolicy(detail.policy.id)
+                toast.success('Activated')
+                await openDetail(detail.country.code)
+                load()
+              } catch (e) {
+                toast.error(e instanceof ApiError ? e.message : 'Activation denied')
+              } finally {
+                setBusy(false)
+              }
+            }}
+            className="rounded-full bg-ink px-3 py-1.5 font-mono-tech text-[10px] uppercase text-paper"
+          >
+            Authorize ACTIVE
+          </button>
+          {detail.policy.status === 'ACTIVE' && (
+            <button
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                try {
+                  await api.suspendCountryPolicy(detail.policy.id)
+                  toast.success('Suspended')
+                  await openDetail(detail.country.code)
+                  load()
+                } catch (e) {
+                  toast.error(e instanceof ApiError ? e.message : 'Suspend failed')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+              className="rounded-full border border-terra px-3 py-1.5 font-mono-tech text-[10px] uppercase text-terra"
+            >
+              Suspend
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead>
+            <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+              {['Gate', 'Title', 'Status', 'Update'].map((h) => (
+                <th key={h} className="px-2 py-2 font-medium">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {detail.policy.gates.map((g) => (
+              <tr key={g.id} className="border-b border-sand-soft last:border-0">
+                <td className="px-2 py-2 font-mono-tech text-xs">{g.code}</td>
+                <td className="px-2 py-2 text-xs text-ink-soft">{g.title}</td>
+                <td className="px-2 py-2 font-mono-tech text-[10px] uppercase">{g.status}</td>
+                <td className="px-2 py-2">
+                  <select
+                    disabled={busy || detail.policy.status === 'ACTIVE'}
+                    value={g.status}
+                    onChange={async (e) => {
+                      const status = e.target.value
+                      setBusy(true)
+                      try {
+                        await api.patchCountryGate(g.id, {
+                          status,
+                          rationale: status === 'NOT_APPLICABLE' ? (g.rationale || 'N/A rationale (staff)') : g.rationale,
+                          evidence: { label: `Status → ${status}` },
+                        })
+                        await openDetail(detail.country.code)
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Gate update failed')
+                      } finally {
+                        setBusy(false)
+                      }
+                    }}
+                    className="rounded border border-sand-soft bg-white px-2 py-1 text-xs"
+                  >
+                    {GATE_STATUSES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {detail.policy.featureScopes.length > 0 && (
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+          Feature scopes:{' '}
+          {detail.policy.featureScopes.map((s) => `${s.action}=${s.state}`).join(' · ')}
+        </p>
+      )}
+    </div>
+  ) : null
 
   return (
     <Shell>
@@ -214,7 +355,7 @@ export function AdminCountryActivation() {
         <code className="font-mono-tech text-xs">geo.contributor_onboarding_policy</code>.
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
           disabled={busy}
           onClick={async () => {
@@ -236,7 +377,22 @@ export function AdminCountryActivation() {
         <a href="/admin/countries" className="rounded-full border border-sand-soft px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.15em]">
           Markets list
         </a>
+        <select
+          value={regionFilter}
+          onChange={(e) => setRegionFilter(e.target.value)}
+          className="rounded-full border border-sand-soft bg-white px-3 py-2 font-mono-tech text-[10px] uppercase"
+        >
+          <option value="africa">Africa</option>
+          <option value="all">All regions</option>
+          <option value="americas">Americas</option>
+          <option value="europe">Europe</option>
+          <option value="asia">Asia</option>
+          <option value="oceania">Oceania</option>
+          <option value="middle_east">Middle East</option>
+        </select>
       </div>
+
+      {detailPanel}
 
       <div className="mt-6 overflow-x-auto rounded-2xl border border-sand-soft bg-white">
         <table className="w-full min-w-[900px] text-left text-sm">
@@ -248,7 +404,7 @@ export function AdminCountryActivation() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((c) => (
+            {visible.map((c) => (
               <tr key={c.code} className="border-b border-sand-soft last:border-0">
                 <td className="px-4 py-3 font-mono-tech text-xs">{c.code}</td>
                 <td className="px-4 py-3">
@@ -279,135 +435,6 @@ export function AdminCountryActivation() {
           </tbody>
         </table>
       </div>
-
-      {detail && (
-        <div className="mt-8 space-y-4 rounded-2xl border border-sand-soft bg-white p-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="font-mono-tech text-[10px] uppercase tracking-[0.2em] text-ink-faint">
-                {detail.country.code} · v{detail.policy.version} · {detail.policy.status}
-              </p>
-              <h2 className="font-serif-display text-2xl font-light">{detail.country.name}</h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                disabled={busy || detail.policy.status === 'ACTIVE'}
-                onClick={async () => {
-                  setBusy(true)
-                  try {
-                    await api.submitCountryPolicy(detail.policy.id)
-                    toast.success('Submitted for review')
-                    await openDetail(detail.country.code)
-                    load()
-                  } catch (e) {
-                    toast.error(e instanceof ApiError ? e.message : 'Submit failed')
-                  } finally {
-                    setBusy(false)
-                  }
-                }}
-                className="rounded-full border border-sand-soft px-3 py-1.5 font-mono-tech text-[10px] uppercase"
-              >
-                Submit review
-              </button>
-              <button
-                disabled={busy || detail.policy.status === 'ACTIVE'}
-                onClick={async () => {
-                  setBusy(true)
-                  try {
-                    await api.activateCountryPolicy(detail.policy.id)
-                    toast.success('Activated')
-                    await openDetail(detail.country.code)
-                    load()
-                  } catch (e) {
-                    toast.error(e instanceof ApiError ? e.message : 'Activation denied')
-                  } finally {
-                    setBusy(false)
-                  }
-                }}
-                className="rounded-full bg-ink px-3 py-1.5 font-mono-tech text-[10px] uppercase text-paper"
-              >
-                Authorize ACTIVE
-              </button>
-              {detail.policy.status === 'ACTIVE' && (
-                <button
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true)
-                    try {
-                      await api.suspendCountryPolicy(detail.policy.id)
-                      toast.success('Suspended')
-                      await openDetail(detail.country.code)
-                      load()
-                    } catch (e) {
-                      toast.error(e instanceof ApiError ? e.message : 'Suspend failed')
-                    } finally {
-                      setBusy(false)
-                    }
-                  }}
-                  className="rounded-full border border-terra px-3 py-1.5 font-mono-tech text-[10px] uppercase text-terra"
-                >
-                  Suspend
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-                  {['Gate', 'Title', 'Status', 'Update'].map((h) => (
-                    <th key={h} className="px-2 py-2 font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {detail.policy.gates.map((g) => (
-                  <tr key={g.id} className="border-b border-sand-soft last:border-0">
-                    <td className="px-2 py-2 font-mono-tech text-xs">{g.code}</td>
-                    <td className="px-2 py-2 text-xs text-ink-soft">{g.title}</td>
-                    <td className="px-2 py-2 font-mono-tech text-[10px] uppercase">{g.status}</td>
-                    <td className="px-2 py-2">
-                      <select
-                        disabled={busy || detail.policy.status === 'ACTIVE'}
-                        value={g.status}
-                        onChange={async (e) => {
-                          const status = e.target.value
-                          setBusy(true)
-                          try {
-                            await api.patchCountryGate(g.id, {
-                              status,
-                              rationale: status === 'NOT_APPLICABLE' ? (g.rationale || 'N/A rationale (staff)') : g.rationale,
-                              evidence: { label: `Status → ${status}` },
-                            })
-                            await openDetail(detail.country.code)
-                          } catch (err) {
-                            toast.error(err instanceof ApiError ? err.message : 'Gate update failed')
-                          } finally {
-                            setBusy(false)
-                          }
-                        }}
-                        className="rounded border border-sand-soft bg-white px-2 py-1 text-xs"
-                      >
-                        {GATE_STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {detail.policy.featureScopes.length > 0 && (
-            <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-              Feature scopes:{' '}
-              {detail.policy.featureScopes.map((s) => `${s.action}=${s.state}`).join(' · ')}
-            </p>
-          )}
-        </div>
-      )}
     </Shell>
   )
 }
