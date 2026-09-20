@@ -274,7 +274,9 @@ admin SOP actions (preserve / notify / escalate), DMCA hold blocks report unfree
 `docs/runbooks/rights-ops.md`. **T4 shipped (Phase 52):** public `/rights` hub
 (token + signed-in model review/approve; no compensation UI). **T7 shipped (Phase 53):**
 activation UI evidence URLs, editable feature scopes, transition history, CSV export.
+**Phase 54:** PDS `license.issue` legacy ALLOW while markets HOLD; DENY at grant/checkout
+when ACTIVE/SUSPENDED holds `new_license` (historical grants kept).
 
-**Next (when approved):** T3 DMCA policy hardening (counsel copy), or PDS license.issue
-suspend enforcement. **P1 Rights & revenue** (T5/T6) only after **Dec-PayBase**.
+**Next (when approved):** T3 DMCA policy hardening (counsel copy).
+**P1 Rights & revenue** (T5/T6) only after **Dec-PayBase**.
 Do not invent rates, vendors, or entity.

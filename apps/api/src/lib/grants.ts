@@ -5,6 +5,7 @@ import { assertCanGrant, certificateCode } from './rights.js'
 import { getContributorShare } from './payments-config.js'
 import { appendRightsLedgerEvent } from './ledger.js'
 import { decideGrantEarningsStatus } from './holds.js'
+import { assertNewLicenseAllowed } from './policy-decision.js'
 import { isCommerciallyEligible, thirdPartyCopyright, buyerGrantMustExcludeAiTraining } from '@vuekumi/shared'
 
 type Tx = Prisma.TransactionClient
@@ -37,6 +38,7 @@ export async function issueGrant(
     include: { rightsRecord: true, appearances: true, copyrightAuthorizations: true, contributor: true },
   })
   if (!photo) throw new Error('Photo not found')
+  await assertNewLicenseAllowed(photo.contributor.country)
   const product = await client.licenseProduct.findUnique({ where: { id: input.productId } })
   if (!product) throw new Error('Licence type not found')
   const copyrightCommercialScope = photo.copyrightAuthorizations.length > 0

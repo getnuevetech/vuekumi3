@@ -13,6 +13,7 @@ import {
   evaluatePolicy,
   patchGate,
   submitPolicyForReview,
+  suspendPolicy,
 } from '../src/lib/policy-decision.js'
 import { assertContributorCountry } from '../src/lib/geo.js'
 
@@ -258,4 +259,60 @@ test('admin activation register + evaluate route', async () => {
   assert.equal(evalRes.json().decision, 'DENY')
 
   await app.close()
+})
+
+test('Phase 54: license.issue legacy ALLOW; ACTIVE hold DENY; suspend DENY; ON ALLOW', async () => {
+  // No ACTIVE/SUSPENDED regulating policy → marketplace continues (HOLD-era).
+  const legacy = await evaluatePolicy({ action: 'license.issue', countryCode: 'NG' })
+  assert.equal(legacy.decision, 'ALLOW')
+  assert.ok(legacy.reasonCodes.includes('legacy_pass_through_no_active_policy'))
+
+  const admin = await prisma.user.findFirst({ where: { email: 'admin@vuekumi.com' } })
+  assert.ok(admin)
+  const policy = await freshHoldPolicy('LS', admin.id)
+  for (const gate of policy.gates) {
+    await patchGate({
+      gateId: gate.id,
+      actorId: admin.id,
+      status: 'APPROVED',
+      evidence: { label: 'Phase 54 gate' },
+    })
+  }
+  await submitPolicyForReview(policy.id, admin.id)
+  const other = await prisma.user.findFirst({
+    where: { email: 'support@vuekumi.demo', accountType: 'admin' },
+  })
+  const authorizerId = other?.id ?? 'authorizer-phase54'
+  if (!other) {
+    // Separation of duties needs a different actor id string when support admin missing
+  }
+  const activated = await authorizeActivation({
+    policyVersionId: policy.id,
+    authorizerId: authorizerId === admin.id ? 'authorizer-phase54-alt' : authorizerId,
+    notes: 'Phase 54 activate',
+  })
+  assert.equal(activated.status, 'ACTIVE')
+
+  // Default ACTIVE scopes hold new_license
+  const held = await evaluatePolicy({ action: 'license.issue', countryCode: 'LS' })
+  assert.equal(held.decision, 'DENY')
+  assert.ok(held.reasonCodes.includes('feature_scope_not_on:new_license'))
+
+  await prisma.countryFeatureScope.update({
+    where: { policyVersionId_action: { policyVersionId: policy.id, action: 'new_license' } },
+    data: { state: 'ON' },
+  })
+  const open = await evaluatePolicy({ action: 'license.issue', countryCode: 'LS' })
+  assert.equal(open.decision, 'ALLOW')
+  assert.ok(open.reasonCodes.includes('new_license_on'))
+
+  const grantsBefore = await prisma.licenseGrant.count()
+  await suspendPolicy({ policyVersionId: policy.id, actorId: admin.id, notes: 'Phase 54 suspend' })
+  const suspended = await evaluatePolicy({ action: 'license.issue', countryCode: 'LS' })
+  assert.equal(suspended.decision, 'DENY')
+  assert.ok(suspended.reasonCodes.includes('market_suspended'))
+  const grantsAfter = await prisma.licenseGrant.count()
+  assert.equal(grantsAfter, grantsBefore, 'suspend must not revoke historical grants')
+
+  await prisma.countryPolicyVersion.delete({ where: { id: policy.id } }).catch(() => undefined)
 })
