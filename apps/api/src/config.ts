@@ -36,4 +36,11 @@ export function assertProductionSecrets() {
   if (WEAK_SECRETS.has(config.cookieSecret) || config.cookieSecret.length < 24) {
     throw new Error('COOKIE_SECRET must be a strong unique value in production')
   }
+  const settingsKey = process.env.SETTINGS_ENCRYPTION_KEY
+  if (!settingsKey || WEAK_SECRETS.has(settingsKey) || settingsKey.length < 24) {
+    throw new Error('SETTINGS_ENCRYPTION_KEY must be set to a strong unique value in production')
+  }
+  if (settingsKey === config.jwtSecret || settingsKey === config.cookieSecret) {
+    throw new Error('SETTINGS_ENCRYPTION_KEY must be distinct from JWT_SECRET and COOKIE_SECRET')
+  }
 }

@@ -2,6 +2,32 @@ import sharp from "sharp";
 
 const WATERMARK = "VUEKUMI";
 
+/**
+ * Re-encodes the uploaded original at full resolution/near-lossless quality with
+ * EXIF/GPS/IPTC/XMP metadata stripped (sharp omits metadata unless withMetadata()
+ * is called). Subjects and shoot locations across Africa must not be
+ * deanonymizable via a purchased download's embedded GPS coordinates.
+ */
+export async function stripOriginalMetadata(
+  original: Buffer,
+): Promise<{ buffer: Buffer; mimeType: string }> {
+  const img = sharp(original).rotate();
+  const meta = await sharp(original).metadata();
+  switch (meta.format) {
+    case "png":
+      return { buffer: await img.png({ compressionLevel: 9 }).toBuffer(), mimeType: "image/png" };
+    case "webp":
+      return { buffer: await img.webp({ quality: 95 }).toBuffer(), mimeType: "image/webp" };
+    case "tiff":
+      return { buffer: await img.tiff({ quality: 95 }).toBuffer(), mimeType: "image/tiff" };
+    default:
+      return {
+        buffer: await img.jpeg({ quality: 95, mozjpeg: true }).toBuffer(),
+        mimeType: "image/jpeg",
+      };
+  }
+}
+
 export async function processDerivatives(original: Buffer, premium: boolean) {
   const meta = await sharp(original).metadata();
   const width = meta.width ?? 0;
