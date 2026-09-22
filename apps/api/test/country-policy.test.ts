@@ -9,6 +9,8 @@ import {
 import { buildApp } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
 import {
+  assertContributorUploadAllowed,
+  assertNewLicenseAllowed,
   authorizeActivation,
   evaluatePolicy,
   patchGate,
@@ -78,6 +80,14 @@ test('shared: all 16 gates required for activation', () => {
     COUNTRY_GATE_CODES.map((code) => ({ code, status: 'APPROVED' as const })),
   )
   assert.equal(ready.ok, true)
+})
+
+test('PDS: missing country fails closed, not open, for uploads and new licences', async () => {
+  await assert.rejects(() => assertContributorUploadAllowed(null), /country_unknown_or_disabled|Uploads/)
+  await assert.rejects(() => assertContributorUploadAllowed(undefined), /country_unknown_or_disabled|Uploads/)
+  await assert.rejects(() => assertContributorUploadAllowed('   '), /country_unknown_or_disabled|Uploads/)
+  await assert.rejects(() => assertNewLicenseAllowed(null), /country_unknown_or_disabled|licensing/i)
+  await assert.rejects(() => assertNewLicenseAllowed(undefined), /country_unknown_or_disabled|licensing/i)
 })
 
 test('PDS: Africa list ALLOW under default onboarding; Canada DENY; rights.invite ALLOW', async () => {

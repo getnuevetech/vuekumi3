@@ -676,7 +676,13 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
 
 /** Assert new licenses allowed via PDS for the photograph's contributor market. */
 export async function assertNewLicenseAllowed(countryCode?: string | null) {
-  if (!countryCode?.trim()) return
+  if (!countryCode?.trim()) {
+    throw Object.assign(new Error('New licensing is not available: contributor market is not set'), {
+      statusCode: 403,
+      reasonCodes: ['country_unknown_or_disabled'],
+      policyVersion: null,
+    })
+  }
   const result = await evaluatePolicy({
     action: 'license.issue',
     countryCode,
@@ -700,7 +706,13 @@ export async function assertNewLicenseAllowed(countryCode?: string | null) {
 
 /** Phase 56 — assert contributor uploads allowed for the contributor's market. */
 export async function assertContributorUploadAllowed(countryCode?: string | null) {
-  if (!countryCode?.trim()) return
+  if (!countryCode?.trim()) {
+    throw Object.assign(new Error('Uploads are not available: your account has no country set'), {
+      statusCode: 403,
+      reasonCodes: ['country_unknown_or_disabled'],
+      policyVersion: null,
+    })
+  }
   const result = await evaluatePolicy({
     action: 'contributor.upload',
     countryCode,

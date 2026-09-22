@@ -28,6 +28,13 @@ async function hashPassword(password: string): Promise<string> {
 const prisma = new PrismaClient()
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_SEED !== 'true') {
+    throw new Error(
+      'Refusing to run demo seed data against a production environment. ' +
+        'Set ALLOW_PROD_SEED=true only if you are certain this is not a live production database.',
+    )
+  }
+
   console.log('Seeding database...')
 
   const adminPassword = await hashPassword('Admin123!')

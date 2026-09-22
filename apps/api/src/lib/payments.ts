@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client'
+import { timingSafeEqual } from 'node:crypto'
 import Stripe from 'stripe'
 import { config } from '../config.js'
 import { openGatewayCheckout } from './checkout.js'
@@ -14,6 +15,13 @@ import {
 import { prisma } from './prisma.js'
 
 export { PaymentError } from './payment-error.js'
+
+function timingSafeEqualStrings(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return timingSafeEqual(bufA, bufB)
+}
 
 export async function startLicenseCheckout(input: {
   buyerId: string
@@ -235,7 +243,10 @@ export async function handleStripeWebhook(rawBody: Buffer | string, signature: s
 
 export async function handleFlutterwaveWebhook(payload: Record<string, unknown>, hashHeader?: string) {
   const secrets = await paymentSecrets()
-  if (secrets.flutterwaveHash && hashHeader && hashHeader !== secrets.flutterwaveHash) {
+  if (!secrets.flutterwaveHash) {
+    throw new PaymentError('Flutterwave webhook is not configured', 503)
+  }
+  if (!hashHeader || !timingSafeEqualStrings(hashHeader, secrets.flutterwaveHash)) {
     throw new PaymentError('Invalid Flutterwave hash', 401)
   }
   const data = (payload.data ?? payload) as { status?: string; tx_ref?: string; id?: number }

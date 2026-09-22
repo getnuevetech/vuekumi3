@@ -2,7 +2,11 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:
 import { prisma } from './prisma.js'
 
 function encryptionKey(): Buffer {
-  const secret = process.env.SETTINGS_ENCRYPTION_KEY || process.env.JWT_SECRET || 'dev-settings-key'
+  // Deliberately does not fall back to JWT_SECRET/COOKIE_SECRET: those sign sessions,
+  // this encrypts stored payment/API credentials — a JWT-secret leak must not also
+  // decrypt every Stripe/Flutterwave/OpenAI/S3 key. assertProductionSecrets() refuses
+  // to boot in production without a distinct SETTINGS_ENCRYPTION_KEY.
+  const secret = process.env.SETTINGS_ENCRYPTION_KEY || 'dev-only-settings-key-do-not-use-in-production'
   return scryptSync(secret, 'vuekumi-settings', 32)
 }
 

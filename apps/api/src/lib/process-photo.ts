@@ -1,5 +1,5 @@
 import type { AssetKind } from '@prisma/client'
-import { processDerivatives } from './images.js'
+import { processDerivatives, stripOriginalMetadata } from './images.js'
 import { prisma } from './prisma.js'
 import { derivativeKey, getObjectBuffer, MAX_UPLOAD_BYTES, putObject } from './storage.js'
 
@@ -39,8 +39,17 @@ export async function processPhotoAssets(photoId: string) {
       throw new Error('File exceeds 50 MB')
     }
 
+    // Strip EXIF/GPS/IPTC before this original is ever eligible for buyer download —
+    // photos of people and places across Africa must not leak shoot-location coordinates.
+    const cleaned = await stripOriginalMetadata(buffer)
+    const storedOriginal = await putObject(original.storageKey, cleaned.buffer, cleaned.mimeType)
+    await prisma.photoAsset.update({
+      where: { id: original.id },
+      data: { bytes: storedOriginal.bytes, mimeType: storedOriginal.mimeType },
+    })
+
     const premium = photo.licenseType === 'premium'
-    const derived = await processDerivatives(buffer, premium)
+    const derived = await processDerivatives(cleaned.buffer, premium)
 
     const previewKey = derivativeKey(original.storageKey, 'preview')
     const thumbKey = derivativeKey(original.storageKey, 'thumb')
