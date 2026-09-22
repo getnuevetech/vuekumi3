@@ -123,6 +123,8 @@ Locked product rules already in the running system:
 | **44** | Arc C seed fixtures: representation request + represented photographer with agency-protected inventory + inquiry; partner API demo key (local/CI). No commissions. |
 | **45** | Playwright web smoke (`e2e/smoke.spec.ts`): home, catalog, models, admin login → platform health, member bookings. CI runs after API tests against seeded Postgres. API remains the contract suite. |
 | **55** | Playwright trust-hub smoke: `/report-content`, `/rights`, seed likeness invite, legacy `/invite/model` redirect. No compensation UI. |
+| **56** | PDS `contributor.upload` — legacy ALLOW while markets HOLD; DENY when ACTIVE/SUSPENDED holds `contributor_upload`. |
+| **57** | Asset quarantine reason codes on commercial locks (`Photo.commercialLockReason`); staff freeze requires a code; admin content quarantine filter. |
 | **46** | Ops inventory (O0 external probe) + decision workshop brief (`docs/06`) + O3/O4 checklists in Lightsail README. No invented rates; does not claim O2 closed. |
 | **47** | Rotate live demo staff passwords (admin re-rotate, support, moderator); external O4 API smoke signed; finance on-host recovery required after rate-limit. TLS still open. |
 | **48** | Finish live `@vuekumi.demo` password rotation (member/agency/models/photographers + finance); expand Playwright smoke to pricing/legal/DMCA. CI still uses seed passwords locally. |
@@ -289,7 +291,9 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled**. Phase 56 (PDS `contributor.upload` — legacy ALLOW
+3. Default next slice: **none scheduled**. Phase 57 (asset quarantine reason codes on
+   commercial locks — staff filter + required reason when freezing) is shipped.
+   Phase 56 (PDS `contributor.upload` — legacy ALLOW
    while markets HOLD; DENY when ACTIVE/SUSPENDED holds `contributor_upload`) is shipped.
    Phase 55 (Playwright smoke for `/report-content`
    + `/rights` + legacy invite redirect) is shipped. Phase 54 (PDS `license.issue` — legacy ALLOW
@@ -310,6 +314,6 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 4. When a phase is complete, **merge it to `main` immediately.** `main` is the single
    source of truth — do not leave a finished phase only on a feature branch.
 5. **Ops, not a phase:** production still needs on-host SHA confirm (O2), TLS (O3),
-   and HTTPS O4 re-sign. Prefer full `main` through 56. Do not invent undecided
+   and HTTPS O4 re-sign. Prefer full `main` through 57. Do not invent undecided
    splits, commissions, biometric vendors/retention, or a VueQuatro entity form.
    Do not start P1 negotiation payouts before **Dec-PayBase**.

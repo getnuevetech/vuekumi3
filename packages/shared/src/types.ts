@@ -120,6 +120,7 @@ export interface PhotoDto {
   hasRecognizablePeople?: boolean
   rights?: RightsDto
   commercialLocked?: boolean
+  commercialLockReason?: string | null
   thumbSrc?: string
   hasOriginal?: boolean
   processingStatus?: string

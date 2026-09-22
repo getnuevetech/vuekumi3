@@ -158,6 +158,7 @@ export interface DmcaNoticeDto {
   reviewedAt: string | null
   staffNotes: string | null
   commercialLocked: boolean
+  commercialLockReason?: string | null
   counter: DmcaCounterNoticeDto | null
 }
 

@@ -612,6 +612,8 @@ model Photo {
   commercialLocked     Boolean   @default(false)
   commercialLockedAt   DateTime?
   commercialLockedById String?
+  /// Phase 57 — machine-readable quarantine reason (see COMMERCIAL_LOCK_REASON_CODES).
+  commercialLockReason String?
   permissionState    PermissionState @default(commercial)
   restrictionNotes   String?
   shootId                  String?
