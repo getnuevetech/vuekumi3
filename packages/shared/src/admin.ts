@@ -43,16 +43,29 @@ export type AdminAccountListKind = (typeof ADMIN_ACCOUNT_LIST_KINDS)[number]
 
 export const adminCreateAccountSchema = z.object({
   email: z.string().email(),
-  name: z.string().min(1).max(120),
+  name: z.string().trim().min(1).max(120).optional(),
+  firstName: z.string().trim().min(1).max(60).optional(),
+  lastName: z.string().trim().min(1).max(60).optional(),
   accountType: accountTypeSchema,
   password: z.string().min(8, 'Password must be at least 8 characters').max(200),
   country: z.string().length(2).optional(),
   sendPasswordReset: z.boolean().optional(),
+}).superRefine((value, ctx) => {
+  const first = value.firstName?.trim()
+  const last = value.lastName?.trim()
+  if ((first && !last) || (!first && last)) {
+    ctx.addIssue({ code: 'custom', message: 'First and last name are required', path: ['lastName'] })
+  }
+  if (!first && !last && !value.name?.trim()) {
+    ctx.addIssue({ code: 'custom', message: 'First and last name are required', path: ['firstName'] })
+  }
 })
 export type AdminCreateAccountInput = z.infer<typeof adminCreateAccountSchema>
 
 export const adminPatchAccountSchema = z.object({
-  name: z.string().min(1).max(120).optional(),
+  name: z.string().trim().min(1).max(120).optional(),
+  firstName: z.string().trim().min(1).max(60).optional(),
+  lastName: z.string().trim().min(1).max(60).optional(),
   email: z.string().email().optional(),
   country: z.string().length(2).optional().or(z.literal('')),
   status: z.enum(['active', 'suspended', 'pending']).optional(),
@@ -81,6 +94,8 @@ export interface AdminAccountDto {
   id: string
   email: string
   name: string
+  firstName: string
+  lastName: string
   accountType: string
   status: string
   country: string | null

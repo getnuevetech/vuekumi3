@@ -2,8 +2,8 @@ import { useEffect, useState, type DragEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { CREATION_CLAIM_LABEL, type CreationClaim } from '@vuekumi/shared'
-import { PortalShell } from '../components/shared'
-import { api, ApiError } from '../api/client'
+import { CountrySelect, PortalShell, countryNameFromSuggestion } from '../components/shared'
+import { api, ApiError, type GeoCountry } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { modelPortalLinks } from './Model'
 
@@ -38,13 +38,16 @@ export function ModelUpload() {
   const [progress, setProgress] = useState('')
   const [africa, setAfrica] = useState('')
   const [acceptPhotographer, setAcceptPhotographer] = useState(false)
-  const [countries, setCountries] = useState<{ code: string; name: string }[]>([])
+  const [countries, setCountries] = useState<GeoCountry[]>([])
 
   const needsPhotographer = claim === 'photographer_took' || claim === 'assigned' || claim === 'licensed'
   const dualRole = Boolean(user?.hasPhotographerAgreement)
 
   useEffect(() => {
-    api.countries(true).then((d) => setCountries(d.countries)).catch(() => setCountries([]))
+    api.countries().then((d) => {
+      setCountries(d.countries)
+      setCountry((prev) => (prev ? countryNameFromSuggestion(prev, d.countries) ?? '' : prev))
+    }).catch(() => setCountries([]))
   }, [])
 
   return (
@@ -71,7 +74,7 @@ export function ModelUpload() {
             className="mt-3 w-full rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm"
           >
             <option value="">African country (required for commercial)</option>
-            {countries.map((c) => (
+            {countries.filter((c) => c.contributorEligible).map((c) => (
               <option key={c.code} value={c.code}>{c.name}</option>
             ))}
           </select>
@@ -178,7 +181,14 @@ export function ModelUpload() {
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm">
             {['People', 'Fashion', 'Culture', 'Urban', 'Lifestyle'].map((c) => <option key={c}>{c}</option>)}
           </select>
-          <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
+          <CountrySelect
+            by="name"
+            countries={countries}
+            value={country}
+            onChange={setCountry}
+            placeholder="Country depicted"
+            className="rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
           <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags (comma separated)" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
         </div>
         <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="w-full rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />

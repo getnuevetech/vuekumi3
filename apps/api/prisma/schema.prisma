@@ -243,6 +243,8 @@ model User {
   email           String       @unique
   passwordHash    String?
   name            String
+  firstName       String?
+  lastName        String?
   accountType     AccountType
   status          UserStatus   @default(active)
   country         String?

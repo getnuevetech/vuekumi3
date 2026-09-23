@@ -3,6 +3,7 @@ import {
   CONSENT_VERSION,
   MODEL_RELEASE_ATTESTATION,
   acceptModelInviteSchema,
+  personNameFrom,
   decideAppearanceSchema,
   guestConsentSchema,
   verifyLikenessSchema,
@@ -361,14 +362,17 @@ export async function modelRoutes(app: FastifyInstance) {
           await prisma.user.update({ where: { id: user.id }, data: { accountType: 'model' } })
         }
       } else {
-        if (!body.name || !body.password) {
-          throw new ModelError('Name and password are required to create your account')
+        if (!body.password) {
+          throw new ModelError('A password is required to create your account')
         }
+        const person = personNameFrom(body)
         user = await prisma.user.create({
           data: {
             email: invite.inviteEmail.toLowerCase(),
             passwordHash: await hashPassword(body.password),
-            name: body.name,
+            name: person.name,
+            firstName: person.firstName,
+            lastName: person.lastName,
             accountType: 'model',
             status: 'active',
             emailVerifiedAt: new Date(),

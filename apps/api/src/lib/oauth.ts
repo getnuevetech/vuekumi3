@@ -1,3 +1,4 @@
+import { joinDisplayName, splitDisplayName } from '@vuekumi/shared'
 import { config } from '../config.js'
 import { writeAuditLog } from './audit.js'
 import { prisma } from './prisma.js'
@@ -214,10 +215,13 @@ export async function resolveOAuthUser(input: {
   }
 
   const created = await prisma.$transaction(async (tx) => {
+    const parts = splitDisplayName(input.name?.trim() || email.split('@')[0])
     const user = await tx.user.create({
       data: {
         email,
-        name: input.name,
+        name: joinDisplayName(parts.firstName, parts.lastName) || parts.firstName,
+        firstName: parts.firstName,
+        lastName: parts.lastName,
         accountType: 'user',
         status: 'active',
         avatarUrl: input.picture,

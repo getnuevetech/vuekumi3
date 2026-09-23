@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { PHOTO_CATEGORIES, SCREENING_KIND_LABEL, AI_TRAINING_OPT_IN_COPY, creatorPortalLabel, isNonCommercialCreator, type PermissionState, type PhotoDto, type UpdatePhotoInput } from '@vuekumi/shared'
-import { PortalShell, StatusPill } from '../components/shared'
+import { CountrySelect, PortalShell, StatusPill, countryNameFromSuggestion } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { money } from '../lib/format'
@@ -55,7 +55,7 @@ export function ContributorPhotoEdit() {
     setTitle(row.title)
     setDescription(row.description ?? '')
     setCategory(row.category)
-    setCountry(row.country)
+    setCountry(countryNameFromSuggestion(row.country, countries) ?? row.country)
     setTags(row.tags.join(', '))
     setLicenseType(row.license)
     setPrice(String(row.price > 0 ? row.price : 12))
@@ -74,7 +74,7 @@ export function ContributorPhotoEdit() {
         toast.error(err instanceof ApiError ? err.message : 'Failed to load photograph')
         navigate('/contributor/portfolio')
       })
-    api.countries(true).then((d) => setCountries(d.countries)).catch(() => setCountries([]))
+    api.countries().then((d) => setCountries(d.countries)).catch(() => setCountries([]))
   }, [id, navigate])
 
   if (!photo || !id) {
@@ -213,19 +213,15 @@ export function ContributorPhotoEdit() {
                 <option key={c}>{c}</option>
               ))}
             </select>
-            <input
+            <CountrySelect
               required
-              list="photo-countries"
+              by="name"
+              countries={countries}
               value={country}
-              onChange={(e) => setCountry(e.target.value)}
+              onChange={setCountry}
               placeholder="Country depicted"
-              className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra"
+              className="rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm outline-none focus:border-terra"
             />
-            <datalist id="photo-countries">
-              {countries.map((c) => (
-                <option key={c.code} value={c.name} />
-              ))}
-            </datalist>
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags (comma separated)" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra sm:col-span-2" />
           </div>
           <textarea

@@ -27,6 +27,8 @@ export interface AuthUser {
   id: string
   email: string
   name: string
+  firstName: string
+  lastName: string
   accountType: AccountType
   status: UserStatus
   country: string | null

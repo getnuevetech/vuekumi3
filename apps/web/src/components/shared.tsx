@@ -37,6 +37,56 @@ export function Reveal({
   )
 }
 
+export function countryNameFromSuggestion(
+  raw: string,
+  countries: Pick<GeoCountry, 'code' | 'name'>[],
+): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const byCode = countries.find((c) => c.code.toLowerCase() === trimmed.toLowerCase())
+  if (byCode) return byCode.name
+  const byName = countries.find((c) => c.name.toLowerCase() === trimmed.toLowerCase())
+  return byName ? byName.name : null
+}
+
+export function CountrySelect({
+  countries,
+  value,
+  onChange,
+  required,
+  placeholder,
+  className,
+  by = 'code',
+}: {
+  countries: Pick<GeoCountry, 'code' | 'name'>[]
+  value: string
+  onChange: (value: string) => void
+  required?: boolean
+  placeholder: string
+  className?: string
+  by?: 'code' | 'name'
+}) {
+  const known = by === 'code'
+    ? countries.some((c) => c.code === value)
+    : countries.some((c) => c.name === value)
+  return (
+    <select
+      required={required}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={className}
+    >
+      <option value="">{placeholder}</option>
+      {value && !known ? <option value={value}>{value}</option> : null}
+      {countries.map((c) => (
+        <option key={c.code} value={by === 'code' ? c.code : c.name}>
+          {by === 'code' ? `${c.name} (${c.code})` : c.name}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 function CurrencySelect() {
   const { quote, setCountry } = useCurrency()
   const [countries, setCountries] = useState<GeoCountry[]>([])

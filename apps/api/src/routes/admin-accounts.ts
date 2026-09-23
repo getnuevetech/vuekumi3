@@ -9,6 +9,7 @@ import {
   adminCreateAdminSchema,
   adminHas,
   adminPatchAccountSchema,
+  personNameFrom,
   adminPatchAdminSchema,
   lastSuperAdminBlocked,
   selfCapabilityEditBlocked,
@@ -256,10 +257,19 @@ export async function adminAccountRoutes(app: FastifyInstance) {
       }
     }
 
+    const person = (body.firstName !== undefined || body.lastName !== undefined)
+      ? personNameFrom({
+          firstName: body.firstName ?? existing.firstName ?? '',
+          lastName: body.lastName ?? existing.lastName ?? '',
+        })
+      : body.name !== undefined
+        ? personNameFrom({ name: body.name })
+        : null
+
     const user = await prisma.user.update({
       where: { id },
       data: {
-        ...(body.name ? { name: body.name } : {}),
+        ...(person ? { name: person.name, firstName: person.firstName, lastName: person.lastName } : {}),
         ...(body.email ? { email: body.email.toLowerCase() } : {}),
         ...(country !== undefined ? { country: country || null } : {}),
         ...(body.status ? { status: body.status } : {}),

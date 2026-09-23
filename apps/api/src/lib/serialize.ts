@@ -28,6 +28,7 @@ import type {
   ScreeningKind,
 } from '@vuekumi/shared'
 import type { TwoPartyAppearanceInput } from '@vuekumi/shared'
+import { splitDisplayName } from '@vuekumi/shared'
 import {
   commercialEligibilityBlock,
   copyrightCleared,
@@ -79,10 +80,15 @@ export function serializeUser(user: UserWithRelations): AuthUser {
   const agencyMember = user.agencyMembers?.[0]
   const quota = displayQuota(user.userProfile, new Date())
   const plan = displayPlan(user.userProfile, new Date())
+  const stored = user.firstName
+    ? { firstName: user.firstName, lastName: user.lastName ?? '' }
+    : splitDisplayName(user.name)
   return {
     id: user.id,
     email: user.email,
     name: user.name,
+    firstName: stored.firstName,
+    lastName: stored.lastName,
     accountType: user.accountType,
     status: user.status,
     country: user.country,

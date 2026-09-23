@@ -24,7 +24,8 @@ type Role = 'member' | 'photographer' | 'photo_influencer' | 'contributor' | 'ag
 export default function Login() {
   const [mode, setMode] = useState<Mode>('signin')
   const [role, setRole] = useState<Role>('member')
-  const [name, setName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [country, setCountry] = useState('')
@@ -189,7 +190,8 @@ export default function Login() {
                     : await register({
                         email,
                         password,
-                        name,
+                        firstName,
+                        lastName,
                         accountType,
                         country: country || undefined,
                         acceptAgreement: needsAgreement ? acceptAgreement : undefined,
@@ -205,13 +207,24 @@ export default function Login() {
           >
             {mode === 'signup' && (
               <>
-                <input
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full name"
-                  className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
-                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="First name"
+                    autoComplete="given-name"
+                    className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
+                  />
+                  <input
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last name"
+                    autoComplete="family-name"
+                    className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none placeholder:text-ink-faint focus:border-terra"
+                  />
+                </div>
                 <select
                   required={creatorRole}
                   value={country}
@@ -313,7 +326,7 @@ export default function Login() {
                     try {
                       const { user } = await api.oauthDev({
                         email: nextEmail,
-                        name: name || nextEmail.split('@')[0],
+                        name: [firstName, lastName].filter(Boolean).join(' ') || nextEmail.split('@')[0],
                       })
                       const signedIn = await completeSession().catch(() => user)
                       navigate(redirect ?? homeForUser(signedIn))

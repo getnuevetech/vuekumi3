@@ -169,7 +169,8 @@ function LikenessPanel({
   const [usage, setUsage] = useState<ModelUsagePreference>('commercial')
   const [aiTraining, setAiTraining] = useState(false)
   const [selected, setSelected] = useState(() => (preview.images ?? []).map((i) => i.appearanceId))
-  const [name, setName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [password, setPassword] = useState('')
   const signedInMatch = Boolean(user && user.email.toLowerCase() === preview.email)
 
@@ -198,7 +199,7 @@ function LikenessPanel({
     setBusy(true)
     setError(null)
     try {
-      await api.acceptModelInvite(token, preview.needsAccount ? { name, password } : {})
+      await api.acceptModelInvite(token, preview.needsAccount ? { firstName, lastName, password } : {})
       await onClaimed()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not claim invite')
@@ -280,7 +281,10 @@ function LikenessPanel({
       </p>
       {preview.needsAccount ? (
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void accept() }}>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" autoComplete="given-name" className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra" />
+            <input required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" autoComplete="family-name" className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra" />
+          </div>
           <input required type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (8+ characters)" className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra" />
           {error && status === 'decided' && <p className="text-sm text-[#b3382e]">{error}</p>}
           <button type="submit" disabled={busy} className="w-full rounded-full border border-ink py-3.5 font-mono-tech text-[11px] uppercase tracking-[0.2em] hover:bg-ink hover:text-paper disabled:opacity-50">
