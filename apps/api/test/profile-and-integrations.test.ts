@@ -288,3 +288,50 @@ test('settings hides gateway and AI keys, and those pages show a legacy key with
     await app.close()
   }
 })
+
+test('saving an AI provider keeps an older vision purpose', async () => {
+  const app = await buildApp()
+  const admin = await login(app, 'admin@vuekumi.com', 'Admin123!')
+  const openai = await prisma.aiProvider.findUnique({ where: { slug: 'openai' } })
+  assert.ok(openai)
+  const previous = { purpose: openai.purpose, notes: openai.notes, modelName: openai.modelName }
+  await prisma.aiProvider.update({ where: { id: openai.id }, data: { purpose: 'vision' } })
+  try {
+    const kept = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/ai-providers/${openai.id}`,
+      headers: { cookie: admin },
+      payload: { purpose: 'vision', notes: 'kept the older purpose', model: 'gpt-4o-mini' },
+    })
+    assert.equal(kept.statusCode, 200, kept.body)
+    const keptBody = kept.json() as { provider: { purpose: string; model: string; notes: string } }
+    assert.equal(keptBody.provider.purpose, 'vision')
+    assert.equal(keptBody.provider.model, 'gpt-4o-mini')
+    assert.equal(keptBody.provider.notes, 'kept the older purpose')
+
+    const changed = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/ai-providers/${openai.id}`,
+      headers: { cookie: admin },
+      payload: { purpose: 'image_analysis' },
+    })
+    assert.equal(changed.statusCode, 200, changed.body)
+    assert.equal((changed.json() as { provider: { purpose: string } }).provider.purpose, 'image_analysis')
+
+    await prisma.aiProvider.update({ where: { id: openai.id }, data: { purpose: 'vision' } })
+    const rejected = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/ai-providers/${openai.id}`,
+      headers: { cookie: admin },
+      payload: { purpose: 'not-a-real-purpose' },
+    })
+    assert.equal(rejected.statusCode, 400, rejected.body)
+    assert.match(rejected.json().error as string, /purpose/)
+    assert.doesNotMatch(rejected.json().error as string, /Invalid option/)
+    const still = await prisma.aiProvider.findUnique({ where: { id: openai.id } })
+    assert.equal(still?.purpose, 'vision')
+  } finally {
+    await prisma.aiProvider.update({ where: { id: openai.id }, data: previous })
+    await app.close()
+  }
+})
