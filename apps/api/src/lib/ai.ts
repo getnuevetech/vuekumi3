@@ -30,7 +30,7 @@ export type ResolvedProvider =
   | { kind: 'dev' }
 
 /**
- * Phase 57 — per-purpose provider dispatch. Looks up `AiProvider` rows
+ * Phase 58 — per-purpose provider dispatch. Looks up `AiProvider` rows
  * registered for this exact purpose first (lowest `priority` wins, so a
  * fallback provider can be registered without removing the primary), then
  * falls back to the single legacy `ai.openai_api_key` setting and the old

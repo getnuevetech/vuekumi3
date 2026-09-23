@@ -92,7 +92,7 @@ before any different retention or vendor is adopted.
 
 ---
 
-## 4. Phase 57 — AI Provider Registry (multi-provider dispatch) — **shipped**
+## 4. Phase 58 — AI Provider Registry (multi-provider dispatch) — **shipped**
 
 **Not gated. Pure infrastructure.**
 
@@ -102,7 +102,7 @@ in `@vuekumi/shared`; `AiProvider.priority` column for fallback ordering;
 `resolveProvider(purpose)` in `apps/api/src/lib/ai.ts` replaces
 `resolveVisionProvider()`, dispatching to the highest-priority enabled row
 for that purpose, falling back to the legacy single `ai.openai_api_key`
-setting and the old untyped `vision`/`openai` row so pre-Phase-57 installs
+setting and the old untyped `vision`/`openai` row so pre-Phase-58 installs
 keep working unchanged, then dev/no-op. `suggestFromContext`
 (`image_analysis`), `compareLikeness` (`likeness_matching`), and
 `screenImageForRights` (`image_analysis` — see §5 correction below) all
@@ -133,7 +133,7 @@ of being decorative.
   interface VisionAdapter {
     analyzeImage(input): Promise<...>       // image_analysis
     proposeRemediation(input): Promise<...> // image_remediation
-    matchFaces(a, b): Promise<...>          // id_verification / likeness_matching (Tier B — kept behind the Dec-Bio flag from Phase 59)
+    matchFaces(a, b): Promise<...>          // id_verification / likeness_matching (Tier B — kept behind the Dec-Bio flag from Phase 60)
   }
   ```
   Ship one adapter (`openaiAdapter`) that implements today's chat-completions
@@ -156,11 +156,11 @@ still pass unmodified in behavior.
 
 ---
 
-## 5. Proposed Phase 58 — AI subject quarantine (presence detection → contact or block)
+## 5. Proposed Phase 59 — AI subject quarantine (presence detection → contact or block)
 
 **Not gated (Tier A only — presence, not identity). Buildable now.**
 
-**Correction found while building Phase 57**: §1's audit undersold what
+**Correction found while building Phase 58**: §1's audit undersold what
 already exists. `apps/api/src/lib/screening.ts` (Phase 23) already runs
 AI/heuristic person-presence detection (`screenImageForRights`,
 `RightsScreeningDto` with `kind`/`possibleMinor`/`crowdBackground`/etc.) at
@@ -224,9 +224,9 @@ retroactive sweep, unless product asks for one separately).
 
 ---
 
-## 6. One product decision Phase 58 needs (not a new Dec-*, a scope call)
+## 6. One product decision Phase 59 needs (not a new Dec-*, a scope call)
 
-"Image remediation" was named as a function but not defined. Before Phase 58
+"Image remediation" was named as a function but not defined. Before Phase 59
 ships, product picks what an automated remediation action actually is when
 `image_remediation` fires (e.g., on a policy-violation flag, not just an
 undeclared subject):
@@ -242,18 +242,18 @@ undeclared subject):
 
 This is a UX/policy call, not a legal-gate decision — record it in `06` as a
 short product note (not a numbered Dec-* — it doesn't touch money, biometric
-retention, or country eligibility) before Phase 58 implementation starts.
+retention, or country eligibility) before Phase 59 implementation starts.
 
 ---
 
-## 7. Proposed Phase 59 — ID/face verification provider (Tier B, Dec-Bio gated)
+## 7. Proposed Phase 60 — ID/face verification provider (Tier B, Dec-Bio gated)
 
 **Spec only. Do not implement until Dec-Bio is signed**, per `06` Dec-Bio and
 `07` §6 Gate K. Recorded here so the architecture is ready the day the
 decision lands, not invented today.
 
 Scope once unblocked:
-- New `id_verification` purpose in the Phase 57 registry, pointed at a named
+- New `id_verification` purpose in the Phase 58 registry, pointed at a named
   KYC vendor (Dec-Bio option B) — this plan does not choose or default to
   one; per `06` non-goals, no vendor is invented here.
 - Government-ID-photo ↔ profile-avatar match, used only where the product
@@ -284,12 +284,12 @@ signature).
 Product asked whether AI can name/tag/describe photos for uploaders. **It
 already does** (§1 row 3: `suggestFromContext`, `AiSuggestPanel`) — title,
 description, category, country, tags, and an `hasRecognizablePeople`
-suggestion, running on the same `image_analysis` purpose Phase 57 formalizes.
+suggestion, running on the same `image_analysis` purpose Phase 58 formalizes.
 
 The gap is UX, not capability: today the contributor must open the panel and
 click "Apply" per field, so it's easy to skip entirely (this is also *why*
-Phase 58 exists — a skippable suggestion is not an enforcement point). Fold
-into Phase 57/61: run the suggestion automatically at upload and pre-fill
+Phase 59 exists — a skippable suggestion is not an enforcement point). Fold
+into Phase 58/62: run the suggestion automatically at upload and pre-fill
 the form fields (title/description/category/tags) as an editable draft the
 contributor reviews before submitting, rather than a separate panel they may
 never open. This is a UI default change, not a new AI capability, and it
@@ -300,7 +300,7 @@ review the normal upload path instead of an opt-in extra.
 
 ---
 
-## 9. Proposed Phase 60 — AI-assisted account & content approval (criteria-based)
+## 9. Proposed Phase 61 — AI-assisted account & content approval (criteria-based)
 
 **Not gated as a whole, but must not swallow the two decisions that already
 have their own gate.** Automated approve/deny of accounts and content is a
@@ -311,15 +311,15 @@ signal** alongside — never instead of — the checks that already own their
 domains:
 
 - **Country/Africa eligibility stays owned by Phase 49's PDS `contributor.create`
-  check.** Phase 60 does not re-decide it, re-score it, or let a high
+  check.** Phase 61 does not re-decide it, re-score it, or let a high
   "quality" signal override a country DENY. Dec-AfricaElig is still
   unsigned (`06`); this phase invents nothing about it.
-- **Identity/biometric determination stays owned by Phase 59 (Dec-Bio
-  gated).** Phase 60's account-approval criteria are explicitly the
+- **Identity/biometric determination stays owned by Phase 60 (Dec-Bio
+  gated).** Phase 61's account-approval criteria are explicitly the
   non-biometric kind (below) — it never fingerprints a face to decide
   account approval.
 
-What Phase 60 *does* add, using the same `ALLOW / DENY / REVIEW + reason
+What Phase 61 *does* add, using the same `ALLOW / DENY / REVIEW + reason
 codes + policy version` contract the PDS already uses everywhere else (`08`
 §5), so it plugs into the existing admin moderation queues rather than
 inventing a parallel one:
@@ -339,10 +339,10 @@ this codebase.
 
 ---
 
-## 10. Proposed Phase 61 — Image enhancement & uploader recommendations
+## 10. Proposed Phase 62 — Image enhancement & uploader recommendations
 
 **Not gated. Extends the `image_remediation` purpose from quarantine-only
-(Phase 58 §6 option A) to advisory quality feedback.**
+(Phase 59 §6 option A) to advisory quality feedback.**
 
 At upload, run an additional advisory pass: sharpness/exposure/composition
 score, suggested crop or orientation fix, and a plain-language note to the
@@ -352,11 +352,11 @@ auto-brighten) is **opt-in only** — the uploader clicks "apply," mirroring
 the existing `AiSuggestPanel` per-field apply pattern — never a silent
 rewrite of a contributor's copyrighted work. Duplicate-of-existing-catalog
 detection (perceptual hash against already-live photos) belongs here too and
-doubles as a cheap fraud/plagiarism signal for Phase 60's content criteria.
+doubles as a cheap fraud/plagiarism signal for Phase 61's content criteria.
 
 ---
 
-## 11. Proposed Phase 62 — AI analytics & reporting (views/comments → admin + uploader reports)
+## 11. Proposed Phase 63 — AI analytics & reporting (views/comments → admin + uploader reports)
 
 **Not gated — pure reporting, changes no account or content state.** New
 purpose `analytics_reporting` (text-only; does not need a vision-capable
@@ -369,7 +369,7 @@ conversions, and comments, and produces two report surfaces:
 - **Admin-facing**: a new panel (or an extension of the existing
   `/admin/metrics` overview) — catalog health, category gaps, per-contributor
   performance trend, and moderation-queue volume/aging, so staff have one
-  place to see what Phase 60's queue actually needs attention.
+  place to see what Phase 61's queue actually needs attention.
 
 Because this phase only reads and summarizes existing data (views, licences,
 comments already tracked elsewhere), it carries no PDS gating requirement —
@@ -379,18 +379,24 @@ it cannot deny a licence or an account by itself.
 
 ## 12. Sequencing
 
+**Renumbered 2026-09-23**: this plan originally proposed 57–62, but a
+different, unrelated Phase 57 ("asset quarantine reason codes" —
+`Photo.commercialLockReason`, PR #23) merged to `main` first. Everything
+here shifted up by one to 58–63 to avoid colliding with it; there is no
+functional overlap between that phase and this plan.
+
 | Phase | Name | Depends on | Gated? |
 | --- | --- | --- | --- |
-| **57** | AI Provider Registry (multi-provider dispatch) | — | No — buildable now |
-| **58** | AI subject quarantine (detect → auto-invite or block) | 57; one product scope call (§6) | No — Tier A only |
-| **59** | ID/face verification provider (KYC, identity-bound likeness) | 57; **Dec-Bio signed** | **Yes** |
-| **60** | AI-assisted account & content approval (criteria-based) | 57; does not touch Phase 49 country gate or Phase 59 identity gate | No — additive signal only |
-| **61** | Image enhancement & uploader recommendations | 57; 58 (shares the remediation UX) | No |
-| **62** | AI analytics & reporting | none (reads existing data) | No |
+| **58** | AI Provider Registry (multi-provider dispatch) | — | No — **shipped** |
+| **59** | AI subject quarantine (detect → auto-invite or block) | 58; one product scope call (§6) | No — Tier A only |
+| **60** | ID/face verification provider (KYC, identity-bound likeness) | 58; **Dec-Bio signed** | **Yes** |
+| **61** | AI-assisted account & content approval (criteria-based) | 58; does not touch Phase 49 country gate or Phase 60 identity gate | No — additive signal only |
+| **62** | Image enhancement & uploader recommendations | 58; 59 (shares the remediation UX) | No |
+| **63** | AI analytics & reporting | none (reads existing data) | No |
 
-57, 58, 60, 61, and 62 can all build in parallel with any open Arc T / P1
+58, 59, 61, 62, and 63 can all build in parallel with any open Arc T / P1
 work already in flight (T5/T6 compensation, still separately waiting on
-Dec-PayBase) — none of them depends on model compensation, and only 59
+Dec-PayBase) — none of them depends on model compensation, and only 60
 depends on a human decision (Dec-Bio) outside this plan's control.
 
 ---
@@ -406,21 +412,21 @@ depends on a human decision (Dec-Bio) outside this plan's control.
   ID match as a legal release, consent, or proof of identity in itself
   (unchanged from `01`/`07` doctrine)
 - Retroactively re-scanning the existing photo library for undeclared
-  subjects as part of Phase 58 (a separate, explicitly product-approved
+  subjects as part of Phase 59 (a separate, explicitly product-approved
   backfill if ever wanted)
-- Building a second, parallel consent/invite pipeline — Phase 58 reuses the
+- Building a second, parallel consent/invite pipeline — Phase 59 reuses the
   Phase 24/25 appearance and RightsHub flows rather than inventing a new one
-- Letting Phase 60's quality/fraud signal override or re-decide the Phase 49
-  country-eligibility gate or the Phase 59 identity gate
+- Letting Phase 61's quality/fraud signal override or re-decide the Phase 49
+  country-eligibility gate or the Phase 60 identity gate
 - An unappealable, fully automatic DENY on a real account or a live photo —
-  Phase 60 always leaves a human-visible reason and a review/appeal path
-- Silently altering a contributor's uploaded image — Phase 61's fixes are
+  Phase 61 always leaves a human-visible reason and a review/appeal path
+- Silently altering a contributor's uploaded image — Phase 62's fixes are
   opt-in, applied only when the uploader clicks apply
 
 ---
 
 ## 14. Immediate next action (human)
 
-Say which of Phase 57 / 58 / 60 / 61 / 62 to start (all unblocked); record
-the image-remediation scope call from §6 in `06` before Phase 58/61 begin;
-no action needed on Phase 59 until Dec-Bio is signed.
+Phase 58 is shipped. Say which of Phase 59 / 61 / 62 / 63 to start next (all
+unblocked); record the image-remediation scope call from §6 in `06` before
+Phase 59/62 begin; no action needed on Phase 60 until Dec-Bio is signed.

@@ -14,7 +14,7 @@ export const PHOTO_CATEGORIES = [
 ] as const
 
 /**
- * Phase 57 — the fixed set of AI functions the provider registry dispatches
+ * Phase 58 — the fixed set of AI functions the provider registry dispatches
  * on. `image_remediation` and `id_verification` have no provider
  * implementation yet (Phases 61 and 59); the enum exists now so provider
  * rows can be registered against the right purpose ahead of time.

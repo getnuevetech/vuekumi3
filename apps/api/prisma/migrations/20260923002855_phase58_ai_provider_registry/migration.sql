@@ -1,4 +1,4 @@
--- Phase 57 — AI Provider Registry: make AiProvider.purpose dispatchable.
+-- Phase 58 — AI Provider Registry: make AiProvider.purpose dispatchable.
 -- priority orders multiple providers registered for the same purpose
 -- (lowest wins), so admins can register a fallback without deleting the
 -- primary provider.
