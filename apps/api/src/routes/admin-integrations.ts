@@ -50,10 +50,12 @@ const aiSchema = z.object({
   enabled: z.boolean().optional(),
 })
 
+const currentPurposes = new Set<string>(AI_PROVIDER_PURPOSES)
+
 const aiPatchSchema = z.object({
   name: z.string().min(2).optional(),
   slug: slugSchema.optional(),
-  purpose: z.enum(AI_PROVIDER_PURPOSES).optional(),
+  purpose: z.string().trim().min(1).max(60).optional(),
   priority: z.number().int().min(0).max(1000).optional(),
   apiBaseUrl: z.string().url().optional().or(z.literal('')),
   apiKey: z.string().optional(),
@@ -378,6 +380,11 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
     const body = aiPatchSchema.parse(request.body)
     const existing = await prisma.aiProvider.findUnique({ where: { id } })
     if (!existing) return reply.code(404).send({ error: 'Provider not found' })
+    if (body.purpose && !currentPurposes.has(body.purpose) && body.purpose !== existing.purpose) {
+      return reply.code(400).send({
+        error: 'Choose a purpose from the list. An older purpose such as vision can stay until you pick a current one.',
+      })
+    }
     try {
       const provider = await prisma.aiProvider.update({
         where: { id },

@@ -36,6 +36,7 @@ function kindLabel(kind: string) {
 }
 
 function purposeLabel(purpose: string) {
+  if (purpose === 'vision') return 'Vision (older purpose)'
   return purpose in AI_PROVIDER_PURPOSE_LABELS
     ? AI_PROVIDER_PURPOSE_LABELS[purpose as AiProviderPurpose]
     : purpose
@@ -739,11 +740,16 @@ function ProviderEditor({
       </label>
       <label className="block text-sm">Purpose
         <select value={purpose} onChange={(e) => setPurpose(e.target.value)} className={`${fieldClass} mt-1 w-full`}>
-          {!knownPurpose && <option value={purpose}>{purpose}</option>}
+          {!knownPurpose && <option value={purpose}>{purposeLabel(purpose)}</option>}
           {AI_PROVIDER_PURPOSES.map((item) => (
             <option key={item} value={item}>{AI_PROVIDER_PURPOSE_LABELS[item]}</option>
           ))}
         </select>
+        {!knownPurpose && (
+          <span className="mt-1 block text-xs text-ink-faint">
+            This provider still uses an older purpose. Saving keeps it. Choose Image analysis if this key should run tagging and descriptions.
+          </span>
+        )}
       </label>
       <label className="block text-sm">Priority
         <input type="number" min={0} value={priority} onChange={(e) => setPriority(Number(e.target.value) || 0)} className={`${fieldClass} mt-1 w-full`} />
