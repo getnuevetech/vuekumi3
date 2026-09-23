@@ -403,10 +403,11 @@ this codebase.
 
 ---
 
-## 10. Proposed Phase 62 — Image enhancement & uploader recommendations
+## 10. Phase 62 — Image enhancement & uploader recommendations — **shipped**
 
-**Not gated. Extends the `image_remediation` purpose (once §6 is decided,
-likely quarantine-only, option A) to advisory quality feedback.**
+**Option A (quarantine and notify) is recorded in `06` §2b.** Advisory
+quality notes ship with it. Opt-in preview brighten/crop does not replace
+the original.
 
 At upload, run an additional advisory pass: sharpness/exposure/composition
 score, suggested crop or orientation fix, and a plain-language note to the
@@ -455,7 +456,7 @@ functional overlap between that phase and this plan.
 | **59** | AI subject quarantine (detect → auto-invite or block) | 58 | No — **shipped**, Tier A only |
 | **60** | ID/face verification provider (KYC, identity-bound likeness) | 58; **Dec-Bio signed** | **Yes** |
 | **61** | AI-assisted account & content approval (criteria-based) | 58; does not touch Phase 49 country gate or Phase 60 identity gate | No — **shipped**, additive signal only |
-| **62** | Image enhancement & uploader recommendations | 58; 59 (shares the remediation UX) | No |
+| **62** | Image enhancement & uploader recommendations | 58; 59 (shares the remediation UX) | No — **shipped**, option A |
 | **63** | AI analytics & reporting | none (reads existing data) | No |
 
 58, 59, 61, 62, and 63 can all build in parallel with any open Arc T / P1
@@ -491,8 +492,6 @@ depends on a human decision (Dec-Bio) outside this plan's control.
 
 ## 14. Immediate next action (human)
 
-Phase 58, 59, and 61 are shipped. **Phase 64** (detection fails closed) is
-shipped — see [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md).
-Record the image-remediation scope call from §6 in `06` before Phase 62.
-Phase 63 can follow 64 without that note. No action on Phase 60 until
-Dec-Bio is signed.
+Phases 58, 59, 61, 62, 64, and 65 are shipped. Option A is recorded in
+`06` §2b. Next build is Phase 63. No action on Phase 60 until Dec-Bio is
+signed.

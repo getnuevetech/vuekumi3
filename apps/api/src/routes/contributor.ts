@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
 import type { PermissionState } from '@vuekumi/shared'
 import {
   CONSENT_VERSION,
@@ -61,13 +62,17 @@ import {
 import { appendRightsLedgerEvent, loadRightsLedger } from '../lib/ledger.js'
 import { issueAppearanceInvite } from './models.js'
 import { loadOriginalBytes, screenImageForRights, screeningWriteData } from '../lib/screening.js'
+import { applyPreviewAdjustment, proposeRemediation, type RemediationProposal } from '../lib/remediation.js'
 import { evaluateContentApproval } from '../lib/moderation.js'
 import {
   ALLOWED_IMAGE_TYPES,
   assertOwnedOriginalKey,
   extensionFor,
+  derivativeKey,
+  getObjectBuffer,
   objectExists,
   originalKeyFor,
+  putObject,
   presignPut,
   verifyLocalToken,
   writeLocalUpload,
@@ -473,10 +478,46 @@ export async function contributorRoutes(app: FastifyInstance) {
       }
     }
 
+    // Phase 62 — quality / duplicate quarantine. Option A: do not alter the original.
+    let remediation: RemediationProposal | null = null
+    if (image) {
+      remediation = await proposeRemediation(image)
+      const duplicate = remediation.contentHash
+        ? await prisma.photo.findFirst({
+            where: {
+              contentHash: remediation.contentHash,
+              NOT: { id: photo.id },
+              status: 'active',
+            },
+            select: { id: true, title: true },
+          })
+        : null
+      if (duplicate) {
+        remediation = {
+          ...remediation,
+          decision: 'quarantine',
+          notes: [
+            `This file matches live photograph ${duplicate.id} (${duplicate.title}). It stays in review. The original was not altered.`,
+            ...remediation.notes,
+          ],
+        }
+      }
+      await prisma.photo.update({
+        where: { id: photo.id },
+        data: { contentHash: remediation.contentHash },
+      })
+      if (remediation.decision === 'quarantine') {
+        await prisma.moderationItem.updateMany({
+          where: { photoId: photo.id, status: 'pending' },
+          data: { notes: `Quarantine: ${remediation.notes.join(' ')}`.slice(0, 500) },
+        })
+      }
+    }
+
     // Phase 61 — second, independent signal alongside the existing manual
     // moderation queue. Never touches the Phase 49 country gate or rights
     // engine; "not auto-approved" just means today's unchanged pending state.
-    if (photo.status === 'pending') {
+    if (photo.status === 'pending' && remediation?.decision !== 'quarantine') {
       const approval = await evaluateContentApproval({
         screening: {
           possibleMinor: photo.possibleMinor,
@@ -552,7 +593,41 @@ export async function contributorRoutes(app: FastifyInstance) {
 
     return {
       photo: serializePhoto(photo, photo.contributor.contributorProfile?.handle ?? contributorId, true),
+      remediation,
     }
+  })
+
+  app.post('/contributor/photos/:id/remediation', gate, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const body = z.object({ action: z.enum(['brighten', 'crop']) }).parse(request.body)
+    const photo = await prisma.photo.findUnique({
+      where: { id },
+      include: { assets: true },
+    })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (!isImpersonatingStaff(request.authUser) && photo.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    const original = photo.assets.find((asset) => asset.kind === 'original')
+    if (!original) return reply.code(400).send({ error: 'Upload the original before applying a preview adjustment' })
+    const bytes = await getObjectBuffer(original.storageKey)
+    const adjusted = await applyPreviewAdjustment(bytes, body.action)
+    const previewKey = derivativeKey(original.storageKey, 'preview')
+    const stored = await putObject(previewKey, adjusted, 'image/jpeg')
+    await prisma.photoAsset.upsert({
+      where: { photoId_kind: { photoId: id, kind: 'preview' } },
+      create: { photoId: id, kind: 'preview', storageKey: stored.key, bytes: stored.bytes, mimeType: 'image/jpeg' },
+      update: { storageKey: stored.key, bytes: stored.bytes, mimeType: 'image/jpeg' },
+    })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'photo.remediation_preview',
+      entityType: 'photo',
+      entityId: id,
+      metadata: { action: body.action, originalUntouched: true },
+      ipAddress: request.ip,
+    })
+    return { ok: true, action: body.action, originalUntouched: true }
   })
 
   app.patch('/contributor/photos/:id', gate, async (request, reply) => {

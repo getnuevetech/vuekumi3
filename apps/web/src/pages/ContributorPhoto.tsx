@@ -121,6 +121,20 @@ export function ContributorPhotoEdit() {
     }
   }
 
+  const applyPreview = async (action: 'brighten' | 'crop') => {
+    setBusy(true)
+    try {
+      const result = await api.applyPhotoRemediation(id, action)
+      const refreshed = await api.contributorPhoto(id)
+      load(refreshed.photo)
+      toast.success(result.originalUntouched ? 'Preview updated. The original file was not changed.' : 'Preview updated')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Preview adjustment failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Edit photograph</p>
@@ -165,6 +179,29 @@ export function ContributorPhotoEdit() {
               {photo.rights.possibleMinor ? ' · Possible minor — additional verification required' : ''}
               . Screening does not decide whether consent exists, and does not identify anyone.
             </p>
+          )}
+          {photo.hasOriginal && (
+            <div className="rounded-xl border border-sand-soft bg-cream px-4 py-3 text-sm text-ink-soft">
+              <p>Optional preview only. Brighten or crop writes a new preview. The original file stays as uploaded.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void applyPreview('brighten')}
+                  className="rounded-full border border-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] hover:bg-ink hover:text-paper disabled:opacity-50"
+                >
+                  Brighten preview
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void applyPreview('crop')}
+                  className="rounded-full border border-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] hover:bg-ink hover:text-paper disabled:opacity-50"
+                >
+                  Crop preview
+                </button>
+              </div>
+            </div>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
             <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />

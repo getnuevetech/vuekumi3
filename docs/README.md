@@ -5,7 +5,7 @@ Read in this order:
 0. **[10-POST-REVIEW-EXECUTION-PLAN.md](./10-POST-REVIEW-EXECUTION-PLAN.md)** — current
    backlog after the 23 September 2026 review. Reconciles the Trust & Markets memo,
    the admin-portal spec, and the AI-pipeline request with Phases 49–61. Next build,
-   is Phase 62 (image remediation). Phases 64 and 65 are shipped. Do not restart T1 or P0.
+   is Phase 63 (analytics reporting). Phases 62, 64, and 65 are shipped. Do not restart T1 or P0.
 1. **[03-PRODUCT-AND-RIGHTS.md](./03-PRODUCT-AND-RIGHTS.md)** — recovered May 2026 concept
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
@@ -33,7 +33,7 @@ Read in this order:
    registry (Phase 58, **shipped**), AI subject quarantine / auto-invite-or-block
    (Phase 59, **shipped**), ID/face verification (Phase 60, **blocked on Dec-Bio**),
    AI-assisted account/content approval (Phase 61, **shipped**), image
-   enhancement + uploader recommendations (Phase 62), AI analytics/reporting
+   enhancement + uploader recommendations (Phase 62, **shipped**, option A), AI analytics/reporting
    (Phase 63).
 11. **[runbooks/rights-ops.md](./runbooks/rights-ops.md)** — staff rights-ops SOP
    (Phase 51 / T2). Public holder review: `/rights` (Phase 52 / T4).

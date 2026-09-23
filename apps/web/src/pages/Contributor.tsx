@@ -466,6 +466,7 @@ export function ContributorUpload() {
               // the server's actual verdict per file, not the one shared checkbox,
               // so an under-declared upload still gets routed to rights clearance.
               const needsClearance: { id: string; aiDetectedUndeclared: boolean }[] = [];
+              const quarantined: string[] = [];
               for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 setProgress(`Uploading ${i + 1} of ${files.length}`);
@@ -493,8 +494,14 @@ export function ContributorUpload() {
                 if (submitted.photo.hasRecognizablePeople) {
                   needsClearance.push({ id: submitted.photo.id, aiDetectedUndeclared: !people });
                 }
+                if (submitted.remediation?.decision === 'quarantine') {
+                  quarantined.push(submitted.remediation.notes[0] ?? 'Held for quality review. The original file was not altered.');
+                }
               }
               toast.success(files.length === 1 ? `Submitted ${lastId} for review` : `Submitted ${files.length} images for review`);
+              if (quarantined.length > 0) {
+                toast.warning(quarantined[0], { duration: 10000 });
+              }
               setTitle('');
               setFiles([]);
               setProgress('');

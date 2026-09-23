@@ -28,7 +28,7 @@ list would rebuild shipped work.
 | --- | --- | --- |
 | Trust & Markets (T0–T9) | Public report hub, rights hub, country matrix admin, then compensation | T0, T1, T2, T4, T7 shipped (Phases 49–53). T3, T5, T6, T8, T9 still open. |
 | Admin portal spec v1.2 | Three independent layers, eight modules, PDS ALLOW/DENY/REVIEW, 16 gates, four-eyes activation | P0 shipped (Phase 49). `license.issue` and `contributor.upload` recheck shipped (Phases 54, 56). Quarantine reason codes shipped (Phase 57). Negotiation, tax/payee, and buyer overlays remain. |
-| AI pipeline request | Several providers, one per function; detect a person; contact them if the uploader gave details; otherwise force an authorization prompt | Registry and contributor prompt shipped (Phases 58–59). Detection **fails open** when vision is missing or errors (see §3). ID match and image remediation have no caller. |
+| AI pipeline request | Several providers, one per function; detect a person; contact them if the uploader gave details; otherwise force an authorization prompt | Registry and contributor prompt shipped (Phases 58–59). Detection fails closed when vision is missing (Phase 64). Image remediation shipped as quarantine plus opt-in preview (Phase 62). ID match still has no caller (Phase 60 / Dec-Bio). |
 
 The three control layers stay the architecture:
 
@@ -53,7 +53,7 @@ chat-completions. A Replicate row in seed data is not called.
 | Function | Registry purpose | What runs | Next step |
 | --- | --- | --- | --- |
 | Image analysis (tags, description, person present) | `image_analysis` | `suggestFromContext` (opt-in Apply) and `screenImageForRights` at upload | Keep. Fix fail-open (§3) before trusting it. Optional later: pre-fill the upload form as an editable draft (already sketched in `09` §8). |
-| Image remediation (quality, enhancement, quarantine action) | `image_remediation` | No caller. Purpose exists so a row can be saved early. | Phase 62, after the scope call in §4. |
+| Image remediation (quality, enhancement, quarantine action) | `image_remediation` | Option A shipped. Quarantine and advisory notes. Preview brighten/crop is opt-in. Pixels are not sent out for an automatic edit. | Phase 62, **shipped**. |
 | ID document matched to avatar / profile image | `id_verification` | No route, no schema, no vendor. | Phase 60. Blocked on Dec-Bio. |
 | Named model / person likeness for a copyright or release check | `likeness_matching` | Phase 28 opt-in compare. Selfie bytes are discarded. A similarity result does not grant a release and does not search a face database. | Stay. Binding a face to a named identity is Phase 60, same Dec-Bio gate. |
 | Person detected → contact, or prompt that authorization is required | `image_analysis` plus the existing invite | Contributor upload: if the server sets `hasRecognizablePeople`, the UI opens `/contributor/photos/:id` and `PeopleIdentifier` collects name, email, and mobile, which sends the existing invite. If the checkbox was off, a warning states that commercial licensing stays on hold. Empty contact cannot clear the two-approval lock. | Shipped for contributors (Phase 59) and model uploads (Phase 65). Detection fails closed (Phase 64). |
@@ -129,23 +129,15 @@ photo editor can send the existing appearance invite. An unsettled detection
 does not treat a self-likeness checkbox as clearance of everyone in the frame.
 Photographer contact for third-party copyright stays on the same editor.
 
-### Remediation scope call, then Phase 62
+### Phase 62 — Image remediation — **shipped** (option A)
 
-`image_remediation` has no behavior until product picks one action. Record
-the choice in `06` (a product note, not a new Dec-*):
-
-| Option | Action | Recommendation |
-| --- | --- | --- |
-| A | Quarantine and notify. Do not alter pixels. | Default if no one chooses. |
-| B | Blur the detected region on public previews only. Original stays intact. | Higher cost; publish is already blocked by Phase 64. |
-| C | Reject the file and require a re-upload. | Harsh default. |
-
-Phase 62, after that note: advisory sharpness/exposure notes, opt-in crop or
-brightness (uploader clicks apply), perceptual-hash duplicate check against
-live photos. No silent rewrite of a contributor’s file. The
-`image_remediation` purpose gets its first caller. A non-OpenAI wire format
-is a separate adapter task; do not pretend the Replicate seed row already
-does it.
+Recorded in `06` §2b. Severe quality failures and exact duplicates of live
+photographs stay in review and skip criteria auto-approve. Exposure and
+resolution notes are advisory. Brighten and crop are opt-in preview
+derivatives; the original file is not replaced. `image_remediation` is
+resolved so the registry is the caller, and the image bytes are not sent to
+that provider for an automatic edit. A non-OpenAI wire format remains a
+separate adapter task.
 
 ### Phase 63 — Analytics reporting (can run beside Phase 62)
 
@@ -196,7 +188,6 @@ host until Phase 64 is deployed.
 
 ## 7. Immediate decision
 
-Phases 64 and 65 are shipped. Next build is **Phase 62** (image remediation, default A: quarantine only, no silent pixel edits).
-Record the Phase 62 remediation option (default A, quarantine only) when that
-phase starts. Leave Phase 60 and T5/T6 untouched until Dec-Bio and Dec-PayBase
-are signed in `06`.
+Phases 62, 64, and 65 are shipped. Next build is **Phase 63** (read-only
+analytics: views, favorites, and licences). Leave Phase 60 and T5/T6
+untouched until Dec-Bio and Dec-PayBase are signed in `06`.

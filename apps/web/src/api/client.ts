@@ -180,6 +180,13 @@ async function request<T>(path: string, init?: RequestInit, retried = false): Pr
   return data as T
 }
 
+export type RemediationProposalDto = {
+  decision: 'advisory' | 'quarantine'
+  notes: string[]
+  contentHash: string | null
+  provider: 'openai' | 'dev'
+}
+
 export const api = {
   health: () => request<{ status: string }>('/api/health'),
 
@@ -655,7 +662,16 @@ export const api = {
   },
 
   submitPhoto: (body: SubmitPhotoInput) =>
-    request<{ photo: PhotoDto }>('/api/contributor/photos', { method: 'POST', body: JSON.stringify(body) }),
+    request<{ photo: PhotoDto; remediation: RemediationProposalDto | null }>('/api/contributor/photos', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  applyPhotoRemediation: (id: string, action: 'brighten' | 'crop') =>
+    request<{ ok: true; action: 'brighten' | 'crop'; originalUntouched: true }>(
+      `/api/contributor/photos/${id}/remediation`,
+      { method: 'POST', body: JSON.stringify({ action }) },
+    ),
 
   contributorPhoto: (id: string) => request<{ photo: PhotoDto }>(`/api/contributor/photos/${id}`),
 

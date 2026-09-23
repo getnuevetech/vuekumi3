@@ -200,6 +200,23 @@ is signed, in which case negotiation may be scheduled without inventing a %.
 
 ---
 
+## 2b. Product note — image remediation (not a Dec-*)
+
+This is not a numbered decision. It does not set a rate, a biometric vendor,
+a retention window, or country eligibility.
+
+Phase 62 ships **option A** from
+[`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md):
+quarantine and notify. A severe quality failure or an exact duplicate of a
+live photograph stays in review. Sharpness and exposure notes are advisory.
+Brighten and crop write a preview only after the uploader clicks apply. The
+original file is not rewritten by that action.
+
+Options B (blur a region on the public preview) and C (reject and require a
+re-upload) were not taken.
+
+---
+
 ## 3. Explicit non-goals of Phase 46
 
 - Inventing any undecided rate, vendor, retention window, or entity form

@@ -16,8 +16,9 @@ export const PHOTO_CATEGORIES = [
 /**
  * Phase 58 — the fixed set of AI functions the provider registry dispatches
  * on. `image_analysis` and `likeness_matching` have callers.
- * `image_remediation` (Phase 62) and `id_verification` (Phase 60, Dec-Bio)
- * are registry values only until those phases ship.
+ * `image_remediation` has a caller (Phase 62, quarantine and opt-in preview).
+ * `id_verification` (Phase 60, Dec-Bio) stays a registry value until that
+ * decision is signed.
  */
 export const AI_PROVIDER_PURPOSES = [
   'image_analysis',

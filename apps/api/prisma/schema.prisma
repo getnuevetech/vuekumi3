@@ -627,6 +627,8 @@ model Photo {
   screeningNotes           String?
   screeningAt              DateTime?
   screeningProvider        String?
+  /// Phase 62 — difference hash of the original. Used to quarantine exact duplicates. Not a biometric.
+  contentHash              String?
 
   uploadedById             String?
   creationClaim            CreationClaim @default(self_created)
@@ -666,6 +668,7 @@ model Photo {
   @@index([commercialLocked])
   @@index([permissionState])
   @@index([shootId])
+  @@index([contentHash])
 }
 
 model HomeFeaturedPin {
