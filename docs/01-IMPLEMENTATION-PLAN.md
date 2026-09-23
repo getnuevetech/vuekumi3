@@ -291,7 +291,16 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled** absent explicit approval. Phase 59
+3. Default next slice: **none scheduled** absent explicit approval. Phase 61
+   (AI-assisted account & content approval — `AiProvider`-independent
+   criteria in `lib/moderation.ts`: disposable-email-domain check on creator
+   signup, technical/metadata criteria on photo upload, admin on/off switch
+   and thresholds via the existing generic Settings screen, default
+   auto-approve **on** per product instruction; Phase 23's possible-minor /
+   sensitive / uncertain-detection screening flags always force manual
+   review regardless of the switch; agency's existing `pending`-account
+   pattern generalized to creator signups; a `pending` account is now
+   actually blocked from uploading) is shipped. Phase 59
    (AI subject quarantine — the contributor upload flow now routes on the
    server's actual, post-AI-screening `hasRecognizablePeople` instead of the
    submitted checkbox, so an under-declared batch upload still lands on the

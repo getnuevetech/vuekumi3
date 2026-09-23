@@ -324,7 +324,7 @@ review the normal upload path instead of an opt-in extra.
 
 ---
 
-## 9. Proposed Phase 61 — AI-assisted account & content approval (criteria-based)
+## 9. Phase 61 — AI-assisted account & content approval (criteria-based) — **shipped**
 
 **Not gated as a whole, but must not swallow the two decisions that already
 have their own gate.** Automated approve/deny of accounts and content is a
@@ -333,6 +333,46 @@ wrong and it either lets bad actors through or silently locks out a
 legitimate African photographer. This phase adds a **second, independent
 signal** alongside — never instead of — the checks that already own their
 domains:
+
+**Shipped scope (product decision: auto-approve is the default, admin can
+flip it off)**: `apps/api/src/lib/moderation.ts` — `evaluateAccountApproval`
+and `evaluateContentApproval`. Wired into `POST /auth/register` (replaces
+the old hardcoded `agency ? pending : active`, generalizing the *existing*
+agency `pending`-account pattern to `CREATOR_ACCOUNT_TYPES`) and into
+`POST /contributor/photos` (runs after `processPhotoAssets` so real
+width/height are available; auto-approval flips `Photo.status` to `active`
+and the existing `ModerationItem` to `approved` with a reasons-bearing note,
+rather than inventing a parallel queue). A `pending` creator account is now
+actually blocked from uploading (previously `pending` existed on the User
+model for agencies but nothing enforced it).
+
+Criteria are admin-editable through the **existing** generic Settings
+mechanism (`SETTING_DEFINITIONS`, new "Moderation" group — surfaces
+automatically in the Admin Settings screen, no new UI needed), not a new
+dedicated table:
+- `moderation.ai_auto_approve_accounts` / `moderation.ai_auto_approve_content` — the on/off switch, **default `true`** per product's explicit instruction
+- `moderation.disposable_email_domains` — comma list, seeded with common disposable-email providers
+- `moderation.require_complete_metadata`, `moderation.min_photo_width`, `moderation.min_photo_height` — content criteria
+
+**Safety floor that the toggle cannot disable**: `possibleMinor`,
+`potentiallySensitive`, and `uncertainHumanDetection` (from Phase 23's
+existing screening) always force manual review regardless of the
+auto-approve setting — not exposed as a togglable criterion, so an admin
+flipping the general switch can't accidentally wave through exactly the
+cases screening exists to catch.
+
+**Deliberately not built in this pass** (say so rather than overclaim):
+duplicate-account fingerprinting (device/IP/payout-method reuse — no such
+tracking exists yet), ToS/consent-checkbox completeness scoring (already a
+hard requirement at signup, not a scored signal), exact/perceptual
+duplicate-image hashing, and a policy-prohibited-content classifier
+(violence/hate/CSAM-adjacent) — that last one needs its own prompt design,
+accuracy bar, and likely legal sign-off before being trusted for
+zero-tolerance auto-quarantine, not something to bolt on inside this phase.
+These remain real gaps in the "criteria" list below, listed for the next
+iteration rather than silently dropped.
+
+Original proposal for reference (superseded by the shipped scope above):
 
 - **Country/Africa eligibility stays owned by Phase 49's PDS `contributor.create`
   check.** Phase 61 does not re-decide it, re-score it, or let a high
@@ -414,7 +454,7 @@ functional overlap between that phase and this plan.
 | **58** | AI Provider Registry (multi-provider dispatch) | — | No — **shipped** |
 | **59** | AI subject quarantine (detect → auto-invite or block) | 58 | No — **shipped**, Tier A only |
 | **60** | ID/face verification provider (KYC, identity-bound likeness) | 58; **Dec-Bio signed** | **Yes** |
-| **61** | AI-assisted account & content approval (criteria-based) | 58; does not touch Phase 49 country gate or Phase 60 identity gate | No — additive signal only |
+| **61** | AI-assisted account & content approval (criteria-based) | 58; does not touch Phase 49 country gate or Phase 60 identity gate | No — **shipped**, additive signal only |
 | **62** | Image enhancement & uploader recommendations | 58; 59 (shares the remediation UX) | No |
 | **63** | AI analytics & reporting | none (reads existing data) | No |
 
@@ -451,7 +491,7 @@ depends on a human decision (Dec-Bio) outside this plan's control.
 
 ## 14. Immediate next action (human)
 
-Phase 58 and 59 are shipped. Say which of Phase 61 / 62 / 63 to start next
-(all unblocked); record the image-remediation scope call from §6 in `06`
+Phase 58, 59, and 61 are shipped. Say which of Phase 62 / 63 to start next
+(both unblocked); record the image-remediation scope call from §6 in `06`
 before Phase 62 begins; no action needed on Phase 60 until Dec-Bio is
 signed.

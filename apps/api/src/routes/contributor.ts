@@ -61,6 +61,7 @@ import {
 import { appendRightsLedgerEvent, loadRightsLedger } from '../lib/ledger.js'
 import { issueAppearanceInvite } from './models.js'
 import { loadOriginalBytes, screenImageForRights, screeningWriteData } from '../lib/screening.js'
+import { evaluateContentApproval } from '../lib/moderation.js'
 import {
   ALLOWED_IMAGE_TYPES,
   assertOwnedOriginalKey,
@@ -273,6 +274,9 @@ export async function contributorRoutes(app: FastifyInstance) {
     if (!isCreatorWorkspaceAccount(accountType) && !isImpersonatingStaff(request.authUser)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
+    if (request.authUser?.status === 'pending' && !isImpersonatingStaff(request.authUser)) {
+      return reply.code(403).send({ error: 'Your account is pending staff review before you can upload' })
+    }
 
     const contributorId = await resolveCreatorWorkspaceId(request, reply)
     if (!contributorId) return
@@ -466,6 +470,57 @@ export async function contributorRoutes(app: FastifyInstance) {
         if (reloaded) photo = reloaded
       } catch (err) {
         request.log.warn({ err, photoId: photo.id }, 'inline derivative processing failed')
+      }
+    }
+
+    // Phase 61 — second, independent signal alongside the existing manual
+    // moderation queue. Never touches the Phase 49 country gate or rights
+    // engine; "not auto-approved" just means today's unchanged pending state.
+    if (photo.status === 'pending') {
+      const approval = await evaluateContentApproval({
+        screening: {
+          possibleMinor: photo.possibleMinor,
+          potentiallySensitive: photo.potentiallySensitive,
+          uncertainHumanDetection: photo.uncertainHumanDetection,
+        },
+        title: photo.title,
+        category: photo.category,
+        country: photo.country,
+        width: photo.width,
+        height: photo.height,
+      })
+      if (approval.decision === 'active') {
+        const pendingModeration = await prisma.moderationItem.findFirst({
+          where: { photoId: photo.id, status: 'pending' },
+        })
+        await prisma.$transaction([
+          prisma.photo.update({
+            where: { id: photo.id },
+            data: { status: 'active', publishedAt: new Date() },
+          }),
+          ...(pendingModeration
+            ? [
+                prisma.moderationItem.update({
+                  where: { id: pendingModeration.id },
+                  data: {
+                    status: 'approved',
+                    decidedAt: new Date(),
+                    notes: `Auto-approved by AI criteria: ${approval.reasons.join(', ')}`,
+                  },
+                }),
+              ]
+            : []),
+        ])
+        await writeAuditLog({
+          actorId: request.userId,
+          action: 'moderation.content_auto_approved',
+          entityType: 'photo',
+          entityId: photo.id,
+          metadata: { reasons: approval.reasons },
+          ipAddress: request.ip,
+        })
+        const reloaded = await prisma.photo.findUnique({ where: { id: photo.id }, include: photoInclude })
+        if (reloaded) photo = reloaded
       }
     }
 
