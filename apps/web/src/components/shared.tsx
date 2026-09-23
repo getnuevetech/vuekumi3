@@ -518,13 +518,11 @@ export function PortalShell({
   subtitle,
   links,
   children,
-  variant = 'default',
 }: {
   title: string
   subtitle: string
   links: PortalLink[]
   children: ReactNode
-  variant?: 'default' | 'admin'
 }) {
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
@@ -554,11 +552,11 @@ export function PortalShell({
   }, [pathname, links])
 
   return (
-    <div className={`min-h-screen bg-paper lg:grid ${variant === 'admin' ? 'lg:grid-cols-[260px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
+    <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
       {/* sidebar */}
-      <aside className={`border-b border-sand bg-ink text-paper lg:fixed lg:inset-y-0 lg:flex lg:flex-col lg:border-b-0 ${variant === 'admin' ? 'lg:w-[260px]' : 'lg:w-[240px]'}`}>
+      <aside className="border-b border-sand bg-ink text-paper lg:fixed lg:inset-y-0 lg:flex lg:w-[260px] lg:flex-col lg:border-b-0">
         <div className="flex items-center justify-between px-5 py-4 lg:block lg:px-6 lg:py-7">
-          <LogoMark dark accent={variant === 'admin' ? '#d6e6ff' : '#bc773f'} />
+          <LogoMark dark accent="#d6e6ff" />
           <span className="hidden lg:mt-1.5 lg:block font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper-soft">
             {title}
           </span>

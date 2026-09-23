@@ -141,12 +141,8 @@ export function useAdminLinks(): PortalLink[] {
 
 export function AdminShell({ children, subtitle }: { children: React.ReactNode; subtitle: string }) {
   const links = useAdminLinks()
-  useEffect(() => {
-    document.body.classList.add('admin-portal')
-    return () => document.body.classList.remove('admin-portal')
-  }, [])
   return (
-    <PortalShell title="Admin portal" subtitle={subtitle} links={links} variant="admin">
+    <PortalShell title="Admin portal" subtitle={subtitle} links={links}>
       {children}
     </PortalShell>
   )

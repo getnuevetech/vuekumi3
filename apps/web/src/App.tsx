@@ -58,6 +58,25 @@ import Account from './pages/Account'
 import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './guards/ProtectedRoute'
 
+const PORTAL_THEME_PREFIXES = [
+  '/account',
+  '/admin',
+  '/agency',
+  '/bookings',
+  '/campaigns',
+  '/checkout',
+  '/collections',
+  '/contributor',
+  '/favorites',
+  '/following',
+  '/licenses',
+  '/model',
+]
+
+function usesPortalTheme(pathname: string) {
+  return PORTAL_THEME_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
@@ -66,10 +85,20 @@ function ScrollToTop() {
   return null
 }
 
+function PortalTheme() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    document.body.classList.toggle('portal-theme', usesPortalTheme(pathname))
+    return () => document.body.classList.remove('portal-theme')
+  }, [pathname])
+  return null
+}
+
 export default function App() {
   return (
     <>
       <ScrollToTop />
+      <PortalTheme />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />

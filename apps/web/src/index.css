@@ -222,8 +222,8 @@
   }
 }
 
-/* Admin portal only. Unlayered so these beat the marketplace palette utilities. */
-body.admin-portal {
+/* Signed-in portals and account pages. Unlayered so these beat the marketplace palette utilities. */
+body.portal-theme {
   --background: 214 45% 98%;
   --foreground: 215 55% 16%;
   --card: 0 0% 100%;
@@ -248,79 +248,86 @@ body.admin-portal {
   line-height: 1.5;
 }
 
-body.admin-portal ::selection {
+body.portal-theme ::selection {
   background: #0b2545;
   color: #ffffff;
 }
 
-body.admin-portal .font-serif-display,
-body.admin-portal .font-mono-tech,
-body.admin-portal .font-condensed {
+body.portal-theme .font-serif-display,
+body.portal-theme .font-mono-tech,
+body.portal-theme .font-condensed {
   font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
 }
 
-body.admin-portal .font-serif-display {
+body.portal-theme .font-serif-display {
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
-body.admin-portal .font-light {
+body.portal-theme .font-light {
   font-weight: 600;
 }
 
-body.admin-portal .font-mono-tech,
-body.admin-portal .text-\[9px\],
-body.admin-portal .text-\[10px\],
-body.admin-portal .text-\[11px\] {
+body.portal-theme .font-mono-tech,
+body.portal-theme .text-\[9px\],
+body.portal-theme .text-\[10px\],
+body.portal-theme .text-\[11px\] {
   font-size: 0.875rem;
   line-height: 1.4;
 }
 
-body.admin-portal .font-mono-tech {
+body.portal-theme .font-mono-tech {
   font-weight: 600;
 }
 
-body.admin-portal .uppercase {
+body.portal-theme .uppercase {
   text-transform: none;
 }
 
-body.admin-portal .tracking-\[0\.25em\],
-body.admin-portal .tracking-\[0\.22em\],
-body.admin-portal .tracking-\[0\.2em\],
-body.admin-portal .tracking-\[0\.18em\],
-body.admin-portal .tracking-\[0\.15em\],
-body.admin-portal .tracking-\[0\.14em\],
-body.admin-portal .tracking-\[0\.12em\] {
+body.portal-theme .tracking-\[0\.25em\],
+body.portal-theme .tracking-\[0\.22em\],
+body.portal-theme .tracking-\[0\.2em\],
+body.portal-theme .tracking-\[0\.18em\],
+body.portal-theme .tracking-\[0\.15em\],
+body.portal-theme .tracking-\[0\.14em\],
+body.portal-theme .tracking-\[0\.12em\] {
   letter-spacing: 0.01em;
 }
 
-body.admin-portal .bg-paper { background-color: #ffffff; }
-body.admin-portal .bg-cream { background-color: #e7eef8; }
-body.admin-portal .bg-ink { background-color: #0b2545; }
-body.admin-portal .bg-ink-deep { background-color: #081c36; }
-body.admin-portal .bg-terra { background-color: #1e5aa8; }
-body.admin-portal .text-ink { color: #12243f; }
-body.admin-portal .text-ink-soft { color: #2c4668; }
-body.admin-portal .text-ink-faint { color: #4d6482; }
-body.admin-portal .text-terra { color: #1a4f91; }
-body.admin-portal .text-paper { color: #ffffff; }
-body.admin-portal .text-paper-soft { color: rgba(255, 255, 255, 0.86); }
-body.admin-portal .text-paper-faint { color: rgba(255, 255, 255, 0.68); }
-body.admin-portal .border-sand,
-body.admin-portal .border-sand-soft { border-color: #d3e0ef; }
-body.admin-portal .border-terra { border-color: #1a4f91; }
-body.admin-portal .hover\:bg-terra:hover { background-color: #163e78; }
-body.admin-portal .hover\:bg-ink:hover { background-color: #081c36; }
-body.admin-portal .hover\:text-terra:hover { color: #d6e6ff; }
-body.admin-portal .hover\:text-ink:hover { color: #0b2545; }
-body.admin-portal .hover\:border-terra:hover,
-body.admin-portal .hover\:border-ink:hover,
-body.admin-portal .focus\:border-terra:focus { border-color: #1a4f91; }
-body.admin-portal .hover\:bg-paper\/5:hover { background-color: rgba(255, 255, 255, 0.08); }
-body.admin-portal .hover\:bg-cream\/50:hover { background-color: #f2f6fb; }
-body.admin-portal .border-paper\/10 { border-color: rgba(255, 255, 255, 0.16); }
-body.admin-portal .border-paper\/15 { border-color: rgba(255, 255, 255, 0.22); }
-body.admin-portal .bg-\[\#f5ece5\] { background-color: #e7eef8; }
-body.admin-portal .text-\[\#bc773f\] { color: #1a4f91; }
-body.admin-portal .bg-\[\#f3e9f5\] { background-color: #e4ecf7; }
-body.admin-portal .text-\[\#7a4a8f\] { color: #243e6b; }
+body.portal-theme .bg-paper { background-color: #ffffff; }
+body.portal-theme .bg-cream { background-color: #e7eef8; }
+body.portal-theme .bg-ink { background-color: #0b2545; }
+body.portal-theme .bg-ink-deep { background-color: #081c36; }
+body.portal-theme .bg-terra { background-color: #1e5aa8; }
+body.portal-theme .text-ink { color: #12243f; }
+body.portal-theme .text-ink-soft { color: #2c4668; }
+body.portal-theme .text-ink-faint { color: #4d6482; }
+body.portal-theme .text-terra { color: #1a4f91; }
+body.portal-theme .text-paper { color: #ffffff; }
+body.portal-theme .text-paper-soft { color: rgba(255, 255, 255, 0.86); }
+body.portal-theme .text-paper-faint { color: rgba(255, 255, 255, 0.68); }
+body.portal-theme .border-sand,
+body.portal-theme .border-sand-soft { border-color: #d3e0ef; }
+body.portal-theme .border-terra { border-color: #1a4f91; }
+body.portal-theme .hover\:bg-terra:hover { background-color: #163e78; }
+body.portal-theme .hover\:bg-ink:hover { background-color: #081c36; }
+body.portal-theme .hover\:text-terra:hover { color: #d6e6ff; }
+body.portal-theme .hover\:text-ink:hover { color: #0b2545; }
+body.portal-theme .hover\:border-terra:hover,
+body.portal-theme .hover\:border-ink:hover,
+body.portal-theme .focus\:border-terra:focus { border-color: #1a4f91; }
+body.portal-theme .hover\:bg-paper\/5:hover { background-color: rgba(255, 255, 255, 0.08); }
+body.portal-theme .hover\:bg-cream\/50:hover { background-color: #f2f6fb; }
+body.portal-theme .border-paper\/10 { border-color: rgba(255, 255, 255, 0.16); }
+body.portal-theme .border-paper\/15 { border-color: rgba(255, 255, 255, 0.22); }
+body.portal-theme .bg-\[\#f5ece5\] { background-color: #e7eef8; }
+body.portal-theme .text-\[\#bc773f\] { color: #1a4f91; }
+body.portal-theme .bg-\[\#f3e9f5\] { background-color: #e4ecf7; }
+body.portal-theme .text-\[\#7a4a8f\] { color: #243e6b; }
+body.portal-theme .accent-\[\#bc773f\] { accent-color: #1e5aa8; }
+body.portal-theme .border-terra\/40 { border-color: rgb(30 90 168 / 0.4); }
+body.portal-theme .bg-terra\/5,
+body.portal-theme .has-checked\:bg-terra\/5:has(:checked) { background-color: rgb(30 90 168 / 0.08); }
+body.portal-theme .has-checked\:border-terra:has(:checked) { border-color: #1a4f91; }
+body.portal-theme svg [stroke="#bc773f"] { stroke: #1e5aa8; }
+body.portal-theme svg [fill="#bc773f"] { fill: #1e5aa8; }

@@ -298,18 +298,18 @@ export function ContributorDashboard() {
               <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                 <defs>
                   <linearGradient id="eg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#bc773f" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#bc773f" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#1e5aa8" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#1e5aa8" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="#efe4da" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
+                <CartesianGrid stroke="#d5e1ef" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, sans-serif' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, sans-serif' }} axisLine={false} tickLine={false} />
                 <Tooltip
                   formatter={(v: number) => [money(v), 'Earnings']}
-                  contentStyle={{ border: '1px solid #dec9b8', borderRadius: 12, fontSize: 12, background: '#faf6f3' }}
+                  contentStyle={{ border: '1px solid #d5e1ef', borderRadius: 12, fontSize: 13, fontFamily: 'Source Sans 3, sans-serif', background: '#ffffff' }}
                 />
-                <Area type="monotone" dataKey="earnings" stroke="#bc773f" strokeWidth={2} fill="url(#eg)" />
+                <Area type="monotone" dataKey="earnings" stroke="#1e5aa8" strokeWidth={2} fill="url(#eg)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -834,18 +834,18 @@ export function ContributorEarnings() {
               <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                 <defs>
                   <linearGradient id="eg2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#bc773f" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#bc773f" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#1e5aa8" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#1e5aa8" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="#efe4da" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
+                <CartesianGrid stroke="#d5e1ef" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, sans-serif' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, sans-serif' }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ border: '1px solid #dec9b8', borderRadius: 12, fontSize: 12, background: '#faf6f3' }}
+                  contentStyle={{ border: '1px solid #d5e1ef', borderRadius: 12, fontSize: 13, fontFamily: 'Source Sans 3, sans-serif', background: '#ffffff' }}
                   formatter={(v: number) => [money(v), 'Earnings']}
                 />
-                <Area type="monotone" dataKey="earnings" stroke="#bc773f" strokeWidth={2} fill="url(#eg2)" />
+                <Area type="monotone" dataKey="earnings" stroke="#1e5aa8" strokeWidth={2} fill="url(#eg2)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
