@@ -6,7 +6,7 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–58 (Arcs A–D complete; through Phase 58 / AI Provider Registry).
+   shipped Phases 0–59 (Arcs A–D complete; through Phase 59 / AI subject quarantine).
    Default next slice: none scheduled until explicitly approved.
 3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
@@ -26,7 +26,7 @@ Read in this order:
 12. **[09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md)** —
    P1 "AI subjects" + "ID/face provider" made concrete: multi-provider AI
    registry (Phase 58, **shipped**), AI subject quarantine / auto-invite-or-block
-   (Phase 59), ID/face verification (Phase 60, **blocked on Dec-Bio**),
+   (Phase 59, **shipped**), ID/face verification (Phase 60, **blocked on Dec-Bio**),
    AI-assisted account/content approval (Phase 61), image enhancement +
    uploader recommendations (Phase 62), AI analytics/reporting (Phase 63).
 11. **[runbooks/rights-ops.md](./runbooks/rights-ops.md)** — staff rights-ops SOP

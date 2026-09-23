@@ -461,13 +461,18 @@ export function ContributorUpload() {
             setBusy(true);
             try {
               let lastId = '';
+              // Server-side AI screening (Phase 23) can force hasRecognizablePeople
+              // to true even when this batch's checkbox was left unchecked — track
+              // the server's actual verdict per file, not the one shared checkbox,
+              // so an under-declared upload still gets routed to rights clearance.
+              const needsClearance: { id: string; aiDetectedUndeclared: boolean }[] = [];
               for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 setProgress(`Uploading ${i + 1} of ${files.length}`);
                 const signed = await api.presignUpload(file.name, file.type || 'image/jpeg');
                 await api.putUpload(signed.uploadUrl, file, signed.headers);
                 setProgress(`Processing ${i + 1} of ${files.length}`);
-                const photo = await api.submitPhoto({
+                const submitted = await api.submitPhoto({
                   title: files.length === 1 ? title : `${title || file.name.replace(/\.[^.]+$/, '')} ${i + 1}`,
                   description,
                   category,
@@ -484,13 +489,26 @@ export function ContributorUpload() {
                   modelReleaseNotes: releaseNotes || undefined,
                   originalKey: signed.key,
                 });
-                lastId = photo.photo.id;
+                lastId = submitted.photo.id;
+                if (submitted.photo.hasRecognizablePeople) {
+                  needsClearance.push({ id: submitted.photo.id, aiDetectedUndeclared: !people });
+                }
               }
               toast.success(files.length === 1 ? `Submitted ${lastId} for review` : `Submitted ${files.length} images for review`);
               setTitle('');
               setFiles([]);
               setProgress('');
-              if (people && lastId) navigate(`/contributor/photos/${lastId}`);
+              if (needsClearance.length > 0) {
+                if (needsClearance.some((n) => n.aiDetectedUndeclared)) {
+                  toast.warning(
+                    "Vuekumi's automated review detected a person in one or more photos you didn't mark as having people. Add their contact details or confirm independent authorization — commercial licensing is on hold until then.",
+                    { duration: 10000 },
+                  );
+                } else if (needsClearance.length > 1) {
+                  toast.info(`${needsClearance.length} photos need model-release clearance — opening the first one.`);
+                }
+                navigate(`/contributor/photos/${needsClearance[0].id}`);
+              }
             } catch (err) {
               toast.error(err instanceof ApiError ? err.message : 'Submit failed');
             } finally {
