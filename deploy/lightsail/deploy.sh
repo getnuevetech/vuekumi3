@@ -21,9 +21,13 @@ set -a
 source .env
 set +a
 
-for var in POSTGRES_PASSWORD JWT_SECRET COOKIE_SECRET WEB_URL; do
+for var in POSTGRES_PASSWORD JWT_SECRET COOKIE_SECRET SETTINGS_ENCRYPTION_KEY WEB_URL; do
   if [[ -z "${!var:-}" ]]; then
     echo "ERROR: $var is not set in .env"
+    if [[ "$var" == "SETTINGS_ENCRYPTION_KEY" ]]; then
+      echo "  The API refuses to boot in production without it (encrypts Admin Settings values)."
+      echo "  Generate one: openssl rand -base64 48"
+    fi
     exit 1
   fi
 done
