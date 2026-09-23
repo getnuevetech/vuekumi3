@@ -156,9 +156,30 @@ still pass unmodified in behavior.
 
 ---
 
-## 5. Proposed Phase 59 — AI subject quarantine (presence detection → contact or block)
+## 5. Phase 59 — AI subject quarantine (presence detection → contact or block) — **shipped**
 
-**Not gated (Tier A only — presence, not identity). Buildable now.**
+**Not gated (Tier A only — presence, not identity).**
+
+**Shipped scope, smaller than originally proposed**: items 1 and 2 below
+turned out to already exist (see the correction note) — nothing needed
+building for detection, cross-check, or blocking. The only real gap was
+that the client's post-upload redirect used the contributor's *local*
+checkbox state instead of the server's actual (post-AI-override)
+`hasRecognizablePeople`, so a batch upload with an under-declared photo
+never routed the uploader to the existing rights-clearance screen. Fixed in
+`apps/web/src/pages/Contributor.tsx`: the submit handler now reads each
+uploaded photo's server-returned `hasRecognizablePeople` (not the shared
+checkbox) to decide whether to navigate to `/contributor/photos/:id` —
+which already renders `PeopleIdentifier` (name/email/mobile → auto-fires
+the Phase 24/25 invite email on submit) whenever `hasRecognizablePeople` is
+true, per §5 item 3's already-shipped invite pipeline. When the checkbox was
+left off but the server detected a person anyway, a distinct warning toast
+uses the exact prompt language from item 3's "no contact info given" branch.
+Item 4 (appeal path) also needed no new work — the existing rights-report
+queue already covers a disputed flag; no new `AiSubjectDetection` model or
+PDS action code was added, since the existing `RightsRecord` fields and
+`commercialEligibilityBlock` already carry that decision with a clear
+reason ("AWAITING MODEL CONSENT").
 
 **Correction found while building Phase 58**: §1's audit undersold what
 already exists. `apps/api/src/lib/screening.ts` (Phase 23) already runs
@@ -176,7 +197,8 @@ genuinely missing piece: turning a silent "pending" state into the
 uploader-visible prompt-or-auto-invite workflow the product described,
 using `identifyAppearanceSchema` (already collects displayName/email/mobile)
 as the contact-capture step. This is the "AI subjects" line item `08` §8
-already names under P1, made concrete:
+already names under P1, made concrete. Original proposal for reference
+(superseded by the shipped scope above — kept so the reasoning is visible):
 
 1. **Detection becomes a first-class signal, not just a suggestion field.**
    On upload processing (same pipeline as EXIF stripping / derivative
@@ -224,12 +246,14 @@ retroactive sweep, unless product asks for one separately).
 
 ---
 
-## 6. One product decision Phase 59 needs (not a new Dec-*, a scope call)
+## 6. One product decision Phase 62 needs (not a new Dec-*, a scope call)
 
-"Image remediation" was named as a function but not defined. Before Phase 59
-ships, product picks what an automated remediation action actually is when
-`image_remediation` fires (e.g., on a policy-violation flag, not just an
-undeclared subject):
+"Image remediation" was named as a function but not defined. Phase 59
+shipped without needing this — it reused the existing rights-lock
+mechanism rather than a new `image_remediation` action. Before Phase 62
+(image enhancement, §10) ships, product picks what an automated remediation
+action actually is when `image_remediation` fires more broadly (e.g., on a
+policy-violation flag, not just an undeclared subject):
 
 - (A) **Quarantine only** — unpublish/hold the photo and notify the
   contributor; no image is altered. Lowest risk, recommended default.
@@ -242,7 +266,7 @@ undeclared subject):
 
 This is a UX/policy call, not a legal-gate decision — record it in `06` as a
 short product note (not a numbered Dec-* — it doesn't touch money, biometric
-retention, or country eligibility) before Phase 59 implementation starts.
+retention, or country eligibility) before Phase 62 implementation starts.
 
 ---
 
@@ -341,8 +365,8 @@ this codebase.
 
 ## 10. Proposed Phase 62 — Image enhancement & uploader recommendations
 
-**Not gated. Extends the `image_remediation` purpose from quarantine-only
-(Phase 59 §6 option A) to advisory quality feedback.**
+**Not gated. Extends the `image_remediation` purpose (once §6 is decided,
+likely quarantine-only, option A) to advisory quality feedback.**
 
 At upload, run an additional advisory pass: sharpness/exposure/composition
 score, suggested crop or orientation fix, and a plain-language note to the
@@ -388,7 +412,7 @@ functional overlap between that phase and this plan.
 | Phase | Name | Depends on | Gated? |
 | --- | --- | --- | --- |
 | **58** | AI Provider Registry (multi-provider dispatch) | — | No — **shipped** |
-| **59** | AI subject quarantine (detect → auto-invite or block) | 58; one product scope call (§6) | No — Tier A only |
+| **59** | AI subject quarantine (detect → auto-invite or block) | 58 | No — **shipped**, Tier A only |
 | **60** | ID/face verification provider (KYC, identity-bound likeness) | 58; **Dec-Bio signed** | **Yes** |
 | **61** | AI-assisted account & content approval (criteria-based) | 58; does not touch Phase 49 country gate or Phase 60 identity gate | No — additive signal only |
 | **62** | Image enhancement & uploader recommendations | 58; 59 (shares the remediation UX) | No |
@@ -427,6 +451,7 @@ depends on a human decision (Dec-Bio) outside this plan's control.
 
 ## 14. Immediate next action (human)
 
-Phase 58 is shipped. Say which of Phase 59 / 61 / 62 / 63 to start next (all
-unblocked); record the image-remediation scope call from §6 in `06` before
-Phase 59/62 begin; no action needed on Phase 60 until Dec-Bio is signed.
+Phase 58 and 59 are shipped. Say which of Phase 61 / 62 / 63 to start next
+(all unblocked); record the image-remediation scope call from §6 in `06`
+before Phase 62 begins; no action needed on Phase 60 until Dec-Bio is
+signed.

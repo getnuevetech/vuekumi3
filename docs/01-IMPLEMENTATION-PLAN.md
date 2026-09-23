@@ -291,7 +291,12 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled** absent explicit approval. Phase 58
+3. Default next slice: **none scheduled** absent explicit approval. Phase 59
+   (AI subject quarantine — the contributor upload flow now routes on the
+   server's actual, post-AI-screening `hasRecognizablePeople` instead of the
+   submitted checkbox, so an under-declared batch upload still lands on the
+   existing rights-clearance screen; detection/blocking themselves were
+   already shipped by Phase 23 and the two-party lock) is shipped. Phase 58
    (AI Provider Registry — `AiProvider.purpose` dispatch is now real;
    `image_analysis`/`likeness_matching`/screening all resolve per-purpose,
    priority-ordered, with the legacy single-key setup still a fallback; see
