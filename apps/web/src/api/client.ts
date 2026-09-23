@@ -827,11 +827,12 @@ export const api = {
 
   contributorPhotos: () => request<{ items: PhotoDto[] }>('/api/contributor/photos'),
 
-  adminContent: (params?: { q?: string; status?: string; page?: number }) => {
+  adminContent: (params?: { q?: string; status?: string; page?: number; locked?: boolean }) => {
     const qs = new URLSearchParams()
     if (params?.q) qs.set('q', params.q)
     if (params?.status) qs.set('status', params.status)
     if (params?.page) qs.set('page', String(params.page))
+    if (params?.locked) qs.set('locked', '1')
     const q = qs.toString()
     return request<{ items: AdminContentRow[]; total: number }>(`/api/admin/content${q ? `?${q}` : ''}`)
   },
@@ -901,11 +902,22 @@ export const api = {
       body: JSON.stringify({ notes }),
     }),
 
-  setCommercialLock: (photoId: string, locked: boolean, notes?: string) =>
-    request<{ ok: boolean; commercialLocked: boolean }>(`/api/admin/content/${photoId}/commercial-lock`, {
-      method: 'POST',
-      body: JSON.stringify({ locked, notes }),
-    }),
+  setCommercialLock: (
+    photoId: string,
+    locked: boolean,
+    opts?: { notes?: string; reason?: import('@vuekumi/shared').CommercialLockReasonCode },
+  ) =>
+    request<{ ok: boolean; commercialLocked: boolean; commercialLockReason: string | null }>(
+      `/api/admin/content/${photoId}/commercial-lock`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          locked,
+          notes: opts?.notes,
+          reason: opts?.reason,
+        }),
+      },
+    ),
 
   decideModeration: (id: string, action: 'approve' | 'reject', notes?: string) =>
     request<{ ok: boolean }>(`/api/admin/moderation/${id}/decide`, {

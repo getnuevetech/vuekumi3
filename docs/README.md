@@ -6,7 +6,7 @@ Read in this order:
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
-   shipped Phases 0–56 (Arcs A–D complete; through Phase 56 / PDS contributor.upload).
+   shipped Phases 0–57 (Arcs A–D complete; through Phase 57 / asset quarantine reasons).
    Default next slice: none scheduled until explicitly approved.
 3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
@@ -21,14 +21,14 @@ Read in this order:
    Engineering adoption of Admin Portal & Country Activation spec v1.2: three
    control layers, eight modules, Policy Decision Service, P0–P2 tranches.
    **P0 (Phase 49) shipped**; T1–T2 + T4 + T7 (Phases 50–53) shipped; Phase 54 PDS
-   license.issue suspend enforcement shipped; P1–P2 remain plan until approved.
+   license.issue suspend enforcement shipped; Phase 57 quarantine reason codes shipped;
+   P1 negotiation (T5/T6) remain plan until Dec-PayBase.
 12. **[09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md)** —
    P1 "AI subjects" + "ID/face provider" made concrete: multi-provider AI
-   registry (Phase 57), AI subject quarantine / auto-invite-or-block (Phase 58,
-   unblocked), ID/face verification (Phase 59, **blocked on Dec-Bio**),
-   AI-assisted account/content approval (Phase 60), image enhancement +
-   uploader recommendations (Phase 61), AI analytics/reporting (Phase 62).
-   Plan only.
+   registry (Phase 58, **shipped**), AI subject quarantine / auto-invite-or-block
+   (Phase 59), ID/face verification (Phase 60, **blocked on Dec-Bio**),
+   AI-assisted account/content approval (Phase 61), image enhancement +
+   uploader recommendations (Phase 62), AI analytics/reporting (Phase 63).
 11. **[runbooks/rights-ops.md](./runbooks/rights-ops.md)** — staff rights-ops SOP
    (Phase 51 / T2). Public holder review: `/rights` (Phase 52 / T4).
 7. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —

@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import {
+  commercialLockReasonForReport,
   createRightsReportSchema,
   decideRightsReportSchema,
   reportIsUrgent,
@@ -96,6 +97,7 @@ async function fileRightsReport(request: FastifyRequest, reply: FastifyReply, ph
     locked: true,
     actorId: request.userId,
     holdReason: holdReasonForReport(reason),
+    lockReason: commercialLockReasonForReport(reason),
   })
   const rightsPatch = rightsPatchForReport(reason)
   if (Object.keys(rightsPatch).length) {
@@ -215,6 +217,9 @@ export async function reportRoutes(app: FastifyInstance) {
         actorId: request.userId!,
         notes: body.notes,
         holdReason: holdReasonForReport(report.reason as RightsReportReason),
+        lockReason: body.action === 'lock'
+          ? commercialLockReasonForReport(report.reason as RightsReportReason)
+          : null,
       })
     }
 
@@ -273,6 +278,7 @@ export async function reportRoutes(app: FastifyInstance) {
       locked: body.locked,
       actorId: request.userId!,
       notes: body.notes,
+      lockReason: body.locked ? (body.reason ?? 'staff_quarantine') : null,
     })
 
     if (body.locked) {
@@ -292,10 +298,17 @@ export async function reportRoutes(app: FastifyInstance) {
       action: body.locked ? 'rights.commercial_lock' : 'rights.commercial_unlock',
       entityType: 'photo',
       entityId: id,
-      metadata: { notes: body.notes ?? null },
+      metadata: {
+        notes: body.notes ?? null,
+        commercialLockReason: updated.commercialLockReason ?? null,
+      },
       ipAddress: request.ip,
     })
 
-    return { ok: true as const, commercialLocked: updated.commercialLocked }
+    return {
+      ok: true as const,
+      commercialLocked: updated.commercialLocked,
+      commercialLockReason: updated.commercialLockReason ?? null,
+    }
   })
 }

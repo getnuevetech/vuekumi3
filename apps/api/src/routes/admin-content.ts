@@ -28,11 +28,13 @@ export async function adminContentRoutes(app: FastifyInstance) {
   const moderationDecide = { preHandler: requireAdminCapability(app, 'moderation.decide') }
 
   app.get('/admin/content', list, async (request) => {
-    const query = request.query as { q?: string; status?: string; page?: string }
+    const query = request.query as { q?: string; status?: string; page?: string; locked?: string }
     const page = Math.max(1, Number(query.page) || 1)
     const limit = 25
+    const lockedOnly = query.locked === '1' || query.locked === 'true'
     const where = {
       ...(query.status ? { status: query.status as 'draft' | 'pending' | 'active' | 'rejected' | 'delisted' } : {}),
+      ...(lockedOnly ? { commercialLocked: true } : {}),
       ...(query.q
         ? {
             OR: [

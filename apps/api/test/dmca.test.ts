@@ -147,6 +147,7 @@ test('a DMCA notice disputes copyright, freezes licensing, and holds unpaid earn
     include: { rightsRecord: true },
   })
   assert.equal(photo.commercialLocked, true)
+  assert.equal(photo.commercialLockReason, 'dmca_hold')
   assert.equal(photo.rightsRecord?.copyrightStatus, 'disputed')
 
   const held = await prisma.earningsLedger.findMany({ where: { photoId: 'afr-017' } })
@@ -212,6 +213,7 @@ test('a DMCA notice disputes copyright, freezes licensing, and holds unpaid earn
     include: { rightsRecord: true },
   })
   assert.equal(restoredPhoto.commercialLocked, false)
+  assert.equal(restoredPhoto.commercialLockReason, null)
   assert.notEqual(restoredPhoto.rightsRecord?.copyrightStatus, 'verified')
 
   const released = await prisma.earningsLedger.findMany({ where: { photoId: 'afr-017' } })

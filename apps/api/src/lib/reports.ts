@@ -148,6 +148,7 @@ export async function photoHasOpenDmcaHold(photoId: string): Promise<boolean> {
 export function serializeRightsReport(
   report: RightsReport & {
     photo: Pick<Photo, 'id' | 'title' | 'src' | 'storageKey' | 'processingStatus' | 'commercialLocked'> & {
+      commercialLockReason?: string | null
       contributor?: User & { contributorProfile?: { handle: string } | null }
     }
   },
@@ -183,6 +184,7 @@ export function serializeRightsReport(
     reviewedAt: report.reviewedAt?.toISOString() ?? null,
     staffNotes: report.staffNotes,
     commercialLocked: report.photo.commercialLocked,
+    commercialLockReason: report.photo.commercialLockReason ?? null,
     openDmcaHold: opts?.openDmcaHold ?? false,
   }
 }
@@ -193,6 +195,7 @@ export async function applyCommercialLock(input: {
   actorId?: string | null
   notes?: string | null
   holdReason?: EarningsHoldReason
+  lockReason?: string | null
 }): Promise<Photo> {
   const photo = await prisma.photo.update({
     where: { id: input.photoId },
@@ -201,11 +204,13 @@ export async function applyCommercialLock(input: {
           commercialLocked: true,
           commercialLockedAt: new Date(),
           commercialLockedById: input.actorId || null,
+          commercialLockReason: input.lockReason ?? 'staff_quarantine',
         }
       : {
           commercialLocked: false,
           commercialLockedAt: null,
           commercialLockedById: null,
+          commercialLockReason: null,
         },
   })
   if (input.locked) {

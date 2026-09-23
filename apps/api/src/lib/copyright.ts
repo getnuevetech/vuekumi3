@@ -9,9 +9,9 @@ import { COPYRIGHT_AUTHORIZATION_TERMS_VERSION } from '@vuekumi/shared'
 import type { CopyrightAuthorization } from '@prisma/client'
 import { prisma } from './prisma.js'
 import { appendRightsLedgerEvent } from './ledger.js'
-import { holdAvailableEarnings } from './holds.js'
 import { MODEL_INVITE_DAYS, ModelError, appearanceStatusForDecision, syncVerifiedRightsRecord } from './models.js'
 import { syncAiTrainingEligible } from './ai-training.js'
+import { applyCommercialLock } from './reports.js'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
 import { config } from '../config.js'
 import { photographerRightsNoticeEmail, sendEmail } from './email.js'
@@ -189,11 +189,13 @@ export async function applyCopyrightDecision(input: {
   }
 
   if (input.action === 'unauthorized') {
-    await prisma.photo.update({
-      where: { id: row.photoId },
-      data: { commercialLocked: true, commercialLockedAt: new Date() },
+    await applyCommercialLock({
+      photoId: row.photoId,
+      locked: true,
+      actorId: input.actorId,
+      holdReason: 'copyright_dispute',
+      lockReason: 'rights_report',
     })
-    await holdAvailableEarnings({ photoIds: [row.photoId], reason: 'copyright_dispute' })
   }
 
   await syncVerifiedRightsRecord(row.photoId)

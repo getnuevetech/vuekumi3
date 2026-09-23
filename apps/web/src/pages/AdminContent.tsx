@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { PermissionState, RightsLedgerDto } from '@vuekumi/shared'
-import { MODEL_APPEARANCE_LABEL, LIKENESS_CHECK_LABEL } from '@vuekumi/shared'
+import type { CommercialLockReasonCode, PermissionState, RightsLedgerDto } from '@vuekumi/shared'
+import {
+  COMMERCIAL_LOCK_REASON_CODES,
+  COMMERCIAL_LOCK_REASON_LABEL,
+  MODEL_APPEARANCE_LABEL,
+  LIKENESS_CHECK_LABEL,
+} from '@vuekumi/shared'
 import { StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
@@ -19,26 +24,34 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export function AdminContent() {
   const [q, setQ] = useState('')
+  const [lockedOnly, setLockedOnly] = useState(false)
   const [items, setItems] = useState<AdminContentRow[]>([])
   const [total, setTotal] = useState(0)
   const [detail, setDetail] = useState<AdminContentDetail | null>(null)
   const [ledger, setLedger] = useState<RightsLedgerDto | null>(null)
   const [quoteUsd, setQuoteUsd] = useState('')
   const [restrictionNotes, setRestrictionNotes] = useState('')
+  const [lockReason, setLockReason] = useState<CommercialLockReasonCode>('staff_quarantine')
 
   const load = () => {
-    api.adminContent({ q }).then((d) => {
+    api.adminContent({ q, locked: lockedOnly || undefined }).then((d) => {
       setItems(d.items)
       setTotal(d.total)
     }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load'))
   }
 
-  useEffect(() => { load() }, [q])
+  useEffect(() => { load() }, [q, lockedOnly])
 
   const open = (id: string) => {
     api.adminContentDetail(id).then((next) => {
       setDetail(next)
       setRestrictionNotes(next.photo.restrictionNotes ?? '')
+      const existing = next.photo.commercialLockReason
+      if (existing && (COMMERCIAL_LOCK_REASON_CODES as readonly string[]).includes(existing)) {
+        setLockReason(existing as CommercialLockReasonCode)
+      } else {
+        setLockReason('staff_quarantine')
+      }
     }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed'))
     api.adminRightsLedger(id)
       .then((next) => setLedger(next.ledger))
@@ -51,12 +64,23 @@ export function AdminContent() {
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Library & rights.</h1>
       <p className="mt-1 text-sm text-ink-soft">{total} photographs. Click a row for the rights panel.</p>
 
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Search title, country, id…"
-        className="mt-6 w-full max-w-xs rounded-full border border-sand-soft bg-white px-4 py-2 text-sm outline-none focus:border-terra"
-      />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search title, country, id…"
+          className="w-full max-w-xs rounded-full border border-sand-soft bg-white px-4 py-2 text-sm outline-none focus:border-terra"
+        />
+        <label className="flex items-center gap-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+          <input
+            type="checkbox"
+            checked={lockedOnly}
+            onChange={(e) => setLockedOnly(e.target.checked)}
+            className="accent-terra"
+          />
+          Quarantine only
+        </label>
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border border-sand-soft bg-white">
         <table className="w-full min-w-[920px] text-left text-sm">
@@ -100,6 +124,12 @@ export function AdminContent() {
                     <StatusPill status={p.status} />
                     {p.commercialLocked && <StatusPill status="locked" />}
                   </div>
+                  {p.commercialLocked && p.commercialLockReason && (
+                    <p className="mt-1 font-mono-tech text-[10px] text-ink-faint">
+                      {(COMMERCIAL_LOCK_REASON_LABEL as Record<string, string>)[p.commercialLockReason]
+                        ?? p.commercialLockReason}
+                    </p>
+                  )}
                 </td>
               </tr>
             ))}
@@ -140,6 +170,15 @@ export function AdminContent() {
                     ? `Cleared${detail.photo.rights.processVerifiedAt ? ' · process verified' : ''}`
                     : detail.photo.rights?.twoPartyBlocker ?? 'Waiting on photographer and model approval'}
                 </p>
+                {detail.photo.commercialLocked && (
+                  <p>
+                    <span className="text-ink-soft">Quarantine</span>
+                    {' · '}
+                    {(COMMERCIAL_LOCK_REASON_LABEL as Record<string, string>)[detail.photo.commercialLockReason ?? '']
+                      ?? detail.photo.commercialLockReason
+                      ?? 'Frozen'}
+                  </p>
+                )}
               </div>
 
               <div className="mt-4">
@@ -176,6 +215,23 @@ export function AdminContent() {
                 )}
               </div>
 
+              {!detail.photo.commercialLocked && (
+                <div className="mt-4">
+                  <label className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                    Quarantine reason
+                  </label>
+                  <select
+                    value={lockReason}
+                    onChange={(e) => setLockReason(e.target.value as CommercialLockReasonCode)}
+                    className="mt-1 w-full border border-sand bg-white px-3 py-2 text-sm"
+                  >
+                    {COMMERCIAL_LOCK_REASON_CODES.map((code) => (
+                      <option key={code} value={code}>{COMMERCIAL_LOCK_REASON_LABEL[code]}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -195,7 +251,7 @@ export function AdminContent() {
                   type="button"
                   onClick={() => {
                     const locked = !detail.photo.commercialLocked
-                    api.setCommercialLock(detail.photo.id, locked)
+                    api.setCommercialLock(detail.photo.id, locked, locked ? { reason: lockReason } : undefined)
                       .then(() => {
                         toast.success(locked ? 'Licensing frozen' : 'Licensing restored')
                         open(detail.photo.id)

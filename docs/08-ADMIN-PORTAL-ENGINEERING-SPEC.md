@@ -279,6 +279,8 @@ when ACTIVE/SUSPENDED holds `new_license` (historical grants kept).
 **Phase 55:** Playwright covers `/report-content` + `/rights`.
 **Phase 56:** PDS `contributor.upload` mirrors Phase 54 — DENY at
 presign/bin/submit when ACTIVE/SUSPENDED holds `contributor_upload`.
+**Phase 57:** Asset quarantine reason codes on commercial locks; admin content
+`?locked=1` filter; freeze requires a machine-readable reason.
 
 **Next (when approved):** T3 DMCA policy hardening (counsel copy).
 **P1 Rights & revenue** (T5/T6) only after **Dec-PayBase**.

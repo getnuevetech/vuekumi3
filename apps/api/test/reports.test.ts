@@ -12,6 +12,7 @@ import {
   reportQueueWhere,
 } from '../src/lib/reports.js'
 import {
+  commercialLockReasonForReport,
   dmcaTrackBlockedForReason,
   reportIsUrgent,
   reportQueueForReason,
@@ -323,7 +324,12 @@ test('T2 SOP: preserve / notify / escalate update stage; unlock blocked by open 
     }).catch(() => undefined)
     await prisma.photo.update({
       where: { id: 'afr-003' },
-      data: { commercialLocked: false, commercialLockedAt: null, commercialLockedById: null },
+      data: {
+        commercialLocked: false,
+        commercialLockedAt: null,
+        commercialLockedById: null,
+        commercialLockReason: null,
+      },
     }).catch(() => undefined)
     await app.close()
   }
@@ -414,9 +420,10 @@ test('a public report can freeze licensing on a live photograph', async () => {
 
   const queue = await app.inject({ method: 'GET', url: '/api/admin/reports?status=queue', headers: { cookie } })
   assert.equal(queue.statusCode, 200)
-  const items = (queue.json() as { items: { id: string; photoId: string }[] }).items
+  const items = (queue.json() as { items: { id: string; photoId: string; commercialLockReason?: string | null }[] }).items
   const report = items.find((row) => row.photoId === 'afr-011')
   assert.ok(report)
+  assert.equal(report.commercialLockReason, 'likeness_dispute')
 
   const locked = await app.inject({
     method: 'POST',
@@ -425,7 +432,8 @@ test('a public report can freeze licensing on a live photograph', async () => {
     payload: { action: 'lock', notes: 'Temporary commercial freeze for Phase 22 test' },
   })
   assert.equal(locked.statusCode, 200)
-  assert.equal((locked.json() as { report: { commercialLocked: boolean; status: string } }).report.commercialLocked, true)
+  assert.equal((locked.json() as { report: { commercialLocked: boolean; status: string; commercialLockReason?: string | null } }).report.commercialLocked, true)
+  assert.equal((locked.json() as { report: { commercialLockReason?: string | null } }).report.commercialLockReason, 'likeness_dispute')
 
   const licenses = await app.inject({ method: 'GET', url: '/api/photos/afr-011/licenses' })
   const offered = (licenses.json() as { items: { offered: boolean }[] }).items
@@ -438,7 +446,8 @@ test('a public report can freeze licensing on a live photograph', async () => {
     payload: { action: 'unlock', notes: 'Restore after Phase 22 test' },
   })
   assert.equal(unlocked.statusCode, 200)
-  assert.equal((unlocked.json() as { report: { commercialLocked: boolean } }).report.commercialLocked, false)
+  assert.equal((unlocked.json() as { report: { commercialLocked: boolean; commercialLockReason?: string | null } }).report.commercialLocked, false)
+  assert.equal((unlocked.json() as { report: { commercialLockReason?: string | null } }).report.commercialLockReason, null)
 
   await app.inject({
     method: 'POST',
@@ -446,5 +455,80 @@ test('a public report can freeze licensing on a live photograph', async () => {
     headers: { cookie },
     payload: { action: 'dismiss', notes: 'Test cleanup' },
   })
+  await app.close()
+})
+
+test('Phase 57: report reasons map to quarantine codes', () => {
+  assert.equal(commercialLockReasonForReport('safety_urgent'), 'safety_urgent')
+  assert.equal(commercialLockReasonForReport('likeness'), 'likeness_dispute')
+  assert.equal(commercialLockReasonForReport('unauthorized_use'), 'likeness_dispute')
+  assert.equal(commercialLockReasonForReport('fraudulent_release'), 'fraud_review')
+  assert.equal(commercialLockReasonForReport('copyright'), 'rights_report')
+  assert.equal(commercialLockReasonForReport('compensation_dispute'), 'rights_report')
+})
+
+test('Phase 57: staff freeze requires a quarantine reason code', async () => {
+  const app = await buildApp()
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'admin@vuekumi.com', password: 'Admin123!' },
+  })
+  if (login.statusCode !== 200) {
+    await app.close()
+    return
+  }
+  const raw = login.headers['set-cookie']
+  const cookie = (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
+
+  await prisma.photo.update({
+    where: { id: 'afr-012' },
+    data: {
+      commercialLocked: false,
+      commercialLockedAt: null,
+      commercialLockedById: null,
+      commercialLockReason: null,
+    },
+  })
+
+  const missing = await app.inject({
+    method: 'POST',
+    url: '/api/admin/content/afr-012/commercial-lock',
+    headers: { cookie },
+    payload: { locked: true },
+  })
+  assert.equal(missing.statusCode, 400)
+
+  const locked = await app.inject({
+    method: 'POST',
+    url: '/api/admin/content/afr-012/commercial-lock',
+    headers: { cookie },
+    payload: { locked: true, reason: 'staff_quarantine', notes: 'Phase 57 quarantine' },
+  })
+  assert.equal(locked.statusCode, 200, locked.body)
+  const body = locked.json() as { commercialLocked: boolean; commercialLockReason: string | null }
+  assert.equal(body.commercialLocked, true)
+  assert.equal(body.commercialLockReason, 'staff_quarantine')
+
+  const filtered = await app.inject({
+    method: 'GET',
+    url: '/api/admin/content?locked=1',
+    headers: { cookie },
+  })
+  assert.equal(filtered.statusCode, 200)
+  const items = (filtered.json() as { items: { id: string; commercialLocked: boolean; commercialLockReason?: string | null }[] }).items
+  assert.ok(items.every((row) => row.commercialLocked))
+  assert.ok(items.some((row) => row.id === 'afr-012' && row.commercialLockReason === 'staff_quarantine'))
+
+  const unlock = await app.inject({
+    method: 'POST',
+    url: '/api/admin/content/afr-012/commercial-lock',
+    headers: { cookie },
+    payload: { locked: false },
+  })
+  assert.equal(unlock.statusCode, 200)
+  assert.equal((unlock.json() as { commercialLocked: boolean; commercialLockReason: string | null }).commercialLocked, false)
+  assert.equal((unlock.json() as { commercialLockReason: string | null }).commercialLockReason, null)
+
   await app.close()
 })

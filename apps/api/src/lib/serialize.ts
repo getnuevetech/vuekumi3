@@ -328,6 +328,7 @@ export function serializePhoto(
         )
       : undefined,
     commercialLocked: photo.commercialLocked,
+    commercialLockReason: photo.commercialLockReason ?? null,
     appearances: extras?.appearances,
     copyrightAuthorizations: extras?.copyrightAuthorizations,
   }
