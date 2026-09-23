@@ -491,10 +491,8 @@ depends on a human decision (Dec-Bio) outside this plan's control.
 
 ## 14. Immediate next action (human)
 
-Phase 58, 59, and 61 are shipped, with one correction in front of them:
-detection fails open when vision is missing or errors, and Phase 61 can then
-auto-publish. That fix is **Phase 64** in
-[`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md).
+Phase 58, 59, and 61 are shipped. **Phase 64** (detection fails closed) is
+shipped — see [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md).
 Record the image-remediation scope call from §6 in `06` before Phase 62.
 Phase 63 can follow 64 without that note. No action on Phase 60 until
 Dec-Bio is signed.

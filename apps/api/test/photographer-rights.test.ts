@@ -74,11 +74,26 @@ test('professional photographers enter commercial inventory; community contribut
   })
   assert.equal(landscape.statusCode, 200)
   const landscapePhoto = (landscape.json() as {
-    photo: { rights?: { copyrightStatus?: string; modelConsentStatus?: string; commercialEligible?: boolean } }
+    photo: {
+      status?: string
+      hasRecognizablePeople?: boolean
+      permissionState?: string
+      rights?: {
+        copyrightStatus?: string
+        modelConsentStatus?: string
+        commercialEligible?: boolean
+        screeningKind?: string | null
+      }
+    }
   }).photo
   assert.equal(landscapePhoto.rights?.copyrightStatus, 'claimed')
-  assert.equal(landscapePhoto.rights?.modelConsentStatus, 'not_required')
-  assert.equal(landscapePhoto.rights?.commercialEligible, true)
+  // Phase 64 — no vision provider in CI. A failed read is uncertain, not "no person".
+  assert.equal(landscapePhoto.rights?.screeningKind, 'uncertain_human_detection')
+  assert.equal(landscapePhoto.hasRecognizablePeople, true)
+  assert.equal(landscapePhoto.rights?.modelConsentStatus, 'required')
+  assert.equal(landscapePhoto.rights?.commercialEligible, false)
+  assert.equal(landscapePhoto.permissionState, 'editorial')
+  assert.equal(landscapePhoto.status, 'pending')
 
   await app.close()
 })

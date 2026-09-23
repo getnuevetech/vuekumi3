@@ -174,7 +174,14 @@ test('registration: disposable email keeps a photographer pending and blocks upl
       },
     })
     assert.equal(uploaded.statusCode, 200, uploaded.body)
-    assert.equal((uploaded.json() as { photo: { status: string } }).photo.status, 'active')
+    const uploadedPhoto = (uploaded.json() as {
+      photo: { status: string; hasRecognizablePeople: boolean; rights?: { screeningKind?: string | null; commercialEligible?: boolean } }
+    }).photo
+    // Phase 64 — CI has no vision provider, so this landscape upload stays pending.
+    assert.equal(uploadedPhoto.rights?.screeningKind, 'uncertain_human_detection')
+    assert.equal(uploadedPhoto.hasRecognizablePeople, true)
+    assert.equal(uploadedPhoto.rights?.commercialEligible, false)
+    assert.equal(uploadedPhoto.status, 'pending')
   } finally {
     await app.close()
   }

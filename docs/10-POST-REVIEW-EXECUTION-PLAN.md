@@ -66,32 +66,33 @@ review — but only when screening actually sets those flags.
 
 ---
 
-## 3. Defect that makes shipped detection unsafe
+## 3. Defect that made detection unsafe — closed by Phase 64
 
-`screenImageForRights` catches every provider error and returns
-`heuristicPeopleScreen`. With no vision key, development returns that
-heuristic directly. The heuristic marks a person only for categories People,
-Fashion, and Culture, or for a few words in the title. It sets
-`uncertainHumanDetection` to false.
+`screenImageForRights` used to catch every provider error and return
+`heuristicPeopleScreen`. With no vision key, development returned that
+heuristic directly. The heuristic marked a person only for categories People,
+Fashion, and Culture, or for a few words in the title, and set
+`uncertainHumanDetection` to false. Phase 61 could then auto-publish.
 
-Phase 61 then auto-publishes a pending photo when metadata and size pass and
-those three safety flags are false. A self-created copyright at `claimed` is
-enough for commercial eligibility when likeness is `not_required`. A portrait
-filed as Landscape, with “people” unchecked, and with vision missing or
-failing, can enter the stock catalog as commercially eligible. The two-approval
-lock never runs, because the system recorded that nobody is in the frame.
-
-Until this is fixed on a host, turn `moderation.ai_auto_approve_content` off
-in Admin → Settings.
+Phase 64 writes `uncertain_human_detection` instead. Likeness stays required
+and auto-approve stays off until a vision call succeeds and reports no person.
+Hosts that have not deployed Phase 64 should keep
+`moderation.ai_auto_approve_content` false.
 
 ---
 
 ## 4. Build sequence (approve one slice at a time)
 
-### Phase 64 — Detection fails closed
+### Phase 64 — Detection fails closed — **shipped**
 
-**Approve this first.** It is a correction of Phases 59 and 61, not a new
-product and not a second invite pipeline.
+Correction of Phases 59 and 61. `visionUnavailableScreen` writes
+`uncertain_human_detection` when the image-analysis provider is missing or
+the vision call fails. A keyword hint may still raise `possibleMinor`. It
+cannot return `no_recognizable_person`. A successful vision read is trusted.
+Auto-approve and commercial eligibility then stay locked through the existing
+people flag. No second invite pipeline.
+
+Original scope, for reference:
 
 - If the `image_analysis` provider is missing, times out, returns invalid
   JSON, or is the dev no-op, write `uncertain_human_detection`. Record that
@@ -196,6 +197,7 @@ host until Phase 64 is deployed.
 
 ## 7. Immediate decision
 
-Approve **Phase 64** alone. Record the Phase 62 remediation option when you
-want enhancement work. Leave Phase 60 and T5/T6 untouched until Dec-Bio and
-Dec-PayBase are signed in `06`.
+Phase 64 is shipped. Next build is **Phase 65** (model-upload prompt parity).
+Record the Phase 62 remediation option (default A, quarantine only) when that
+phase starts. Leave Phase 60 and T5/T6 untouched until Dec-Bio and Dec-PayBase
+are signed in `06`.

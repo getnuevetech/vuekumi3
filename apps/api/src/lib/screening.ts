@@ -14,6 +14,35 @@ function kindFromCount(count: number | null, crowd: boolean, uncertain: boolean)
   return 'uncertain_human_detection'
 }
 
+/**
+ * Phase 64 — a missing or failed vision read is never "no person".
+ * Keyword hints may still raise a minor or crowd flag. They cannot clear anyone.
+ */
+export function visionUnavailableScreen(
+  input: {
+    title?: string | null
+    category?: string | null
+    filename?: string | null
+    declaredPeople?: boolean
+  },
+  reason: string,
+): RightsScreeningDto {
+  const hint = heuristicPeopleScreen(input)
+  const detail = reason.replace(/\s+/g, ' ').trim().slice(0, 180) || 'vision unavailable'
+  return {
+    kind: 'uncertain_human_detection',
+    recognizablePersonCount: hint.kind === 'no_recognizable_person' ? null : hint.recognizablePersonCount,
+    possibleMinor: hint.possibleMinor,
+    crowdBackground: hint.crowdBackground,
+    selfPortraitLikely: hint.selfPortraitLikely,
+    potentiallySensitive: false,
+    uncertainHumanDetection: true,
+    notes: `Person detection did not complete (${detail}). Treated as uncertain — a keyword hint is not clearance. VueKumi does not identify who appears and does not capture face geometry.`.slice(0, 500),
+    provider: 'dev',
+    biometricUsed: false,
+  }
+}
+
 export function heuristicPeopleScreen(input: {
   title?: string | null
   category?: string | null
@@ -136,6 +165,13 @@ Context: ${context}`,
   } catch {
     throw new AiError('OpenAI returned invalid JSON', 502)
   }
+  if (
+    parsed.kind == null
+    && typeof parsed.recognizablePersonCount !== 'number'
+    && parsed.uncertainHumanDetection !== true
+  ) {
+    throw new AiError('OpenAI returned no person-detection result', 502)
+  }
   return normalizeScreening(parsed, fallback)
 }
 
@@ -146,10 +182,11 @@ export async function screenImageForRights(input: {
   declaredPeople?: boolean
   image?: Buffer | null
 }): Promise<RightsScreeningDto> {
-  const fallback = heuristicPeopleScreen(input)
   try {
     const provider = await resolveProvider('image_analysis')
-    if (provider.kind === 'dev') return fallback
+    if (provider.kind === 'dev') {
+      return visionUnavailableScreen(input, 'no image-analysis provider configured')
+    }
     const jpeg = input.image ? await resizeForVision(input.image) : undefined
     return await callOpenAiPeopleScreen(
       provider,
@@ -160,8 +197,9 @@ export async function screenImageForRights(input: {
       }),
       jpeg,
     )
-  } catch {
-    return fallback
+  } catch (err) {
+    const reason = err instanceof Error && err.message ? err.message : 'vision request failed'
+    return visionUnavailableScreen(input, reason)
   }
 }
 

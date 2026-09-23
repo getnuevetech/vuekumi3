@@ -5,7 +5,8 @@ Read in this order:
 0. **[10-POST-REVIEW-EXECUTION-PLAN.md](./10-POST-REVIEW-EXECUTION-PLAN.md)** — current
    backlog after the 23 September 2026 review. Reconciles the Trust & Markets memo,
    the admin-portal spec, and the AI-pipeline request with Phases 49–61. Next build,
-   if approved, is Phase 64 (detection fails closed). Do not restart T1 or P0.
+   if approved, is Phase 65 (model-upload prompt parity). Phase 64 (detection fails
+   closed) is shipped on this branch. Do not restart T1 or P0.
 1. **[03-PRODUCT-AND-RIGHTS.md](./03-PRODUCT-AND-RIGHTS.md)** — recovered May 2026 concept
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.

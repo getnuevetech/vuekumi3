@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { applyScreeningToPeopleFlag } from '@vuekumi/shared'
 import { heuristicSuggest, resolveProvider } from '../src/lib/ai.js'
+import { visionUnavailableScreen } from '../src/lib/screening.js'
 import { prisma } from '../src/lib/prisma.js'
 import { encryptSecret } from '../src/lib/settings.js'
 
@@ -71,6 +73,25 @@ test('resolveProvider: falls back to the legacy global key when no purpose row i
 test('resolveProvider: dev mode when nothing is configured', async () => {
   const resolved = await resolveProvider('image_remediation')
   assert.equal(resolved.kind, 'dev')
+})
+
+test('Phase 64: vision unavailable is uncertain and cannot clear a person', () => {
+  const landscape = visionUnavailableScreen(
+    { title: 'Sunset over Lagos', category: 'Landscape', declaredPeople: false },
+    'no image-analysis provider configured',
+  )
+  assert.equal(landscape.kind, 'uncertain_human_detection')
+  assert.equal(landscape.uncertainHumanDetection, true)
+  assert.equal(landscape.provider, 'dev')
+  assert.equal(applyScreeningToPeopleFlag({ declaredPeople: false, screening: landscape }), true)
+
+  const child = visionUnavailableScreen(
+    { title: 'Child on the beach', category: 'Landscape' },
+    'timeout',
+  )
+  assert.equal(child.possibleMinor, true)
+  assert.equal(child.kind, 'uncertain_human_detection')
+  assert.notEqual(child.kind, 'no_recognizable_person')
 })
 
 test('heuristic suggestion never auto-applies and flags people categories', () => {
