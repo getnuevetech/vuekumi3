@@ -20,6 +20,7 @@ export function ModelPhotoEdit() {
   const [personName, setPersonName] = useState('')
   const [personEmail, setPersonEmail] = useState('')
   const [personMobile, setPersonMobile] = useState('')
+  const [confirmBusy, setConfirmBusy] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -144,6 +145,42 @@ export function ModelPhotoEdit() {
               <input required value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="Mobile" className="w-full rounded-xl border border-sand-soft px-3 py-2 text-sm" />
               <button disabled={busy} className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper disabled:opacity-50">Send rights-clearance notice</button>
             </form>
+          )}
+          {photo.hasRecognizablePeople && photo.rights?.modelConsentStatus !== 'approved' && (
+            <div className="space-y-3 rounded-xl bg-cream p-4">
+              <p className="text-sm font-medium">Likeness clearance on hold</p>
+              <p className="text-sm text-ink-soft">
+                Vuekumi's automated review couldn't confirm this photograph shows only you. Your own consent
+                doesn't cover anyone else who may appear. Commercial licensing stays on hold until this is
+                resolved.
+              </p>
+              {(photo.appearances ?? []).filter((a) => !a.selfShot).map((a) => (
+                <p key={a.id} className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                  {a.displayName} · {a.consentStatus}
+                </p>
+              ))}
+              <button
+                disabled={confirmBusy}
+                onClick={async () => {
+                  setConfirmBusy(true)
+                  try {
+                    const result = await api.confirmModelPhotoSelfOnly(id)
+                    setPhoto(result.photo)
+                    toast.success('Confirmed — only you are in this photograph')
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Could not confirm')
+                  } finally {
+                    setConfirmBusy(false)
+                  }
+                }}
+                className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper disabled:opacity-50"
+              >
+                It's only me in this photo
+              </button>
+              <p className="text-sm text-ink-soft">
+                If someone else is in this photo, use the likeness authorization form above to invite them.
+              </p>
+            </div>
           )}
         </div>
         <aside className="h-fit rounded-2xl bg-cream p-6 text-sm text-ink-soft">

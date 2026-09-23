@@ -755,6 +755,12 @@ export const api = {
   updateModelPhoto: (id: string, body: UpdatePhotoInput) =>
     request<{ photo: PhotoDto }>(`/api/model/photos/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
+  confirmModelPhotoSelfOnly: (photoId: string) =>
+    request<{ photo: PhotoDto }>(`/api/model/photos/${photoId}/appearances/confirm-self`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
   identifyCopyrightHolder: (photoId: string, body: import('@vuekumi/shared').IdentifyCopyrightHolderInput) =>
     request<{ authorization: import('@vuekumi/shared').CopyrightAuthorizationDto; joinUrl: string }>(
       `/api/model/photos/${photoId}/copyright-holder`,
