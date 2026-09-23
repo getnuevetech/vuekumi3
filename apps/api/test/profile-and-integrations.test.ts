@@ -175,3 +175,116 @@ test('gateway and AI lists survive a bad secret and duplicate slugs are not a 50
     await app.close()
   }
 })
+
+test('settings hides gateway and AI keys, and those pages show a legacy key without returning it', async () => {
+  const app = await buildApp()
+  const admin = await login(app, 'admin@vuekumi.com', 'Admin123!')
+  const stripe = await prisma.paymentGateway.findUnique({ where: { slug: 'stripe' } })
+  const openai = await prisma.aiProvider.findUnique({ where: { slug: 'openai' } })
+  assert.ok(stripe)
+  assert.ok(openai)
+  const previousGateway = {
+    configEnc: stripe.configEnc,
+    webhookSecretEnc: stripe.webhookSecretEnc,
+    publicKey: stripe.publicKey,
+  }
+  const previousAi = { apiKeyEnc: openai.apiKeyEnc, modelName: openai.modelName }
+  const settingKeys = ['payments.stripe.secret_key', 'payments.stripe.publishable_key', 'ai.openai_api_key', 'ai.openai_model']
+  const previousSettings = await prisma.platformSetting.findMany({ where: { key: { in: settingKeys } } })
+
+  await prisma.paymentGateway.update({
+    where: { id: stripe.id },
+    data: { configEnc: null, webhookSecretEnc: null, publicKey: null },
+  })
+  await prisma.aiProvider.update({
+    where: { id: openai.id },
+    data: { apiKeyEnc: null, modelName: null },
+  })
+  await prisma.platformSetting.deleteMany({ where: { key: { in: settingKeys } } })
+  await prisma.platformSetting.createMany({
+    data: [
+      { key: 'payments.stripe.secret_key', value: encryptSecret('sk_test_legacysettingskey'), secret: true, label: 'Stripe secret key', group: 'Payments — Stripe' },
+      { key: 'payments.stripe.publishable_key', value: 'pk_test_legacysettings', secret: false, label: 'Stripe publishable key', group: 'Payments — Stripe' },
+      { key: 'ai.openai_api_key', value: encryptSecret('sk-legacy-openai-key'), secret: true, label: 'OpenAI API key', group: 'AI' },
+      { key: 'ai.openai_model', value: 'gpt-4o-mini', secret: false, label: 'OpenAI vision model', group: 'AI' },
+    ],
+  })
+
+  try {
+    const settings = await app.inject({ method: 'GET', url: '/api/admin/settings', headers: { cookie: admin } })
+    assert.equal(settings.statusCode, 200, settings.body)
+    const keys = (settings.json() as { settings: { key: string }[] }).settings.map((row) => row.key)
+    assert.equal(keys.includes('payments.stripe.secret_key'), false)
+    assert.equal(keys.includes('payments.flutterwave.secret_key'), false)
+    assert.equal(keys.includes('ai.openai_api_key'), false)
+    assert.equal(keys.includes('ai.replicate_api_token'), false)
+    assert.equal(keys.includes('payments.contributor_share'), true)
+    assert.equal(keys.includes('email.resend_api_key'), true)
+
+    const gateways = await app.inject({ method: 'GET', url: '/api/admin/gateways', headers: { cookie: admin } })
+    assert.equal(gateways.statusCode, 200, gateways.body)
+    const stripeRow = (gateways.json() as { gateways: Array<Record<string, unknown>> }).gateways.find((row) => row.slug === 'stripe')
+    assert.equal(stripeRow?.secretSource, 'settings')
+    assert.equal(stripeRow?.hasSecret, true)
+    assert.match(String(stripeRow?.secretMasked), /skey/)
+    assert.equal(stripeRow?.publicKey, 'pk_test_legacysettings')
+    assert.equal(JSON.stringify(gateways.json()).includes('sk_test_legacysettingskey'), false)
+
+    const providers = await app.inject({ method: 'GET', url: '/api/admin/ai-providers', headers: { cookie: admin } })
+    const openaiRow = (providers.json() as { providers: Array<Record<string, unknown>> }).providers.find((row) => row.slug === 'openai')
+    assert.equal(openaiRow?.keySource, 'settings')
+    assert.equal(openaiRow?.model, 'gpt-4o-mini')
+    assert.equal(openaiRow?.modelSource, 'settings')
+    assert.equal(JSON.stringify(providers.json()).includes('sk-legacy-openai-key'), false)
+
+    const rejected = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/gateways/${stripe.id}`,
+      headers: { cookie: admin },
+      payload: { secretKey: 'pk_test_not_a_secret' },
+    })
+    assert.equal(rejected.statusCode, 400, rejected.body)
+    assert.match(rejected.json().error as string, /publishable key/)
+
+    const saved = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/gateways/${stripe.id}`,
+      headers: { cookie: admin },
+      payload: { secretKey: 'sk_test_moved_to_gateway', webhookSecret: 'whsec_moved', publicKey: 'pk_test_on_gateway', name: 'Stripe' },
+    })
+    assert.equal(saved.statusCode, 200, saved.body)
+    const savedGateway = saved.json() as { gateway: { secretSource: string; webhookSource: string; secretMasked: string; publicKeySource: string } }
+    assert.equal(savedGateway.gateway.secretSource, 'gateway')
+    assert.equal(savedGateway.gateway.webhookSource, 'gateway')
+    assert.equal(savedGateway.gateway.publicKeySource, 'gateway')
+    assert.match(savedGateway.gateway.secretMasked, /eway/)
+
+    const savedAi = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/ai-providers/${openai.id}`,
+      headers: { cookie: admin },
+      payload: { model: 'gpt-4.1-mini', apiKey: 'sk-moved-onto-provider' },
+    })
+    assert.equal(savedAi.statusCode, 200, savedAi.body)
+    const savedProvider = savedAi.json() as { provider: { model: string; modelSource: string; keySource: string } }
+    assert.equal(savedProvider.provider.model, 'gpt-4.1-mini')
+    assert.equal(savedProvider.provider.modelSource, 'provider')
+    assert.equal(savedProvider.provider.keySource, 'provider')
+  } finally {
+    await prisma.paymentGateway.update({ where: { id: stripe.id }, data: previousGateway })
+    await prisma.aiProvider.update({ where: { id: openai.id }, data: previousAi })
+    await prisma.platformSetting.deleteMany({ where: { key: { in: settingKeys } } })
+    if (previousSettings.length) {
+      await prisma.platformSetting.createMany({
+        data: previousSettings.map((row) => ({
+          key: row.key,
+          value: row.value,
+          secret: row.secret,
+          label: row.label,
+          group: row.group,
+        })),
+      })
+    }
+    await app.close()
+  }
+})

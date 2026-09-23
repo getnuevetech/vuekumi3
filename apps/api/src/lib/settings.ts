@@ -57,6 +57,19 @@ export interface SettingDefinition {
   envFallback?: string
 }
 
+/** These credentials are edited on Admin → Gateways and Admin → AI, not Settings. */
+export const GATEWAY_AND_AI_SETTING_KEYS = new Set([
+  'payments.stripe.secret_key',
+  'payments.stripe.publishable_key',
+  'payments.stripe.webhook_secret',
+  'payments.flutterwave.secret_key',
+  'payments.flutterwave.public_key',
+  'payments.flutterwave.secret_hash',
+  'ai.openai_api_key',
+  'ai.openai_model',
+  'ai.replicate_api_token',
+])
+
 export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'payments.stripe.secret_key', label: 'Stripe secret key', group: 'Payments — Stripe', secret: true, envFallback: 'STRIPE_SECRET_KEY' },
   { key: 'payments.stripe.publishable_key', label: 'Stripe publishable key', group: 'Payments — Stripe', secret: false },
@@ -166,7 +179,7 @@ export async function listSettingsForAdmin() {
   const rows = await prisma.platformSetting.findMany()
   const byKey = new Map(rows.map((r) => [r.key, r]))
 
-  return SETTING_DEFINITIONS.map((def) => {
+  return SETTING_DEFINITIONS.filter((def) => !GATEWAY_AND_AI_SETTING_KEYS.has(def.key)).map((def) => {
     const row = byKey.get(def.key)
     let configured = false
     let displayValue = ''

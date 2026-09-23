@@ -6,10 +6,10 @@ import { prisma } from './prisma.js'
 export type CheckoutProvider = 'stripe' | 'flutterwave' | 'dev'
 
 export const STRIPE_NOT_CONFIGURED =
-  'Stripe is not configured. In Admin → Settings, paste the Stripe secret key (sk_… or rk_…) and save. A publishable key cannot start checkout.'
+  'Stripe is not configured. In Admin → Gateways, open Stripe and paste the secret key (sk_… or rk_…). A publishable key cannot start checkout.'
 
 export const PAYMENTS_NOT_CONFIGURED =
-  'Payments are not configured. In Admin → Settings, paste the Stripe secret key (sk_… or rk_…) and save. A publishable key cannot start checkout.'
+  'Payments are not configured. In Admin → Gateways, open Stripe and paste the secret key (sk_… or rk_…). A publishable key cannot start checkout.'
 
 const FLUTTERWAVE_CURRENCIES = new Set([
   'NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'TZS', 'RWF', 'USD', 'EUR', 'GBP', 'XOF', 'XAF',
@@ -38,10 +38,10 @@ export function stripeSecretProblem(value: string | null | undefined): string | 
   const secret = normalizeSecret(value)
   if (!secret) return null
   if (secret.startsWith('pk_')) {
-    return 'The Stripe secret field has a publishable key (pk_…). Paste the secret key (sk_… or rk_…) into Stripe secret key.'
+    return 'That is a Stripe publishable key (pk_…). Paste the secret key (sk_… or rk_…) into the Stripe secret key on Admin → Gateways.'
   }
   if (secret.startsWith('whsec_')) {
-    return 'The Stripe secret field has a webhook secret (whsec_…). Paste that into Stripe webhook secret, and put the secret key (sk_… or rk_…) into Stripe secret key.'
+    return 'That is a Stripe webhook secret (whsec_…). Paste it into the Stripe webhook field, and put the secret key (sk_… or rk_…) into the secret key field.'
   }
   return null
 }
@@ -53,42 +53,40 @@ function gatewayMatches(row: { slug: string; name: string }, provider: 'stripe' 
   return slug === 'flutterwave' || slug.startsWith('flutterwave-') || name === 'flutterwave'
 }
 
-async function gatewaySecret(provider: 'stripe' | 'flutterwave'): Promise<string> {
-  const rows = await prisma.paymentGateway.findMany({
-    where: { enabled: true, kind: { in: ['checkout', 'both'] }, configEnc: { not: null } },
-  })
-  const matches = rows
-    .filter((row) => gatewayMatches(row, provider))
-    .sort((a, b) => Number(b.slug.toLowerCase() === provider) - Number(a.slug.toLowerCase() === provider))
-  for (const row of matches) {
-    if (!row.configEnc) continue
-    try {
-      const plain = normalizeSecret(decryptSecret(row.configEnc))
-      if (plain) return plain
-    } catch {
-      // Ciphertext from a different settings key cannot be used.
-    }
+function readEncrypted(stored: string | null | undefined): string {
+  if (!stored) return ''
+  try {
+    return normalizeSecret(decryptSecret(stored))
+  } catch {
+    return ''
   }
-  return ''
+}
+
+async function checkoutGateway(provider: 'stripe' | 'flutterwave') {
+  const rows = await prisma.paymentGateway.findMany({
+    where: { enabled: true, kind: { in: ['checkout', 'both'] } },
+  })
+  return rows
+    .filter((row) => gatewayMatches(row, provider))
+    .sort((a, b) => Number(b.slug.toLowerCase() === provider) - Number(a.slug.toLowerCase() === provider))[0] ?? null
 }
 
 export async function paymentSecrets() {
-  let stripeSecret = normalizeSecret(await getSetting('payments.stripe.secret_key'))
-  let flutterwaveSecret = normalizeSecret(await getSetting('payments.flutterwave.secret_key'))
-  if (!usableStripeSecret(stripeSecret)) {
-    const fromGateway = await gatewaySecret('stripe')
-    if (fromGateway) stripeSecret = fromGateway
-  }
-  if (!flutterwaveSecret) {
-    const fromGateway = await gatewaySecret('flutterwave')
-    if (fromGateway) flutterwaveSecret = fromGateway
-  }
+  const stripeGateway = await checkoutGateway('stripe')
+  const flutterwaveGateway = await checkoutGateway('flutterwave')
+  const gatewayStripe = readEncrypted(stripeGateway?.configEnc)
+  const settingsStripe = normalizeSecret(await getSetting('payments.stripe.secret_key'))
+  const gatewayFlutterwave = readEncrypted(flutterwaveGateway?.configEnc)
+  const settingsFlutterwave = normalizeSecret(await getSetting('payments.flutterwave.secret_key'))
   return {
-    stripeSecret,
-    stripeWebhook: normalizeSecret(await getSetting('payments.stripe.webhook_secret')),
-    flutterwaveSecret,
-    flutterwavePublic: normalizeSecret(await getSetting('payments.flutterwave.public_key')),
-    flutterwaveHash: normalizeSecret(await getSetting('payments.flutterwave.secret_hash')),
+    stripeSecret: usableStripeSecret(gatewayStripe) || settingsStripe,
+    stripeWebhook: readEncrypted(stripeGateway?.webhookSecretEnc)
+      || normalizeSecret(await getSetting('payments.stripe.webhook_secret')),
+    flutterwaveSecret: gatewayFlutterwave || settingsFlutterwave,
+    flutterwavePublic: normalizeSecret(flutterwaveGateway?.publicKey)
+      || normalizeSecret(await getSetting('payments.flutterwave.public_key')),
+    flutterwaveHash: readEncrypted(flutterwaveGateway?.webhookSecretEnc)
+      || normalizeSecret(await getSetting('payments.flutterwave.secret_hash')),
   }
 }
 
@@ -145,7 +143,7 @@ export function chooseProvider(input: {
   if (input.requested === 'flutterwave' && input.flutterwave) return 'flutterwave'
   if (input.requested === 'stripe' && !input.stripe) throw new PaymentError(STRIPE_NOT_CONFIGURED, 400)
   if (input.requested === 'flutterwave' && !input.flutterwave) {
-    throw new PaymentError('Flutterwave is not configured. Add the Flutterwave secret key in Admin → Settings.', 400)
+    throw new PaymentError('Flutterwave is not configured. Open Flutterwave on Admin → Gateways and paste the secret key.', 400)
   }
   if (input.africanBuyer && input.flutterwave) return 'flutterwave'
   if (input.stripe) return 'stripe'

@@ -1597,9 +1597,10 @@ model PaymentGateway {
   kind        String
   countries   String[]
   currencies  String[]
-  configEnc   String?
-  publicKey   String?
-  notes       String?
+  configEnc        String?
+  publicKey        String?
+  webhookSecretEnc String?
+  notes            String?
   enabled     Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1618,6 +1619,7 @@ model AiProvider {
   priority   Int      @default(0)
   apiBaseUrl String?
   apiKeyEnc  String?
+  modelName  String?
   notes      String?
   enabled    Boolean  @default(true)
   createdAt  DateTime @default(now())

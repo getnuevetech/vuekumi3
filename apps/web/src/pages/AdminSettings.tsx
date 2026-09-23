@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { api, ApiError } from '../api/client'
 import { AdminShell } from './Admin'
@@ -16,7 +17,7 @@ interface SettingRow {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <AdminShell subtitle="Platform configuration — API keys live here, not in server env files.">
+    <AdminShell subtitle="Email, storage, sign-in, and operations. Payment and AI keys live on their own pages.">
       {children}
     </AdminShell>
   )
@@ -56,10 +57,12 @@ export function AdminSettings() {
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Settings</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Integrations.</h1>
+      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Platform settings.</h1>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
-        Payment, email, AI, storage, Google sign-in, and Sentry keys live here — not in server env files.
-        Leave a secret field blank to keep the current value. Google redirect URI is
+        Email, storage, Google sign-in, Sentry, DMCA, payouts, contributor share, and country policy live here.
+        Payment keys are on <Link to="/admin/gateways" className="text-terra underline">Gateways</Link>.
+        AI keys and models are on <Link to="/admin/ai" className="text-terra underline">AI APIs</Link>.
+        Leave a secret field blank to keep the current value. Google redirect URI is{' '}
         <code className="font-mono-tech text-[11px]">{`${window.location.origin}/api/auth/oauth/google/callback`}</code>.
       </p>
 
@@ -82,12 +85,7 @@ export function AdminSettings() {
                 })
                 .filter((s) => s.value.trim().length > 0)
               if (payload.length === 0) {
-                const stripe = rows.find((r) => r.key === 'payments.stripe.secret_key')
-                toast.error(
-                  stripe && !stripe.configured
-                    ? 'Nothing was saved. Paste the Stripe secret key (sk_…) into Stripe secret key, then save again.'
-                    : 'Nothing new to save. Leave a secret blank to keep the current value.',
-                )
+                toast.error('Nothing new to save. Leave a secret blank to keep the current value.')
                 return
               }
               const data = await api.updateAdminSettings(payload)
@@ -114,12 +112,6 @@ export function AdminSettings() {
           {groups.map(([group, items]) => (
             <section key={group} className="rounded-2xl border border-sand-soft bg-white p-6">
               <h2 className="font-serif-display text-xl font-light">{group}</h2>
-              {group === 'Payments — Stripe' && (
-                <p className="mt-2 text-sm text-ink-soft">
-                  Checkout uses the secret key (sk_… or rk_…). Saving only the publishable key leaves plan selection unable to start a payment.
-                  Leave a secret blank to keep the current value.
-                </p>
-              )}
               {group === 'Email' && (
                 <p className="mt-2 text-sm text-ink-soft">
                   Verification, password reset, and agency invites send through Resend once the API key is saved.

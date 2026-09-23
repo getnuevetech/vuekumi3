@@ -1213,11 +1213,18 @@ export interface PaymentGateway {
   countries: string[]
   currencies: string[]
   publicKey: string | null
+  publicKeySource?: 'gateway' | 'settings' | null
   notes: string | null
   enabled: boolean
+  updatedAt?: string
   hasSecret: boolean
   secretReadable?: boolean
   secretMasked?: string
+  secretSource?: 'gateway' | 'settings' | null
+  hasWebhook?: boolean
+  webhookReadable?: boolean
+  webhookMasked?: string
+  webhookSource?: 'gateway' | 'settings' | null
 }
 
 export interface AiProvider {
@@ -1227,11 +1234,15 @@ export interface AiProvider {
   purpose: string
   priority: number
   apiBaseUrl: string | null
+  model?: string | null
+  modelSource?: 'provider' | 'settings' | null
   notes: string | null
   enabled: boolean
+  updatedAt?: string
   hasKey: boolean
   keyReadable?: boolean
   keyMasked?: string
+  keySource?: 'provider' | 'settings' | null
 }
 
 export { AI_PROVIDER_PURPOSES, AI_PROVIDER_PURPOSE_LABELS, type AiProviderPurpose }

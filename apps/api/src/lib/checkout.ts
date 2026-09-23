@@ -17,7 +17,7 @@ export function paymentErrorFromStripe(err: unknown): PaymentError {
   const redacted = raw.replace(/\b(?:sk|rk|pk)_(?:test|live)_[A-Za-z0-9]+/g, '…').slice(0, 240)
   if (status === 401 || type === 'StripeAuthenticationError') {
     return new PaymentError(
-      'Stripe rejected the API key. In Admin → Settings, paste the secret key (sk_… or rk_…), not the publishable key.',
+      'Stripe rejected the API key. In Admin → Gateways, open Stripe and paste the secret key (sk_… or rk_…), not the publishable key.',
       400,
     )
   }
@@ -101,7 +101,7 @@ export async function openGatewayCheckout(input: {
   try {
     json = (await res.json()) as { status?: string; data?: { link?: string }; message?: string }
   } catch {
-    throw new PaymentError('Flutterwave did not return a checkout link. Check the Flutterwave secret key in Admin → Settings.', 502)
+    throw new PaymentError('Flutterwave did not return a checkout link. Check the Flutterwave secret key on Admin → Gateways.', 502)
   }
   if (!res.ok || !json.data?.link) {
     throw new PaymentError(json.message ?? 'Flutterwave checkout failed', 502)

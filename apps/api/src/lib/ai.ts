@@ -38,7 +38,7 @@ export type ResolvedProvider =
  * phase keep working unchanged for every purpose, then dev/no-op.
  */
 export async function resolveProvider(purpose: AiProviderPurpose): Promise<ResolvedProvider> {
-  const model = (await getSetting('ai.openai_model')) || 'gpt-4o-mini'
+  const fallbackModel = (await getSetting('ai.openai_model')) || 'gpt-4o-mini'
 
   const rows = await prisma.aiProvider.findMany({
     where: { purpose, enabled: true, apiKeyEnc: { not: null } },
@@ -53,7 +53,7 @@ export async function resolveProvider(purpose: AiProviderPurpose): Promise<Resol
         kind: 'openai' as const,
         key,
         base: (row.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
-        model,
+        model: row.modelName?.trim() || fallbackModel,
         providerId: row.id,
         providerName: row.name,
       }
@@ -68,7 +68,7 @@ export async function resolveProvider(purpose: AiProviderPurpose): Promise<Resol
       kind: 'openai',
       key: legacyKey,
       base: 'https://api.openai.com/v1',
-      model,
+      model: fallbackModel,
       providerId: null,
       providerName: 'ai.openai_api_key setting',
     }
@@ -85,7 +85,7 @@ export async function resolveProvider(purpose: AiProviderPurpose): Promise<Resol
           kind: 'openai' as const,
           key,
           base: (legacyRow.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
-          model,
+          model: legacyRow.modelName?.trim() || fallbackModel,
           providerId: legacyRow.id,
           providerName: legacyRow.name,
         }
@@ -96,7 +96,7 @@ export async function resolveProvider(purpose: AiProviderPurpose): Promise<Resol
   }
 
   if (config.isDev) return { kind: 'dev' }
-  throw new AiError(`Add an AI provider for "${purpose}" in Admin Settings to run this feature.`, 503)
+  throw new AiError(`Add an AI provider for "${purpose}" on Admin → AI.`, 503)
 }
 
 export { AI_PROVIDER_PURPOSES }
