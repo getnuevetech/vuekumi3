@@ -129,6 +129,14 @@ photo editor can send the existing appearance invite. An unsettled detection
 does not treat a self-likeness checkbox as clearance of everyone in the frame.
 Photographer contact for third-party copyright stays on the same editor.
 
+Hardened after review: the settled/unsettled check is now an allowlist
+(auto-clear only on `no_recognizable_person` or `one_recognizable_person`)
+rather than a blocklist, so `crowd_background_persons` can no longer slip
+through as "settled." Because that gate can now hold a genuinely self-shot
+photo in `required` with no vision provider ever confirming it, the model
+can explicitly override via `POST /model/photos/:id/appearances/confirm-self`
+— a human closing AI uncertainty, not the AI granting a release.
+
 ### Phase 62 — Image remediation — **shipped** (option A)
 
 Recorded in `06` §2b. Severe quality failures and exact duplicates of live

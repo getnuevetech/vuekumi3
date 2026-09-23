@@ -347,3 +347,114 @@ test('Phase 65: undeclared model upload stays likeness-locked and can invite the
 
   await app.close()
 })
+
+test('Phase 65: uncertain screening withholds self-shot auto-approval; confirm-self and other-person invite close the gap', async () => {
+  const app = await buildApp()
+  try {
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { email: 'zuri-adewale@vuekumi.demo', password: 'User12345!' },
+    })
+    assert.equal(login.statusCode, 200, login.body)
+    const cookie = cookies(login)
+
+    // CI has no image-analysis provider configured, so Phase 64's
+    // visionUnavailableScreen always returns 'uncertain_human_detection' —
+    // self-shot must NOT auto-approve on an uncertain read.
+    const submitted = await app.inject({
+      method: 'POST',
+      url: '/api/model/photos',
+      headers: { cookie },
+      payload: {
+        title: 'Zuri portrait',
+        category: 'People',
+        country: 'Nigeria',
+        hasRecognizablePeople: true,
+        copyrightHolder: 'Zuri Adewale',
+        copyrightAttested: true,
+        creationClaim: 'self_created',
+        inPhotograph: true,
+        ownLikenessConfirmed: true,
+        ownUsage: 'commercial',
+      },
+    })
+    assert.equal(submitted.statusCode, 200, submitted.body)
+    const submittedPhoto = (submitted.json() as {
+      photo: { id: string; hasRecognizablePeople: boolean; appearances?: unknown[]; rights?: { modelConsentStatus: string; commercialEligible: boolean } }
+    }).photo
+    assert.equal(submittedPhoto.hasRecognizablePeople, true)
+    assert.equal(submittedPhoto.rights?.modelConsentStatus, 'required')
+    assert.equal(submittedPhoto.rights?.commercialEligible, false)
+    assert.equal((submittedPhoto.appearances ?? []).length, 0)
+    const photoId = submittedPhoto.id
+
+    // The model explicitly confirms it's only them — a human override of
+    // AI uncertainty, not the AI granting a release.
+    const confirmed = await app.inject({
+      method: 'POST',
+      url: `/api/model/photos/${photoId}/appearances/confirm-self`,
+      headers: { cookie },
+    })
+    assert.equal(confirmed.statusCode, 200, confirmed.body)
+    const confirmedPhoto = (confirmed.json() as { photo: { rights?: { modelConsentStatus: string; commercialEligible: boolean } } }).photo
+    assert.equal(confirmedPhoto.rights?.modelConsentStatus, 'approved')
+    assert.equal(confirmedPhoto.rights?.commercialEligible, true)
+
+    const confirmAgain = await app.inject({
+      method: 'POST',
+      url: `/api/model/photos/${photoId}/appearances/confirm-self`,
+      headers: { cookie },
+    })
+    assert.equal(confirmAgain.statusCode, 409, confirmAgain.body)
+
+    // A second, fresh upload where the model instead identifies someone
+    // else depicted — reuses the Phase 24/25 invite pipeline.
+    const submitted2 = await app.inject({
+      method: 'POST',
+      url: '/api/model/photos',
+      headers: { cookie },
+      payload: {
+        title: 'Zuri and a friend',
+        category: 'People',
+        country: 'Nigeria',
+        hasRecognizablePeople: true,
+        copyrightHolder: 'Zuri Adewale',
+        copyrightAttested: true,
+        creationClaim: 'self_created',
+        inPhotograph: true,
+        ownLikenessConfirmed: true,
+        ownUsage: 'editorial',
+      },
+    })
+    assert.equal(submitted2.statusCode, 200, submitted2.body)
+    const photoId2 = (submitted2.json() as { photo: { id: string } }).photo.id
+
+    const invited = await app.inject({
+      method: 'POST',
+      url: `/api/model/photos/${photoId2}/appearances`,
+      headers: { cookie },
+      payload: {
+        displayName: 'Friend In Frame',
+        email: `friend-${Date.now()}@vuekumi.demo`,
+        mobile: '+2348033333333',
+      },
+    })
+    assert.equal(invited.statusCode, 200, invited.body)
+    const invitedBody = invited.json() as { appearance: { consentStatus: string }; joinUrl: string }
+    assert.equal(invitedBody.appearance.consentStatus, 'invitation_sent')
+    assert.ok(invitedBody.joinUrl)
+
+    const stillLocked = await app.inject({ method: 'GET', url: `/api/model/photos/${photoId2}` , headers: { cookie }})
+    const lockedPhoto = (stillLocked.json() as {
+      photo: { rights?: { modelConsentStatus: string; commercialEligible: boolean } }
+    }).photo
+    // The invite is pending, so rollup reports the finer-grained
+    // 'invitation_sent' rather than 'required' — commercial stays locked
+    // either way, which is the property that actually matters here.
+    assert.equal(lockedPhoto.rights?.modelConsentStatus, 'invitation_sent')
+    assert.equal(lockedPhoto.rights?.commercialEligible, false)
+  } finally {
+    await app.close()
+  }
+})
