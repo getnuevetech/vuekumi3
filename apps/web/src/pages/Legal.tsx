@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import type { LegalOverlayDto, LegalStandardDto } from '@vuekumi/shared'
-import { SiteHeader } from '../components/shared'
-import { api } from '../api/client'
+import { CountrySelect, SiteHeader } from '../components/shared'
+import { api, type GeoCountry } from '../api/client'
 
 export default function LegalPage() {
   const [params] = useSearchParams()
   const [page, setPage] = useState<LegalStandardDto | null>(null)
   const [code, setCode] = useState((params.get('country') ?? 'NG').toUpperCase())
+  const [countries, setCountries] = useState<GeoCountry[]>([])
   const [overlay, setOverlay] = useState<LegalOverlayDto | null>(null)
 
   useEffect(() => {
     api.legalStandard().then(setPage).catch(() => setPage(null))
+    api.countries().then((d) => setCountries(d.countries)).catch(() => setCountries([]))
   }, [])
 
   useEffect(() => {
@@ -46,12 +48,12 @@ export default function LegalPage() {
           <p className="mt-2 text-sm text-ink-soft">
             Priority fill: {(page?.priorityCountries ?? []).join(', ')}. Everyone else uses the standard overlay plus an extra notice. Overlays never weaken this standard.
           </p>
-          <input
+          <CountrySelect
+            countries={countries}
             value={code}
-            maxLength={2}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="ISO"
-            className="mt-4 w-24 rounded-xl border border-sand-soft px-3 py-2 font-mono-tech text-sm outline-none focus:border-terra"
+            onChange={setCode}
+            placeholder="Country"
+            className="mt-4 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm outline-none focus:border-terra"
           />
           {overlay && (
             <div className="mt-4 space-y-2 text-sm">

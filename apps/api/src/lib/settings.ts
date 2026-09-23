@@ -28,6 +28,20 @@ export function decryptSecret(stored: string): string {
   return Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]).toString('utf8')
 }
 
+/** A bad ciphertext must not take down the admin list. The caller can ask for a new key. */
+export function readStoredSecret(stored: string | null | undefined): {
+  hasSecret: boolean
+  readable: boolean
+  masked: string
+} {
+  if (!stored) return { hasSecret: false, readable: true, masked: '' }
+  try {
+    return { hasSecret: true, readable: true, masked: maskSecret(decryptSecret(stored)) }
+  } catch {
+    return { hasSecret: true, readable: false, masked: '' }
+  }
+}
+
 export function maskSecret(value: string): string {
   if (!value) return ''
   if (value.length <= 4) return '••••'

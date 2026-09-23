@@ -541,7 +541,7 @@ export const api = {
   agencyInvitePreview: (token: string) =>
     request<{ invite: AgencyInvitePreviewDto }>(`/api/agency/join/${token}`),
 
-  acceptAgencyInvite: (token: string, body?: { name?: string; password?: string; country?: string }) =>
+  acceptAgencyInvite: (token: string, body?: { name?: string; firstName?: string; lastName?: string; password?: string; country?: string }) =>
     request<{ user: AuthUser; member: AgencyMemberDto }>(`/api/agency/join/${token}`, {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
@@ -1002,19 +1002,23 @@ export const api = {
 
   createAccount: (body: {
     email: string
-    name: string
+    name?: string
+    firstName?: string
+    lastName?: string
     accountType: 'user' | 'photographer' | 'photo_influencer' | 'contributor' | 'agency' | 'model'
     password: string
     country?: string
   }) =>
     request<{ user: AdminAccount }>('/api/admin/accounts', { method: 'POST', body: JSON.stringify(body) }),
 
-  patchAccount: (id: string, body: Partial<Pick<AdminAccount, 'name' | 'email' | 'country' | 'status'>>) =>
+  patchAccount: (id: string, body: Partial<Pick<AdminAccount, 'name' | 'firstName' | 'lastName' | 'email' | 'country' | 'status'>>) =>
     request<{ user: AdminAccount }>(`/api/admin/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   createAdmin: (body: {
     email: string
-    name: string
+    name?: string
+    firstName?: string
+    lastName?: string
     password: string
     country?: string
     preset: 'super_admin' | 'moderator' | 'finance' | 'support'
@@ -1212,6 +1216,7 @@ export interface PaymentGateway {
   notes: string | null
   enabled: boolean
   hasSecret: boolean
+  secretReadable?: boolean
   secretMasked?: string
 }
 
@@ -1225,6 +1230,7 @@ export interface AiProvider {
   notes: string | null
   enabled: boolean
   hasKey: boolean
+  keyReadable?: boolean
   keyMasked?: string
 }
 

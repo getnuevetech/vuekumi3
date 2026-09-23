@@ -6,7 +6,7 @@ import type {
   AgencyEntityStatus,
   CreatorKind,
 } from '@vuekumi/shared'
-import { resolveAdminCapabilities, storedAdminCapabilities } from '@vuekumi/shared'
+import { personNameFrom, resolveAdminCapabilities, splitDisplayName, storedAdminCapabilities } from '@vuekumi/shared'
 import { registrationCreatorKind } from './creator-kind.js'
 import { agreementVersionForAccountType } from '../data/licenses.js'
 import { handleTaken } from './models.js'
@@ -17,6 +17,8 @@ type AccountRow = {
   id: string
   email: string
   name: string
+  firstName: string | null
+  lastName: string | null
   accountType: string
   status: string
   country: string | null
@@ -57,10 +59,15 @@ function agencyOf(user: AccountRow) {
 
 export function serializeAdminAccount(user: AccountRow): AdminAccountDto {
   const agency = agencyOf(user)
+  const stored = user.firstName
+    ? { firstName: user.firstName, lastName: user.lastName ?? '' }
+    : splitDisplayName(user.name)
   return {
     id: user.id,
     email: user.email,
     name: user.name,
+    firstName: stored.firstName,
+    lastName: stored.lastName,
     accountType: user.accountType,
     status: user.status,
     country: user.country,
@@ -125,13 +132,16 @@ export async function provisionStaffCreatedUser(body: AdminCreateAccountInput) {
   const email = body.email.toLowerCase()
   const country = body.country?.toUpperCase()
   const accountType = body.accountType as Exclude<AdminCreateAccountInput['accountType'], 'admin'>
+  const person = personNameFrom(body)
 
   return prisma.$transaction(async (tx) => {
     const created = await tx.user.create({
       data: {
         email,
         passwordHash,
-        name: body.name.trim(),
+        name: person.name,
+        firstName: person.firstName,
+        lastName: person.lastName,
         accountType,
         country,
         status: 'active',
@@ -139,7 +149,7 @@ export async function provisionStaffCreatedUser(body: AdminCreateAccountInput) {
     })
 
     if (accountType === 'photographer' || accountType === 'photo_influencer' || accountType === 'contributor') {
-      const handle = await uniqueStaffHandle(body.name, created.id)
+      const handle = await uniqueStaffHandle(person.name, created.id)
       await tx.contributorProfile.create({
         data: {
           userId: created.id,
@@ -158,10 +168,10 @@ export async function provisionStaffCreatedUser(body: AdminCreateAccountInput) {
     }
 
     if (accountType === 'agency') {
-      const slug = await uniqueAgencySlug(body.name, created.id)
+      const slug = await uniqueAgencySlug(person.name, created.id)
       await tx.agency.create({
         data: {
-          name: body.name.trim(),
+          name: person.name,
           slug,
           ownerUserId: created.id,
           status: 'pending',
@@ -172,7 +182,7 @@ export async function provisionStaffCreatedUser(body: AdminCreateAccountInput) {
     }
 
     if (accountType === 'model') {
-      const handle = await uniqueStaffHandle(body.name, created.id)
+      const handle = await uniqueStaffHandle(person.name, created.id)
       await tx.modelProfile.create({
         data: {
           userId: created.id,
@@ -193,12 +203,15 @@ export async function provisionStaffCreatedAdmin(body: AdminCreateAdminInput) {
   const passwordHash = await hashPassword(body.password)
   const stored = storedAdminCapabilities(body.preset, body.capabilities)
   const country = body.country?.toUpperCase()
+  const person = personNameFrom(body)
 
   const created = await prisma.user.create({
     data: {
       email: body.email.toLowerCase(),
       passwordHash,
-      name: body.name.trim(),
+      name: person.name,
+      firstName: person.firstName,
+      lastName: person.lastName,
       accountType: 'admin',
       country,
       status: 'active',

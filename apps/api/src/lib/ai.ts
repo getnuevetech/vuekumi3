@@ -44,14 +44,21 @@ export async function resolveProvider(purpose: AiProviderPurpose): Promise<Resol
     where: { purpose, enabled: true, apiKeyEnc: { not: null } },
     orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
   })
-  if (rows[0]?.apiKeyEnc) {
-    return {
-      kind: 'openai',
-      key: decryptSecret(rows[0].apiKeyEnc),
-      base: (rows[0].apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
-      model,
-      providerId: rows[0].id,
-      providerName: rows[0].name,
+  for (const row of rows) {
+    if (!row.apiKeyEnc) continue
+    try {
+      const key = decryptSecret(row.apiKeyEnc)
+      if (!key) continue
+      return {
+        kind: 'openai' as const,
+        key,
+        base: (row.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
+        model,
+        providerId: row.id,
+        providerName: row.name,
+      }
+    } catch {
+      // A key saved under a different settings key cannot be used. Try the next provider.
     }
   }
 
@@ -71,13 +78,20 @@ export async function resolveProvider(purpose: AiProviderPurpose): Promise<Resol
     where: { enabled: true, apiKeyEnc: { not: null }, OR: [{ slug: 'openai' }, { purpose: 'vision' }] },
   })
   if (legacyRow?.apiKeyEnc) {
-    return {
-      kind: 'openai',
-      key: decryptSecret(legacyRow.apiKeyEnc),
-      base: (legacyRow.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
-      model,
-      providerId: legacyRow.id,
-      providerName: legacyRow.name,
+    try {
+      const key = decryptSecret(legacyRow.apiKeyEnc)
+      if (key) {
+        return {
+          kind: 'openai' as const,
+          key,
+          base: (legacyRow.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
+          model,
+          providerId: legacyRow.id,
+          providerName: legacyRow.name,
+        }
+      }
+    } catch {
+      // Unreadable legacy key falls through to the settings key or dev mode.
     }
   }
 

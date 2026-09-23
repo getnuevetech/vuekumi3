@@ -2,16 +2,36 @@ import { z } from 'zod'
 import { accountTypeSchema, publicRegisterAccountTypeSchema } from './accounts.js'
 import { bookingAvailabilitySchema } from './bookings.js'
 
+const legacyName = z.string().trim().min(1).max(120).optional()
+const givenName = z.string().trim().min(1).max(60).optional()
+
+function requirePersonName(
+  value: { name?: string; firstName?: string; lastName?: string },
+  ctx: z.RefinementCtx,
+) {
+  const first = value.firstName?.trim()
+  const last = value.lastName?.trim()
+  const legacy = value.name?.trim()
+  if ((first && !last) || (!first && last)) {
+    ctx.addIssue({ code: 'custom', message: 'First and last name are required', path: ['lastName'] })
+  }
+  if (!first && !last && !legacy) {
+    ctx.addIssue({ code: 'custom', message: 'First and last name are required', path: ['firstName'] })
+  }
+}
+
 export { accountTypeSchema, publicRegisterAccountTypeSchema }
 
 export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  name: z.string().min(1).max(120),
+  name: legacyName,
+  firstName: givenName,
+  lastName: givenName,
   accountType: publicRegisterAccountTypeSchema,
   country: z.string().min(2).max(2).optional(),
   acceptAgreement: z.boolean().optional(),
-})
+}).superRefine(requirePersonName)
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -32,7 +52,9 @@ export const oauthDevSchema = z.object({
 })
 
 export const updateProfileSchema = z.object({
-  name: z.string().min(1).max(120).optional(),
+  name: legacyName,
+  firstName: givenName,
+  lastName: givenName,
   country: z.string().length(2).optional().or(z.literal('')),
   avatarUrl: z.string().max(500).optional().or(z.literal('')),
   bio: z.string().max(1000).optional().or(z.literal('')),

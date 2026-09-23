@@ -10,7 +10,8 @@ import {
 } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router'
-import { StatusPill } from '../components/shared'
+import { CountrySelect, StatusPill } from '../components/shared'
+import { splitDisplayName } from '@vuekumi/shared'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { api, ApiError, setActAsCreator, type AdminAccount, type GeoCountry } from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -94,10 +95,11 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
   const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<AdminAccount | null>(null)
   const [creating, setCreating] = useState(false)
-  const [draft, setDraft] = useState({ name: '', email: '', country: '', status: 'active' })
+  const [draft, setDraft] = useState({ firstName: '', lastName: '', email: '', country: '', status: 'active' })
   const [agencyStatus, setAgencyStatus] = useState('pending')
   const [createDraft, setCreateDraft] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     country: '',
@@ -144,7 +146,14 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
   }
 
   const openRow = async (u: AdminAccount) => {
-    setDraft({ name: u.name, email: u.email, country: u.country ?? '', status: u.status })
+    const parts = splitDisplayName(u.name)
+    setDraft({
+      firstName: u.firstName || parts.firstName,
+      lastName: u.lastName || parts.lastName,
+      email: u.email,
+      country: u.country ?? '',
+      status: u.status,
+    })
     setAgencyStatus(u.agencyStatus ?? 'pending')
     setSelected(u)
     const nextPreset = (u.adminRole as StaffPreset | null) ?? 'support'
@@ -153,8 +162,10 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
     try {
       const detail = await api.adminAccount(u.id)
       setSelected(detail.user)
+      const detailParts = splitDisplayName(detail.user.name)
       setDraft({
-        name: detail.user.name,
+        firstName: detail.user.firstName || detailParts.firstName,
+        lastName: detail.user.lastName || detailParts.lastName,
         email: detail.user.email,
         country: detail.user.country ?? '',
         status: detail.user.status,
@@ -195,7 +206,7 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
           <button
             type="button"
             onClick={() => {
-              setCreateDraft({ name: '', email: '', password: '', country: '' })
+              setCreateDraft({ firstName: '', lastName: '', email: '', password: '', country: '' })
               applyPreset('support')
               setCreating(true)
             }}
@@ -262,14 +273,23 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
           {selected && (
             <div className="space-y-3 px-4 pb-8">
               <p className="font-mono-tech text-[10px] text-ink-faint">{selected.id}</p>
-              <label className="block text-sm">Name
-                <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
+              <label className="block text-sm">First name
+                <input required value={draft.firstName} onChange={(e) => setDraft({ ...draft, firstName: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
+              </label>
+              <label className="block text-sm">Last name
+                <input required value={draft.lastName} onChange={(e) => setDraft({ ...draft, lastName: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
               </label>
               <label className="block text-sm">Email
                 <input value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
               </label>
-              <label className="block text-sm">Country (ISO)
-                <input value={draft.country} onChange={(e) => setDraft({ ...draft, country: e.target.value.toUpperCase() })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
+              <label className="block text-sm">Country
+                <CountrySelect
+                  countries={countries}
+                  value={draft.country}
+                  onChange={(code) => setDraft({ ...draft, country: code })}
+                  placeholder="Country"
+                  className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm outline-none focus:border-terra"
+                />
               </label>
               <label className="block text-sm">Status
                 <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft bg-white px-3 py-2 text-sm">
@@ -391,7 +411,8 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                   if (kind === 'admins') {
                     await api.createAdmin({
                       email: createDraft.email,
-                      name: createDraft.name,
+                      firstName: createDraft.firstName,
+                      lastName: createDraft.lastName,
                       password: createDraft.password,
                       country: createDraft.country || undefined,
                       preset,
@@ -400,7 +421,8 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                   } else {
                     await api.createAccount({
                       email: createDraft.email,
-                      name: createDraft.name,
+                      firstName: createDraft.firstName,
+                      lastName: createDraft.lastName,
                       password: createDraft.password,
                       accountType: createType[kind],
                       country: createDraft.country || undefined,
@@ -419,8 +441,11 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
               <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
                 {copy[kind].kicker}
               </p>
-              <label className="block text-sm">Name
-                <input required value={createDraft.name} onChange={(e) => setCreateDraft({ ...createDraft, name: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
+              <label className="block text-sm">First name
+                <input required value={createDraft.firstName} onChange={(e) => setCreateDraft({ ...createDraft, firstName: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
+              </label>
+              <label className="block text-sm">Last name
+                <input required value={createDraft.lastName} onChange={(e) => setCreateDraft({ ...createDraft, lastName: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />
               </label>
               <label className="block text-sm">Email
                 <input required type="email" value={createDraft.email} onChange={(e) => setCreateDraft({ ...createDraft, email: e.target.value })} className="mt-1 w-full rounded-xl border border-sand-soft px-3 py-2 text-sm outline-none focus:border-terra" />

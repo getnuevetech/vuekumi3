@@ -41,7 +41,9 @@ export const selfShotAppearanceSchema = decideAppearanceSchema.extend({
 })
 
 export const acceptModelInviteSchema = z.object({
-  name: z.string().min(1).max(120).optional(),
+  name: z.string().trim().min(1).max(120).optional(),
+  firstName: z.string().trim().min(1).max(60).optional(),
+  lastName: z.string().trim().min(1).max(60).optional(),
   password: z.string().min(8).optional(),
 })
 

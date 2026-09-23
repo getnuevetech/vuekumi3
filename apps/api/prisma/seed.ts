@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { PRESET_CAPABILITIES } from '@vuekumi/shared'
+import { PRESET_CAPABILITIES, splitDisplayName } from '@vuekumi/shared'
 import bcrypt from 'bcryptjs'
 import { randomBytes, createHash } from 'node:crypto'
 import { photos, photographers } from './seed-data.js'
@@ -1025,6 +1025,18 @@ async function main() {
   await prisma.homeFeaturedPin.create({
     data: { slot: 'hero', position: 0, photoId: 'afr-014' },
   })
+
+  const unnamed = await prisma.user.findMany({
+    where: { firstName: null },
+    select: { id: true, name: true },
+  })
+  for (const row of unnamed) {
+    const parts = splitDisplayName(row.name)
+    await prisma.user.update({
+      where: { id: row.id },
+      data: { firstName: parts.firstName, lastName: parts.lastName },
+    })
+  }
 
   console.log('Seed complete.')
   console.log('Admin: admin@vuekumi.com / Admin123!')

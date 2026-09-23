@@ -229,11 +229,22 @@ export const PRESET_CAPABILITIES: Record<AdminRole, readonly AdminCapability[]> 
 
 export const adminCreateAdminSchema = z.object({
   email: z.string().email(),
-  name: z.string().min(1).max(120),
+  name: z.string().trim().min(1).max(120).optional(),
+  firstName: z.string().trim().min(1).max(60).optional(),
+  lastName: z.string().trim().min(1).max(60).optional(),
   password: z.string().min(8, 'Password must be at least 8 characters').max(200),
   country: z.string().length(2).optional(),
   preset: z.enum(['super_admin', 'moderator', 'finance', 'support']),
   capabilities: z.array(adminCapabilitySchema).optional(),
+}).superRefine((value, ctx) => {
+  const first = value.firstName?.trim()
+  const last = value.lastName?.trim()
+  if ((first && !last) || (!first && last)) {
+    ctx.addIssue({ code: 'custom', message: 'First and last name are required', path: ['lastName'] })
+  }
+  if (!first && !last && !value.name?.trim()) {
+    ctx.addIssue({ code: 'custom', message: 'First and last name are required', path: ['firstName'] })
+  }
 })
 export type AdminCreateAdminInput = z.infer<typeof adminCreateAdminSchema>
 

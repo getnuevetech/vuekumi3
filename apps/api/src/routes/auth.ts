@@ -4,6 +4,7 @@ import {
   CREATOR_ACCOUNT_TYPES,
   forgotPasswordSchema,
   loginSchema,
+  personNameFrom,
   registerSchema,
   resetPasswordSchema,
   updateProfileSchema,
@@ -87,6 +88,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const passwordHash = await hashPassword(body.password)
+    const person = personNameFrom(body)
     let status: 'active' | 'pending' = 'active'
     let approvalReasons: string[] = ['not_applicable']
     if (body.accountType === 'agency') {
@@ -103,7 +105,9 @@ export async function authRoutes(app: FastifyInstance) {
         data: {
           email: body.email.toLowerCase(),
           passwordHash,
-          name: body.name,
+          name: person.name,
+          firstName: person.firstName,
+          lastName: person.lastName,
           accountType: body.accountType,
           country: body.country?.toUpperCase(),
           status,
@@ -111,7 +115,7 @@ export async function authRoutes(app: FastifyInstance) {
       })
 
       if (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor') {
-        const handle = body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        const handle = person.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         await tx.contributorProfile.create({
           data: {
             userId: created.id,
@@ -133,7 +137,7 @@ export async function authRoutes(app: FastifyInstance) {
       }
 
       if (body.accountType === 'model') {
-        const handle = body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        const handle = person.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         await tx.modelProfile.create({
           data: {
             userId: created.id,
@@ -147,10 +151,10 @@ export async function authRoutes(app: FastifyInstance) {
       }
 
       if (body.accountType === 'agency') {
-        const slug = body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        const slug = person.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         const agency = await tx.agency.create({
           data: {
-            name: body.name,
+            name: person.name,
             slug: `${slug}-${created.id.slice(-4)}`,
             ownerUserId: created.id,
             status: 'pending',
@@ -279,11 +283,20 @@ export async function authRoutes(app: FastifyInstance) {
     const avatarUrl =
       body.avatarUrl === undefined ? existing.avatarUrl : body.avatarUrl.trim() || null
 
+    const person = (body.firstName !== undefined || body.lastName !== undefined)
+      ? personNameFrom({
+          firstName: body.firstName ?? existing.firstName ?? '',
+          lastName: body.lastName ?? existing.lastName ?? '',
+        })
+      : body.name !== undefined
+        ? personNameFrom({ name: body.name })
+        : null
+
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: userId },
         data: {
-          ...(body.name ? { name: body.name.trim() } : {}),
+          ...(person ? { name: person.name, firstName: person.firstName, lastName: person.lastName } : {}),
           country,
           avatarUrl,
         },

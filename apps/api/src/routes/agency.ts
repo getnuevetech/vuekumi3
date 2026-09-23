@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import {
   acceptInviteSchema,
+  personNameFrom,
   inviteMemberSchema,
   updateMemberRoleSchema,
 } from '@vuekumi/shared'
@@ -402,14 +403,17 @@ export async function agencyRoutes(app: FastifyInstance) {
           return reply.code(401).send({ error: 'Sign in with the invited email to join this agency' })
         }
       } else {
-        if (!body.name || !body.password) {
-          throw new AgencyError('Name and password are required to create your account')
+        if (!body.password) {
+          throw new AgencyError('A password is required to create your account')
         }
+        const person = personNameFrom(body)
         user = await prisma.user.create({
           data: {
             email: invite.email,
             passwordHash: await hashPassword(body.password),
-            name: body.name,
+            name: person.name,
+            firstName: person.firstName,
+            lastName: person.lastName,
             accountType: 'agency',
             country: body.country?.toUpperCase(),
             status: 'active',

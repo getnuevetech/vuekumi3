@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import type { BookingAvailability, SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
+import { splitDisplayName } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS, hasModelAccess, isCreatorWorkspaceAccount } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
@@ -11,7 +12,8 @@ export default function Account() {
   const { user, refresh, logout, loading: authLoading } = useAuth()
   const navigate = useNavigate()
 
-  const [name, setName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [country, setCountry] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [handle, setHandle] = useState('')
@@ -40,7 +42,9 @@ export default function Account() {
 
   useEffect(() => {
     if (!user) return
-    setName(user.name)
+    const parts = splitDisplayName(user.name)
+    setFirstName(user.firstName || parts.firstName)
+    setLastName(user.lastName || parts.lastName)
     setCountry(user.country ?? '')
     setAvatarUrl(user.avatarUrl ?? '')
     setHandle(user.contributorHandle ?? user.modelHandle ?? '')
@@ -185,7 +189,8 @@ export default function Account() {
             setProfileBusy(true)
             try {
               await api.updateMe({
-                name,
+                firstName,
+                lastName,
                 country,
                 avatarUrl,
                 ...(publicProfile ? { handle, bio, location } : {}),
@@ -203,13 +208,24 @@ export default function Account() {
           }}
         >
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Profile</p>
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Full name"
-            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First name"
+              autoComplete="given-name"
+              className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+            />
+            <input
+              required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last name"
+              autoComplete="family-name"
+              className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+            />
+          </div>
           <select
             required={contributor}
             value={country}

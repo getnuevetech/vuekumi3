@@ -6,9 +6,9 @@ import {
 import { toast } from 'sonner';
 import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto, RepresentationDto } from '@vuekumi/shared';
 import { creatorPortalLabel, isNonCommercialCreator, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
-import { PortalShell, StatCard, SectionHead, StatusPill, type PortalLink } from '../components/shared';
+import { CountrySelect, PortalShell, StatCard, SectionHead, StatusPill, countryNameFromSuggestion, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
-import { api, ApiError, getActAsCreatorId, getActAsCreatorLabel, setActAsCreator } from '../api/client';
+import { api, ApiError, getActAsCreatorId, getActAsCreatorLabel, setActAsCreator, type GeoCountry } from '../api/client';
 import { AiSuggestPanel } from '../components/AiSuggestPanel';
 import { PermissionStateField } from '../components/PermissionStateField';
 import { useAuth } from '../context/AuthContext';
@@ -362,6 +362,7 @@ export function ContributorUpload() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Landscape');
   const [country, setCountry] = useState('');
+  const [countries, setCountries] = useState<GeoCountry[]>([]);
   const [tags, setTags] = useState('');
   const [description, setDescription] = useState('');
   const [licenseType, setLicenseType] = useState<'free' | 'premium'>('free');
@@ -374,6 +375,10 @@ export function ContributorUpload() {
   const [attested, setAttested] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
+
+  useEffect(() => {
+    api.countries().then((d) => setCountries(d.countries)).catch(() => setCountries([]));
+  }, []);
 
   const addFiles = (incoming: File[]) => {
     const images = incoming.filter((f) => f.type.startsWith('image/'));
@@ -434,7 +439,10 @@ export function ContributorUpload() {
               if (s.title) setTitle(s.title)
               if (s.description) setDescription(s.description)
               if (s.category) setCategory(s.category)
-              if (s.country) setCountry(s.country)
+              if (s.country) {
+                const match = countryNameFromSuggestion(s.country, countries);
+                if (match) setCountry(match);
+              }
               if (s.tags.length) setTags(s.tags.join(', '))
               if (s.hasRecognizablePeople != null) setPeople(s.hasRecognizablePeople)
             }}
@@ -540,7 +548,15 @@ export function ContributorUpload() {
                 <option key={c}>{c}</option>
               ))}
             </select>
-            <input required value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
+            <CountrySelect
+              required
+              by="name"
+              countries={countries}
+              value={country}
+              onChange={setCountry}
+              placeholder="Country depicted"
+              className="rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm outline-none focus:border-terra"
+            />
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags (comma separated)" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
           </div>
           <textarea

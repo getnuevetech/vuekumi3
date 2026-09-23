@@ -11,7 +11,8 @@ export default function JoinAgency() {
   const { user, refresh } = useAuth()
   const [preview, setPreview] = useState<AgencyInvitePreviewDto | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [name, setName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
@@ -36,7 +37,7 @@ export default function JoinAgency() {
     setBusy(true)
     setError(null)
     try {
-      await api.acceptAgencyInvite(token, preview?.needsAccount ? { name, password } : {})
+      await api.acceptAgencyInvite(token, preview?.needsAccount ? { firstName, lastName, password } : {})
       await refresh()
       navigate('/agency')
     } catch (err) {
@@ -68,13 +69,24 @@ export default function JoinAgency() {
                 className="mt-8 space-y-3"
                 onSubmit={(e) => { e.preventDefault(); void accept() }}
               >
-                <input
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full name"
-                  className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra"
-                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="First name"
+                    autoComplete="given-name"
+                    className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra"
+                  />
+                  <input
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last name"
+                    autoComplete="family-name"
+                    className="w-full rounded-2xl border border-sand-soft bg-white px-4 py-3 text-sm outline-none focus:border-terra"
+                  />
+                </div>
                 <input
                   required
                   type="password"
