@@ -1,6 +1,8 @@
 # VueKumi — Admin portal engineering adoption (spec v1.2)
 
 **Status: engineering adoption note. Plan only until build is explicitly approved.**
+P0 and the safe Arc T slices have since shipped; current sequencing is
+[`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md).
 Does **not** replace legal agreements, local counsel sign-off, or the Country
 Activation Matrix research workbook.
 

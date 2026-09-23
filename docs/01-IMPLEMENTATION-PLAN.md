@@ -291,7 +291,9 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled** absent explicit approval. Phase 61
+3. Default next slice: **[10-POST-REVIEW-EXECUTION-PLAN.md](./10-POST-REVIEW-EXECUTION-PLAN.md)**
+   (Phase 64 detection fail-closed, when approved). Do not restart T1, T7, or P0
+   from older memos. Phase 61
    (AI-assisted account & content approval — `AiProvider`-independent
    criteria in `lib/moderation.ts`: disposable-email-domain check on creator
    signup, technical/metadata criteria on photo upload, admin on/off switch

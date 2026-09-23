@@ -1,7 +1,9 @@
 # VueKumi — Trust, rights operations, likeness compensation & country activation
 
 **Status: implementation plan only. Do not start numbered build phases from this
-document until explicitly approved.** Companion to
+document until explicitly approved.** Opening verdict in §1 predates Phases 49–56;
+current sequencing is [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md).
+Companion to
 [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md),
 [`05-POST-ARC-D-RECOMMENDATIONS.md`](./05-POST-ARC-D-RECOMMENDATIONS.md), and
 [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md).

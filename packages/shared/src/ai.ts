@@ -15,9 +15,9 @@ export const PHOTO_CATEGORIES = [
 
 /**
  * Phase 58 — the fixed set of AI functions the provider registry dispatches
- * on. `image_remediation` and `id_verification` have no provider
- * implementation yet (Phases 61 and 59); the enum exists now so provider
- * rows can be registered against the right purpose ahead of time.
+ * on. `image_analysis` and `likeness_matching` have callers.
+ * `image_remediation` (Phase 62) and `id_verification` (Phase 60, Dec-Bio)
+ * are registry values only until those phases ship.
  */
 export const AI_PROVIDER_PURPOSES = [
   'image_analysis',

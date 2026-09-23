@@ -2,12 +2,17 @@
 
 Read in this order:
 
+0. **[10-POST-REVIEW-EXECUTION-PLAN.md](./10-POST-REVIEW-EXECUTION-PLAN.md)** — current
+   backlog after the 23 September 2026 review. Reconciles the Trust & Markets memo,
+   the admin-portal spec, and the AI-pipeline request with Phases 49–61. Next build,
+   if approved, is Phase 64 (detection fails closed). Do not restart T1 or P0.
 1. **[03-PRODUCT-AND-RIGHTS.md](./03-PRODUCT-AND-RIGHTS.md)** — recovered May 2026 concept
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.
 2. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
    shipped Phases 0–61 (Arcs A–D complete; through Phase 61 / AI account+content approval).
-   Default next slice: none scheduled until explicitly approved.
+   Default next slice: **[10-POST-REVIEW-EXECUTION-PLAN.md](./10-POST-REVIEW-EXECUTION-PLAN.md)**
+   (Phase 64 when approved). Do not restart shipped T1/P0 work from older memos.
 3. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
    redeploy). Not a licence to start work without approval.
