@@ -9,10 +9,16 @@ and [`08-ADMIN-PORTAL-ENGINEERING-SPEC.md`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.m
 
 Origin: product asked to (1) let admins configure different/multiple AI
 providers per function (image analysis, image remediation, ID-to-avatar
-verification, model/person likeness verification for copyright), and (2)
-make image analysis able to detect an undeclared person in a photo, then
-either auto-initiate contact using uploader-supplied details or block
-publishing with an explicit authorization prompt when no details are given.
+verification, model/person likeness verification for copyright), (2) make
+image analysis able to detect an undeclared person in a photo, then either
+auto-initiate contact using uploader-supplied details or block publishing
+with an explicit authorization prompt when no details are given, and (3) a
+follow-up round asking for AI-driven meta-naming/profiling of photos,
+criteria-based automated account/content approval and denial, image
+fine-tuning and uploader recommendations, and view/comment analytics
+reporting to admin and uploaders — "an AI pipeline built in all ways
+possible to manage the entire system, with reports to admin and manual
+override where needed." §§8–11 below answer that follow-up round.
 
 ---
 
@@ -241,21 +247,123 @@ signature).
 
 ---
 
-## 8. Sequencing
+## 8. Meta-naming / image profiling — already shipped, needs one UX change
+
+Product asked whether AI can name/tag/describe photos for uploaders. **It
+already does** (§1 row 3: `suggestFromContext`, `AiSuggestPanel`) — title,
+description, category, country, tags, and an `hasRecognizablePeople`
+suggestion, running on the same `image_analysis` purpose Phase 57 formalizes.
+
+The gap is UX, not capability: today the contributor must open the panel and
+click "Apply" per field, so it's easy to skip entirely (this is also *why*
+Phase 58 exists — a skippable suggestion is not an enforcement point). Fold
+into Phase 57/61: run the suggestion automatically at upload and pre-fill
+the form fields (title/description/category/tags) as an editable draft the
+contributor reviews before submitting, rather than a separate panel they may
+never open. This is a UI default change, not a new AI capability, and it
+never auto-publishes without the contributor seeing the draft first —
+`suggestFromContext`'s existing prompt already tells the model "a human will
+review every field" (`apps/api/src/lib/ai.ts:147`); this just makes that
+review the normal upload path instead of an opt-in extra.
+
+---
+
+## 9. Proposed Phase 60 — AI-assisted account & content approval (criteria-based)
+
+**Not gated as a whole, but must not swallow the two decisions that already
+have their own gate.** Automated approve/deny of accounts and content is a
+trust-and-safety surface, not a pure engineering one — get the contract
+wrong and it either lets bad actors through or silently locks out a
+legitimate African photographer. This phase adds a **second, independent
+signal** alongside — never instead of — the checks that already own their
+domains:
+
+- **Country/Africa eligibility stays owned by Phase 49's PDS `contributor.create`
+  check.** Phase 60 does not re-decide it, re-score it, or let a high
+  "quality" signal override a country DENY. Dec-AfricaElig is still
+  unsigned (`06`); this phase invents nothing about it.
+- **Identity/biometric determination stays owned by Phase 59 (Dec-Bio
+  gated).** Phase 60's account-approval criteria are explicitly the
+  non-biometric kind (below) — it never fingerprints a face to decide
+  account approval.
+
+What Phase 60 *does* add, using the same `ALLOW / DENY / REVIEW + reason
+codes + policy version` contract the PDS already uses everywhere else (`08`
+§5), so it plugs into the existing admin moderation queues rather than
+inventing a parallel one:
+
+| Surface | Example criteria (non-exhaustive, admin-editable) | Contract |
+| --- | --- | --- |
+| Account signup (beyond country) | Disposable/role email domain, duplicate-account fingerprint (device/IP/payout-method reuse), required profile fields incomplete, ToS/consent checkboxes unsigned | High-confidence clean → `ALLOW` (skips manual queue, speeds up onboarding); anything ambiguous or flagged → `REVIEW` in the existing admin accounts queue; **never an unappealable auto-DENY on an account** |
+| Photo/content upload | Technical quality floor (resolution, blur, exact-duplicate hash against the catalog), copyright-attestation completeness, policy-prohibited categories (violence, hate symbols, CSAM-adjacent — zero tolerance) | Clean → `ALLOW` to normal moderation; policy-prohibited → immediate quarantine + mandatory human audit log entry (never a silent, unlogged removal); everything else → `REVIEW` |
+
+This mirrors UAT #11 in `08` §9 ("face-match false negative → manual appeal;
+no fabricated consent") applied to moderation generally: a DENY on a real
+person's account or a real contributor's photo is never final without a
+human able to see why and overturn it. The admin side of this is a
+**recommendation with reasons**, not a black box — every `AiModerationDecision`
+row logs the criteria that fired, same discipline as `AuditLog` elsewhere in
+this codebase.
+
+---
+
+## 10. Proposed Phase 61 — Image enhancement & uploader recommendations
+
+**Not gated. Extends the `image_remediation` purpose from quarantine-only
+(Phase 58 §6 option A) to advisory quality feedback.**
+
+At upload, run an additional advisory pass: sharpness/exposure/composition
+score, suggested crop or orientation fix, and a plain-language note to the
+uploader ("this photo is underexposed — consider re-shooting or increasing
+brightness before publishing"). Any actual pixel change (auto-crop,
+auto-brighten) is **opt-in only** — the uploader clicks "apply," mirroring
+the existing `AiSuggestPanel` per-field apply pattern — never a silent
+rewrite of a contributor's copyrighted work. Duplicate-of-existing-catalog
+detection (perceptual hash against already-live photos) belongs here too and
+doubles as a cheap fraud/plagiarism signal for Phase 60's content criteria.
+
+---
+
+## 11. Proposed Phase 62 — AI analytics & reporting (views/comments → admin + uploader reports)
+
+**Not gated — pure reporting, changes no account or content state.** New
+purpose `analytics_reporting` (text-only; does not need a vision-capable
+provider). A periodic job aggregates per-photo views, favorites, licence
+conversions, and comments, and produces two report surfaces:
+
+- **Contributor-facing**: a periodic summary in the existing Earnings/
+  Dashboard tab of `Contributor.tsx` — top-performing photos, trending
+  tags/categories worth shooting more of.
+- **Admin-facing**: a new panel (or an extension of the existing
+  `/admin/metrics` overview) — catalog health, category gaps, per-contributor
+  performance trend, and moderation-queue volume/aging, so staff have one
+  place to see what Phase 60's queue actually needs attention.
+
+Because this phase only reads and summarizes existing data (views, licences,
+comments already tracked elsewhere), it carries no PDS gating requirement —
+it cannot deny a licence or an account by itself.
+
+---
+
+## 12. Sequencing
 
 | Phase | Name | Depends on | Gated? |
 | --- | --- | --- | --- |
 | **57** | AI Provider Registry (multi-provider dispatch) | — | No — buildable now |
 | **58** | AI subject quarantine (detect → auto-invite or block) | 57; one product scope call (§6) | No — Tier A only |
 | **59** | ID/face verification provider (KYC, identity-bound likeness) | 57; **Dec-Bio signed** | **Yes** |
+| **60** | AI-assisted account & content approval (criteria-based) | 57; does not touch Phase 49 country gate or Phase 59 identity gate | No — additive signal only |
+| **61** | Image enhancement & uploader recommendations | 57; 58 (shares the remediation UX) | No |
+| **62** | AI analytics & reporting | none (reads existing data) | No |
 
-57 and 58 can build in parallel with any open Arc T / P1 work already in
-flight (T5/T6 compensation, still separately waiting on Dec-PayBase) — they
-touch different files and neither depends on model compensation.
+57, 58, 60, 61, and 62 can all build in parallel with any open Arc T / P1
+work already in flight (T5/T6 compensation, still separately waiting on
+Dec-PayBase) — none of them depends on model compensation, and only 59
+depends on a human decision (Dec-Bio) outside this plan's control.
 
 ---
 
-## 9. Explicit non-goals
+## 13. Explicit non-goals
 
 - Choosing or defaulting to a specific ID-verification or facial-recognition
   vendor (Dec-Bio's decision, not this plan's)
@@ -270,11 +378,17 @@ touch different files and neither depends on model compensation.
   backfill if ever wanted)
 - Building a second, parallel consent/invite pipeline — Phase 58 reuses the
   Phase 24/25 appearance and RightsHub flows rather than inventing a new one
+- Letting Phase 60's quality/fraud signal override or re-decide the Phase 49
+  country-eligibility gate or the Phase 59 identity gate
+- An unappealable, fully automatic DENY on a real account or a live photo —
+  Phase 60 always leaves a human-visible reason and a review/appeal path
+- Silently altering a contributor's uploaded image — Phase 61's fixes are
+  opt-in, applied only when the uploader clicks apply
 
 ---
 
-## 10. Immediate next action (human)
+## 14. Immediate next action (human)
 
-Say which of Phase 57 / 58 to start (both are unblocked); record the
-image-remediation scope call from §6 in `06` before Phase 58 begins; no
-action needed on Phase 59 until Dec-Bio is signed.
+Say which of Phase 57 / 58 / 60 / 61 / 62 to start (all unblocked); record
+the image-remediation scope call from §6 in `06` before Phase 58/61 begin;
+no action needed on Phase 59 until Dec-Bio is signed.

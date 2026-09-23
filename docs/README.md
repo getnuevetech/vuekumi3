@@ -25,7 +25,10 @@ Read in this order:
 12. **[09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md)** —
    P1 "AI subjects" + "ID/face provider" made concrete: multi-provider AI
    registry (Phase 57), AI subject quarantine / auto-invite-or-block (Phase 58,
-   unblocked), ID/face verification (Phase 59, **blocked on Dec-Bio**). Plan only.
+   unblocked), ID/face verification (Phase 59, **blocked on Dec-Bio**),
+   AI-assisted account/content approval (Phase 60), image enhancement +
+   uploader recommendations (Phase 61), AI analytics/reporting (Phase 62).
+   Plan only.
 11. **[runbooks/rights-ops.md](./runbooks/rights-ops.md)** — staff rights-ops SOP
    (Phase 51 / T2). Public holder review: `/rights` (Phase 52 / T4).
 7. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
