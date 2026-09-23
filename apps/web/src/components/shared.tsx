@@ -59,13 +59,13 @@ function CurrencySelect() {
 
 /* ---------------- Logo ---------------- */
 
-export function LogoMark({ dark = false }: { dark?: boolean }) {
+export function LogoMark({ dark = false, accent = '#bc773f' }: { dark?: boolean; accent?: string }) {
   return (
     <Link to="/" className="flex items-center gap-2.5">
       <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
         <circle cx="13" cy="13" r="12" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
-        <circle cx="13" cy="13" r="6.5" stroke="#bc773f" strokeWidth="1.4" />
-        <circle cx="13" cy="13" r="2" fill="#bc773f" />
+        <circle cx="13" cy="13" r="6.5" stroke={accent} strokeWidth="1.4" />
+        <circle cx="13" cy="13" r="2" fill={accent} />
         <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
       </svg>
       <span className={`font-serif-display text-xl tracking-tight ${dark ? 'text-paper' : 'text-ink'}`}>
@@ -518,11 +518,13 @@ export function PortalShell({
   subtitle,
   links,
   children,
+  variant = 'default',
 }: {
   title: string
   subtitle: string
   links: PortalLink[]
   children: ReactNode
+  variant?: 'default' | 'admin'
 }) {
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
@@ -552,11 +554,11 @@ export function PortalShell({
   }, [pathname, links])
 
   return (
-    <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[240px_1fr]">
+    <div className={`min-h-screen bg-paper lg:grid ${variant === 'admin' ? 'lg:grid-cols-[260px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
       {/* sidebar */}
-      <aside className="border-b border-sand bg-ink text-paper lg:fixed lg:inset-y-0 lg:flex lg:w-[240px] lg:flex-col lg:border-b-0">
+      <aside className={`border-b border-sand bg-ink text-paper lg:fixed lg:inset-y-0 lg:flex lg:flex-col lg:border-b-0 ${variant === 'admin' ? 'lg:w-[260px]' : 'lg:w-[240px]'}`}>
         <div className="flex items-center justify-between px-5 py-4 lg:block lg:px-6 lg:py-7">
-          <LogoMark dark />
+          <LogoMark dark accent={variant === 'admin' ? '#d6e6ff' : '#bc773f'} />
           <span className="hidden lg:mt-1.5 lg:block font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper-soft">
             {title}
           </span>

@@ -221,3 +221,106 @@
     }
   }
 }
+
+/* Admin portal only. Unlayered so these beat the marketplace palette utilities. */
+body.admin-portal {
+  --background: 214 45% 98%;
+  --foreground: 215 55% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 55% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 55% 16%;
+  --primary: 215 72% 16%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 214 42% 94%;
+  --secondary-foreground: 215 55% 16%;
+  --muted: 214 42% 94%;
+  --muted-foreground: 215 18% 36%;
+  --accent: 214 42% 94%;
+  --accent-foreground: 215 55% 16%;
+  --border: 214 32% 84%;
+  --input: 214 32% 84%;
+  --ring: 215 62% 28%;
+  background-color: #ffffff;
+  color: #12243f;
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+body.admin-portal ::selection {
+  background: #0b2545;
+  color: #ffffff;
+}
+
+body.admin-portal .font-serif-display,
+body.admin-portal .font-mono-tech,
+body.admin-portal .font-condensed {
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+}
+
+body.admin-portal .font-serif-display {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+body.admin-portal .font-light {
+  font-weight: 600;
+}
+
+body.admin-portal .font-mono-tech,
+body.admin-portal .text-\[9px\],
+body.admin-portal .text-\[10px\],
+body.admin-portal .text-\[11px\] {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+body.admin-portal .font-mono-tech {
+  font-weight: 600;
+}
+
+body.admin-portal .uppercase {
+  text-transform: none;
+}
+
+body.admin-portal .tracking-\[0\.25em\],
+body.admin-portal .tracking-\[0\.22em\],
+body.admin-portal .tracking-\[0\.2em\],
+body.admin-portal .tracking-\[0\.18em\],
+body.admin-portal .tracking-\[0\.15em\],
+body.admin-portal .tracking-\[0\.14em\],
+body.admin-portal .tracking-\[0\.12em\] {
+  letter-spacing: 0.01em;
+}
+
+body.admin-portal .bg-paper { background-color: #ffffff; }
+body.admin-portal .bg-cream { background-color: #e7eef8; }
+body.admin-portal .bg-ink { background-color: #0b2545; }
+body.admin-portal .bg-ink-deep { background-color: #081c36; }
+body.admin-portal .bg-terra { background-color: #1e5aa8; }
+body.admin-portal .text-ink { color: #12243f; }
+body.admin-portal .text-ink-soft { color: #2c4668; }
+body.admin-portal .text-ink-faint { color: #4d6482; }
+body.admin-portal .text-terra { color: #1a4f91; }
+body.admin-portal .text-paper { color: #ffffff; }
+body.admin-portal .text-paper-soft { color: rgba(255, 255, 255, 0.86); }
+body.admin-portal .text-paper-faint { color: rgba(255, 255, 255, 0.68); }
+body.admin-portal .border-sand,
+body.admin-portal .border-sand-soft { border-color: #d3e0ef; }
+body.admin-portal .border-terra { border-color: #1a4f91; }
+body.admin-portal .hover\:bg-terra:hover { background-color: #163e78; }
+body.admin-portal .hover\:bg-ink:hover { background-color: #081c36; }
+body.admin-portal .hover\:text-terra:hover { color: #d6e6ff; }
+body.admin-portal .hover\:text-ink:hover { color: #0b2545; }
+body.admin-portal .hover\:border-terra:hover,
+body.admin-portal .hover\:border-ink:hover,
+body.admin-portal .focus\:border-terra:focus { border-color: #1a4f91; }
+body.admin-portal .hover\:bg-paper\/5:hover { background-color: rgba(255, 255, 255, 0.08); }
+body.admin-portal .hover\:bg-cream\/50:hover { background-color: #f2f6fb; }
+body.admin-portal .border-paper\/10 { border-color: rgba(255, 255, 255, 0.16); }
+body.admin-portal .border-paper\/15 { border-color: rgba(255, 255, 255, 0.22); }
+body.admin-portal .bg-\[\#f5ece5\] { background-color: #e7eef8; }
+body.admin-portal .text-\[\#bc773f\] { color: #1a4f91; }
+body.admin-portal .bg-\[\#f3e9f5\] { background-color: #e4ecf7; }
+body.admin-portal .text-\[\#7a4a8f\] { color: #243e6b; }
