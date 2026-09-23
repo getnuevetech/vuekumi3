@@ -22,6 +22,10 @@ Read in this order:
    control layers, eight modules, Policy Decision Service, P0–P2 tranches.
    **P0 (Phase 49) shipped**; T1–T2 + T4 + T7 (Phases 50–53) shipped; Phase 54 PDS
    license.issue suspend enforcement shipped; P1–P2 remain plan until approved.
+12. **[09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md)** —
+   P1 "AI subjects" + "ID/face provider" made concrete: multi-provider AI
+   registry (Phase 57), AI subject quarantine / auto-invite-or-block (Phase 58,
+   unblocked), ID/face verification (Phase 59, **blocked on Dec-Bio**). Plan only.
 11. **[runbooks/rights-ops.md](./runbooks/rights-ops.md)** — staff rights-ops SOP
    (Phase 51 / T2). Public holder review: `/rights` (Phase 52 / T4).
 7. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
