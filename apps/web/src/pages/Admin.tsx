@@ -141,8 +141,12 @@ export function useAdminLinks(): PortalLink[] {
 
 export function AdminShell({ children, subtitle }: { children: React.ReactNode; subtitle: string }) {
   const links = useAdminLinks()
+  useEffect(() => {
+    document.body.classList.add('admin-portal')
+    return () => document.body.classList.remove('admin-portal')
+  }, [])
   return (
-    <PortalShell title="Admin portal" subtitle={subtitle} links={links}>
+    <PortalShell title="Admin portal" subtitle={subtitle} links={links} variant="admin">
       {children}
     </PortalShell>
   )
@@ -235,15 +239,15 @@ export function AdminDashboard() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={series} margin={{ top: 8, right: 8, left: -4, bottom: 0 }} barGap={4}>
-                <CartesianGrid stroke="#efe4da" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#8a7f76' }} axisLine={false} tickLine={false} tickFormatter={formatAxisUsd} />
+                <CartesianGrid stroke="#d5e1ef" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, Segoe UI, sans-serif' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, Segoe UI, sans-serif' }} axisLine={false} tickLine={false} tickFormatter={formatAxisUsd} />
                 <Tooltip
                   formatter={(v: number, name: string) => [money(v), name === 'revenue' ? 'Revenue' : 'Payouts']}
-                  contentStyle={{ border: '1px solid #dec9b8', borderRadius: 12, fontSize: 12, background: '#faf6f3' }}
+                  contentStyle={{ border: '1px solid #d5e1ef', borderRadius: 12, fontSize: 14, background: '#ffffff', fontFamily: 'Source Sans 3, Segoe UI, sans-serif', color: '#12243f' }}
                 />
-                <Bar dataKey="revenue" fill="#3c3835" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="payouts" fill="#bc773f" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="#0b2545" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="payouts" fill="#3b82c4" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
