@@ -15,7 +15,13 @@ import { config } from '../config.js'
 import { openGatewayCheckout } from './checkout.js'
 import { convertFromUsd, pricingForCountry } from './fx.js'
 import { PaymentError } from './payment-error.js'
-import { chooseProvider, flutterwaveCurrency, paymentSecrets } from './payments-config.js'
+import {
+  assertStripeSecretUsable,
+  chooseProvider,
+  flutterwaveCurrency,
+  paymentSecrets,
+  usableStripeSecret,
+} from './payments-config.js'
 import { prisma } from './prisma.js'
 
 type Tx = Prisma.TransactionClient
@@ -254,12 +260,13 @@ export async function startPlusCheckout(input: {
   if (existing?.checkoutUrl) return existing
 
   const secrets = await paymentSecrets()
+  assertStripeSecretUsable(secrets, input.requestedProvider)
   const country = input.country
     ? await prisma.country.findUnique({ where: { code: input.country.toUpperCase() } })
     : null
   const provider = chooseProvider({
     requested: input.requestedProvider,
-    stripe: Boolean(secrets.stripeSecret),
+    stripe: Boolean(usableStripeSecret(secrets.stripeSecret)),
     flutterwave: Boolean(secrets.flutterwaveSecret),
     africanBuyer: country?.region === 'africa',
     allowDev: config.isDev,

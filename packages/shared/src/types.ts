@@ -203,7 +203,7 @@ export interface PaymentMethodsDto {
   stripe: boolean
   flutterwave: boolean
   dev: boolean
-  defaultProvider: 'stripe' | 'flutterwave' | 'dev'
+  defaultProvider: 'stripe' | 'flutterwave' | 'dev' | null
   contributorShare: number
 }
 

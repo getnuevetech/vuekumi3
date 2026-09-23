@@ -8,9 +8,11 @@ import type { GrantWithRelations } from './grants.js'
 import { issueGrant } from './grants.js'
 import { PaymentError } from './payment-error.js'
 import {
+  assertStripeSecretUsable,
   chooseProvider,
   flutterwaveCurrency,
   paymentSecrets,
+  usableStripeSecret,
 } from './payments-config.js'
 import { prisma } from './prisma.js'
 
@@ -39,12 +41,13 @@ export async function startLicenseCheckout(input: {
   requestedProvider?: 'stripe' | 'flutterwave'
 }) {
   const secrets = await paymentSecrets()
+  assertStripeSecretUsable(secrets, input.requestedProvider)
   const country = input.buyerCountry
     ? await prisma.country.findUnique({ where: { code: input.buyerCountry.toUpperCase() } })
     : null
   const provider = chooseProvider({
     requested: input.requestedProvider,
-    stripe: Boolean(secrets.stripeSecret),
+    stripe: Boolean(usableStripeSecret(secrets.stripeSecret)),
     flutterwave: Boolean(secrets.flutterwaveSecret),
     africanBuyer: country?.region === 'africa',
     allowDev: config.isDev,

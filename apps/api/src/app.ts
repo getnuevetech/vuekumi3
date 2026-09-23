@@ -5,6 +5,7 @@ import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
 import { ZodError } from 'zod'
 import { config } from './config.js'
+import { PaymentError } from './lib/payment-error.js'
 import { registerRateLimit } from './lib/rate-limit.js'
 import { captureException } from './lib/sentry.js'
 import { authRoutes } from './routes/auth.js'
@@ -73,6 +74,10 @@ export async function buildApp() {
     if (err instanceof ZodError) {
       const message = err.issues[0]?.message ?? 'Invalid request'
       return reply.code(400).send({ error: message })
+    }
+    if (err instanceof PaymentError) {
+      if (err.statusCode >= 500) request.log.error(err)
+      return reply.code(err.statusCode).send({ error: err.message })
     }
     const status =
       err && typeof err === 'object' && 'statusCode' in err && typeof err.statusCode === 'number'

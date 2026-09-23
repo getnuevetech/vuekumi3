@@ -70,20 +70,39 @@ export function AdminSettings() {
           className="mt-8 space-y-8"
           onSubmit={async (e) => {
             e.preventDefault()
+            const form = e.currentTarget
             setSaving(true)
             try {
+              const formData = new FormData(form)
               const payload = rows
-                .map((r) => ({ key: r.key, value: drafts[r.key] ?? '' }))
+                .map((r) => {
+                  const fromDom = formData.get(r.key)
+                  const value = typeof fromDom === 'string' ? fromDom : (drafts[r.key] ?? '')
+                  return { key: r.key, value }
+                })
                 .filter((s) => s.value.trim().length > 0)
+              if (payload.length === 0) {
+                const stripe = rows.find((r) => r.key === 'payments.stripe.secret_key')
+                toast.error(
+                  stripe && !stripe.configured
+                    ? 'Nothing was saved. Paste the Stripe secret key (sk_…) into Stripe secret key, then save again.'
+                    : 'Nothing new to save. Leave a secret blank to keep the current value.',
+                )
+                return
+              }
               const data = await api.updateAdminSettings(payload)
               setRows(data.settings)
-              toast.success('Settings saved')
+              const savedLabels = rows.filter((r) => payload.some((item) => item.key === r.key)).map((r) => r.label)
+              toast.success(`Saved ${savedLabels.join(', ')}`)
               setDrafts((prev) => {
                 const next = { ...prev }
-                rows.forEach((r) => {
-                  if (r.secret) next[r.key] = ''
+                data.settings.forEach((s) => {
+                  if (!s.secret) next[s.key] = s.value
                 })
                 return next
+              })
+              form.querySelectorAll('input[data-secret="true"]').forEach((el) => {
+                if (el instanceof HTMLInputElement) el.value = ''
               })
             } catch (err) {
               toast.error(err instanceof ApiError ? err.message : 'Save failed')
@@ -95,6 +114,12 @@ export function AdminSettings() {
           {groups.map(([group, items]) => (
             <section key={group} className="rounded-2xl border border-sand-soft bg-white p-6">
               <h2 className="font-serif-display text-xl font-light">{group}</h2>
+              {group === 'Payments — Stripe' && (
+                <p className="mt-2 text-sm text-ink-soft">
+                  Checkout uses the secret key (sk_… or rk_…). Saving only the publishable key leaves plan selection unable to start a payment.
+                  Leave a secret blank to keep the current value.
+                </p>
+              )}
               {group === 'Email' && (
                 <p className="mt-2 text-sm text-ink-soft">
                   Verification, password reset, and agency invites send through Resend once the API key is saved.
@@ -112,14 +137,27 @@ export function AdminSettings() {
                         </span>
                       )}
                     </span>
-                    <input
-                      type={item.secret ? 'password' : 'text'}
-                      autoComplete="off"
-                      placeholder={item.secret ? (item.configured ? 'Leave blank to keep current' : item.placeholder ?? 'Paste key') : item.placeholder}
-                      value={drafts[item.key] ?? ''}
-                      onChange={(e) => setDrafts((s) => ({ ...s, [item.key]: e.target.value }))}
-                      className="mt-1.5 w-full rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra"
-                    />
+                    {item.secret ? (
+                      <input
+                        name={item.key}
+                        data-secret="true"
+                        type="password"
+                        autoComplete="off"
+                        placeholder={item.configured ? 'Leave blank to keep current' : item.placeholder ?? 'Paste key'}
+                        defaultValue=""
+                        className="mt-1.5 w-full rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra"
+                      />
+                    ) : (
+                      <input
+                        name={item.key}
+                        type="text"
+                        autoComplete="off"
+                        placeholder={item.placeholder}
+                        value={drafts[item.key] ?? ''}
+                        onChange={(e) => setDrafts((s) => ({ ...s, [item.key]: e.target.value }))}
+                        className="mt-1.5 w-full rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra"
+                      />
+                    )}
                   </label>
                 ))}
               </div>

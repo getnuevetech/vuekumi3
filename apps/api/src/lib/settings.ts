@@ -177,23 +177,61 @@ export async function listSettingsForAdmin() {
   })
 }
 
+export function prepareSettingValue(key: string, value: string): string {
+  const def = SETTING_DEFINITIONS.find((d) => d.key === key)
+  if (!def) throw Object.assign(new Error(`Unknown setting: ${key}`), { statusCode: 400 })
+  let next = value.trim()
+  if (def.secret || key === 'payments.stripe.publishable_key') {
+    next = next.replace(/^['"]+|['"]+$/g, '').replace(/\s+/g, '')
+  }
+  if (!next) return ''
+  if (key === 'payments.stripe.secret_key') {
+    if (next.startsWith('pk_')) {
+      throw Object.assign(
+        new Error('That is a Stripe publishable key (pk_…). Paste the secret key (sk_… or rk_…) into Stripe secret key.'),
+        { statusCode: 400 },
+      )
+    }
+    if (next.startsWith('whsec_')) {
+      throw Object.assign(
+        new Error('That is a Stripe webhook secret. Paste it into Stripe webhook secret, and put the secret key (sk_… or rk_…) into Stripe secret key.'),
+        { statusCode: 400 },
+      )
+    }
+    if (!/^(sk|rk)_(test|live)_/.test(next)) {
+      throw Object.assign(
+        new Error('Stripe secret key should start with sk_test_, sk_live_, rk_test_, or rk_live_.'),
+        { statusCode: 400 },
+      )
+    }
+  }
+  if (key === 'payments.stripe.publishable_key' && !next.startsWith('pk_')) {
+    throw Object.assign(new Error('Stripe publishable key should start with pk_.'), { statusCode: 400 })
+  }
+  if (key === 'payments.stripe.webhook_secret' && !next.startsWith('whsec_')) {
+    throw Object.assign(new Error('Stripe webhook secret should start with whsec_.'), { statusCode: 400 })
+  }
+  return next
+}
+
 export async function upsertSetting(key: string, value: string, actorId?: string) {
   const def = SETTING_DEFINITIONS.find((d) => d.key === key)
   if (!def) throw new Error(`Unknown setting: ${key}`)
-  if (def.secret && !value.trim()) return
+  const stored = prepareSettingValue(key, value)
+  if (def.secret && !stored) return
 
   await prisma.platformSetting.upsert({
     where: { key },
     create: {
       key,
-      value: def.secret ? encryptSecret(value) : value,
+      value: def.secret ? encryptSecret(stored) : stored,
       secret: def.secret,
       label: def.label,
       group: def.group,
       updatedBy: actorId,
     },
     update: {
-      value: def.secret ? encryptSecret(value) : value,
+      value: def.secret ? encryptSecret(stored) : stored,
       secret: def.secret,
       updatedBy: actorId,
     },
