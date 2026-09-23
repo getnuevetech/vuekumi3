@@ -61,6 +61,7 @@ Rough live counts from admin overview: **15 users**, **6 contributors**,
 | HTTPS broken while DNS points at the instance | **Critical** | O3 TLS |
 | Host git SHA / migration head unknown (needs SSH) | High (ops truth) | O2 on-host |
 | Seed model invite `seed-nomsa-model-invite` still resolves on live | Medium (seed artifact) | Revoke/expire on host when practical |
+| API crash-loops on redeploy after the `SETTINGS_ENCRYPTION_KEY` production guard shipped — this box's `.env` predates it | **Closed** — `deploy.sh` now checks for it before building; operator adds `SETTINGS_ENCRYPTION_KEY=$(openssl rand -base64 48)` to `.env` on any host deployed before that guard | Operator |
 
 ### 1.4 O0 conclusion
 
