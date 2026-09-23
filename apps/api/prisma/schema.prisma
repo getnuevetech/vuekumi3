@@ -1598,15 +1598,23 @@ model PaymentGateway {
   updatedAt   DateTime @updatedAt
 }
 
+/// Phase 57 — purpose is validated against AI_PROVIDER_PURPOSES at the
+/// application layer (kept as String here for forward compatibility, same
+/// pattern as other enum-shaped string columns in this schema). priority
+/// orders multiple providers registered for the same purpose; lowest wins,
+/// so admins can register a fallback without deleting the primary.
 model AiProvider {
   id         String   @id @default(cuid())
   name       String
   slug       String   @unique
   purpose    String
+  priority   Int      @default(0)
   apiBaseUrl String?
   apiKeyEnc  String?
   notes      String?
   enabled    Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([purpose, enabled, priority])
 }

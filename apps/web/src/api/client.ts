@@ -77,7 +77,7 @@ import type {
   PartnerKeyDto,
   CreatePartnerKeyInput,
 } from '@vuekumi/shared'
-import { firstAdminPath } from '@vuekumi/shared'
+import { firstAdminPath, AI_PROVIDER_PURPOSES, AI_PROVIDER_PURPOSE_LABELS, type AiProviderPurpose } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
@@ -1180,12 +1180,15 @@ export interface AiProvider {
   name: string
   slug: string
   purpose: string
+  priority: number
   apiBaseUrl: string | null
   notes: string | null
   enabled: boolean
   hasKey: boolean
   keyMasked?: string
 }
+
+export { AI_PROVIDER_PURPOSES, AI_PROVIDER_PURPOSE_LABELS, type AiProviderPurpose }
 
 export interface AdminContentRow extends PhotoDto {
   modelReleases?: { id: string; fileName: string; status: string; notes: string | null }[]

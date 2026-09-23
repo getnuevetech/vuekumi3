@@ -92,9 +92,26 @@ before any different retention or vendor is adopted.
 
 ---
 
-## 4. Proposed Phase 57 — AI Provider Registry (multi-provider dispatch)
+## 4. Phase 57 — AI Provider Registry (multi-provider dispatch) — **shipped**
 
-**Not gated. Pure infrastructure — buildable now.**
+**Not gated. Pure infrastructure.**
+
+Shipped as designed: `AI_PROVIDER_PURPOSES` enum
+(`image_analysis`/`image_remediation`/`id_verification`/`likeness_matching`)
+in `@vuekumi/shared`; `AiProvider.priority` column for fallback ordering;
+`resolveProvider(purpose)` in `apps/api/src/lib/ai.ts` replaces
+`resolveVisionProvider()`, dispatching to the highest-priority enabled row
+for that purpose, falling back to the legacy single `ai.openai_api_key`
+setting and the old untyped `vision`/`openai` row so pre-Phase-57 installs
+keep working unchanged, then dev/no-op. `suggestFromContext`
+(`image_analysis`), `compareLikeness` (`likeness_matching`), and
+`screenImageForRights` (`image_analysis` — see §5 correction below) all
+moved onto it. Admin AI-providers screen groups by purpose with a
+priority field and a fallback "other" bucket for any legacy free-text
+purpose value already in a database. Seed's `DEFAULT_AI_PROVIDERS`
+purposes migrated from `vision`/`enhance` to the new enum values.
+
+Original scope for reference:
 
 Make the existing `AiProvider` table's `purpose` column do real work instead
 of being decorative.
@@ -143,8 +160,23 @@ still pass unmodified in behavior.
 
 **Not gated (Tier A only — presence, not identity). Buildable now.**
 
-This is the "AI subjects" line item `08` §8 already names under P1, made
-concrete:
+**Correction found while building Phase 57**: §1's audit undersold what
+already exists. `apps/api/src/lib/screening.ts` (Phase 23) already runs
+AI/heuristic person-presence detection (`screenImageForRights`,
+`RightsScreeningDto` with `kind`/`possibleMinor`/`crowdBackground`/etc.) at
+upload, and `applyScreeningToPeopleFlag` (`@vuekumi/shared`) already
+**overrides** a contributor's `hasRecognizablePeople: false` to `true` when
+AI detects a person or is uncertain — a contributor cannot self-declare
+their way past detection. That in turn already sets
+`modelReleaseRequired`/`modelReleaseStatus: 'pending'`, which the existing
+two-party commercial-lock engine (`commercialEligibilityBlock`) already
+blocks commercial licensing on ("AWAITING MODEL CONSENT"). **Detection and
+blocking are shipped, not new.** What's below is now scoped to only the
+genuinely missing piece: turning a silent "pending" state into the
+uploader-visible prompt-or-auto-invite workflow the product described,
+using `identifyAppearanceSchema` (already collects displayName/email/mobile)
+as the contact-capture step. This is the "AI subjects" line item `08` §8
+already names under P1, made concrete:
 
 1. **Detection becomes a first-class signal, not just a suggestion field.**
    On upload processing (same pipeline as EXIF stripping / derivative

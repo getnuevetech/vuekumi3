@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { AI_PROVIDER_PURPOSES } from '@vuekumi/shared'
 import { z } from 'zod'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
@@ -20,7 +21,8 @@ const gatewaySchema = z.object({
 const aiSchema = z.object({
   name: z.string().min(2),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
-  purpose: z.string().min(2),
+  purpose: z.enum(AI_PROVIDER_PURPOSES),
+  priority: z.number().int().min(0).max(1000).optional(),
   apiBaseUrl: z.string().url().optional().or(z.literal('')),
   apiKey: z.string().optional(),
   notes: z.string().optional(),
@@ -97,7 +99,9 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
   })
 
   app.get('/admin/ai-providers', readAi, async () => {
-    const providers = await prisma.aiProvider.findMany({ orderBy: { name: 'asc' } })
+    const providers = await prisma.aiProvider.findMany({
+      orderBy: [{ purpose: 'asc' }, { priority: 'asc' }, { name: 'asc' }],
+    })
     return {
       providers: providers.map((p) => ({
         ...p,
@@ -115,6 +119,7 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
         name: body.name,
         slug: body.slug,
         purpose: body.purpose,
+        priority: body.priority ?? 0,
         apiBaseUrl: body.apiBaseUrl || null,
         notes: body.notes,
         enabled: body.enabled ?? true,
@@ -140,6 +145,7 @@ export async function adminIntegrationRoutes(app: FastifyInstance) {
       data: {
         ...('name' in body ? { name: body.name } : {}),
         ...('purpose' in body ? { purpose: body.purpose } : {}),
+        ...('priority' in body ? { priority: body.priority } : {}),
         ...('apiBaseUrl' in body ? { apiBaseUrl: body.apiBaseUrl || null } : {}),
         ...('notes' in body ? { notes: body.notes } : {}),
         ...('enabled' in body ? { enabled: body.enabled } : {}),

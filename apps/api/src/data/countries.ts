@@ -119,6 +119,6 @@ export const DEFAULT_GATEWAYS = [
 ]
 
 export const DEFAULT_AI_PROVIDERS = [
-  { name: 'OpenAI', slug: 'openai', purpose: 'vision', apiBaseUrl: 'https://api.openai.com/v1', notes: 'GPT-4o Vision — tags, quality, people detection' },
-  { name: 'Replicate', slug: 'replicate', purpose: 'enhance', apiBaseUrl: 'https://api.replicate.com/v1', notes: 'Image enhancement and upscaling' },
+  { name: 'OpenAI', slug: 'openai', purpose: 'image_analysis', apiBaseUrl: 'https://api.openai.com/v1', notes: 'GPT-4o Vision — tags, quality, people detection' },
+  { name: 'Replicate', slug: 'replicate', purpose: 'image_remediation', apiBaseUrl: 'https://api.replicate.com/v1', notes: 'Image enhancement and upscaling' },
 ]

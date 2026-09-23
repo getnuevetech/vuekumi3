@@ -3,7 +3,7 @@ import { applyAiFieldsSchema, canImpersonateCreator, suggestFileSchema } from '@
 import type { AuthUser } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { authenticate, requireCreatorWorkspace } from '../lib/auth-middleware.js'
-import { AiError, loadPhotoImage, resolveVisionProvider, suggestFromContext } from '../lib/ai.js'
+import { AiError, loadPhotoImage, resolveProvider, suggestFromContext } from '../lib/ai.js'
 import { prisma } from '../lib/prisma.js'
 import { serializePhoto } from '../lib/serialize.js'
 import { syncPermissionToTwoParty } from '../lib/models.js'
@@ -122,7 +122,7 @@ export async function aiRoutes(app: FastifyInstance) {
 
   app.get('/ai/status', staff, async () => {
     try {
-      const provider = await resolveVisionProvider()
+      const provider = await resolveProvider('image_analysis')
       return { configured: provider.kind === 'openai', provider: provider.kind, manualOnly: true as const }
     } catch {
       return { configured: false, provider: 'dev' as const, manualOnly: true as const }
