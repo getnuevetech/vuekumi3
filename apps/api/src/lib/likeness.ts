@@ -1,7 +1,7 @@
 import type { LikenessCheckStatus } from '@vuekumi/shared'
 import { config } from '../config.js'
 import { ModelError } from './models.js'
-import { resolveVisionProvider, resizeForVision, loadPhotoImage } from './ai.js'
+import { resolveProvider, resizeForVision, loadPhotoImage } from './ai.js'
 
 export const LIKENESS_REFERENCE_MAX_BYTES = 4 * 1024 * 1024
 
@@ -156,7 +156,7 @@ export async function compareLikeness(input: {
     throw new ModelError('Reference image could not be read')
   }
 
-  const provider = await resolveVisionProvider()
+  const provider = await resolveProvider('likeness_matching')
   if (provider.kind === 'dev') {
     return {
       status: 'unavailable',

@@ -13,6 +13,27 @@ export const PHOTO_CATEGORIES = [
   'Architecture',
 ] as const
 
+/**
+ * Phase 58 — the fixed set of AI functions the provider registry dispatches
+ * on. `image_remediation` and `id_verification` have no provider
+ * implementation yet (Phases 61 and 59); the enum exists now so provider
+ * rows can be registered against the right purpose ahead of time.
+ */
+export const AI_PROVIDER_PURPOSES = [
+  'image_analysis',
+  'image_remediation',
+  'id_verification',
+  'likeness_matching',
+] as const
+export type AiProviderPurpose = (typeof AI_PROVIDER_PURPOSES)[number]
+
+export const AI_PROVIDER_PURPOSE_LABELS: Record<AiProviderPurpose, string> = {
+  image_analysis: 'Image analysis (tagging, description, subject flag)',
+  image_remediation: 'Image remediation (quality/enhancement, quarantine)',
+  id_verification: 'ID verification (government ID ↔ avatar match)',
+  likeness_matching: 'Likeness matching (selfie ↔ photo comparison)',
+}
+
 export const applyAiFieldsSchema = z.object({
   fields: z
     .array(z.enum(['title', 'description', 'category', 'country', 'tags', 'hasRecognizablePeople']))

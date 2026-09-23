@@ -291,7 +291,13 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
 2. For staff ACL + model upload + symmetric rights, read
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
-3. Default next slice: **none scheduled**. Phase 57 (asset quarantine reason codes on
+3. Default next slice: **none scheduled** absent explicit approval. Phase 58
+   (AI Provider Registry — `AiProvider.purpose` dispatch is now real;
+   `image_analysis`/`likeness_matching`/screening all resolve per-purpose,
+   priority-ordered, with the legacy single-key setup still a fallback; see
+   [`09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md`](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md))
+   is shipped, approved to build phase-by-phase with merge-to-main after each.
+   Phase 57 (asset quarantine reason codes on
    commercial locks — staff filter + required reason when freezing) is shipped.
    Phase 56 (PDS `contributor.upload` — legacy ALLOW
    while markets HOLD; DENY when ACTIVE/SUSPENDED holds `contributor_upload`) is shipped.

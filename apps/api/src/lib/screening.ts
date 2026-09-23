@@ -1,6 +1,6 @@
 import type { RightsScreeningDto, ScreeningKind } from '@vuekumi/shared'
 import { defaultScreening } from '@vuekumi/shared'
-import { AiError, resizeForVision, resolveVisionProvider } from './ai.js'
+import { AiError, resizeForVision, resolveProvider } from './ai.js'
 import { getObjectBuffer } from './storage.js'
 
 const PEOPLE_CATEGORIES = new Set(['People', 'Fashion', 'Culture'])
@@ -148,7 +148,7 @@ export async function screenImageForRights(input: {
 }): Promise<RightsScreeningDto> {
   const fallback = heuristicPeopleScreen(input)
   try {
-    const provider = await resolveVisionProvider()
+    const provider = await resolveProvider('image_analysis')
     if (provider.kind === 'dev') return fallback
     const jpeg = input.image ? await resizeForVision(input.image) : undefined
     return await callOpenAiPeopleScreen(

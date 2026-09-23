@@ -1,4 +1,4 @@
-import { PHOTO_CATEGORIES } from '@vuekumi/shared'
+import { AI_PROVIDER_PURPOSES, PHOTO_CATEGORIES, type AiProviderPurpose } from '@vuekumi/shared'
 import sharp from 'sharp'
 import { config } from '../config.js'
 import { decryptSecret, getSetting } from './settings.js'
@@ -25,30 +25,67 @@ export class AiError extends Error {
   }
 }
 
-export async function resolveVisionProvider() {
-  const key = (await getSetting('ai.openai_api_key')) ?? ''
+export type ResolvedProvider =
+  | { kind: 'openai'; key: string; base: string; model: string; providerId: string | null; providerName: string }
+  | { kind: 'dev' }
+
+/**
+ * Phase 58 — per-purpose provider dispatch. Looks up `AiProvider` rows
+ * registered for this exact purpose first (lowest `priority` wins, so a
+ * fallback provider can be registered without removing the primary), then
+ * falls back to the single legacy `ai.openai_api_key` setting and the old
+ * untyped 'vision'/'openai' provider row so installs configured before this
+ * phase keep working unchanged for every purpose, then dev/no-op.
+ */
+export async function resolveProvider(purpose: AiProviderPurpose): Promise<ResolvedProvider> {
   const model = (await getSetting('ai.openai_model')) || 'gpt-4o-mini'
-  if (key) {
-    return { kind: 'openai' as const, key, base: 'https://api.openai.com/v1', model }
-  }
-  const row = await prisma.aiProvider.findFirst({
-    where: {
-      enabled: true,
-      apiKeyEnc: { not: null },
-      OR: [{ slug: 'openai' }, { purpose: 'vision' }],
-    },
+
+  const rows = await prisma.aiProvider.findMany({
+    where: { purpose, enabled: true, apiKeyEnc: { not: null } },
+    orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
   })
-  if (row?.apiKeyEnc) {
+  if (rows[0]?.apiKeyEnc) {
     return {
-      kind: 'openai' as const,
-      key: decryptSecret(row.apiKeyEnc),
-      base: (row.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
+      kind: 'openai',
+      key: decryptSecret(rows[0].apiKeyEnc),
+      base: (rows[0].apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
       model,
+      providerId: rows[0].id,
+      providerName: rows[0].name,
     }
   }
-  if (config.isDev) return { kind: 'dev' as const }
-  throw new AiError('Add an OpenAI key in Admin Settings to run suggestions.', 503)
+
+  const legacyKey = (await getSetting('ai.openai_api_key')) ?? ''
+  if (legacyKey) {
+    return {
+      kind: 'openai',
+      key: legacyKey,
+      base: 'https://api.openai.com/v1',
+      model,
+      providerId: null,
+      providerName: 'ai.openai_api_key setting',
+    }
+  }
+
+  const legacyRow = await prisma.aiProvider.findFirst({
+    where: { enabled: true, apiKeyEnc: { not: null }, OR: [{ slug: 'openai' }, { purpose: 'vision' }] },
+  })
+  if (legacyRow?.apiKeyEnc) {
+    return {
+      kind: 'openai',
+      key: decryptSecret(legacyRow.apiKeyEnc),
+      base: (legacyRow.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/$/, ''),
+      model,
+      providerId: legacyRow.id,
+      providerName: legacyRow.name,
+    }
+  }
+
+  if (config.isDev) return { kind: 'dev' }
+  throw new AiError(`Add an AI provider for "${purpose}" in Admin Settings to run this feature.`, 503)
 }
+
+export { AI_PROVIDER_PURPOSES }
 
 export function heuristicSuggest(input: {
   title?: string | null
@@ -176,7 +213,7 @@ export async function suggestFromContext(input: {
   image?: Buffer | null
 }): Promise<SuggestionPayload> {
   const fallback = heuristicSuggest(input)
-  const provider = await resolveVisionProvider()
+  const provider = await resolveProvider('image_analysis')
   if (provider.kind === 'dev') return fallback
   const jpeg = input.image ? await resizeForVision(input.image) : undefined
   return callOpenAi(provider, JSON.stringify({
