@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import {
   changePasswordSchema,
+  CREATOR_ACCOUNT_TYPES,
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
@@ -29,6 +30,7 @@ import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 import { serializeUser, authUserInclude } from '../lib/serialize.js'
 import { authenticate, requireAdminCapability } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
+import { evaluateAccountApproval } from '../lib/moderation.js'
 import { clearAuthCookies, issueTokens } from '../lib/session.js'
 
 import { agreementVersionForAccountType } from '../data/licenses.js'
@@ -85,7 +87,16 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const passwordHash = await hashPassword(body.password)
-    const status = body.accountType === 'agency' ? 'pending' : 'active'
+    let status: 'active' | 'pending' = 'active'
+    let approvalReasons: string[] = ['not_applicable']
+    if (body.accountType === 'agency') {
+      status = 'pending'
+      approvalReasons = ['agency_requires_manual_approval']
+    } else if ((CREATOR_ACCOUNT_TYPES as readonly string[]).includes(body.accountType)) {
+      const approval = await evaluateAccountApproval({ email: body.email })
+      status = approval.decision
+      approvalReasons = approval.reasons
+    }
 
     const user = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
@@ -153,6 +164,17 @@ export async function authRoutes(app: FastifyInstance) {
 
       return created
     })
+
+    if (status === 'pending' || approvalReasons[0] !== 'not_applicable') {
+      await writeAuditLog({
+        actorId: user.id,
+        action: status === 'active' ? 'moderation.account_auto_approved' : 'moderation.account_pending_review',
+        entityType: 'user',
+        entityId: user.id,
+        metadata: { accountType: body.accountType, reasons: approvalReasons },
+        ipAddress: request.ip,
+      })
+    }
 
     const verifyToken = await createEmailVerification(user.id, user.email, user.name)
     await issueTokens(app, user.id, reply, request)

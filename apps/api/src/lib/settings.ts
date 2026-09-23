@@ -80,6 +80,48 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     secret: false,
     placeholder: 'africa_list',
   },
+  {
+    key: 'moderation.ai_auto_approve_accounts',
+    label: 'AI auto-approve new creator accounts (true/false)',
+    group: 'Moderation',
+    secret: false,
+    placeholder: 'true',
+  },
+  {
+    key: 'moderation.ai_auto_approve_content',
+    label: 'AI auto-approve new photo uploads (true/false)',
+    group: 'Moderation',
+    secret: false,
+    placeholder: 'true',
+  },
+  {
+    key: 'moderation.disposable_email_domains',
+    label: 'Blocked email domains for new accounts (comma-separated; sends to manual review, never blocks)',
+    group: 'Moderation',
+    secret: false,
+    placeholder: 'mailinator.com,10minutemail.com,guerrillamail.com',
+  },
+  {
+    key: 'moderation.require_complete_metadata',
+    label: 'Require title/category/country before auto-approving an upload (true/false)',
+    group: 'Moderation',
+    secret: false,
+    placeholder: 'true',
+  },
+  {
+    key: 'moderation.min_photo_width',
+    label: 'Minimum photo width (px) to auto-approve',
+    group: 'Moderation',
+    secret: false,
+    placeholder: '800',
+  },
+  {
+    key: 'moderation.min_photo_height',
+    label: 'Minimum photo height (px) to auto-approve',
+    group: 'Moderation',
+    secret: false,
+    placeholder: '600',
+  },
 ]
 
 export function envSetting(key: string): string | null {
