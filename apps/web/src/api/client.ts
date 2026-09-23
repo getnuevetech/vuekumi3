@@ -730,6 +730,12 @@ export const api = {
   submitModelPhoto: (body: import('@vuekumi/shared').SubmitModelPhotoInput) =>
     request<{ photo: PhotoDto }>('/api/model/photos', { method: 'POST', body: JSON.stringify(body) }),
 
+  identifyModelAppearance: (photoId: string, body: IdentifyAppearanceInput) =>
+    request<{ appearance: PhotoAppearanceDto; joinUrl: string }>(`/api/model/photos/${photoId}/appearances`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   updateModelPhoto: (id: string, body: UpdatePhotoInput) =>
     request<{ photo: PhotoDto }>(`/api/model/photos/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 

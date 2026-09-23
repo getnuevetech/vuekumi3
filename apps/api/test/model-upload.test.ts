@@ -284,4 +284,66 @@ test('model register, upload, photographer display-only, and dual-role self-shot
     payload: { permissionState: 'commercial' },
   })
   assert.equal(patchCommercial.statusCode, 400)
+
+  await app.close()
+})
+
+test('Phase 65: undeclared model upload stays likeness-locked and can invite the person', async () => {
+  const app = await buildApp()
+  const registered = await app.inject({
+    method: 'POST',
+    url: '/api/auth/register',
+    payload: {
+      email: `mdl65-${Date.now()}@vuekumi.demo`,
+      password: 'User12345!',
+      name: 'Phase Sixty Five',
+      accountType: 'model',
+      country: 'KE',
+      acceptAgreement: true,
+    },
+  })
+  assert.equal(registered.statusCode, 200, registered.body)
+  const cookie = cookies(registered)
+  const submitted = await app.inject({
+    method: 'POST',
+    url: '/api/model/photos',
+    headers: { cookie },
+    payload: {
+      title: 'Street corner',
+      category: 'Urban',
+      country: 'Kenya',
+      hasRecognizablePeople: false,
+      copyrightHolder: 'Phase Sixty Five',
+      copyrightAttested: true,
+      creationClaim: 'self_created',
+      inPhotograph: false,
+    },
+  })
+  assert.equal(submitted.statusCode, 200, submitted.body)
+  const photo = (submitted.json() as {
+    photo: {
+      id: string
+      hasRecognizablePeople: boolean
+      rights?: { modelConsentStatus?: string; screeningKind?: string | null; commercialEligible?: boolean }
+    }
+  }).photo
+  assert.equal(photo.hasRecognizablePeople, true)
+  assert.equal(photo.rights?.screeningKind, 'uncertain_human_detection')
+  assert.equal(photo.rights?.modelConsentStatus, 'required')
+  assert.equal(photo.rights?.commercialEligible, false)
+
+  const invited = await app.inject({
+    method: 'POST',
+    url: `/api/model/photos/${photo.id}/appearances`,
+    headers: { cookie },
+    payload: {
+      displayName: 'Other Person',
+      email: `other-${Date.now()}@vuekumi.demo`,
+      mobile: '+254700000065',
+    },
+  })
+  assert.equal(invited.statusCode, 200, invited.body)
+  assert.match((invited.json() as { joinUrl: string }).joinUrl, /\/invite\/model\//)
+
+  await app.close()
 })

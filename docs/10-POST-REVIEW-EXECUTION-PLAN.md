@@ -56,7 +56,7 @@ chat-completions. A Replicate row in seed data is not called.
 | Image remediation (quality, enhancement, quarantine action) | `image_remediation` | No caller. Purpose exists so a row can be saved early. | Phase 62, after the scope call in §4. |
 | ID document matched to avatar / profile image | `id_verification` | No route, no schema, no vendor. | Phase 60. Blocked on Dec-Bio. |
 | Named model / person likeness for a copyright or release check | `likeness_matching` | Phase 28 opt-in compare. Selfie bytes are discarded. A similarity result does not grant a release and does not search a face database. | Stay. Binding a face to a named identity is Phase 60, same Dec-Bio gate. |
-| Person detected → contact, or prompt that authorization is required | `image_analysis` plus the existing invite | Contributor upload: if the server sets `hasRecognizablePeople`, the UI opens `/contributor/photos/:id` and `PeopleIdentifier` collects name, email, and mobile, which sends the existing invite. If the checkbox was off, a warning states that commercial licensing stays on hold. Empty contact cannot clear the two-approval lock. | Make detection fail closed so this path actually runs (§4). Model upload does not yet show the same undeclared-person warning (§4 Phase 65). |
+| Person detected → contact, or prompt that authorization is required | `image_analysis` plus the existing invite | Contributor upload: if the server sets `hasRecognizablePeople`, the UI opens `/contributor/photos/:id` and `PeopleIdentifier` collects name, email, and mobile, which sends the existing invite. If the checkbox was off, a warning states that commercial licensing stays on hold. Empty contact cannot clear the two-approval lock. | Shipped for contributors (Phase 59) and model uploads (Phase 65). Detection fails closed (Phase 64). |
 
 Phase 61 account and content “AI approval” is a settings checklist
 (disposable-email domain, title/category/country, minimum width and height).
@@ -120,15 +120,14 @@ Original scope, for reference:
 `active` commercial stock, and the uploader is sent to the authorization
 screen because the server set `hasRecognizablePeople`.
 
-### Phase 65 — Model-upload prompt parity
+### Phase 65 — Model-upload prompt parity — **shipped**
 
-Model submit always toasts “Submitted for review” and opens the model photo
-editor. It does not compare the server people flag with the checkbox, and
-that editor has no `PeopleIdentifier`. After Phase 64, an undeclared person
-on a model upload must surface the same hold: another person needs likeness
-authorization, and a missing photographer contact still blocks copyright
-clearance. Reuse the model-upload photographer fields and the appearance
-invite. Models still do not earn.
+Model submit compares the server `hasRecognizablePeople` flag with the
+checkbox. An undeclared person, or an unfinished detection, warns that
+likeness authorization is required and that models do not earn. The model
+photo editor can send the existing appearance invite. An unsettled detection
+does not treat a self-likeness checkbox as clearance of everyone in the frame.
+Photographer contact for third-party copyright stays on the same editor.
 
 ### Remediation scope call, then Phase 62
 
@@ -197,7 +196,7 @@ host until Phase 64 is deployed.
 
 ## 7. Immediate decision
 
-Phase 64 is shipped. Next build is **Phase 65** (model-upload prompt parity).
+Phases 64 and 65 are shipped. Next build is **Phase 62** (image remediation, default A: quarantine only, no silent pixel edits).
 Record the Phase 62 remediation option (default A, quarantine only) when that
 phase starts. Leave Phase 60 and T5/T6 untouched until Dec-Bio and Dec-PayBase
 are signed in `06`.

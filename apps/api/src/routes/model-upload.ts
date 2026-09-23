@@ -5,6 +5,7 @@ import {
   applyScreeningToPeopleFlag,
   canEnterCommercialInventory,
   guestCopyrightConsentSchema,
+  identifyAppearanceSchema,
   identifyCopyrightHolderSchema,
   isCommerciallyEligible,
   presignUploadSchema,
@@ -18,9 +19,11 @@ import { requireAccountTypes } from '../lib/auth-middleware.js'
 import {
   ModelError,
   appearanceInclude,
+  ownEmailInviteBlocked,
   serializeAppearance,
   syncVerifiedRightsRecord,
 } from '../lib/models.js'
+import { issueAppearanceInvite } from './models.js'
 import {
   copyrightInclude,
   applyCopyrightDecision,
@@ -196,8 +199,12 @@ export async function modelUploadRoutes(app: FastifyInstance) {
     const thirdParty = thirdPartyCopyright(body.creationClaim)
     const now = new Date()
     const selfShotVerified = body.inPhotograph && body.ownLikenessConfirmed
+    const detectionSettled = !screening.uncertainHumanDetection
+      && screening.kind !== 'uncertain_human_detection'
+      && screening.kind !== 'multiple_recognizable_people'
+    const selfShotClearsLikeness = Boolean(selfShotVerified && detectionSettled)
     const modelConsentStatus = people
-      ? (selfShotVerified && screening.kind !== 'multiple_recognizable_people' ? 'approved' : 'required')
+      ? (selfShotClearsLikeness ? 'approved' : 'required')
       : 'not_required'
     const commercialEligible = commercialUploader && isCommerciallyEligible({
       copyrightStatus,
@@ -280,9 +287,9 @@ export async function modelUploadRoutes(app: FastifyInstance) {
             inviteEmail: request.authUser?.email ?? null,
             modelUserId: userId,
             invitedById: userId,
-            status: 'approved',
-            consentStatus: 'approved',
-            decisionKind: 'approved',
+            status: selfShotClearsLikeness ? 'approved' : 'identified',
+            consentStatus: selfShotClearsLikeness ? 'approved' : 'required',
+            decisionKind: selfShotClearsLikeness ? 'approved' : null,
             usage: body.ownUsage ?? 'editorial',
             confirmedLikeness: true,
             selfShot: true,
@@ -375,6 +382,60 @@ export async function modelUploadRoutes(app: FastifyInstance) {
         },
       ),
       joinUrl,
+    }
+  })
+
+  app.post('/model/photos/:id/appearances', gate, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const body = identifyAppearanceSchema.parse(request.body)
+    const photo = await prisma.photo.findUnique({
+      where: { id },
+      include: { contributor: true },
+    })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (photo.uploadedById !== request.userId && photo.contributorId !== request.userId) {
+      return reply.code(403).send({ error: 'Forbidden' })
+    }
+    const email = body.email.toLowerCase()
+    const selfBlocked = ownEmailInviteBlocked(email, photo.contributor.email)
+    if (selfBlocked) return reply.code(400).send({ error: selfBlocked })
+    const dup = await prisma.photoAppearance.findFirst({ where: { photoId: id, inviteEmail: email } })
+    if (dup) return reply.code(409).send({ error: 'That person is already identified on this photograph' })
+
+    const minor = Boolean(body.isMinor || body.ageClass === 'minor')
+    try {
+      const created = await prisma.photoAppearance.create({
+        data: {
+          photoId: id,
+          displayName: body.displayName,
+          inviteEmail: email,
+          inviteMobile: body.mobile,
+          invitedById: request.userId!,
+          status: 'identified',
+          consentStatus: 'required',
+          ageClass: minor ? 'minor' : (body.ageClass ?? (photo.possibleMinor ? 'unknown' : 'adult')),
+          isMinor: minor,
+          guardianName: minor ? body.guardianName : null,
+          guardianEmail: minor ? body.guardianEmail?.toLowerCase() : null,
+          guardianMobile: minor ? body.guardianMobile : null,
+        },
+      })
+      const issued = await issueAppearanceInvite(created.id)
+      await syncVerifiedRightsRecord(id)
+      await writeAuditLog({
+        actorId: request.userId,
+        action: 'model.invite',
+        entityType: 'photo_appearance',
+        entityId: created.id,
+        metadata: { photoId: id, email, displayName: body.displayName, source: 'model_upload' },
+        ipAddress: request.ip,
+      })
+      return {
+        appearance: serializeAppearance(issued.appearance, { includeEmail: true, includeMobile: true }),
+        joinUrl: issued.joinUrl,
+      }
+    } catch (err) {
+      return modelError(reply, err)
     }
   })
 

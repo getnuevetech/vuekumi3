@@ -17,6 +17,9 @@ export function ModelPhotoEdit() {
   const [email, setEmail] = useState('')
   const [mobile, setMobile] = useState('')
   const [busy, setBusy] = useState(false)
+  const [personName, setPersonName] = useState('')
+  const [personEmail, setPersonEmail] = useState('')
+  const [personMobile, setPersonMobile] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -68,6 +71,53 @@ export function ModelPhotoEdit() {
               Photographer contact: {authz.displayName} · {authz.status}
               {authz.commercialSublicensing ? ' · commercial sublicensing granted' : ' · display only or pending'}
             </p>
+          )}
+          {photo.hasRecognizablePeople && (
+            <form
+              className="space-y-3 rounded-xl border border-sand-soft p-4"
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setBusy(true)
+                try {
+                  await api.identifyModelAppearance(id, {
+                    displayName: personName,
+                    email: personEmail,
+                    mobile: personMobile,
+                  })
+                  toast.success('VueKumi will contact them for likeness authorization')
+                  setPersonName('')
+                  setPersonEmail('')
+                  setPersonMobile('')
+                  const next = await api.modelPhoto(id)
+                  setPhoto(next.photo)
+                } catch (err) {
+                  toast.error(err instanceof ApiError ? err.message : 'Could not send likeness request')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Likeness authorization</p>
+              <p className="text-sm text-ink-soft">
+                {photo.rights?.screeningKind === 'uncertain_human_detection'
+                  ? 'Person detection did not finish, so this photograph cannot be cleared from the upload alone. '
+                  : 'A person appears in this photograph. '}
+                Add anyone else who is recognizable. VueKumi contacts them for likeness authorization. That is not copyright, and models do not earn from licences.
+              </p>
+              {(photo.appearances ?? []).length > 0 && (
+                <ul className="space-y-1 text-sm text-ink-soft">
+                  {(photo.appearances ?? []).map((row) => (
+                    <li key={row.id}>{row.displayName} · {row.consentStatus ?? row.status}</li>
+                  ))}
+                </ul>
+              )}
+              <input required value={personName} onChange={(e) => setPersonName(e.target.value)} placeholder="Person's name" className="w-full rounded-xl border border-sand-soft px-3 py-2 text-sm" />
+              <input required type="email" value={personEmail} onChange={(e) => setPersonEmail(e.target.value)} placeholder="Email" className="w-full rounded-xl border border-sand-soft px-3 py-2 text-sm" />
+              <input required value={personMobile} onChange={(e) => setPersonMobile(e.target.value)} placeholder="Mobile" className="w-full rounded-xl border border-sand-soft px-3 py-2 text-sm" />
+              <button disabled={busy} className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper disabled:opacity-50">
+                Send likeness request
+              </button>
+            </form>
           )}
           {photo.rights?.thirdPartyCopyright && !authz && (
             <form

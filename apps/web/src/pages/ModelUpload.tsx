@@ -121,7 +121,7 @@ export function ModelUpload() {
             const signed = await api.presignModelUpload(file.name, file.type || 'image/jpeg')
             await api.putUpload(signed.uploadUrl, file, signed.headers)
             setProgress('Submitting')
-            const photo = await api.submitModelPhoto({
+            const submitted = await api.submitModelPhoto({
               title: title || file.name.replace(/\.[^.]+$/, ''),
               description: description || undefined,
               category,
@@ -140,8 +140,22 @@ export function ModelUpload() {
               assignmentDocumentName: claim === 'assigned' || claim === 'licensed' ? (documentName || undefined) : undefined,
               originalKey: signed.key,
             })
-            toast.success('Submitted for review')
-            navigate(`/model/photos/${photo.photo.id}`)
+            const detected = Boolean(submitted.photo.hasRecognizablePeople)
+            const undeclared = detected && !inPhoto
+            if (undeclared) {
+              toast.warning(
+                "Vuekumi's automated review detected a person you did not mark. Add their contact details — likeness authorization is required, and models do not earn from licences.",
+                { duration: 10000 },
+              )
+            } else if (submitted.photo.rights?.screeningKind === 'uncertain_human_detection') {
+              toast.warning(
+                'Person detection did not finish. This photograph stays locked until everyone who appears is identified. Models do not earn from licences.',
+                { duration: 10000 },
+              )
+            } else {
+              toast.success('Submitted for review')
+            }
+            navigate(`/model/photos/${submitted.photo.id}`)
           } catch (err) {
             toast.error(err instanceof ApiError ? err.message : 'Submit failed')
           } finally {
