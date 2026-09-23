@@ -309,6 +309,9 @@ export interface ContributorStatsDto {
   profileViews: number
   photosCount: number
   approvalRate: number
+  favorites: number
+  licences: number
+  report: string[]
   availableUsd: number
   thisMonthUsd: number
   series: { month: string; earnings: number }[]

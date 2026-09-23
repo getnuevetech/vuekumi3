@@ -205,7 +205,29 @@ export function AdminDashboard() {
           value={stats ? money(stats.revenueMonthUsd) : '—'}
           sub={stats ? `${fmt(stats.downloads)} lifetime downloads` : 'Loading'}
         />
+        <StatCard
+          label="Catalog views"
+          value={stats ? fmt(stats.catalogViews) : '—'}
+          sub={stats ? `${fmt(stats.catalogFavorites)} favorites` : 'Loading'}
+        />
+        <StatCard
+          label="Licences issued"
+          value={stats ? fmt(stats.licencesIssued) : '—'}
+          sub="Read-only count"
+        />
+        <StatCard
+          label="Review aging"
+          value={stats ? fmt(stats.moderationOlderThan7Days) : '—'}
+          sub="Pending more than 7 days"
+        />
       </div>
+      {(overview?.engagementReport ?? []).length > 0 && (
+        <ul className="mt-4 space-y-1 text-sm text-ink-soft">
+          {overview?.engagementReport.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
 
       <div className="mt-10">
         <SectionHead kicker="Revenue" title="Revenue vs contributor payouts" />

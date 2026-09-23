@@ -11,6 +11,10 @@ export interface AdminOverviewStatsDto {
   revenueMonthUsd: number
   downloads: number
   monthLabel: string
+  catalogViews: number
+  catalogFavorites: number
+  licencesIssued: number
+  moderationOlderThan7Days: number
 }
 
 export interface AdminRevenuePointDto {
@@ -22,6 +26,7 @@ export interface AdminRevenuePointDto {
 export interface AdminOverviewDto {
   stats: AdminOverviewStatsDto
   series: AdminRevenuePointDto[]
+  engagementReport: string[]
 }
 
 export const ADMIN_ACCOUNT_LIST_KINDS = [

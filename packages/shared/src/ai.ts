@@ -17,6 +17,7 @@ export const PHOTO_CATEGORIES = [
  * Phase 58 — the fixed set of AI functions the provider registry dispatches
  * on. `image_analysis` and `likeness_matching` have callers.
  * `image_remediation` has a caller (Phase 62, quarantine and opt-in preview).
+ * `analytics_reporting` is resolved by the read-only catalog summary (Phase 63).
  * `id_verification` (Phase 60, Dec-Bio) stays a registry value until that
  * decision is signed.
  */
@@ -25,6 +26,7 @@ export const AI_PROVIDER_PURPOSES = [
   'image_remediation',
   'id_verification',
   'likeness_matching',
+  'analytics_reporting',
 ] as const
 export type AiProviderPurpose = (typeof AI_PROVIDER_PURPOSES)[number]
 
@@ -33,6 +35,7 @@ export const AI_PROVIDER_PURPOSE_LABELS: Record<AiProviderPurpose, string> = {
   image_remediation: 'Image remediation (quality/enhancement, quarantine)',
   id_verification: 'ID verification (government ID ↔ avatar match)',
   likeness_matching: 'Likeness matching (selfie ↔ photo comparison)',
+  analytics_reporting: 'Analytics reporting (read-only views, favorites, licences)',
 }
 
 export const applyAiFieldsSchema = z.object({

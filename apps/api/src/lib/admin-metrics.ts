@@ -1,6 +1,7 @@
 import type { AccountType } from '@prisma/client'
 import type { AdminOverviewDto, AdminRevenuePointDto } from '@vuekumi/shared'
 import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
+import { narrateCatalogEngagement, reportingProviderKind } from './analytics-report.js'
 import { prisma } from './prisma.js'
 import { roundUsd } from './payouts.js'
 
@@ -62,7 +63,8 @@ export function revenuePayoutSeries(
 }
 
 export async function loadAdminOverview(now = new Date()): Promise<AdminOverviewDto> {
-  const [users, contributors, photosLive, pendingReview, openRightsReports, downloadAgg, payments, subscriptions, payouts] =
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const [users, contributors, photosLive, pendingReview, openRightsReports, downloadAgg, payments, subscriptions, payouts, viewAgg, catalogFavorites, licencesIssued, moderationOlderThan7Days, categoryRows, provider] =
     await Promise.all([
       prisma.user.count(),
       prisma.user.count({
@@ -84,6 +86,16 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
         where: { status: 'paid' },
         select: { amountUsd: true, processedAt: true, createdAt: true },
       }),
+      prisma.photo.aggregate({ _sum: { views: true } }),
+      prisma.photoFavorite.count(),
+      prisma.licenseGrant.count(),
+      prisma.moderationItem.count({ where: { status: 'pending', createdAt: { lt: weekAgo } } }),
+      prisma.photo.groupBy({
+        by: ['category'],
+        where: LIVE,
+        _sum: { views: true },
+      }),
+      reportingProviderKind(),
     ])
 
   const series = revenuePayoutSeries(
@@ -96,6 +108,19 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
     now,
   )
   const current = series[series.length - 1]
+  const catalogViews = viewAgg._sum.views ?? 0
+  const busiest = [...categoryRows].sort((a, b) => (b._sum.views ?? 0) - (a._sum.views ?? 0))[0]
+  const topCategory = (busiest?._sum.views ?? 0) > 0 ? busiest?.category ?? null : null
+  const engagementReport = narrateCatalogEngagement({
+    views: catalogViews,
+    favorites: catalogFavorites,
+    licences: licencesIssued,
+    topCategory,
+    moderationOlderThan7Days,
+  })
+  if (provider === 'openai') {
+    engagementReport.push('A reporting provider is configured. Catalog rows are not sent to it.')
+  }
 
   return {
     stats: {
@@ -107,7 +132,12 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
       revenueMonthUsd: current?.revenue ?? 0,
       downloads: downloadAgg._sum.downloads ?? 0,
       monthLabel: currentMonthLabel(now),
+      catalogViews,
+      catalogFavorites,
+      licencesIssued,
+      moderationOlderThan7Days,
     },
     series,
+    engagementReport,
   }
 }

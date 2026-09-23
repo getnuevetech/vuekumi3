@@ -292,7 +292,7 @@ The old plan’s NestJS / MSW / lockfile / AfriStock risks are closed.
    [`04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md`](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md) and
    approve **one** phase at a time.
 3. Default next slice: **[10-POST-REVIEW-EXECUTION-PLAN.md](./10-POST-REVIEW-EXECUTION-PLAN.md)**
-   (Phases 62, 64, and 65 are shipped; next is Phase 63). Do not restart T1, T7, or P0
+   (Phases 62–65 are shipped; remaining work waits on signed decisions). Do not restart T1, T7, or P0
    from older memos. Phase 61
    (AI-assisted account & content approval — `AiProvider`-independent
    criteria in `lib/moderation.ts`: disposable-email-domain check on creator

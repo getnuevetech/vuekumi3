@@ -421,24 +421,20 @@ doubles as a cheap fraud/plagiarism signal for Phase 61's content criteria.
 
 ---
 
-## 11. Proposed Phase 63 — AI analytics & reporting (views/comments → admin + uploader reports)
+## 11. Phase 63 — AI analytics & reporting — **shipped**
 
-**Not gated — pure reporting, changes no account or content state.** New
-purpose `analytics_reporting` (text-only; does not need a vision-capable
-provider). A periodic job aggregates per-photo views, favorites, licence
-conversions, and comments, and produces two report surfaces:
+**Read-only.** Counts of views, favorites, and licences on the contributor
+dashboard and `/admin` metrics. Photo comments are not a stored record.
+`analytics_reporting` is resolved; catalog rows are not sent to a provider.
+The surfaces are:
 
-- **Contributor-facing**: a periodic summary in the existing Earnings/
-  Dashboard tab of `Contributor.tsx` — top-performing photos, trending
-  tags/categories worth shooting more of.
-- **Admin-facing**: a new panel (or an extension of the existing
-  `/admin/metrics` overview) — catalog health, category gaps, per-contributor
-  performance trend, and moderation-queue volume/aging, so staff have one
-  place to see what Phase 61's queue actually needs attention.
+- **Contributor-facing**: the dashboard lists views, favorites, licences,
+  and the busiest category by views, beside the existing top photographs.
+- **Admin-facing**: `/admin` adds catalog views, favorites, licences issued,
+  and a count of moderation items pending longer than 7 days.
 
-Because this phase only reads and summarizes existing data (views, licences,
-comments already tracked elsewhere), it carries no PDS gating requirement —
-it cannot deny a licence or an account by itself.
+The summary only reads stored counts. It carries no PDS gating requirement
+and cannot deny a licence or an account by itself.
 
 ---
 
@@ -457,7 +453,7 @@ functional overlap between that phase and this plan.
 | **60** | ID/face verification provider (KYC, identity-bound likeness) | 58; **Dec-Bio signed** | **Yes** |
 | **61** | AI-assisted account & content approval (criteria-based) | 58; does not touch Phase 49 country gate or Phase 60 identity gate | No — **shipped**, additive signal only |
 | **62** | Image enhancement & uploader recommendations | 58; 59 (shares the remediation UX) | No — **shipped**, option A |
-| **63** | AI analytics & reporting | none (reads existing data) | No |
+| **63** | AI analytics & reporting | none (reads existing data) | No — **shipped** |
 
 58, 59, 61, 62, and 63 can all build in parallel with any open Arc T / P1
 work already in flight (T5/T6 compensation, still separately waiting on
@@ -492,6 +488,6 @@ depends on a human decision (Dec-Bio) outside this plan's control.
 
 ## 14. Immediate next action (human)
 
-Phases 58, 59, 61, 62, 64, and 65 are shipped. Option A is recorded in
-`06` §2b. Next build is Phase 63. No action on Phase 60 until Dec-Bio is
-signed.
+Phases 58, 59, and 61–65 are shipped. Option A is recorded in `06` §2b.
+No further phase in this plan is unblocked. No action on Phase 60 until
+Dec-Bio is signed.

@@ -63,6 +63,7 @@ import { appendRightsLedgerEvent, loadRightsLedger } from '../lib/ledger.js'
 import { issueAppearanceInvite } from './models.js'
 import { loadOriginalBytes, screenImageForRights, screeningWriteData } from '../lib/screening.js'
 import { applyPreviewAdjustment, proposeRemediation, type RemediationProposal } from '../lib/remediation.js'
+import { narrateCatalogEngagement, reportingProviderKind } from '../lib/analytics-report.js'
 import { evaluateContentApproval } from '../lib/moderation.js'
 import {
   ALLOWED_IMAGE_TYPES,
@@ -124,7 +125,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     monthStart.setUTCDate(1)
     monthStart.setUTCHours(0, 0, 0, 0)
 
-    const [user, live, views, followers, rejected, available, month, seriesRows, top] = await Promise.all([
+    const [user, live, views, followers, rejected, available, month, seriesRows, top, favorites, licences, categoryRows, provider] = await Promise.all([
       prisma.user.findUnique({
         where: { id: contributorId },
         include: { contributorProfile: true },
@@ -158,10 +159,30 @@ export async function contributorRoutes(app: FastifyInstance) {
         orderBy: [{ downloads: 'desc' }, { views: 'desc' }],
         take: 4,
       }),
+      prisma.photoFavorite.count({ where: { photo: { contributorId } } }),
+      prisma.licenseGrant.count({ where: { photo: { contributorId } } }),
+      prisma.photo.groupBy({
+        by: ['category'],
+        where: { contributorId },
+        _sum: { views: true },
+      }),
+      reportingProviderKind(),
     ])
 
     const handle = user?.contributorProfile?.handle ?? ''
     const rate = approvalRate(live._count._all, rejected)
+    const viewCount = views._sum.views ?? 0
+    const busiest = [...categoryRows].sort((a, b) => (b._sum.views ?? 0) - (a._sum.views ?? 0))[0]
+    const topCategory = (busiest?._sum.views ?? 0) > 0 ? busiest?.category ?? null : null
+    const report = narrateCatalogEngagement({
+      views: viewCount,
+      favorites,
+      licences,
+      topCategory,
+    })
+    if (provider === 'openai') {
+      report.push('A reporting provider is configured. Catalog rows are not sent to it.')
+    }
 
     return {
       name: user?.name ?? 'Contributor',
@@ -169,11 +190,14 @@ export async function contributorRoutes(app: FastifyInstance) {
       avatarUrl: user?.avatarUrl ?? null,
       location: user?.contributorProfile?.location ?? null,
       downloads: live._sum.downloads ?? 0,
-      views: views._sum.views ?? 0,
+      views: viewCount,
       followers,
       profileViews: user?.contributorProfile?.profileViews ?? 0,
       photosCount: live._count._all,
       approvalRate: rate,
+      favorites,
+      licences,
+      report,
       availableUsd: available._sum.amountUsd ?? 0,
       thisMonthUsd: month._sum.amountUsd ?? 0,
       series: earningsMonthSeries(seriesRows),

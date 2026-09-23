@@ -275,12 +275,20 @@ export function ContributorDashboard() {
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label="Available balance" value={money(stats?.availableUsd ?? 0)} sub={`${money(stats?.thisMonthUsd ?? 0)} earned this month`} />
         <StatCard label="Downloads" value={fmt(stats?.downloads ?? 0)} sub={`${stats?.photosCount ?? 0} live photographs`} />
         <StatCard label="Profile views" value={fmt(stats?.profileViews ?? 0)} sub={`${fmt(stats?.followers ?? 0)} followers`} />
         <StatCard label="Approval rate" value={`${stats?.approvalRate ?? 0}%`} sub={`${fmt(stats?.views ?? 0)} photo views`} />
+        <StatCard label="Favorites" value={fmt(stats?.favorites ?? 0)} sub={`${fmt(stats?.licences ?? 0)} licences`} />
       </div>
+      {(stats?.report ?? []).length > 0 && (
+        <ul className="mt-4 space-y-1 text-sm text-ink-soft">
+          {stats?.report.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
 
       <div className="mt-10">
         <SectionHead kicker="Performance" title="Earnings, last 6 months" />

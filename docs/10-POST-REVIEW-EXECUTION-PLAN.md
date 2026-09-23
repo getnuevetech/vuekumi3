@@ -139,12 +139,14 @@ resolved so the registry is the caller, and the image bytes are not sent to
 that provider for an automatic edit. A non-OpenAI wire format remains a
 separate adapter task.
 
-### Phase 63 — Analytics reporting (can run beside Phase 62)
+### Phase 63 — Analytics reporting — **shipped**
 
-Read-only summaries of views, favorites, licences, and comments for the
-contributor dashboard and `/admin` metrics. New purpose
-`analytics_reporting` if a text model is used to narrate the numbers. This
-phase cannot deny an account, a photo, or a licence.
+Read-only counts of views, favorites, and licences on the contributor
+dashboard and `/admin` metrics, plus how many moderation items have been
+pending for more than 7 days. Photo comments are not stored, so they are
+not part of the summary. `analytics_reporting` is resolved and catalog rows
+are not sent to that provider. This phase cannot deny an account, a photo,
+or a licence.
 
 ### Still blocked — do not schedule as build
 
@@ -188,6 +190,6 @@ host until Phase 64 is deployed.
 
 ## 7. Immediate decision
 
-Phases 62, 64, and 65 are shipped. Next build is **Phase 63** (read-only
-analytics: views, favorites, and licences). Leave Phase 60 and T5/T6
-untouched until Dec-Bio and Dec-PayBase are signed in `06`.
+Phases 62, 63, 64, and 65 are shipped. The remaining rows in §4 stay
+blocked. Leave Phase 60 and T5/T6 untouched until Dec-Bio and Dec-PayBase
+are signed in `06`.
