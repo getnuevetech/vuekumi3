@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useRef } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router'
 import type { SubscriptionDto } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
 import { api, ApiError } from '../api/client'
@@ -9,10 +10,13 @@ import { toast } from 'sonner'
 
 export default function PlusCheckout() {
   const { subscriptionId } = useParams()
+  const [params] = useSearchParams()
+  const sessionId = params.get('session_id')
   const { format } = useCurrency()
   const { refresh } = useAuth()
   const [subscription, setSubscription] = useState<SubscriptionDto | null>(null)
   const [busy, setBusy] = useState(false)
+  const confirmStarted = useRef(false)
 
   const load = async () => {
     if (!subscriptionId) return
@@ -23,6 +27,12 @@ export default function PlusCheckout() {
   useEffect(() => {
     load().catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not load checkout'))
   }, [subscriptionId])
+
+  useEffect(() => {
+    if (!subscriptionId || !sessionId || confirmStarted.current) return
+    confirmStarted.current = true
+    void verify()
+  }, [subscriptionId, sessionId])
 
   async function afterActivate(next: SubscriptionDto) {
     setSubscription(next)
@@ -64,7 +74,7 @@ export default function PlusCheckout() {
       <div className="mx-auto max-w-[640px] px-5 pb-24 pt-28">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Vuekumi+</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">
-          {paid ? 'Plus is active.' : 'Complete payment.'}
+          {paid ? 'Plus is active.' : busy && sessionId ? 'Confirming payment.' : 'Complete payment.'}
         </h1>
         <p className="mt-2 text-sm text-ink-soft">
           Vuekumi+ lifts the daily royalty-free quota. Premium images stay billed per licence. Copyright stays with the photographer.

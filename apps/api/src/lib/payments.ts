@@ -39,6 +39,7 @@ export async function startLicenseCheckout(input: {
   quoteId?: string | null
   scopeJson: Record<string, unknown>
   requestedProvider?: 'stripe' | 'flutterwave'
+  returnOrigin?: string
 }) {
   const secrets = await paymentSecrets()
   assertStripeSecretUsable(secrets, input.requestedProvider)
@@ -72,11 +73,13 @@ export async function startLicenseCheckout(input: {
     },
     orderBy: { createdAt: 'desc' },
   })
-  if (existing?.checkoutUrl) {
+  const origin = (input.returnOrigin || config.webUrl).replace(/\/$/, '')
+  const configuredOrigin = config.webUrl.replace(/\/$/, '')
+  if (existing?.checkoutUrl && origin === configuredOrigin) {
     return existing
   }
 
-  const payment = await prisma.payment.create({
+  const payment = existing ?? await prisma.payment.create({
     data: {
       buyerId: input.buyerId,
       photoId: input.photoId,
@@ -105,8 +108,8 @@ export async function startLicenseCheckout(input: {
     buyerEmail: input.buyerEmail,
     buyerName: input.buyerName,
     description: `Vuekumi licence — ${input.licenseType.replace('_', ' ')}`,
-    successUrl: `${config.webUrl}/checkout/${payment.id}`,
-    cancelUrl: `${config.webUrl}/photo/${input.photoId}?checkout=cancelled`,
+    successUrl: `${origin}/checkout/${payment.id}`,
+    cancelUrl: `${origin}/photo/${input.photoId}?checkout=cancelled`,
     metadata: { paymentId: payment.id, photoId: input.photoId },
     secrets,
   })

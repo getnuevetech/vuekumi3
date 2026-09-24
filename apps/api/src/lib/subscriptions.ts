@@ -240,6 +240,7 @@ export async function startPlusCheckout(input: {
   name: string
   country?: string | null
   requestedProvider?: 'stripe' | 'flutterwave'
+  returnOrigin?: string
 }) {
   const profile = await ensureUserProfile(input.userId)
   const now = new Date()
@@ -257,7 +258,9 @@ export async function startPlusCheckout(input: {
     },
     orderBy: { createdAt: 'desc' },
   })
-  if (existing?.checkoutUrl) return existing
+  const origin = (input.returnOrigin || config.webUrl).replace(/\/$/, '')
+  const configuredOrigin = config.webUrl.replace(/\/$/, '')
+  if (existing?.checkoutUrl && origin === configuredOrigin) return existing
 
   const secrets = await paymentSecrets()
   assertStripeSecretUsable(secrets, input.requestedProvider)
@@ -280,7 +283,7 @@ export async function startPlusCheckout(input: {
   const amountUsd = PLUS_PRICE_USD
   const amountLocal = currency === 'USD' ? amountUsd : convertFromUsd(amountUsd, pricing.rateToUsd)
 
-  const subscription = await prisma.subscription.create({
+  const subscription = existing ?? await prisma.subscription.create({
     data: {
       userId: input.userId,
       plan: PLUS_PLAN,
@@ -302,8 +305,8 @@ export async function startPlusCheckout(input: {
     buyerEmail: input.email,
     buyerName: input.name,
     description: 'Vuekumi+ — 30 days of unlimited royalty-free downloads',
-    successUrl: `${config.webUrl}/checkout/plus/${subscription.id}`,
-    cancelUrl: `${config.webUrl}/pricing?checkout=cancelled`,
+    successUrl: `${origin}/checkout/plus/${subscription.id}`,
+    cancelUrl: `${origin}/pricing?checkout=cancelled`,
     metadata: { subscriptionId: subscription.id },
     secrets,
   })

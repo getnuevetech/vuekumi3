@@ -11,6 +11,7 @@ import {
 } from '../src/lib/payments-config.js'
 import { handleFlutterwaveWebhook, PaymentError } from '../src/lib/payments.js'
 import { prisma } from '../src/lib/prisma.js'
+import { browserOrigin } from '../src/lib/public-origin.js'
 import { encryptSecret, prepareSettingValue } from '../src/lib/settings.js'
 
 async function setFlutterwaveHash(value: string | null) {
@@ -261,4 +262,60 @@ test('plan checkout explains a publishable key instead of an internal server err
       await prisma.paymentGateway.update({ where: { id: gateway.id }, data: { configEnc: gateway.configEnc } })
     }
   }
+})
+
+test('plus checkout returns the buyer to the host they used', async () => {
+  const app = await buildApp()
+  const email = `return-origin-${Date.now()}@vuekumi.demo`
+  const registered = await app.inject({
+    method: 'POST',
+    url: '/api/auth/register',
+    headers: { host: 'vuekumi.com', 'x-forwarded-proto': 'http' },
+    payload: { email, password: 'User12345!', name: 'Return Origin', accountType: 'user', country: 'US' },
+  })
+  assert.equal(registered.statusCode, 200, registered.body)
+  const raw = registered.headers['set-cookie']
+  const cookie = (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
+  try {
+    const started = await app.inject({
+      method: 'POST',
+      url: '/api/subscriptions',
+      headers: { cookie, host: 'vuekumi.com', 'x-forwarded-proto': 'http' },
+      payload: {},
+    })
+    assert.equal(started.statusCode, 200, started.body)
+    const body = started.json() as { checkout: { url: string; provider: string; subscriptionId: string } }
+    if (body.checkout.provider === 'dev') {
+      assert.equal(
+        body.checkout.url,
+        `http://vuekumi.com/checkout/plus/${body.checkout.subscriptionId}`,
+      )
+    } else {
+      assert.match(body.checkout.url, /^https:\/\/checkout\.stripe\.com\//)
+    }
+  } finally {
+    await prisma.user.deleteMany({ where: { email } })
+    await app.close()
+  }
+})
+
+test('checkout return origin follows the address the buyer used', () => {
+  assert.equal(
+    browserOrigin(
+      { protocol: 'http', headers: { host: 'vuekumi.com', 'x-forwarded-proto': 'http' } },
+      'https://vuekumi.com',
+    ),
+    'http://vuekumi.com',
+  )
+  assert.equal(
+    browserOrigin(
+      { protocol: 'https', headers: { host: 'vuekumi.com', 'x-forwarded-proto': 'https' } },
+      'http://vuekumi.com',
+    ),
+    'https://vuekumi.com',
+  )
+  assert.equal(
+    browserOrigin({ protocol: 'http', headers: { host: 'evil.com/path' } }, 'https://vuekumi.com'),
+    'https://vuekumi.com',
+  )
 })
