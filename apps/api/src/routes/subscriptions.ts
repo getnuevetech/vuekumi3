@@ -2,7 +2,9 @@ import type { FastifyInstance } from 'fastify'
 import { adminHas, startPlusSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { authenticate } from '../lib/auth-middleware.js'
+import { config } from '../config.js'
 import { PaymentError } from '../lib/payment-error.js'
+import { browserOrigin } from '../lib/public-origin.js'
 import { prisma } from '../lib/prisma.js'
 import {
   cancelPlus,
@@ -73,6 +75,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
         name: request.authUser!.name,
         country: request.authUser?.country,
         requestedProvider: body.provider,
+        returnOrigin: browserOrigin(request, config.webUrl),
       })
       await writeAuditLog({
         actorId: request.userId,

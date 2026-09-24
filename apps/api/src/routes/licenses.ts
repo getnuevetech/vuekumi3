@@ -19,6 +19,7 @@ import { parseQuoteStatus, sortQuotesForQueue } from '../lib/quotes.js'
 import { getSettingSafe } from '../lib/settings.js'
 import { issueGrant } from '../lib/grants.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
+import { browserOrigin } from '../lib/public-origin.js'
 import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
 import { assertCanGrant, COMMERCIAL_LOCK_REASON, priceForProduct, RightsError, twoPartyLicenseBlock } from '../lib/rights.js'
 import { assertNewLicenseAllowed } from '../lib/policy-decision.js'
@@ -261,6 +262,7 @@ export async function licenseRoutes(app: FastifyInstance) {
         agencyId: request.authUser?.agencyId,
         scopeJson,
         requestedProvider: body.provider,
+        returnOrigin: browserOrigin(request, config.webUrl),
       })
       await writeAuditLog({
         actorId: request.userId,
@@ -448,6 +450,7 @@ export async function licenseRoutes(app: FastifyInstance) {
         quoteId: quote.id,
         scopeJson,
         requestedProvider: body.provider,
+        returnOrigin: browserOrigin(request, config.webUrl),
       })
       return { checkout: serializeCheckout(payment) }
     } catch (err) {
