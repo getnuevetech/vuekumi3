@@ -554,11 +554,14 @@ export function PortalShell({
   subtitle,
   links,
   children,
+  expandGroups = false,
 }: {
   title: string
   subtitle: string
   links: PortalLink[]
   children: ReactNode
+  /** Admin opens every section so pages are not tucked behind a collapsed group. */
+  expandGroups?: boolean
 }) {
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
@@ -566,7 +569,7 @@ export function PortalShell({
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const open = new Set<string>()
     for (const link of links) {
-      if (link.children?.length && (portalGroupActive(pathname, link) || link.children.length === 1)) {
+      if (link.children?.length && (expandGroups || portalGroupActive(pathname, link) || link.children.length === 1)) {
         open.add(link.label)
       }
     }
@@ -577,7 +580,7 @@ export function PortalShell({
       let changed = false
       const next = new Set(prev)
       for (const link of links) {
-        const auto = Boolean(link.children?.length && (portalGroupActive(pathname, link) || link.children.length === 1))
+        const auto = Boolean(link.children?.length && (expandGroups || portalGroupActive(pathname, link) || link.children.length === 1))
         if (auto && !next.has(link.label)) {
           next.add(link.label)
           changed = true
@@ -585,7 +588,7 @@ export function PortalShell({
       }
       return changed ? next : prev
     })
-  }, [pathname, links])
+  }, [pathname, links, expandGroups])
 
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
@@ -644,8 +647,13 @@ export function PortalShell({
                 onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
                 className="mb-3 block font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
               >
-                Log out · {user.accountType}{user.hasModelProfile && user.accountType !== 'model' ? ' · model' : ''}
+                Log out · {user.adminRole ? user.adminRole.replaceAll('_', ' ') : user.accountType}{user.hasModelProfile && user.accountType !== 'model' ? ' · model' : ''}
               </button>
+              {user.accountType === 'admin' && user.adminRole && user.adminRole !== 'super_admin' && (
+                <p className="mb-3 font-mono-tech text-[9px] leading-relaxed tracking-[0.12em] text-paper-faint">
+                  This role only lists the pages it is allowed to open. A super admin sees every section.
+                </p>
+              )}
             </>
           )}
           <Link to="/" className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper-soft transition-colors hover:text-terra">

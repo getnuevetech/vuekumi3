@@ -1,18 +1,29 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import type { SiteMenuAudience } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import {
   HOME_ICON_KEYS,
   SITE_MENU_AUDIENCES,
   type HomeIconKey,
   type SiteContent,
-  type SiteMenuAudience,
 } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { AdminShell } from './Admin'
 
 const field = 'mt-1 w-full rounded-2xl border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra'
 const label = 'font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint'
+
+const MENU_AUDIENCE_LABEL: Record<SiteMenuAudience, string> = {
+  always: 'Everyone',
+  signed_out: 'Signed out',
+  signed_in: 'Signed in',
+  buyer: 'Buyers',
+  creator: 'Photographers and contributors',
+  model: 'Models',
+  agency: 'Agencies',
+  admin: 'Admins',
+}
 
 function TextField({ title, value, onChange, area = false }: { title: string; value: string; onChange: (value: string) => void; area?: boolean }) {
   return (
@@ -27,7 +38,7 @@ function TextField({ title, value, onChange, area = false }: { title: string; va
   )
 }
 
-export default function AdminSite() {
+export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) {
   const [content, setContent] = useState<SiteContent | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -53,7 +64,7 @@ export default function AdminSite() {
 
   if (!content) {
     return (
-      <AdminShell subtitle="Menu, logo, and the words on the public site.">
+      <AdminShell subtitle={menuOnly ? 'Links in the public header and footer.' : 'Menu, logo, and the words on the public site.'}>
         <p className="text-sm text-ink-soft">Loading site content…</p>
       </AdminShell>
     )
@@ -64,20 +75,57 @@ export default function AdminSite() {
   const pages = content.pages
 
   return (
-    <AdminShell subtitle="Menu, logo, and the words on the public site.">
-      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Site</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Homepage & pages.</h1>
+    <AdminShell subtitle={menuOnly ? 'Links in the public header and footer.' : 'Menu, logo, and the words on the public site.'}>
+      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{menuOnly ? 'Menu' : 'Site'}</p>
+      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{menuOnly ? 'Menu.' : 'Homepage & pages.'}</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-        These words, the menu, and the logo are what visitors see. Photographs in the homepage strips stay on{' '}
-        <Link to="/admin/homepage" className="text-terra">Homepage</Link>.
-        Plan prices stay on <Link to="/admin/plans" className="text-terra">Buyer plans</Link>.
-        Use {'{share}'}, {'{minimum}'}, {'{photos}'}, and {'{countries}'} where a live number should appear.
+        {menuOnly ? (
+          <>
+            These are the links in the public header and footer. Who sees it controls whether a link is shown to everyone, or only to buyers, creators, models, agencies, or admins.
+            The other homepage words are on <Link to="/admin/site" className="text-terra">Site content</Link>.
+          </>
+        ) : (
+          <>
+            These words, the menu, and the logo are what visitors see. Photographs in the homepage strips stay on <Link to="/admin/homepage" className="text-terra">Homepage</Link>.
+            Plan prices stay on <Link to="/admin/plans" className="text-terra">Plans</Link>.
+            The header links themselves are also on <Link to="/admin/menu" className="text-terra">Menu</Link>.
+            Use {'{share}'}, {'{minimum}'}, {'{photos}'}, and {'{countries}'} where a live number should appear.
+          </>
+        )}
       </p>
       <button type="button" disabled={busy} onClick={() => void save()} className="mt-6 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
-        Save site content
+        {menuOnly ? 'Save menu' : 'Save site content'}
       </button>
 
-      <section className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
+      <section id="menu" className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
+        <h2 className="font-serif-display text-2xl font-light">Header menu</h2>
+        <p className="mt-1 text-sm text-ink-soft">Label, path on this site, and who should see the link.</p>
+        <div className="mt-4 space-y-3">
+          {content.menu.map((link, index) => (
+            <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_16rem_auto]">
+              <input value={link.label} onChange={(e) => {
+                const menu = content.menu.map((row, i) => i === index ? { ...row, label: e.target.value } : row)
+                set({ ...content, menu })
+              }} className={field} aria-label={`Menu label ${index + 1}`} />
+              <input value={link.to} onChange={(e) => {
+                const menu = content.menu.map((row, i) => i === index ? { ...row, to: e.target.value } : row)
+                set({ ...content, menu })
+              }} className={field} aria-label={`Menu path ${index + 1}`} />
+              <select value={link.audience} onChange={(e) => {
+                const menu = content.menu.map((row, i) => i === index ? { ...row, audience: e.target.value as SiteMenuAudience } : row)
+                set({ ...content, menu })
+              }} className={field} aria-label={`Menu audience ${index + 1}`}>
+                {SITE_MENU_AUDIENCES.map((audience) => <option key={audience} value={audience}>{MENU_AUDIENCE_LABEL[audience]}</option>)}
+              </select>
+              <button type="button" onClick={() => set({ ...content, menu: content.menu.filter((_, i) => i !== index) })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Remove</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => set({ ...content, menu: [...content.menu, { label: 'New link', to: '/search', audience: 'always' }] })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Add menu link</button>
+        </div>
+      </section>
+
+      {!menuOnly && <>
+      <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">Logo</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <TextField title="Name" value={content.brand.name} onChange={(name) => set({ ...content, brand: { ...content.brand, name } })} />
@@ -95,36 +143,17 @@ export default function AdminSite() {
           <TextField title="Log out" value={content.actions.logout} onChange={(logout) => set({ ...content, actions: { ...content.actions, logout } })} />
           <TextField title="Sell button" value={content.actions.sell} onChange={(sell) => set({ ...content, actions: { ...content.actions, sell } })} />
         </div>
-        <div className="mt-6 space-y-3">
-          {content.menu.map((link, index) => (
-            <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_180px_auto]">
-              <input value={link.label} onChange={(e) => {
-                const menu = content.menu.map((row, i) => i === index ? { ...row, label: e.target.value } : row)
-                set({ ...content, menu })
-              }} className={field} aria-label={`Menu label ${index + 1}`} />
-              <input value={link.to} onChange={(e) => {
-                const menu = content.menu.map((row, i) => i === index ? { ...row, to: e.target.value } : row)
-                set({ ...content, menu })
-              }} className={field} aria-label={`Menu path ${index + 1}`} />
-              <select value={link.audience} onChange={(e) => {
-                const menu = content.menu.map((row, i) => i === index ? { ...row, audience: e.target.value as SiteMenuAudience } : row)
-                set({ ...content, menu })
-              }} className={field} aria-label={`Menu audience ${index + 1}`}>
-                {SITE_MENU_AUDIENCES.map((audience) => <option key={audience} value={audience}>{audience}</option>)}
-              </select>
-              <button type="button" onClick={() => set({ ...content, menu: content.menu.filter((_, i) => i !== index) })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Remove</button>
-            </div>
-          ))}
-          <button type="button" onClick={() => set({ ...content, menu: [...content.menu, { label: 'New link', to: '/search', audience: 'always' }] })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Add menu link</button>
-        </div>
       </section>
+      </>}
 
       <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
-        <h2 className="font-serif-display text-2xl font-light">Footer</h2>
-        <div className="mt-4 grid gap-3">
-          <TextField title="Blurb" value={content.footer.blurb} area onChange={(blurb) => set({ ...content, footer: { ...content.footer, blurb } })} />
-          <TextField title="Copyright line" value={content.footer.copyright} onChange={(copyright) => set({ ...content, footer: { ...content.footer, copyright } })} />
-        </div>
+        <h2 className="font-serif-display text-2xl font-light">{menuOnly ? 'Footer menu' : 'Footer'}</h2>
+        {!menuOnly && (
+          <div className="mt-4 grid gap-3">
+            <TextField title="Blurb" value={content.footer.blurb} area onChange={(blurb) => set({ ...content, footer: { ...content.footer, blurb } })} />
+            <TextField title="Copyright line" value={content.footer.copyright} onChange={(copyright) => set({ ...content, footer: { ...content.footer, copyright } })} />
+          </div>
+        )}
         <div className="mt-4 space-y-3">
           {content.footer.links.map((link, index) => (
             <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
@@ -143,6 +172,7 @@ export default function AdminSite() {
         </div>
       </section>
 
+      {!menuOnly && <>
       <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">Hero words</h2>
         <div className="mt-4 space-y-4">
@@ -251,6 +281,7 @@ export default function AdminSite() {
           <TextField title="Models introduction" value={pages.models.intro} area onChange={(intro) => set({ ...content, pages: { ...pages, models: { ...pages.models, intro } } })} />
         </div>
       </section>
+      </>}
     </AdminShell>
   )
 }

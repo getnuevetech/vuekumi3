@@ -62,6 +62,7 @@ const icons = {
 
 export const adminLinks: PortalLink[] = [
   { to: '/admin', label: 'Overview', icon: icons.dash },
+  { to: '/admin/menu', label: 'Menu', icon: icons.dash },
   {
     label: 'Users',
     icon: icons.users,
@@ -145,7 +146,7 @@ export function useAdminLinks(): PortalLink[] {
 export function AdminShell({ children, subtitle }: { children: React.ReactNode; subtitle: string }) {
   const links = useAdminLinks()
   return (
-    <PortalShell title="Admin portal" subtitle={subtitle} links={links}>
+    <PortalShell title="Admin portal" subtitle={subtitle} links={links} expandGroups>
       {children}
     </PortalShell>
   )

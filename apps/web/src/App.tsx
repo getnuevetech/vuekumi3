@@ -163,6 +163,7 @@ export default function App() {
         <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']} capability="accounts.admins.list"><AdminAdmins /></ProtectedRoute>} />
         <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']} capability="content.list"><AdminContent /></ProtectedRoute>} />
         <Route path="/admin/homepage" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminHomepage /></ProtectedRoute>} />
+        <Route path="/admin/menu" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminSite menuOnly /></ProtectedRoute>} />
         <Route path="/admin/site" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminSite /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']} capability="moderation.list"><AdminModeration /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']} capability="reports.list"><AdminReports /></ProtectedRoute>} />

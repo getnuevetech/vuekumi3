@@ -388,6 +388,7 @@ export function selfCapabilityEditBlocked(actorId: string, targetId: string): { 
 
 export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin': 'metrics.view',
+  '/admin/menu': 'content.featured',
   '/admin/users': 'accounts.users.list',
   '/admin/profile-fields': 'accounts.users.list',
   '/admin/photographers': 'accounts.photographers.list',
