@@ -1037,6 +1037,13 @@ async function main() {
       priceUsd: 19,
       periodDays: 30,
       description: 'Unlimited royalty-free downloads from the free collection for 30 days. Premium images stay billed per licence.',
+      features: [
+        'Unlimited royalty-free downloads from the free collection',
+        'Premium images still billed per licence',
+        'Cancel anytime — access lasts through the paid period',
+      ],
+      badge: 'Most popular',
+      highlighted: true,
       enabled: true,
       sortOrder: 0,
     },

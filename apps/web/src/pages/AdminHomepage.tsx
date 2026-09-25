@@ -19,6 +19,7 @@ function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
 const SLOT_NOTE: Partial<Record<HomeFeaturedSlotKey, string>> = {
   edge: 'These are the featured images. On the homepage they sit above the three messages and scroll left or right with the mouse wheel.',
   editorial: 'Pin several photographs and they change on a timer, or choose a category and the slides pull live images from that category.',
+  pricing: 'These photographs fill homepage pricing cards that do not have their own image. Plan names, prices, and the lines on the cards are edited under Buyer plans.',
 }
 
 type PinTarget =

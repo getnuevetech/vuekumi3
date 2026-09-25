@@ -195,14 +195,17 @@ export const api = {
 
   home: () => request<HomePageDto>('/api/public/home'),
 
-  publicPlans: () => request<{ items: BuyerPlanDto[] }>('/api/plans'),
+  publicPlans: () => request<import('@vuekumi/shared').PublicPlansDto>('/api/plans'),
 
-  adminPlans: () => request<{ items: BuyerPlanDto[] }>('/api/admin/plans'),
+  adminPlans: () => request<import('@vuekumi/shared').PublicPlansDto>('/api/admin/plans'),
 
-  createBuyerPlan: (body: { name: string; slug?: string; priceUsd: number; periodDays: number; description?: string; enabled?: boolean; sortOrder?: number }) =>
+  saveHomePricing: (body: { kicker: string; title: string }) =>
+    request<{ home: import('@vuekumi/shared').HomePricingCopy }>('/api/admin/plans/home', { method: 'PUT', body: JSON.stringify(body) }),
+
+  createBuyerPlan: (body: { name: string; slug?: string; priceUsd: number; periodDays: number; description?: string; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number }) =>
     request<BuyerPlanDto>('/api/admin/plans', { method: 'POST', body: JSON.stringify(body) }),
 
-  updateBuyerPlan: (id: string, body: { name?: string; priceUsd?: number; periodDays?: number; description?: string | null; enabled?: boolean; sortOrder?: number }) =>
+  updateBuyerPlan: (id: string, body: { name?: string; priceUsd?: number; periodDays?: number; description?: string | null; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number }) =>
     request<BuyerPlanDto>(`/api/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   deleteBuyerPlan: (id: string) =>

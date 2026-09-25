@@ -1,15 +1,32 @@
 import type { FastifyInstance } from 'fastify'
-import { createBuyerPlanSchema, patchBuyerPlanSchema } from '@vuekumi/shared'
+import { createBuyerPlanSchema, patchBuyerPlanSchema, patchHomePricingSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
-import { createBuyerPlan, deleteBuyerPlan, listBuyerPlans, serializeBuyerPlan, updateBuyerPlan } from '../lib/buyer-plans.js'
+import { createBuyerPlan, deleteBuyerPlan, listBuyerPlans, loadHomePricingCopy, saveHomePricingCopy, serializeBuyerPlan, updateBuyerPlan } from '../lib/buyer-plans.js'
 
 export async function adminPlanRoutes(app: FastifyInstance) {
   const gate = { preHandler: requireAdminCapability(app, 'plans.manage') }
 
   app.get('/admin/plans', gate, async () => {
-    const rows = await listBuyerPlans({ includeDisabled: true })
-    return { items: rows.map(serializeBuyerPlan) }
+    const [items, home] = await Promise.all([
+      listBuyerPlans({ includeDisabled: true }),
+      loadHomePricingCopy(),
+    ])
+    return { items, home }
+  })
+
+  app.put('/admin/plans/home', gate, async (request) => {
+    const body = patchHomePricingSchema.parse(request.body)
+    const home = await saveHomePricingCopy(body)
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.plans.home',
+      entityType: 'homepage',
+      entityId: 'pricing',
+      metadata: home,
+      ipAddress: request.ip,
+    })
+    return { home }
   })
 
   app.post('/admin/plans', gate, async (request) => {

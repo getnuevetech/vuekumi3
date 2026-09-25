@@ -51,7 +51,7 @@ export default function Pricing() {
       .catch(() => setShare(0.5))
     api.publicPlans()
       .then((data) => setBuyerPlans(data.items))
-      .catch(() => setBuyerPlans(null))
+      .catch(() => setBuyerPlans([]))
   }, [])
 
   async function goPlus(slug = 'plus') {
@@ -73,65 +73,19 @@ export default function Pricing() {
     }
   }
 
-  const catalog = buyerPlans && buyerPlans.length > 0
-    ? buyerPlans
-    : [{ id: 'plus', slug: 'plus', name: 'Vuekumi+', priceUsd: 19, periodDays: 30, description: 'Unlimited royalty-free downloads from the free collection.', enabled: true, sortOrder: 0 }]
-
-  const plans = [
-    {
-      key: 'free',
-      slug: null as string | null,
-      badge: undefined as string | undefined,
-      name: 'Free',
-      price: format(0),
-      per: 'forever',
-      tone: 'paper' as const,
-      cta: user ? 'Browse free collection' : 'Start downloading',
-      to: user ? '/search?license=free' : `/login?redirect=${encodeURIComponent('/search?license=free')}`,
-      features: [
-        'Full access to the free collection',
-        'Standard royalty-free licence included',
-        'Attribution appreciated, not required',
-        'Up to 50 royalty-free downloads / UTC day',
-        'Community support',
-      ],
-    },
-    ...catalog.map((plan) => ({
-      key: plan.slug,
-      slug: plan.slug,
-      name: plan.name,
-      price: format(plan.priceUsd),
-      per: `per ${plan.periodDays} days`,
-      tone: plan.slug === 'plus' ? 'ink' as const : 'paper' as const,
-      badge: plan.slug === 'plus' ? 'Most popular' : undefined,
-      cta: paidActive ? 'Manage plan' : plusBusy === plan.slug ? 'Starting…' : `Go ${plan.name}`,
-      to: undefined as string | undefined,
-      features: [
-        plan.description || `${plan.name} for ${plan.periodDays} days`,
-        'Royalty-free downloads from the free collection',
-        'Premium images still billed per licence',
-        'Cancel anytime — access lasts through the paid period',
-      ],
-    })),
-    {
-      key: 'extended',
-      slug: null as string | null,
-      badge: undefined as string | undefined,
-      name: 'Extended',
-      price: format(49),
-      per: 'per image',
-      tone: 'paper' as const,
-      cta: 'Buy per image',
-      to: '/search?license=premium',
-      features: [
-        'Single premium image, licensed for extended use',
-        'Merchandise & resale rights',
-        'Print runs above 500,000',
-        'Broadcast & OOH advertising',
-        'Usage permission only — copyright stays with the photographer',
-      ],
-    },
-  ]
+  const plans = (buyerPlans ?? []).map((plan) => ({
+    key: plan.slug,
+    slug: plan.slug,
+    name: plan.name,
+    price: format(plan.priceUsd),
+    per: `per ${plan.periodDays} days`,
+    tone: plan.highlighted ? 'ink' as const : 'paper' as const,
+    badge: plan.badge || undefined,
+    cta: paidActive ? 'Manage plan' : plusBusy === plan.slug ? 'Starting…' : `Go ${plan.name}`,
+    features: plan.features.length
+      ? plan.features
+      : [plan.description || `${plan.name} for ${plan.periodDays} days`],
+  }))
 
   return (
     <div className="pt-32 pb-28">
@@ -154,6 +108,9 @@ export default function Pricing() {
           </div>
         </Reveal>
 
+        {buyerPlans && plans.length === 0 && (
+          <p className="mt-16 text-center text-sm text-ink-soft">No buyer plans are available yet.</p>
+        )}
         <div className="mt-16 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {plans.map((p, i) => (
             <Reveal key={p.key} delay={i * 90}>
@@ -189,27 +146,18 @@ export default function Pricing() {
                     </li>
                   ))}
                 </ul>
-                {p.slug ? (
-                  <button
-                    type="button"
-                    disabled={Boolean(plusBusy)}
-                    onClick={() => void goPlus(p.slug!)}
-                    className={`mt-8 rounded-full py-3 text-center font-mono-tech text-[11px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50 ${
-                      p.tone === 'ink'
-                        ? 'bg-paper text-ink hover:bg-terra hover:text-paper'
-                        : 'border border-ink/20 text-ink hover:bg-ink hover:text-paper'
-                    }`}
-                  >
-                    {p.cta}
-                  </button>
-                ) : (
-                  <Link
-                    to={p.to!}
-                    className="mt-8 rounded-full border border-ink/20 py-3 text-center font-mono-tech text-[11px] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-paper"
-                  >
-                    {p.cta}
-                  </Link>
-                )}
+                <button
+                  type="button"
+                  disabled={Boolean(plusBusy)}
+                  onClick={() => void goPlus(p.slug)}
+                  className={`mt-8 rounded-full py-3 text-center font-mono-tech text-[11px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50 ${
+                    p.tone === 'ink'
+                      ? 'bg-paper text-ink hover:bg-terra hover:text-paper'
+                      : 'border border-ink/20 text-ink hover:bg-ink hover:text-paper'
+                  }`}
+                >
+                  {p.cta}
+                </button>
               </div>
             </Reveal>
           ))}
@@ -280,12 +228,18 @@ export default function Pricing() {
         <div className="mt-24">
           <SectionHead kicker="Questions" title="Good to know." />
           <div className="grid gap-px overflow-hidden rounded-2xl border border-sand-soft bg-sand-soft md:grid-cols-2">
-            {faqs.map((f) => (
+            {faqs.map((f) => {
+              const plusPlan = (buyerPlans ?? []).find((plan) => plan.slug === 'plus')
+              const answer = f.q === 'What does Vuekumi+ include?' && plusPlan
+                ? `${plusPlan.name} is ${format(plusPlan.priceUsd)} for ${plusPlan.periodDays} days of royalty-free downloads from the free collection. Premium, extended, editorial, rights-managed and exclusive licences are still billed per image. Photographers keep 50% of those paid sales. ${plusPlan.name} does not pay contributors for free-collection downloads.`
+                : f.a
+              return (
               <div key={f.q} className="bg-white p-7">
                 <h3 className="font-serif-display text-lg font-light">{f.q}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{f.a}</p>
+                <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{answer}</p>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>

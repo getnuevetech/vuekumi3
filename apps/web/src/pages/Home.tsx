@@ -4,6 +4,7 @@ import type { HomeCategoryBannerDto, HomePageDto, ModelPublicDto, PhotoDto, Phot
 import { hasModelAccess, isCreatorAccount, isPhotographerAccount, creatorPortalLabel } from '@vuekumi/shared';
 import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { api } from '../api/client';
 import { fmt } from '../lib/format';
 
@@ -788,25 +789,27 @@ function ModelsRail() {
 /* ---------------- image-topped pricing cards ---------------- */
 
 function NoirPricing({ photos }: { photos: PhotoDto[] }) {
-  const plans = [
-    {
-      photo: photos[0], name: 'Free', price: 'Free',
-      feats: ['Full free collection', 'Standard licence', '50 RF downloads / day'],
-    },
-    {
-      photo: photos[1] ?? photos[0], name: 'Vuekumi+', price: '$19', per: '/30d',
-      feats: ['Unlimited free-collection RF', 'Premium still billed per image', 'Buyer quota — not a contributor pool'],
-    },
-    {
-      photo: photos[2] ?? photos[0], name: 'Extended', price: '$49', per: '/img',
-      feats: ['Extended licence', 'Merchandise & resale rights', 'Usage permission only'],
-    },
-  ];
+  const { format } = useCurrency();
+  const [pack, setPack] = useState<import('@vuekumi/shared').PublicPlansDto | null>(null);
+  useEffect(() => {
+    api.publicPlans().then(setPack).catch(() => setPack({ items: [], home: { kicker: 'studio rates', title: 'Pick a licence' } }));
+  }, []);
+  if (!pack) return null;
+  const plans = pack.items.map((plan, index) => ({
+    photo: plan.homePhotoSrc
+      ? { src: plan.homePhotoSrc }
+      : photos[index] ?? photos[0],
+    name: plan.name,
+    price: format(plan.priceUsd),
+    per: `/${plan.periodDays}d`,
+    feats: plan.features.length ? plan.features : [plan.description || `${plan.periodDays} days`],
+  }));
+  if (plans.length === 0) return null;
   return (
     <section className="bg-noir px-5 pb-24 pt-4 md:px-10">
-      <p className="font-script text-3xl text-terra">studio rates</p>
+      <p className="font-script text-3xl text-terra">{pack.home.kicker}</p>
       <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-        Pick a licence
+        {pack.home.title}
       </h2>
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {plans.map((p, i) => (

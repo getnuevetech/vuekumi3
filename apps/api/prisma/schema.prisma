@@ -696,6 +696,9 @@ model HomeSectionConfig {
   slot      String   @id
   mode      String   @default("pins")
   category  String?
+  /// Homepage pricing section words. Other slots leave these empty.
+  kicker    String?
+  title     String?
   updatedAt DateTime @updatedAt
 }
 
@@ -707,6 +710,12 @@ model BuyerPlan {
   priceUsd    Float
   periodDays  Int
   description String?
+  /// Lines shown on the homepage card and the pricing page.
+  features    String[] @default([])
+  badge       String?
+  highlighted Boolean  @default(false)
+  /// Optional photograph for the homepage pricing card.
+  homePhotoId String?
   enabled     Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())

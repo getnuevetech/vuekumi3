@@ -15,6 +15,19 @@ export type StartPlusInput = z.infer<typeof startPlusSchema>
 export type SubscriptionPlan = typeof FREE_PLAN | typeof PLUS_PLAN
 export type SubscriptionStatus = 'pending' | 'active' | 'cancelled' | 'expired'
 
+export const HOME_PRICING_KICKER = 'studio rates'
+export const HOME_PRICING_TITLE = 'Pick a licence'
+
+export interface HomePricingCopy {
+  kicker: string
+  title: string
+}
+
+export interface PublicPlansDto {
+  items: BuyerPlanDto[]
+  home: HomePricingCopy
+}
+
 export interface BuyerPlanDto {
   id: string
   slug: string
@@ -22,6 +35,11 @@ export interface BuyerPlanDto {
   priceUsd: number
   periodDays: number
   description: string | null
+  features: string[]
+  badge: string | null
+  highlighted: boolean
+  homePhotoId: string | null
+  homePhotoSrc: string | null
   enabled: boolean
   sortOrder: number
 }
@@ -33,12 +51,18 @@ export const buyerPlanSlugSchema = z
   .max(40)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use a short slug of lowercase letters, numbers, and hyphens')
 
+const planFeatureSchema = z.array(z.string().trim().min(1).max(160)).max(8)
+
 export const createBuyerPlanSchema = z.object({
   name: z.string().trim().min(1).max(80),
   slug: buyerPlanSlugSchema.optional(),
   priceUsd: z.number().min(0).max(100000),
   periodDays: z.number().int().min(1).max(3650),
   description: z.string().trim().max(500).optional(),
+  features: planFeatureSchema.optional(),
+  badge: z.string().trim().max(40).nullable().optional(),
+  highlighted: z.boolean().optional(),
+  homePhotoId: z.string().trim().min(1).max(80).nullable().optional(),
   enabled: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 })
@@ -49,9 +73,19 @@ export const patchBuyerPlanSchema = z.object({
   priceUsd: z.number().min(0).max(100000).optional(),
   periodDays: z.number().int().min(1).max(3650).optional(),
   description: z.string().trim().max(500).nullable().optional(),
+  features: planFeatureSchema.optional(),
+  badge: z.string().trim().max(40).nullable().optional(),
+  highlighted: z.boolean().optional(),
+  homePhotoId: z.string().trim().min(1).max(80).nullable().optional(),
   enabled: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 })
+
+export const patchHomePricingSchema = z.object({
+  kicker: z.string().trim().min(1).max(80),
+  title: z.string().trim().min(1).max(120),
+})
+export type PatchHomePricingInput = z.infer<typeof patchHomePricingSchema>
 export type PatchBuyerPlanInput = z.infer<typeof patchBuyerPlanSchema>
 
 export interface SubscriptionDto {

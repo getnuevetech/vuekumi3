@@ -42,9 +42,22 @@ test('admin can create a buyer plan, support cannot, and checkout uses that pric
 
   const listed = await app.inject({ method: 'GET', url: '/api/plans' })
   assert.equal(listed.statusCode, 200, listed.body)
-  const items = (listed.json() as { items: { slug: string; priceUsd: number }[] }).items
+  const listedBody = listed.json() as { items: { slug: string; name: string; priceUsd: number }[]; home: { kicker: string; title: string } }
+  const items = listedBody.items
   assert.equal(items.find((row) => row.slug === 'plus')?.priceUsd, PLUS_PRICE_USD)
   assert.equal(items.find((row) => row.slug === slug)?.priceUsd, 29)
+  assert.equal(items.some((row) => row.name === 'Free' || row.name === 'Extended'), false)
+
+  const heading = await app.inject({
+    method: 'PUT',
+    url: '/api/admin/plans/home',
+    headers: { cookie: admin },
+    payload: { kicker: 'rates', title: 'Choose a plan' },
+  })
+  assert.equal(heading.statusCode, 200, heading.body)
+  const again = await app.inject({ method: 'GET', url: '/api/plans' })
+  assert.equal((again.json() as { home: { title: string } }).home.title, 'Choose a plan')
+  await prisma.homeSectionConfig.deleteMany({ where: { slot: 'pricing' } })
 
   const locked = await app.inject({
     method: 'DELETE',
