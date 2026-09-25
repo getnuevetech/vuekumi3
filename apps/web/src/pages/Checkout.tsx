@@ -75,7 +75,7 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-[640px] px-5 pb-24 pt-28">
+      <div className="mx-auto max-w-[640px] px-5 pb-24 pt-40">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Checkout</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">
           {paid ? 'Licence paid.' : busy && sessionId ? 'Confirming payment.' : 'Complete payment.'}

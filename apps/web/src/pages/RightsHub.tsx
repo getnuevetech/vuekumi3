@@ -73,7 +73,7 @@ export default function RightsHubPage() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+      <main className="mx-auto max-w-2xl px-4 pb-12 pt-40 sm:px-6">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">

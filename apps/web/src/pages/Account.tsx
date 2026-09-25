@@ -102,7 +102,7 @@ export default function Account() {
     return (
       <div className="min-h-screen bg-paper text-ink">
         <SiteHeader />
-        <p className="pt-36 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading…</p>
+        <p className="pt-40 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading…</p>
       </div>
     )
   }
@@ -115,7 +115,7 @@ export default function Account() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-3xl px-5 pb-24 pt-28 md:px-8">
+      <div className="mx-auto max-w-3xl px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Account</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your settings.</h1>
         <p className="mt-2 text-sm text-ink-soft">

@@ -78,7 +78,7 @@ export default function CollectionDetail() {
     return (
       <div className="min-h-screen bg-paper text-ink">
         <SiteHeader />
-        <div className="mx-auto max-w-md px-6 pb-24 pt-36 text-center">
+        <div className="mx-auto max-w-md px-6 pb-24 pt-40 text-center">
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
           <h1 className="font-serif-display mt-2 text-4xl font-light">Collection not found.</h1>
           <Link to={user ? '/collections' : '/search'} className="mt-8 inline-block bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper">
@@ -93,7 +93,7 @@ export default function CollectionDetail() {
     return (
       <div className="min-h-screen bg-paper text-ink">
         <SiteHeader />
-        <p className="pt-36 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading collection…</p>
+        <p className="pt-40 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading collection…</p>
       </div>
     )
   }
@@ -109,7 +109,7 @@ export default function CollectionDetail() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-28 md:px-8">
+      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">
           <Link to="/collections" className="hover:text-terra">Collections</Link>
           <span className="mx-2 text-ink-faint">/</span>

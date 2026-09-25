@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import type { HomeCategoryBannerDto, HomeIconKey, HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto, SiteFacts } from '@vuekumi/shared';
+import { PHOTO_CATEGORIES, type HomeCategoryBannerDto, type HomeIconKey, type HomePageDto, type ModelPublicDto, type PhotoDto, type PhotographerDto, type PublicStatsDto, type SiteFacts } from '@vuekumi/shared';
 import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass, sortMenuLinks } from '@vuekumi/shared';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { LogoMark, Reveal, SearchForm } from '../components/shared';
+import { CountryMark, PhotoHoverActions } from '../components/PhotoActions';
+import { AccountMenu, LogoMark, Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useSiteContent } from '../context/SiteContentContext';
@@ -31,7 +32,7 @@ function contributorPortalHref(accountType?: string) {
 function NoirHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { content } = useSiteContent();
   const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user));
   const menuClass = `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`;
@@ -64,50 +65,29 @@ function NoirHeader() {
               </Link>
             ))}
           </nav>
-          <div className="hidden items-center gap-4 lg:flex">
+          <div className="flex items-center gap-3">
             <ThemeToggle tone="dark" />
-            <SearchForm dark compact />
-            {user ? (
-              <>
-                <Link
-                  to="/account"
-                  className="max-w-[160px] truncate font-condensed text-[12px] uppercase tracking-[0.18em] text-paper-soft hover:text-terra"
-                >
-                  {user.email}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
-                  className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
-                >
-                  {content.actions.logout}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
-                >
-                  {content.actions.login}
-                </Link>
-                <Link
-                  to={contributorPortalHref()}
-                  className="border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
-                >
-                  {content.actions.sell}
-                </Link>
-              </>
+            <AccountMenu tone="dark" />
+            {!user && (
+              <Link
+                to={contributorPortalHref()}
+                className="hidden border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra lg:inline-block"
+              >
+                {content.actions.sell}
+              </Link>
             )}
+            <button
+              onClick={() => setOpen(!open)}
+              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
+              aria-label="Menu"
+            >
+              <span className={`h-px w-6 bg-paper transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
+              <span className={`h-px w-6 bg-paper transition-transform ${open ? '-translate-y-[3.5px] -rotate-45' : ''}`} />
+            </button>
           </div>
-          <button
-            onClick={() => setOpen(!open)}
-            className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
-            aria-label="Menu"
-          >
-            <span className={`h-px w-6 bg-paper transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
-            <span className={`h-px w-6 bg-paper transition-transform ${open ? '-translate-y-[3.5px] -rotate-45' : ''}`} />
-          </button>
+        </div>
+        <div className="px-5 pb-4 md:px-10">
+          <SearchForm dark wide />
         </div>
       </header>
       {open && (
@@ -427,6 +407,8 @@ function FeaturedStrip({ photos }: { photos: PhotoDto[] }) {
             className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 overflow-hidden sm:w-[46vw] lg:w-[28vw]"
           >
             <img src={p.src} alt={p.title} loading={i > 1 ? 'lazy' : undefined} className="h-full w-full object-cover" />
+            <CountryMark country={p.country} />
+            <PhotoHoverActions photo={p} />
             <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
               <p className="font-condensed text-lg font-medium uppercase tracking-[0.18em] text-paper">{p.title}</p>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">
@@ -503,7 +485,9 @@ function CtaBand() {
 function FeedCard({ photo }: { photo: PhotoDto }) {
   return (
     <Link to={`/photo/${photo.id}`} className="strip-cell group relative mb-1 block break-inside-avoid overflow-hidden">
-      <img src={photo.src} alt={photo.title} loading="lazy" className="w-full" />
+      <img src={photo.src} alt={photo.title} loading="lazy" className="min-h-48 w-full object-cover" />
+      <CountryMark country={photo.country} />
+      <PhotoHoverActions photo={photo} />
       <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-4 pt-10">
         <div className="flex items-end justify-between gap-2">
           <div className="min-w-0">
@@ -526,52 +510,45 @@ function FeedCard({ photo }: { photo: PhotoDto }) {
   );
 }
 
+function mixCategoryPhotos(groups: PhotoDto[][], cap = 36): PhotoDto[] {
+  const seen = new Set<string>();
+  const mixed: PhotoDto[] = [];
+  let round = 0;
+  let added = true;
+  while (added && mixed.length < cap) {
+    added = false;
+    for (const group of groups) {
+      const photo = group[round];
+      if (!photo || seen.has(photo.id)) continue;
+      seen.add(photo.id);
+      mixed.push(photo);
+      added = true;
+      if (mixed.length >= cap) break;
+    }
+    round += 1;
+  }
+  return mixed;
+}
+
 function InfiniteFeed() {
   const { content } = useSiteContent();
   const [items, setItems] = useState<PhotoDto[]>([]);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const sentinel = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false);
+  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async (nextPage: number) => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    try {
-      const data = await api.photos({ page: nextPage, limit: 12, facets: '0' });
-      setItems((prev) => (nextPage === 1 ? data.items : [...prev, ...data.items]));
-      setHasMore(data.hasMore);
-      setTotal(data.total);
-      setPage(nextPage);
-    } catch {
-      setHasMore(false);
-    } finally {
-      loadingRef.current = false;
-      setLoading(false);
-    }
+    Promise.all(PHOTO_CATEGORIES.map((category) => (
+      api.photos({ category, page: 1, limit: 4, facets: '0' })
+        .then((data) => data.items)
+        .catch(() => [] as PhotoDto[])
+    ))).then((groups) => {
+      if (!cancelled) setItems(mixCategoryPhotos(groups));
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    void load(1);
-  }, [load]);
-
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && page > 0 && !loadingRef.current) {
-          void load(page + 1);
-        }
-      },
-      { rootMargin: '900px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasMore, page, load]);
 
   return (
     <section id="feed" className="bg-noir">
@@ -583,7 +560,7 @@ function InfiniteFeed() {
           </h2>
         </div>
         <Link to="/search" className="hidden font-mono-tech text-[10px] uppercase tracking-[0.2em] text-noir-soft hover:text-terra md:block">
-          {total ? `${fmt(total)} images` : 'Browse'} — {content.home.feed.browseLabel}
+          {content.home.feed.browseLabel}
         </Link>
       </div>
 
@@ -593,20 +570,18 @@ function InfiniteFeed() {
         ))}
       </div>
 
-      <div ref={sentinel} className="flex items-center justify-center gap-3 py-10">
-        {hasMore || loading ? (
-          <>
-            <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" />
-            <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.15s' }} />
-            <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.3s' }} />
-            <span className="ml-2 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-              {content.home.feed.loading}
-            </span>
-          </>
-        ) : (
+      <div className="flex items-center justify-center py-10">
+        {loading ? (
           <span className="font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-            {content.home.feed.end} — {fmt(total)} photographs
+            {content.home.feed.loading}
           </span>
+        ) : (
+          <Link
+            to="/search"
+            className="border border-paper px-8 py-3 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
+          >
+            Load more images
+          </Link>
         )}
       </div>
     </section>
@@ -639,8 +614,10 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
           {editorial.side}
         </span>
       </div>
-      <div className="relative flex-1">
+      <div className="group relative flex-1">
         {a ? <img src={a.src} alt={a.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px]" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+        {a && <CountryMark country={a.country} />}
+        {a && <PhotoHoverActions photo={a} />}
         {a && (
           <p className="absolute bottom-4 left-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
             {a.title} — {a.country}
@@ -674,8 +651,10 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
           {editorial.cta}
         </Link>
       </div>
-      <div className="relative flex-1">
+      <div className="group relative flex-1">
         {b ? <img src={b.src} alt={b.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px] lg:h-full" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+        {b && <CountryMark country={b.country} />}
+        {b && <PhotoHoverActions photo={b} />}
         {b && (
           <p className="absolute bottom-4 right-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
             {b.title} — {b.country}

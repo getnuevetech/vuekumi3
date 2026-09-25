@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { fillSiteTokens, type CatalogFacets, type PhotoDto, type PhotoSort } from '@vuekumi/shared'
 import { PhotoMasonry, SearchForm, SiteHeader } from '../components/shared'
@@ -25,8 +25,13 @@ export default function Search() {
   const [facets, setFacets] = useState<CatalogFacets | undefined>()
   const [total, setTotal] = useState(0)
   const [hasMore, setHasMore] = useState(false)
-  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const sentinel = useRef<HTMLDivElement>(null)
+  const pageRef = useRef(0)
+  const hasMoreRef = useRef(false)
+  const loadingMoreRef = useRef(false)
+  const generation = useRef(0)
 
   const q = param(params, 'q')
   const category = param(params, 'category')
@@ -50,7 +55,9 @@ export default function Search() {
   }
 
   useEffect(() => {
-    let cancelled = false
+    const gen = ++generation.current
+    pageRef.current = 0
+    hasMoreRef.current = false
     setLoading(true)
     api.photos({
       page: 1,
@@ -63,48 +70,70 @@ export default function Search() {
       photographer: photographer || undefined,
       sort,
     }).then((data) => {
-      if (cancelled) return
+      if (generation.current !== gen) return
       setItems(data.items)
       setFacets(data.facets)
       setTotal(data.total)
       setHasMore(data.hasMore)
-      setPage(1)
+      hasMoreRef.current = data.hasMore
+      pageRef.current = 1
     }).catch(() => {
-      if (!cancelled) {
-        setItems([])
-        setTotal(0)
-        setHasMore(false)
-      }
+      if (generation.current !== gen) return
+      setItems([])
+      setTotal(0)
+      setHasMore(false)
+      hasMoreRef.current = false
+      pageRef.current = 1
     }).finally(() => {
-      if (!cancelled) setLoading(false)
+      if (generation.current === gen) setLoading(false)
     })
-    return () => { cancelled = true }
   }, [filterKey, q, category, country, license, tag, photographer, sort])
 
-  async function loadMore() {
-    const next = page + 1
-    const data = await api.photos({
-      page: next,
-      limit: 24,
-      q: q || undefined,
-      category: category || undefined,
-      country: country || undefined,
-      license: license || undefined,
-      tag: tag || undefined,
-      photographer: photographer || undefined,
-      sort,
-    })
-    setItems((prev) => [...prev, ...data.items])
-    setHasMore(data.hasMore)
-    setPage(next)
-  }
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      if (loadingMoreRef.current || !hasMoreRef.current || pageRef.current < 1) return
+      const gen = generation.current
+      const next = pageRef.current + 1
+      loadingMoreRef.current = true
+      setLoadingMore(true)
+      api.photos({
+        page: next,
+        limit: 24,
+        q: q || undefined,
+        category: category || undefined,
+        country: country || undefined,
+        license: license || undefined,
+        tag: tag || undefined,
+        photographer: photographer || undefined,
+        sort,
+      }).then((data) => {
+        if (generation.current !== gen) return
+        setItems((prev) => [...prev, ...data.items])
+        setHasMore(data.hasMore)
+        hasMoreRef.current = data.hasMore
+        pageRef.current = next
+      }).catch(() => {
+        if (generation.current !== gen) return
+        hasMoreRef.current = false
+        setHasMore(false)
+      }).finally(() => {
+        loadingMoreRef.current = false
+        if (generation.current === gen) setLoadingMore(false)
+      })
+    }, { rootMargin: '700px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [filterKey, hasMore, loading, items.length, q, category, country, license, tag, photographer, sort])
 
   const heading = q ? `Results for “${q}”` : tag ? `Tagged ${tag}` : photographer ? `@${photographer}` : library.title
 
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-28 md:px-8">
+      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{library.kicker}</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight md:text-5xl">{heading}</h1>
         <p className="mt-2 text-sm text-ink-soft">
@@ -188,17 +217,11 @@ export default function Search() {
           <p className="mt-16 text-sm text-ink-soft">No photographs match those filters.</p>
         ) : null}
 
-        {hasMore && (
-          <div className="mt-10 text-center">
-            <button
-              type="button"
-              onClick={() => void loadMore()}
-              className="border border-ink px-8 py-3 font-mono-tech text-[11px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
-            >
-              Load more
-            </button>
-          </div>
-        )}
+        <div ref={sentinel} className="mt-10 flex justify-center">
+          {loadingMore && (
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading more</span>
+          )}
+        </div>
       </div>
     </div>
   )

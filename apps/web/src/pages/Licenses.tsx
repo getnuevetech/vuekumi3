@@ -21,7 +21,7 @@ export default function Licenses() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-[1100px] px-5 pb-24 pt-28">
+      <div className="mx-auto max-w-[1100px] px-5 pb-24 pt-40">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Your licences</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Usage grants.</h1>
         <p className="mt-1 max-w-xl text-sm text-ink-soft">

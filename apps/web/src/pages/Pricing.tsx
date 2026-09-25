@@ -91,7 +91,7 @@ export default function Pricing() {
   }))
 
   return (
-    <div className="pt-32 pb-28">
+    <div className="pt-40 pb-28">
       <SiteHeader />
       <div className="mx-auto max-w-[1400px] px-6 md:px-12">
         <Reveal>

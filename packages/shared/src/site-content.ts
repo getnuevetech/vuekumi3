@@ -81,6 +81,7 @@ export const siteContentSchema = z.object({
   }),
   searchPlaceholder: line(60),
   menu: z.array(siteMenuLinkSchema).min(1).max(24),
+  accountMenu: z.array(siteMenuLinkSchema).min(1).max(16),
   menuStyle: siteMenuStyleSchema,
   actions: z.object({
     login: line(40),
@@ -205,6 +206,15 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     { label: 'Model', to: '/model', audience: 'model' },
     { label: 'Contributor', to: '/contributor', audience: 'creator' },
     { label: 'Admin', to: '/admin', audience: 'admin' },
+  ],
+  accountMenu: [
+    { label: 'Account', to: '/account', audience: 'signed_in', sort: 1 },
+    { label: 'Upload', to: '/contributor/upload', audience: 'creator', sort: 2 },
+    { label: 'Collections', to: '/collections', audience: 'signed_in', sort: 3 },
+    { label: 'Licences', to: '/licenses', audience: 'buyer', sort: 4 },
+    { label: 'Favorites', to: '/favorites', audience: 'buyer', sort: 5 },
+    { label: 'Admin', to: '/admin', audience: 'admin', sort: 6 },
+    { label: 'Log out', to: '#logout', audience: 'signed_in', sort: 7 },
   ],
   menuStyle: { font: 'condensed', sizePx: 10 },
   actions: { login: 'Log in', logout: 'Log out', sell: 'Sell your photos' },
@@ -402,6 +412,7 @@ export function normalizeSiteContent(content: SiteContent): SiteContent {
   return {
     ...content,
     menu: sortMenuLinks(content.menu),
+    accountMenu: sortMenuLinks(content.accountMenu),
     footer: { ...content.footer, links: sortMenuLinks(content.footer.links) },
   }
 }

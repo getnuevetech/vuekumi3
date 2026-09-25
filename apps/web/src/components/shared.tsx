@@ -6,6 +6,7 @@ import { fmt, type Photo } from '../data/content'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { useCurrency } from '../context/CurrencyContext'
 import { ThemeToggle } from './ThemeToggle'
+import { CountryMark, PhotoHoverActions } from './PhotoActions'
 import { useAuth } from '../context/AuthContext'
 import { useSiteContent } from '../context/SiteContentContext'
 import { toast } from 'sonner'
@@ -146,10 +147,12 @@ export function SearchForm({
   dark = false,
   defaultQuery = '',
   compact = false,
+  wide = false,
 }: {
   dark?: boolean
   defaultQuery?: string
   compact?: boolean
+  wide?: boolean
 }) {
   const reactId = useId()
   const { content } = useSiteContent()
@@ -168,14 +171,14 @@ export function SearchForm({
   }
 
   return (
-    <form onSubmit={submit} className={compact ? 'w-44 xl:w-56' : 'w-full max-w-md'}>
+    <form onSubmit={submit} className={wide ? 'w-full' : compact ? 'w-44 xl:w-56' : 'w-full max-w-md'}>
       <label className="sr-only" htmlFor={inputId}>Search the library</label>
       <input
         id={inputId}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={content.searchPlaceholder}
-        className={`w-full px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] outline-none ${
+        className={`w-full font-mono-tech uppercase tracking-[0.14em] outline-none ${wide ? 'px-4 py-3 text-[11px]' : 'px-3 py-2 text-[10px]'} ${
           dark
             ? 'border border-paper/30 bg-transparent text-paper placeholder:text-paper-soft/70 focus:border-terra'
             : 'border border-sand bg-transparent text-ink placeholder:text-ink-faint focus:border-terra'
@@ -185,10 +188,83 @@ export function SearchForm({
   )
 }
 
+function UserIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5 19.5c1.4-3 3.8-4.5 7-4.5s5.6 1.5 7 4.5" />
+    </svg>
+  )
+}
+
+export function AccountMenu({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
+  const { user, logout } = useAuth()
+  const { content } = useSiteContent()
+  const [open, setOpen] = useState(false)
+  const text = tone === 'dark'
+    ? 'font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra'
+    : 'font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra'
+  if (!user) {
+    return (
+      <Link to="/login" className={text}>
+        {content.actions.login}
+      </Link>
+    )
+  }
+  const links = sortMenuLinks(content.accountMenu).filter((link) => menuLinkVisible(link, user))
+  const iconColor = tone === 'dark'
+    ? 'border-paper/40 text-paper hover:border-terra hover:text-terra'
+    : 'border-sand text-ink hover:border-ink'
+  const panel = tone === 'dark'
+    ? 'border-paper/20 bg-noir text-paper'
+    : 'border-sand bg-paper text-ink shadow-lg'
+  return (
+    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        aria-label="Account"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((value) => !value)}
+        className={`flex h-9 w-9 items-center justify-center border ${iconColor}`}
+      >
+        <UserIcon />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-50 min-w-[12rem] pt-2">
+          <div role="menu" className={`border py-1 ${panel}`}>
+            {links.map((link) => link.to === '#logout' ? (
+              <button
+                key={`${link.to}-${link.label}`}
+                type="button"
+                role="menuitem"
+                onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
+                className="block w-full px-4 py-2 text-left font-mono-tech text-[10px] uppercase tracking-[0.14em] hover:text-terra"
+              >
+                {link.label}
+              </button>
+            ) : (
+              <Link
+                key={`${link.to}-${link.label}`}
+                to={link.to}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] hover:text-terra"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { content } = useSiteContent()
   const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user))
   const menuClass = menuTypeClass(content.menuStyle.font)
@@ -213,51 +289,34 @@ export function SiteHeader() {
               <Link key={`${link.to}-${link.label}`} to={link.to} style={menuStyle} className="link-slide hover:text-terra">{link.label}</Link>
             ))}
           </nav>
-          <div className="hidden items-center gap-3 lg:flex">
+          <div className="flex items-center gap-3">
             <ThemeToggle />
-            <SearchForm compact defaultQuery="" />
-            <CurrencySelect />
-            {user ? (
-              <>
-                <Link
-                  to="/account"
-                  className="max-w-[140px] truncate font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft hover:text-terra"
-                >
-                  {user.email}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
-                  className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
-                >
-                  {content.actions.logout}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
-                >
-                  {content.actions.login}
-                </Link>
-                <Link
-                  to="/login?redirect=/contributor/upload&signup=photographer"
-                  className="bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra"
-                >
-                  {content.actions.sell}
-                </Link>
-              </>
+            <div className="hidden md:block">
+              <CurrencySelect />
+            </div>
+            <AccountMenu />
+            {!user && (
+              <Link
+                to="/login?redirect=/contributor/upload&signup=photographer"
+                className="hidden bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra lg:inline-block"
+              >
+                {content.actions.sell}
+              </Link>
             )}
+            <button
+              onClick={() => setOpen(!open)}
+              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-sand lg:hidden"
+              aria-label="Toggle menu"
+            >
+              <span className={`block h-px w-5 bg-ink transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
+              <span className={`block h-px w-5 bg-ink transition-transform ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
+            </button>
           </div>
-          <button
-            onClick={() => setOpen(!open)}
-            className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-sand lg:hidden"
-            aria-label="Toggle menu"
-          >
-            <span className={`block h-px w-5 bg-ink transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
-            <span className={`block h-px w-5 bg-ink transition-transform ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
-          </button>
+        </div>
+        <div className="px-5 pb-3 md:px-8">
+          <div className="mx-auto max-w-[1500px]">
+            <SearchForm wide defaultQuery="" />
+          </div>
         </div>
       </header>
       <div
@@ -361,23 +420,28 @@ export function PhotoCard({
       <BlurImage
         src={photo.src}
         alt={photo.title}
-        className="w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        className="min-h-40 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
       />
       {/* hover overlay */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/30 via-transparent to-black/55 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div className="flex items-start justify-between p-3">
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/30 via-transparent to-black/55 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+        <div className="flex items-start justify-end gap-1 p-2">
           {photo.license === 'premium' ? (
-            <span className="bg-terra px-2 py-1 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-paper">
+            <span className="mr-auto mt-8 bg-terra px-2 py-1 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-paper">
               Premium · ${photo.price}
             </span>
           ) : (
-            <span className="bg-paper/90 px-2 py-1 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink">
+            <span className="mr-auto mt-8 bg-paper/90 px-2 py-1 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink">
               Free
             </span>
           )}
+          <PhotoHoverActions
+            inline
+            photo={{ id: photo.id, src: photo.src, title: photo.title, country: photo.country, license: photo.license, price: photo.price }}
+          />
           <button
             type="button"
             onClick={(e) => { void toggle(e) }}
+            onPointerDown={(e) => e.stopPropagation()}
             className="pointer-events-auto flex h-8 w-8 items-center justify-center bg-paper/90 transition-colors hover:bg-terra hover:text-paper"
             aria-label={liked ? 'Remove from favorites' : 'Save to favorites'}
             aria-pressed={liked}
@@ -397,6 +461,7 @@ export function PhotoCard({
           <span className="font-mono-tech text-[9px] text-white/70">{fmt(photo.downloads)}↓</span>
         </div>
       </div>
+      <CountryMark country={photo.country} />
     </Link>
   )
 }

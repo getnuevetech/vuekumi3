@@ -90,7 +90,7 @@ export default function Bookings() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-4xl px-5 pb-24 pt-28 md:px-8">
+      <div className="mx-auto max-w-4xl px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Bookings</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Briefs & quotes.</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">

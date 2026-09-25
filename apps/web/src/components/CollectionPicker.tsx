@@ -5,7 +5,7 @@ import type { CollectionMembershipDto } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
-export function CollectionPicker({ photoId }: { photoId: string }) {
+export function CollectionPicker({ photoId, variant = 'button' }: { photoId: string; variant?: 'button' | 'panel' }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -21,9 +21,11 @@ export function CollectionPicker({ photoId }: { photoId: string }) {
       .catch(() => setItems([]))
   }
 
+  const panel = variant === 'panel'
+
   useEffect(() => {
-    if (open && user) load()
-  }, [open, user, photoId])
+    if ((open || panel) && user) load()
+  }, [open, panel, user, photoId])
 
   async function toggle(col: CollectionMembershipDto) {
     setBusy(true)
@@ -55,23 +57,8 @@ export function CollectionPicker({ photoId }: { photoId: string }) {
     }
   }
 
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => {
-          if (!user) {
-            navigate(`/login?redirect=/photo/${photoId}`)
-            return
-          }
-          setOpen((v) => !v)
-        }}
-        className="w-full border border-sand bg-white py-3 font-mono-tech text-[11px] uppercase tracking-[0.18em] hover:border-terra"
-      >
-        Add to collection
-      </button>
-      {open && user && (
-        <div className="absolute z-20 mt-2 w-full border border-sand bg-paper p-3 shadow-sm">
+  const body = (
+        <div className={panel ? 'border border-sand bg-paper p-3' : 'absolute z-20 mt-2 w-full border border-sand bg-paper p-3 shadow-sm'}>
           <p className="font-mono-tech text-[9px] uppercase tracking-[0.16em] text-ink-soft">Lightboxes</p>
           <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
             {items.map((col) => (
@@ -121,7 +108,26 @@ export function CollectionPicker({ photoId }: { photoId: string }) {
             </Link>
           </div>
         </div>
-      )}
+  )
+
+  if (panel) return user ? body : null
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (!user) {
+            navigate(`/login?redirect=/photo/${photoId}`)
+            return
+          }
+          setOpen((v) => !v)
+        }}
+        className="w-full border border-sand bg-white py-3 font-mono-tech text-[11px] uppercase tracking-[0.18em] hover:border-terra"
+      >
+        Add to collection
+      </button>
+      {open && user ? body : null}
     </div>
   )
 }

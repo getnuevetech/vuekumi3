@@ -30,7 +30,7 @@ export default function BookCreator({ kind }: { kind: BookingKind }) {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-2xl px-5 pb-24 pt-28 md:px-8">
+      <div className="mx-auto max-w-2xl px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Booking</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">
           {verb} @{handle}.

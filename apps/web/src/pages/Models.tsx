@@ -38,7 +38,7 @@ export default function Models() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-28 md:px-8">
+      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{page.kicker}</p>
         <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">{page.title}</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{page.intro}</p>

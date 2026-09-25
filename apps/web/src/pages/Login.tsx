@@ -66,6 +66,11 @@ export default function Login() {
   }, [searchParams])
 
   useEffect(() => {
+    if (searchParams.get('mode') !== 'signup') return
+    setMode('signup')
+  }, [searchParams])
+
+  useEffect(() => {
     if (!wantsCreator && !wantsModel) return
     setMode('signup')
     setRole(

@@ -1,27 +1,38 @@
 import { useTheme, type ThemeChoice } from '../context/ThemeContext'
 
+function SunIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z" />
+    </svg>
+  )
+}
+
 export function ThemeToggle({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
   const { choice, setChoice } = useTheme()
-  const idle = tone === 'dark'
-    ? 'border-paper/30 text-paper-soft hover:border-paper hover:text-paper'
-    : 'border-sand text-ink-soft hover:border-ink hover:text-ink'
-  const on = tone === 'dark'
-    ? 'border-terra bg-terra text-paper'
-    : 'border-ink bg-ink text-paper'
-  const button = (value: ThemeChoice, label: string) => (
+  const appearance = choice ?? (tone === 'dark' ? 'dark' : 'light')
+  const next: ThemeChoice = appearance === 'dark' ? 'light' : 'dark'
+  const label = next === 'dark' ? 'Switch to dark' : 'Switch to light'
+  const color = tone === 'dark'
+    ? 'border-paper/40 text-paper hover:border-terra hover:text-terra'
+    : 'border-sand text-ink hover:border-ink'
+  return (
     <button
       type="button"
-      aria-pressed={choice === value}
-      onClick={() => setChoice(value)}
-      className={`px-2 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] ${choice === value ? on : idle}`}
+      aria-label={label}
+      onClick={() => setChoice(next)}
+      className={`flex h-9 w-9 items-center justify-center border ${color}`}
     >
-      {label}
+      {appearance === 'dark' ? <SunIcon /> : <MoonIcon />}
     </button>
-  )
-  return (
-    <div className="flex items-center" role="group" aria-label="Appearance">
-      {button('light', 'Light')}
-      {button('dark', 'Dark')}
-    </div>
   )
 }

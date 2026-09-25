@@ -88,7 +88,7 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
         {menuOnly ? (
           <>
-            These are the links in the public header and footer. Who sees it controls whether a link is shown to everyone, or only to buyers, creators, models, agencies, or admins.
+            These are the links in the public header, the account icon menu, and the footer. Who sees it controls whether a link is shown to everyone, or only to buyers, creators, models, agencies, or admins.
             The other homepage words are on <Link to="/admin/site" className="text-terra">Site content</Link>.
           </>
         ) : (
@@ -182,6 +182,60 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
             const sort = content.menu.reduce((max, link) => Math.max(max, link.sort ?? 0), 0) + 1
             set({ ...content, menu: sortMenuLinks([...content.menu, { label: 'New link', to: '/search', audience: 'always', sort }]) })
           }} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Add menu link</button>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
+        <h2 className="font-serif-display text-2xl font-light">Account menu</h2>
+        <p className="mt-1 text-sm text-ink-soft">These items appear when a signed-in visitor hovers the account icon. A path of #logout signs them out. Lower numbers appear first. Signed-out visitors see the Log in label instead of this menu.</p>
+        <div className="mt-4 space-y-3">
+          {content.accountMenu.map((link, index) => (
+            <div key={`${link.label}|${link.to}|${link.audience}`} className="grid gap-2 md:grid-cols-[5rem_1fr_1fr_16rem_auto]">
+              <input
+                type="number"
+                min={0}
+                max={999}
+                value={link.sort ?? index + 1}
+                onChange={(e) => {
+                  const sort = readSort(e.target.value, index + 1)
+                  setContent((current) => {
+                    if (!current) return current
+                    const accountMenu = current.accountMenu.map((row, i) => i === index ? { ...row, sort } : row)
+                    return { ...current, accountMenu }
+                  })
+                }}
+                onBlur={(e) => {
+                  const sort = readSort(e.currentTarget.value, index + 1)
+                  setContent((current) => {
+                    if (!current) return current
+                    const accountMenu = current.accountMenu.map((row, i) => i === index ? { ...row, sort } : row)
+                    return { ...current, accountMenu: sortMenuLinks(accountMenu) }
+                  })
+                }}
+                className={field}
+                aria-label={`Account menu sort ${index + 1}`}
+              />
+              <input value={link.label} onChange={(e) => {
+                const accountMenu = content.accountMenu.map((row, i) => i === index ? { ...row, label: e.target.value } : row)
+                set({ ...content, accountMenu })
+              }} className={field} aria-label={`Account menu label ${index + 1}`} />
+              <input value={link.to} onChange={(e) => {
+                const accountMenu = content.accountMenu.map((row, i) => i === index ? { ...row, to: e.target.value } : row)
+                set({ ...content, accountMenu })
+              }} className={field} aria-label={`Account menu path ${index + 1}`} />
+              <select value={link.audience} onChange={(e) => {
+                const accountMenu = content.accountMenu.map((row, i) => i === index ? { ...row, audience: e.target.value as SiteMenuAudience } : row)
+                set({ ...content, accountMenu })
+              }} className={field} aria-label={`Account menu audience ${index + 1}`}>
+                {SITE_MENU_AUDIENCES.map((audience) => <option key={audience} value={audience}>{MENU_AUDIENCE_LABEL[audience]}</option>)}
+              </select>
+              <button type="button" disabled={content.accountMenu.length <= 1} onClick={() => set({ ...content, accountMenu: content.accountMenu.filter((_, i) => i !== index) })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40">Remove</button>
+            </div>
+          ))}
+          <button type="button" disabled={content.accountMenu.length >= 16} onClick={() => {
+            const sort = content.accountMenu.reduce((max, link) => Math.max(max, link.sort ?? 0), 0) + 1
+            set({ ...content, accountMenu: sortMenuLinks([...content.accountMenu, { label: 'New link', to: '/account', audience: 'signed_in', sort }]) })
+          }} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40">Add account link</button>
         </div>
       </section>
 
