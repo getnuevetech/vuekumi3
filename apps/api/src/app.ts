@@ -25,6 +25,7 @@ import { adminContentRoutes } from './routes/admin-content.js'
 import { adminHomepageRoutes } from './routes/admin-homepage.js'
 import { adminSiteRoutes } from './routes/admin-site.js'
 import { adminPlanRoutes } from './routes/admin-plans.js'
+import { adminProfileRoutes } from './routes/admin-profile.js'
 import { mediaRoutes } from './routes/media.js'
 import { paymentRoutes } from './routes/payments.js'
 import { aiRoutes } from './routes/ai.js'
@@ -118,6 +119,7 @@ export async function buildApp() {
     await api.register(adminHomepageRoutes)
     await api.register(adminSiteRoutes)
     await api.register(adminPlanRoutes)
+    await api.register(adminProfileRoutes)
     await api.register(mediaRoutes)
     await api.register(paymentRoutes)
     await api.register(aiRoutes)

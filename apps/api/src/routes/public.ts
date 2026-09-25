@@ -25,11 +25,15 @@ export async function publicRoutes(app: FastifyInstance) {
 
   app.get('/public/site', async () => loadSitePublic())
 
-  app.get('/plans', async () => {
+  app.get('/plans', async (request) => {
+    const query = request.query as { audience?: string }
+    const audience = ['buyer', 'photographer', 'contributor', 'model'].includes(query.audience ?? '')
+      ? query.audience
+      : 'buyer'
     const [items, home] = await Promise.all([
-      listBuyerPlans({ includeDisabled: false }),
+      listBuyerPlans({ includeDisabled: false, audience }),
       loadHomePricingCopy(),
     ])
-    return { items, home }
+    return { items, home, audience }
   })
 }

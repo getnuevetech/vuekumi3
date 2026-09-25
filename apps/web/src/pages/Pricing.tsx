@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { fillSiteTokens, paidLicenceSplit, isCreatorAccount, type BuyerPlanDto } from '@vuekumi/shared'
+import { fillSiteTokens, paidLicenceSplit, isCreatorAccount, planAudienceForAccount, type BuyerPlanDto } from '@vuekumi/shared'
 import { Reveal, SectionHead, SiteHeader, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
@@ -23,7 +23,8 @@ export default function Pricing() {
   const [plusBusy, setPlusBusy] = useState<string | null>(null)
   const [share, setShare] = useState(0.5)
   const [buyerPlans, setBuyerPlans] = useState<BuyerPlanDto[] | null>(null)
-  const paidActive = Boolean(user?.subscriptionPlan && user.subscriptionPlan !== 'free')
+  const audience = planAudienceForAccount(user?.accountType) ?? 'buyer'
+  const currentSlug = user?.subscriptionPlan && user.subscriptionPlan !== 'free' ? user.subscriptionPlan : null
   const split = paidLicenceSplit(share)
   const earnHref = isCreatorAccount(user?.accountType)
     ? '/contributor'
@@ -35,22 +36,32 @@ export default function Pricing() {
         if (typeof c.contributorShare === 'number') setShare(c.contributorShare)
       })
       .catch(() => setShare(0.5))
-    api.publicPlans()
+    api.publicPlans(audience)
       .then((data) => setBuyerPlans(data.items))
       .catch(() => setBuyerPlans([]))
-  }, [])
+  }, [audience])
 
   async function goPlus(slug = 'plus') {
     if (!user) {
       navigate('/login?redirect=/pricing')
       return
     }
-    if (paidActive) {
+    if (currentSlug === slug) {
       navigate('/account')
       return
     }
     setPlusBusy(slug)
     try {
+      if (currentSlug) {
+        const result = await api.changePlan(slug)
+        if (result.checkout?.url) {
+          window.location.assign(result.checkout.url)
+          return
+        }
+        toast.success('Plan updated')
+        navigate('/account')
+        return
+      }
       const { checkout } = await api.startPlusCheckout({ plan: slug })
       window.location.assign(checkout.url)
     } catch (err) {
@@ -67,7 +78,13 @@ export default function Pricing() {
     per: `per ${plan.periodDays} days`,
     tone: plan.highlighted ? 'ink' as const : 'paper' as const,
     badge: plan.badge || undefined,
-    cta: paidActive ? 'Manage plan' : plusBusy === plan.slug ? 'Starting…' : `Go ${plan.name}`,
+    cta: currentSlug === plan.slug
+      ? 'Current plan'
+      : plusBusy === plan.slug
+        ? 'Starting…'
+        : currentSlug
+          ? (plan.priceUsd > (buyerPlans?.find((row) => row.slug === currentSlug)?.priceUsd ?? plan.priceUsd) ? `Upgrade to ${plan.name}` : `Downgrade to ${plan.name}`)
+          : `Go ${plan.name}`,
     features: plan.features.length
       ? plan.features
       : [plan.description || `${plan.name} for ${plan.periodDays} days`],
@@ -94,7 +111,7 @@ export default function Pricing() {
         </Reveal>
 
         {buyerPlans && plans.length === 0 && (
-          <p className="mt-16 text-center text-sm text-ink-soft">No buyer plans are available yet.</p>
+          <p className="mt-16 text-center text-sm text-ink-soft">No {audience} plans are available yet.</p>
         )}
         <div className="mt-16 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {plans.map((p, i) => (

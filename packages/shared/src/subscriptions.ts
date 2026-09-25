@@ -42,6 +42,7 @@ export interface BuyerPlanDto {
   homePhotoSrc: string | null
   enabled: boolean
   sortOrder: number
+  audience: import('./plan-accounts.js').PlanAudience
 }
 
 export const buyerPlanSlugSchema = z
@@ -65,6 +66,7 @@ export const createBuyerPlanSchema = z.object({
   homePhotoId: z.string().trim().min(1).max(80).nullable().optional(),
   enabled: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
+  audience: z.enum(['buyer', 'photographer', 'contributor', 'model']).optional(),
 })
 export type CreateBuyerPlanInput = z.infer<typeof createBuyerPlanSchema>
 
@@ -79,6 +81,7 @@ export const patchBuyerPlanSchema = z.object({
   homePhotoId: z.string().trim().min(1).max(80).nullable().optional(),
   enabled: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
+  audience: z.enum(['buyer', 'photographer', 'contributor', 'model']).optional(),
 })
 
 export const patchHomePricingSchema = z.object({
@@ -121,6 +124,8 @@ export interface SubscriptionStatusDto {
   pending: SubscriptionDto | null
   priceUsd: number
   periodDays: number
+  downgradeMode?: import('./plan-accounts.js').DowngradeMode
+  audience?: string
 }
 
 export interface SubscriptionCheckoutDto {

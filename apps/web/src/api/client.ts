@@ -202,17 +202,35 @@ export const api = {
   saveSite: (body: import('@vuekumi/shared').SiteContent) =>
     request<import('@vuekumi/shared').SitePublicDto>('/api/admin/site', { method: 'PUT', body: JSON.stringify(body) }),
 
-  publicPlans: () => request<import('@vuekumi/shared').PublicPlansDto>('/api/plans'),
+  publicPlans: (audience?: string) => request<import('@vuekumi/shared').PublicPlansDto>(`/api/plans${audience ? `?audience=${encodeURIComponent(audience)}` : ''}`),
 
-  adminPlans: () => request<import('@vuekumi/shared').PublicPlansDto>('/api/admin/plans'),
+  adminPlans: () => request<import('@vuekumi/shared').PublicPlansDto & { policy: { downgradeMode: import('@vuekumi/shared').DowngradeMode } }>('/api/admin/plans'),
+
+  savePlanPolicy: (body: { downgradeMode: import('@vuekumi/shared').DowngradeMode }) =>
+    request<{ policy: { downgradeMode: import('@vuekumi/shared').DowngradeMode } }>('/api/admin/plans/policy', { method: 'PUT', body: JSON.stringify(body) }),
+
+  planCancellations: () => request<{ items: { id: string; plan: string; reason: string; detail: string | null; email: string | null; createdAt: string }[] }>('/api/admin/plans/cancellations'),
+
+  profileFields: () => request<{ items: { accountType: string; fields: import('@vuekumi/shared').ProfileFieldKey[] }[] }>('/api/admin/profile-fields'),
+
+  accountProfileFields: () => request<{ accountType: string; fields: import('@vuekumi/shared').ProfileFieldKey[] }>('/api/account/profile-fields'),
+
+  saveProfileFields: (body: { items: { accountType: string; fields: import('@vuekumi/shared').ProfileFieldKey[] }[] }) =>
+    request<{ items: { accountType: string; fields: import('@vuekumi/shared').ProfileFieldKey[] }[] }>('/api/admin/profile-fields', { method: 'PUT', body: JSON.stringify(body) }),
+
+  quotePlanChange: (plan: string) => request<{ quote: import('@vuekumi/shared').PlanChangeQuote; planName: string; priceUsd: number; periodDays: number }>('/api/subscriptions/quote', { method: 'POST', body: JSON.stringify({ plan }) }),
+
+  changePlan: (plan: string) => request<{ quote: import('@vuekumi/shared').PlanChangeQuote; checkout: { url: string } | null; subscription: import('@vuekumi/shared').SubscriptionDto }>('/api/subscriptions/change', { method: 'POST', body: JSON.stringify({ plan }) }),
+
+  uploadAvatar: (dataUrl: string) => request<{ avatarUrl: string }>('/api/account/avatar', { method: 'POST', body: JSON.stringify({ dataUrl }) }),
 
   saveHomePricing: (body: { kicker: string; title: string }) =>
     request<{ home: import('@vuekumi/shared').HomePricingCopy }>('/api/admin/plans/home', { method: 'PUT', body: JSON.stringify(body) }),
 
-  createBuyerPlan: (body: { name: string; slug?: string; priceUsd: number; periodDays: number; description?: string; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number }) =>
+  createBuyerPlan: (body: { name: string; slug?: string; priceUsd: number; periodDays: number; description?: string; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number; audience?: import('@vuekumi/shared').PlanAudience }) =>
     request<BuyerPlanDto>('/api/admin/plans', { method: 'POST', body: JSON.stringify(body) }),
 
-  updateBuyerPlan: (id: string, body: { name?: string; priceUsd?: number; periodDays?: number; description?: string | null; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number }) =>
+  updateBuyerPlan: (id: string, body: { name?: string; priceUsd?: number; periodDays?: number; description?: string | null; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number; audience?: import('@vuekumi/shared').PlanAudience }) =>
     request<BuyerPlanDto>(`/api/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   deleteBuyerPlan: (id: string) =>
@@ -598,8 +616,8 @@ export const api = {
   completeDevSubscription: (id: string) =>
     request<{ subscription: SubscriptionDto }>(`/api/subscriptions/${id}/complete-dev`, { method: 'POST', body: JSON.stringify({}) }),
 
-  cancelSubscription: (id: string) =>
-    request<{ subscription: SubscriptionDto }>(`/api/subscriptions/${id}/cancel`, { method: 'POST', body: JSON.stringify({}) }),
+  cancelSubscription: (id: string, body: { reason: import('@vuekumi/shared').CancellationReason; detail?: string }) =>
+    request<{ subscription: SubscriptionDto }>(`/api/subscriptions/${id}/cancel`, { method: 'POST', body: JSON.stringify(body) }),
 
   contributorStats: () => request<ContributorStatsDto>('/api/contributor/stats'),
 

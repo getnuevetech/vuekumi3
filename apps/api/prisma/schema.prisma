@@ -249,6 +249,12 @@ model User {
   status          UserStatus   @default(active)
   country         String?
   avatarUrl       String?
+  phoneCountryCode String?
+  phone           String?
+  addressLine     String?
+  city            String?
+  bio             String?
+  location        String?
   emailVerifiedAt DateTime?
   rightsStrikeCount Int       @default(0)
   repeatInfringerAt DateTime?
@@ -489,6 +495,7 @@ model UserProfile {
   id                  String    @id @default(cuid())
   userId              String    @unique
   subscriptionPlan    String    @default("free")
+  planAudience        String    @default("buyer")
   plusUntil           DateTime?
   downloadQuotaUsed   Int       @default(0)
   downloadQuotaReset  DateTime  @default(now())
@@ -725,7 +732,51 @@ model BuyerPlan {
   homePhotoId String?
   enabled     Boolean  @default(true)
   sortOrder   Int      @default(0)
+  /// buyer, photographer, contributor, or model. Plans are not shared across these.
+  audience    String   @default("buyer")
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// How a downgrade is settled. Admin chooses one mode for the whole site.
+model PlanPolicy {
+  id            String   @id
+  downgradeMode String   @default("neither")
+  updatedAt     DateTime @updatedAt
+}
+
+model SubscriptionCancellation {
+  id             String   @id @default(cuid())
+  userId         String
+  subscriptionId String
+  plan           String
+  reason         String
+  detail         String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model PlanAdjustment {
+  id           String   @id @default(cuid())
+  userId       String
+  fromPlan     String
+  toPlan       String
+  kind         String
+  mode         String
+  creditUsd    Float
+  chargeUsd    Float
+  refundUsd    Float
+  refundStatus String
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Which profile fields each account type must fill. Buyers default to none.
+model ProfileRequirement {
+  accountType String   @id
+  fields      String[] @default([])
   updatedAt   DateTime @updatedAt
 }
 

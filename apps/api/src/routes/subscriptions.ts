@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
-import { adminHas, startPlusSchema } from '@vuekumi/shared'
-import { defaultPlusOffer } from '../lib/buyer-plans.js'
+import { adminHas, cancelSubscriptionSchema, changePlanSchema, startPlusSchema } from '@vuekumi/shared'
+import { defaultPlusOffer, loadPlanPolicy } from '../lib/buyer-plans.js'
 import { writeAuditLog } from '../lib/audit.js'
 import { authenticate } from '../lib/auth-middleware.js'
 import { config } from '../config.js'
@@ -9,11 +9,13 @@ import { browserOrigin } from '../lib/public-origin.js'
 import { prisma } from '../lib/prisma.js'
 import {
   cancelPlus,
+  changePlan,
   completeDevSubscription,
   displayPlan,
   displayQuota,
   ensureUserProfile,
   expirePlusIfNeeded,
+  quoteSubscriptionChange,
   serializeSubscription,
   startPlusCheckout,
   SubscriptionError,
@@ -43,6 +45,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
     })
     const plan = displayPlan(profile, now)
     const offer = await defaultPlusOffer()
+    const policy = await loadPlanPolicy()
     const activePlan = plan === 'free' ? null : await prisma.buyerPlan.findUnique({ where: { slug: plan } })
     const status = plan !== 'free'
       ? (current?.status === 'cancelled' ? 'cancelled' : 'active')
@@ -61,6 +64,8 @@ export async function subscriptionRoutes(app: FastifyInstance) {
       pending: pending ? serializeSubscription(pending) : null,
       priceUsd: offer.priceUsd,
       periodDays: offer.periodDays,
+      downgradeMode: policy.downgradeMode,
+      audience: profile.planAudience,
     }
   })
 
@@ -80,6 +85,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
         requestedProvider: body.provider,
         returnOrigin: browserOrigin(request, config.webUrl),
         planSlug: body.plan,
+        accountType: request.authUser?.accountType,
       })
       await writeAuditLog({
         actorId: request.userId,
@@ -158,18 +164,68 @@ export async function subscriptionRoutes(app: FastifyInstance) {
     }
   })
 
+  app.post('/subscriptions/quote', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const body = changePlanSchema.parse(request.body ?? {})
+    try {
+      const { quote, next } = await quoteSubscriptionChange({
+        userId: request.userId!,
+        accountType: request.authUser?.accountType,
+        planSlug: body.plan,
+      })
+      return { quote, planName: next.name, priceUsd: next.priceUsd, periodDays: next.periodDays }
+    } catch (err) {
+      return subError(reply, err)
+    }
+  })
+
+  app.post('/subscriptions/change', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const body = changePlanSchema.parse(request.body ?? {})
+    try {
+      const result = await changePlan({
+        userId: request.userId!,
+        email: request.authUser!.email,
+        name: request.authUser!.name,
+        country: request.authUser?.country,
+        accountType: request.authUser?.accountType,
+        planSlug: body.plan,
+        returnOrigin: browserOrigin(request, config.webUrl),
+      })
+      return {
+        quote: result.quote,
+        checkout: result.checkout
+          ? {
+              subscriptionId: result.subscription.id,
+              provider: result.subscription.provider,
+              url: result.subscription.checkoutUrl ?? `/checkout/plus/${result.subscription.id}`,
+              amountUsd: result.subscription.amountUsd,
+              currency: result.subscription.currency,
+              amountLocal: result.subscription.amountLocal,
+            }
+          : null,
+        subscription: serializeSubscription(result.subscription),
+      }
+    } catch (err) {
+      return subError(reply, err)
+    }
+  })
+
   app.post('/subscriptions/:id/cancel', {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
+    const body = cancelSubscriptionSchema.parse(request.body ?? {})
     try {
-      const subscription = await cancelPlus(request.userId!, id)
+      const subscription = await cancelPlus(request.userId!, id, body)
       await writeAuditLog({
         actorId: request.userId,
         action: 'subscription.cancel',
         entityType: 'subscription',
         entityId: subscription.id,
-        metadata: { periodEnd: subscription.periodEnd },
+        metadata: { periodEnd: subscription.periodEnd, reason: body.reason },
         ipAddress: request.ip,
       })
       return { subscription: serializeSubscription(subscription) }

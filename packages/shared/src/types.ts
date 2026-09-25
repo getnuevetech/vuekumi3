@@ -34,6 +34,10 @@ export interface AuthUser {
   country: string | null
   avatarUrl: string | null
   emailVerified: boolean
+  phoneCountryCode?: string | null
+  phone?: string | null
+  addressLine?: string | null
+  city?: string | null
   hasPassword: boolean
   bio?: string | null
   location?: string | null

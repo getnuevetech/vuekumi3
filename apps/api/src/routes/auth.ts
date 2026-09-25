@@ -7,8 +7,10 @@ import {
   personNameFrom,
   registerSchema,
   resetPasswordSchema,
+  PROFILE_FIELD_LABEL,
   updateProfileSchema,
 } from '@vuekumi/shared'
+import { z } from 'zod'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
 import {
@@ -26,7 +28,9 @@ import {
   verifyEmail as verifyEmailTemplate,
 } from '../lib/email.js'
 import { hashPassword, createToken, hashToken, verifyPassword } from '../lib/password.js'
+import { requiredProfileFields } from '../lib/profile-requirements.js'
 import { prisma } from '../lib/prisma.js'
+import { getObjectBuffer, putObject } from '../lib/storage.js'
 import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 import { serializeUser, authUserInclude } from '../lib/serialize.js'
 import { authenticate, requireAdminCapability } from '../lib/auth-middleware.js'
@@ -282,6 +286,33 @@ export async function authRoutes(app: FastifyInstance) {
 
     const avatarUrl =
       body.avatarUrl === undefined ? existing.avatarUrl : body.avatarUrl.trim() || null
+    const phoneCountryCode = body.phoneCountryCode === undefined ? existing.phoneCountryCode : body.phoneCountryCode.trim() || null
+    const phone = body.phone === undefined ? existing.phone : body.phone.replace(/\s+/g, '') || null
+    const addressLine = body.addressLine === undefined ? existing.addressLine : body.addressLine.trim() || null
+    const city = body.city === undefined ? existing.city : body.city.trim() || null
+    const bio = body.bio === undefined ? existing.bio : body.bio.trim() || null
+    const location = body.location === undefined
+      ? (existing.location ?? existing.contributorProfile?.location ?? existing.modelProfile?.location ?? null)
+      : body.location.trim() || null
+    if (phoneCountryCode && !/^\+\d{1,4}$/.test(phoneCountryCode)) {
+      return reply.code(400).send({ error: 'Mobile country code looks like +234' })
+    }
+    if (phone && !/^\d{6,15}$/.test(phone)) {
+      return reply.code(400).send({ error: 'Mobile number should be digits only, without the country code' })
+    }
+    const required = await requiredProfileFields(existing.accountType)
+    const filled: Record<string, boolean> = {
+      avatar: Boolean(avatarUrl),
+      phone: Boolean(phoneCountryCode && phone),
+      address: Boolean(addressLine && city),
+      bio: Boolean(bio),
+      location: Boolean(location),
+    }
+    for (const field of required) {
+      if (!filled[field]) {
+        return reply.code(400).send({ error: `${PROFILE_FIELD_LABEL[field]} is required for this account` })
+      }
+    }
 
     const person = (body.firstName !== undefined || body.lastName !== undefined)
       ? personNameFrom({
@@ -299,6 +330,12 @@ export async function authRoutes(app: FastifyInstance) {
           ...(person ? { name: person.name, firstName: person.firstName, lastName: person.lastName } : {}),
           country,
           avatarUrl,
+          phoneCountryCode,
+          phone,
+          addressLine,
+          city,
+          bio,
+          location,
         },
       })
       const availabilityData = {
@@ -342,6 +379,46 @@ export async function authRoutes(app: FastifyInstance) {
       include: authUserInclude,
     })
     return { user: serializeUser(full!) }
+  })
+
+  app.get('/account/profile-fields', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request) => {
+    const accountType = request.authUser?.accountType ?? 'user'
+    const fields = await requiredProfileFields(accountType)
+    return { accountType, fields }
+  })
+
+  app.post('/account/avatar', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const body = z.object({ dataUrl: z.string().min(30).max(2_000_000) }).parse(request.body)
+    const match = body.dataUrl.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,([A-Za-z0-9+/=]+)$/)
+    if (!match) return reply.code(400).send({ error: 'Use a JPEG, PNG, or WebP image' })
+    const buffer = Buffer.from(match[2], 'base64')
+    if (buffer.length > 1_500_000) return reply.code(400).send({ error: 'Profile pictures must be under 1.5 MB' })
+    const type = match[1] === 'image/jpg' ? 'image/jpeg' : match[1]
+    const ext = type.includes('png') ? 'png' : type.includes('webp') ? 'webp' : 'jpg'
+    await putObject(`avatars/${request.userId}.${ext}`, buffer, type)
+    const avatarUrl = `/api/account/avatars/${request.userId}`
+    await prisma.user.update({ where: { id: request.userId! }, data: { avatarUrl } })
+    return { avatarUrl }
+  })
+
+  app.get('/account/avatars/:userId', async (request, reply) => {
+    const { userId } = request.params as { userId: string }
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { avatarUrl: true } })
+    if (!user?.avatarUrl) return reply.code(404).send({ error: 'No profile picture' })
+    for (const ext of ['jpg', 'png', 'webp']) {
+      try {
+        const bytes = await getObjectBuffer(`avatars/${userId}.${ext}`)
+        const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg'
+        return reply.type(type).send(bytes)
+      } catch {
+        /* try the next extension */
+      }
+    }
+    return reply.code(404).send({ error: 'No profile picture' })
   })
 
   app.patch('/auth/me/password', {

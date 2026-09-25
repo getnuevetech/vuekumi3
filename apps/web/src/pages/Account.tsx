@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import type { BookingAvailability, SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
-import { splitDisplayName } from '@vuekumi/shared'
+import type { BookingAvailability, BuyerPlanDto, CancellationReason, PlanChangeQuote, ProfileFieldKey, SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
+import { CANCELLATION_REASON_LABEL, CANCELLATION_REASONS, planAudienceForAccount, splitDisplayName } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS, hasModelAccess, isCreatorWorkspaceAccount } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
@@ -16,9 +16,14 @@ export default function Account() {
   const [lastName, setLastName] = useState('')
   const [country, setCountry] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [phoneCountryCode, setPhoneCountryCode] = useState('')
+  const [phone, setPhone] = useState('')
+  const [addressLine, setAddressLine] = useState('')
+  const [city, setCity] = useState('')
   const [handle, setHandle] = useState('')
   const [bio, setBio] = useState('')
   const [location, setLocation] = useState('')
+  const [requiredFields, setRequiredFields] = useState<ProfileFieldKey[]>([])
   const [availability, setAvailability] = useState<BookingAvailability>('open')
   const [dayRate, setDayRate] = useState('')
   const [countries, setCountries] = useState<GeoCountry[]>([])
@@ -32,13 +37,19 @@ export default function Account() {
   const [sessions, setSessions] = useState<SessionDto[]>([])
   const [sessionsBusy, setSessionsBusy] = useState(false)
   const [plan, setPlan] = useState<SubscriptionStatusDto | null>(null)
+  const [offers, setOffers] = useState<BuyerPlanDto[]>([])
   const [planBusy, setPlanBusy] = useState(false)
+  const [pendingChange, setPendingChange] = useState<{ slug: string; planName: string; priceUsd: number; quote: PlanChangeQuote } | null>(null)
+  const [cancelReason, setCancelReason] = useState<CancellationReason | ''>('')
+  const [cancelDetail, setCancelDetail] = useState('')
 
   const contributor = isCreatorWorkspaceAccount(user?.accountType)
   const model = Boolean(user && hasModelAccess(user))
   const dualRole = Boolean(contributor && user?.hasModelProfile)
   const publicProfile = contributor || model
-  const canSubscribe = user?.accountType === 'user' || user?.accountType === 'agency' || isCreatorWorkspaceAccount(user?.accountType)
+  const audience = planAudienceForAccount(user?.accountType)
+  const canSubscribe = Boolean(audience)
+  const need = (field: ProfileFieldKey) => requiredFields.includes(field)
 
   useEffect(() => {
     if (!user) return
@@ -47,6 +58,10 @@ export default function Account() {
     setLastName(user.lastName || parts.lastName)
     setCountry(user.country ?? '')
     setAvatarUrl(user.avatarUrl ?? '')
+    setPhoneCountryCode(user.phoneCountryCode ?? '')
+    setPhone(user.phone ?? '')
+    setAddressLine(user.addressLine ?? '')
+    setCity(user.city ?? '')
     setHandle(user.contributorHandle ?? user.modelHandle ?? '')
     setBio(user.bio ?? '')
     setLocation(user.location ?? '')
@@ -73,8 +88,14 @@ export default function Account() {
     if (user) {
       loadSessions()
       loadPlan()
+      api.accountProfileFields().then((page) => setRequiredFields(page.fields)).catch(() => setRequiredFields([]))
     }
   }, [user])
+
+  useEffect(() => {
+    if (!audience) return
+    api.publicPlans(audience).then((data) => setOffers(data.items)).catch(() => setOffers([]))
+  }, [audience])
 
   if (authLoading) {
     return (
@@ -109,74 +130,128 @@ export default function Account() {
 
         {canSubscribe && (
           <div className="mt-10 border border-sand bg-white p-6">
-            <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Vuekumi+</p>
-            <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="font-serif-display text-2xl font-light">
-                  {plan && plan.plan !== 'free' ? (plan.planName || plan.plan) : 'Free'} plan
-                </h2>
-                <p className="mt-1 text-sm text-ink-soft">
-                  {plan?.quota.unlimited
-                    ? `Unlimited royalty-free downloads${plan.plusUntil ? ` through ${plan.plusUntil.slice(0, 10)}` : ''}. Premium images are still billed per licence.`
-                    : `${plan?.quota.used ?? user.downloadQuotaUsed ?? 0} of ${plan?.quota.limit ?? 50} royalty-free downloads used today (UTC).`}
+            <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">{audience} plan</p>
+            <div className="mt-2">
+              <h2 className="font-serif-display text-2xl font-light">
+                {plan && plan.plan !== 'free' ? (plan.planName || plan.plan) : 'Free'} plan
+              </h2>
+              <p className="mt-1 text-sm text-ink-soft">
+                {plan?.quota.unlimited
+                  ? `Unlimited royalty-free downloads${plan.plusUntil ? ` through ${plan.plusUntil.slice(0, 10)}` : ''}. Premium images are still billed per licence.`
+                  : audience === 'buyer'
+                    ? `${plan?.quota.used ?? user.downloadQuotaUsed ?? 0} of ${plan?.quota.limit ?? 50} royalty-free downloads used today (UTC).`
+                    : 'This membership is for your account type. Royalty-free buyer downloads stay on a buyer plan.'}
+              </p>
+              {plan?.status === 'cancelled' && plan.plusUntil && (
+                <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra">
+                  Cancels at period end · {plan.plusUntil.slice(0, 10)}
                 </p>
-                {plan?.status === 'cancelled' && plan.plusUntil && (
-                  <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra">
-                    Cancels at period end · {plan.plusUntil.slice(0, 10)}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {plan?.plan === 'free' || !plan ? (
-                  <button
-                    type="button"
-                    disabled={planBusy}
-                    onClick={async () => {
-                      setPlanBusy(true)
-                      try {
-                        const { checkout } = await api.startPlusCheckout()
-                        window.location.assign(checkout.url)
-                      } catch (err) {
-                        toast.error(err instanceof ApiError ? err.message : 'Could not start Vuekumi+')
-                        setPlanBusy(false)
-                      }
-                    }}
-                    className="bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50"
-                  >
-                    {planBusy ? 'Starting…' : `Go Vuekumi+ · $${plan?.priceUsd ?? 19}`}
-                  </button>
-                ) : null}
-                {plan && plan.plan !== 'free' && plan.current && plan.status !== 'cancelled' && (
-                  <button
-                    type="button"
-                    disabled={planBusy}
-                    onClick={async () => {
-                      if (!plan.current) return
-                      setPlanBusy(true)
-                      try {
-                        await api.cancelSubscription(plan.current.id)
-                        toast.success('This plan will end after the current period')
-                        await refresh()
-                        loadPlan()
-                      } catch (err) {
-                        toast.error(err instanceof ApiError ? err.message : 'Could not cancel')
-                      } finally {
-                        setPlanBusy(false)
-                      }
-                    }}
-                    className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-[#b3382e]"
-                  >
-                    Cancel at period end
-                  </button>
-                )}
-              </div>
+              )}
+              {plan && plan.plan !== 'free' && (
+                <p className="mt-2 text-sm text-ink-soft">
+                  {plan.downgradeMode === 'prorate'
+                    ? 'A downgrade credits unused time against the new price.'
+                    : plan.downgradeMode === 'refund'
+                      ? 'A downgrade refunds unused time and charges the new price in full.'
+                      : 'A downgrade charges the new price. Unused time is not credited or refunded.'}
+                </p>
+              )}
             </div>
-            {!plan?.quota.unlimited && (
+            {!plan?.quota.unlimited && audience === 'buyer' && (
               <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-ink/8">
                 <div
                   className="h-full rounded-full bg-terra"
                   style={{ width: `${Math.min(100, ((plan?.quota.used ?? 0) / (plan?.quota.limit ?? 50)) * 100)}%` }}
                 />
+              </div>
+            )}
+            <div className="mt-5 space-y-3">
+              {offers.map((offer) => {
+                const current = plan?.plan === offer.slug
+                const movingUp = plan && plan.plan !== 'free' && offer.priceUsd > (offers.find((row) => row.slug === plan.plan)?.priceUsd ?? offer.priceUsd)
+                return (
+                  <div key={offer.id} className="flex flex-wrap items-center justify-between gap-3 border border-sand px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">{offer.name}{current ? ' · current' : ''}</p>
+                      <p className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">${offer.priceUsd} / {offer.periodDays} days</p>
+                    </div>
+                    {!current && (
+                      <button
+                        type="button"
+                        disabled={planBusy}
+                        onClick={async () => {
+                          if (!plan || plan.plan === 'free') {
+                            setPlanBusy(true)
+                            try {
+                              const { checkout } = await api.startPlusCheckout({ plan: offer.slug })
+                              window.location.assign(checkout.url)
+                            } catch (err) {
+                              toast.error(err instanceof ApiError ? err.message : 'Could not start checkout')
+                              setPlanBusy(false)
+                            }
+                            return
+                          }
+                          setPlanBusy(true)
+                          try {
+                            const quoted = await api.quotePlanChange(offer.slug)
+                            setPendingChange({ slug: offer.slug, planName: quoted.planName, priceUsd: quoted.priceUsd, quote: quoted.quote })
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : 'Could not quote this change')
+                          } finally {
+                            setPlanBusy(false)
+                          }
+                        }}
+                        className="bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50"
+                      >
+                        {plan && plan.plan !== 'free' ? (movingUp ? 'Upgrade' : 'Downgrade') : 'Subscribe'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+              {offers.length === 0 && <p className="text-sm text-ink-soft">No {audience} plans are available yet.</p>}
+            </div>
+            {pendingChange && (
+              <div className="mt-4 border border-terra/40 bg-cream p-4">
+                <p className="text-sm text-ink">
+                  {pendingChange.quote.kind === 'upgrade'
+                    ? `Upgrade to ${pendingChange.planName} charges $${pendingChange.quote.chargeUsd.toFixed(2)} after unused credit.`
+                    : pendingChange.quote.mode === 'prorate'
+                      ? `Downgrade to ${pendingChange.planName} applies unused time to the new price. You pay $${pendingChange.quote.chargeUsd.toFixed(2)}.`
+                      : pendingChange.quote.mode === 'refund'
+                        ? `Downgrade to ${pendingChange.planName} charges $${pendingChange.quote.chargeUsd.toFixed(2)} and refunds $${pendingChange.quote.refundUsd.toFixed(2)} of unused time.`
+                        : `Downgrade to ${pendingChange.planName} charges $${pendingChange.quote.chargeUsd.toFixed(2)}. Unused time is not credited or refunded.`}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    disabled={planBusy}
+                    onClick={async () => {
+                      setPlanBusy(true)
+                      try {
+                        const result = await api.changePlan(pendingChange.slug)
+                        if (result.checkout?.url) {
+                          window.location.assign(result.checkout.url)
+                          return
+                        }
+                        toast.success('Plan updated')
+                        setPendingChange(null)
+                        await refresh()
+                        loadPlan()
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Could not change plan')
+                      } finally {
+                        setPlanBusy(false)
+                      }
+                    }}
+                    className="bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50"
+                  >
+                    Confirm change
+                  </button>
+                  <button type="button" onClick={() => setPendingChange(null)} className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em]">
+                    Keep current plan
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -193,7 +268,13 @@ export default function Account() {
                 lastName,
                 country,
                 avatarUrl,
-                ...(publicProfile ? { handle, bio, location } : {}),
+                phoneCountryCode,
+                phone,
+                addressLine,
+                city,
+                bio,
+                location,
+                ...(publicProfile ? { handle } : {}),
                 ...(publicProfile
                   ? { availability, dayRateUsd: dayRate === '' ? null : Number(dayRate) }
                   : {}),
@@ -208,6 +289,15 @@ export default function Account() {
           }}
         >
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Profile</p>
+          <label className="block">
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Email</span>
+            <input
+              readOnly
+              value={user.email}
+              aria-label="Email address"
+              className="mt-1 w-full border border-sand bg-paper px-4 py-2.5 text-sm text-ink-soft outline-none"
+            />
+          </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <input
               required
@@ -226,6 +316,81 @@ export default function Account() {
               className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
             />
           </div>
+          <div className="flex items-center gap-4">
+            {avatarUrl ? <img src={avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" /> : null}
+            <label className="block flex-1">
+              <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                Profile picture{need('avatar') ? ' (required)' : ''}
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Profile picture"
+                required={need('avatar') && !avatarUrl}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const dataUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader()
+                    reader.onload = () => resolve(String(reader.result))
+                    reader.onerror = () => reject(new Error('Could not read the image'))
+                    reader.readAsDataURL(file)
+                  })
+                  setProfileBusy(true)
+                  try {
+                    const saved = await api.uploadAvatar(dataUrl)
+                    setAvatarUrl(saved.avatarUrl)
+                    await refresh()
+                    toast.success('Profile picture saved')
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Could not upload the picture')
+                  } finally {
+                    setProfileBusy(false)
+                  }
+                }}
+                className="mt-1 w-full text-sm"
+              />
+            </label>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[7rem_1fr]">
+            <input
+              required={need('phone')}
+              value={phoneCountryCode}
+              onChange={(e) => setPhoneCountryCode(e.target.value)}
+              placeholder="+234"
+              aria-label="Country code"
+              autoComplete="tel-country-code"
+              className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+            />
+            <input
+              required={need('phone')}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={need('phone') ? 'Mobile number (required)' : 'Mobile number'}
+              aria-label="Mobile number"
+              inputMode="tel"
+              autoComplete="tel-national"
+              className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+            />
+          </div>
+          <input
+            required={need('address')}
+            value={addressLine}
+            onChange={(e) => setAddressLine(e.target.value)}
+            placeholder={need('address') ? 'Street address (required)' : 'Street address'}
+            aria-label="Street address"
+            autoComplete="street-address"
+            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
+          <input
+            required={need('address')}
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder={need('address') ? 'City (required)' : 'City'}
+            aria-label="City"
+            autoComplete="address-level2"
+            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
           <select
             required={contributor}
             value={country}
@@ -253,19 +418,6 @@ export default function Account() {
                   ? `Shown as /p/${handle || 'your-handle'}`
                   : `Shown as /m/${handle || 'your-handle'}. Approving likeness does not transfer copyright.`}
               </p>
-              <input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Public location (Lagos, Nigeria)"
-                className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
-              />
-              <textarea
-                rows={4}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Short bio"
-                className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
-              />
               <div>
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(AVAILABILITY_LABELS) as BookingAvailability[]).map((a) => (
@@ -298,9 +450,20 @@ export default function Account() {
             </>
           )}
           <input
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="Avatar URL (optional)"
+            required={need('location')}
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder={need('location') ? 'Public location (required)' : 'Public location (Lagos, Nigeria)'}
+            aria-label="Public location"
+            className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+          />
+          <textarea
+            required={need('bio')}
+            rows={4}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder={need('bio') ? 'Short bio (required)' : 'Short bio'}
+            aria-label="Bio"
             className="w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
           />
           <button
@@ -459,6 +622,69 @@ export default function Account() {
             Public model portfolio:{' '}
             <Link to={`/m/${user.modelHandle}`} className="text-terra">/m/{user.modelHandle}</Link>
           </p>
+        )}
+
+        {canSubscribe && plan && plan.plan !== 'free' && plan.current && plan.status !== 'cancelled' && (
+          <form
+            className="mt-16 border border-sand bg-white p-6"
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (!plan.current || !cancelReason) return
+              setPlanBusy(true)
+              try {
+                await api.cancelSubscription(plan.current.id, {
+                  reason: cancelReason,
+                  detail: cancelDetail.trim() || undefined,
+                })
+                toast.success('This plan will end after the current period')
+                setCancelReason('')
+                setCancelDetail('')
+                await refresh()
+                loadPlan()
+              } catch (err) {
+                toast.error(err instanceof ApiError ? err.message : 'Could not cancel')
+              } finally {
+                setPlanBusy(false)
+              }
+            }}
+          >
+            <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-[#b3382e]">Cancel subscription</p>
+            <h2 className="font-serif-display mt-2 text-2xl font-light">End this plan.</h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              Access lasts through {plan.plusUntil ? plan.plusUntil.slice(0, 10) : 'the paid period'}. Tell us why you are leaving so we can keep a record.
+            </p>
+            <label className="mt-4 block">
+              <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Why are you cancelling?</span>
+              <select
+                required
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value as CancellationReason)}
+                aria-label="Cancellation reason"
+                className="mt-1 w-full border border-sand bg-white px-4 py-2.5 text-sm outline-none focus:border-terra"
+              >
+                <option value="">Choose a reason</option>
+                {CANCELLATION_REASONS.map((reason) => (
+                  <option key={reason} value={reason}>{CANCELLATION_REASON_LABEL[reason]}</option>
+                ))}
+              </select>
+            </label>
+            <textarea
+              required={cancelReason === 'other'}
+              rows={3}
+              value={cancelDetail}
+              onChange={(e) => setCancelDetail(e.target.value)}
+              placeholder={cancelReason === 'other' ? 'Tell us a little more (required)' : 'Anything else (optional)'}
+              aria-label="Cancellation details"
+              className="mt-3 w-full border border-sand px-4 py-2.5 text-sm outline-none focus:border-terra"
+            />
+            <button
+              type="submit"
+              disabled={planBusy}
+              className="mt-4 border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-[#b3382e] disabled:opacity-50"
+            >
+              Cancel at period end
+            </button>
+          </form>
         )}
       </div>
     </div>

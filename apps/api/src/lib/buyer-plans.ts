@@ -36,6 +36,7 @@ export function serializeBuyerPlan(row: BuyerPlan, homePhotoSrc: string | null =
     homePhotoSrc,
     enabled: row.enabled,
     sortOrder: row.sortOrder,
+    audience: (row.audience === 'photographer' || row.audience === 'contributor' || row.audience === 'model') ? row.audience : 'buyer',
   }
 }
 
@@ -71,6 +72,7 @@ export async function ensureDefaultPlusPlan() {
       highlighted: true,
       enabled: true,
       sortOrder: 0,
+      audience: 'buyer',
     },
   })
 }
@@ -108,11 +110,14 @@ async function photoSrcById(ids: string[], liveOnly: boolean) {
   return new Map(photos.map((photo) => [photo.id, photo.src]))
 }
 
-export async function listBuyerPlans(opts: { includeDisabled: boolean }) {
+export async function listBuyerPlans(opts: { includeDisabled: boolean; audience?: string }) {
   await ensureDefaultPlusPlan()
   const rows = await prisma.buyerPlan.findMany({
-    where: opts.includeDisabled ? {} : { enabled: true },
-    orderBy: [{ sortOrder: 'asc' }, { priceUsd: 'asc' }, { name: 'asc' }],
+    where: {
+      ...(opts.includeDisabled ? {} : { enabled: true }),
+      ...(opts.audience ? { audience: opts.audience } : {}),
+    },
+    orderBy: [{ audience: 'asc' }, { sortOrder: 'asc' }, { priceUsd: 'asc' }, { name: 'asc' }],
   })
   const srcs = await photoSrcById(rows.map((row) => row.homePhotoId ?? ''), !opts.includeDisabled)
   return rows.map((row) => serializeBuyerPlan(row, row.homePhotoId ? srcs.get(row.homePhotoId) ?? null : null))
@@ -138,6 +143,7 @@ export async function resolveCheckoutPlan(slug: string) {
       priceUsd: PLUS_PRICE_USD,
       periodDays: PLUS_PERIOD_DAYS,
       description: null as string | null,
+      audience: 'buyer',
     }
   }
   throw httpError('That buyer plan is not available', 404)
@@ -172,6 +178,7 @@ export async function createBuyerPlan(input: CreateBuyerPlanInput) {
         homePhotoId: input.homePhotoId ?? null,
         enabled: input.enabled ?? true,
         sortOrder: input.sortOrder ?? 10,
+        audience: input.audience ?? 'buyer',
       },
     })
   } catch (err) {
@@ -199,8 +206,28 @@ export async function updateBuyerPlan(id: string, input: PatchBuyerPlanInput) {
       ...(input.homePhotoId !== undefined ? { homePhotoId: input.homePhotoId } : {}),
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+      ...(input.audience !== undefined && existing.slug !== PLUS_PLAN ? { audience: input.audience } : {}),
     },
   })
+}
+
+function asDowngradeMode(value: string | null | undefined): 'prorate' | 'refund' | 'neither' {
+  if (value === 'prorate' || value === 'refund' || value === 'neither') return value
+  return 'neither'
+}
+
+export async function loadPlanPolicy() {
+  const row = await prisma.planPolicy.findUnique({ where: { id: 'public' } })
+  return { downgradeMode: asDowngradeMode(row?.downgradeMode) }
+}
+
+export async function savePlanPolicy(downgradeMode: 'prorate' | 'refund' | 'neither') {
+  await prisma.planPolicy.upsert({
+    where: { id: 'public' },
+    create: { id: 'public', downgradeMode },
+    update: { downgradeMode },
+  })
+  return { downgradeMode }
 }
 
 export async function deleteBuyerPlan(id: string) {

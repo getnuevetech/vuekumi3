@@ -39,6 +39,7 @@ import { AdminContent } from './pages/AdminContent'
 import AdminHomepage from './pages/AdminHomepage'
 import AdminSite from './pages/AdminSite'
 import AdminPlans from './pages/AdminPlans'
+import AdminProfileFields from './pages/AdminProfileFields'
 import AdminBookings from './pages/AdminBookings'
 import AdminCampaigns from './pages/AdminCampaigns'
 import Licenses from './pages/Licenses'
@@ -153,6 +154,7 @@ export default function App() {
 
         <Route path="/admin" element={<ProtectedRoute allowed={['admin']} capability="metrics.view"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowed={['admin']} capability="accounts.users.list"><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin/profile-fields" element={<ProtectedRoute allowed={['admin']} capability="accounts.users.list"><AdminProfileFields /></ProtectedRoute>} />
         <Route path="/admin/photographers" element={<ProtectedRoute allowed={['admin']} capability="accounts.photographers.list"><AdminPhotographers /></ProtectedRoute>} />
         <Route path="/admin/influencers" element={<ProtectedRoute allowed={['admin']} capability="accounts.influencers.list"><AdminInfluencers /></ProtectedRoute>} />
         <Route path="/admin/contributors" element={<ProtectedRoute allowed={['admin']} capability="accounts.contributors.list"><AdminContributors /></ProtectedRoute>} />

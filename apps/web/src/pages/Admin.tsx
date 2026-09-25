@@ -67,6 +67,7 @@ export const adminLinks: PortalLink[] = [
     icon: icons.users,
     children: [
       { to: '/admin/users', label: 'Members', icon: icons.users },
+      { to: '/admin/profile-fields', label: 'Profile fields', icon: icons.users },
       { to: '/admin/photographers', label: 'Photographers', icon: icons.users },
       { to: '/admin/influencers', label: 'Photo influencers', icon: icons.users },
       { to: '/admin/contributors', label: 'Contributors', icon: icons.users },
@@ -103,7 +104,7 @@ export const adminLinks: PortalLink[] = [
     icon: icons.money,
     children: [
       { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
-      { to: '/admin/plans', label: 'Buyer plans', icon: icons.money },
+      { to: '/admin/plans', label: 'Plans', icon: icons.money },
       { to: '/admin/rates', label: 'FX rates', icon: icons.money },
     ],
   },

@@ -6,6 +6,9 @@ import {
   PLUS_PERIOD_DAYS,
   PLUS_PLAN,
   PLUS_PRICE_USD,
+  planAudienceForAccount,
+  quotePlanChange,
+  unusedCreditUsd,
   type QuotaDto,
   type SubscriptionDto,
   type SubscriptionStatus,
@@ -21,7 +24,7 @@ import {
   paymentSecrets,
   usableStripeSecret,
 } from './payments-config.js'
-import { resolveCheckoutPlan } from './buyer-plans.js'
+import { loadPlanPolicy, resolveCheckoutPlan } from './buyer-plans.js'
 import { prisma } from './prisma.js'
 
 type Tx = Prisma.TransactionClient
@@ -66,11 +69,13 @@ export function displayQuota(
     plusUntil: Date | null
     downloadQuotaUsed: number
     downloadQuotaReset: Date
+    planAudience?: string | null
   } | null | undefined,
   now = new Date(),
 ): QuotaDto {
   const day = utcDayStart(now)
-  if (isPlusActive(profile, now)) {
+  const buyerAccess = isPlusActive(profile, now) && (profile?.planAudience || 'buyer') === 'buyer'
+  if (buyerAccess) {
     return {
       used: 0,
       limit: null,
@@ -103,6 +108,7 @@ type QuotaSnapshot = {
   plusUntil: Date | null
   used: number
   resetAt: Date
+  planAudience?: string | null
 }
 
 export function quotaAfterConsume(snapshot: QuotaSnapshot, now = new Date()): {
@@ -111,7 +117,7 @@ export function quotaAfterConsume(snapshot: QuotaSnapshot, now = new Date()): {
   error?: string
   unlimited?: boolean
 } {
-  if (isPlusActive({ subscriptionPlan: snapshot.plan, plusUntil: snapshot.plusUntil }, now)) {
+  if (isPlusActive({ subscriptionPlan: snapshot.plan, plusUntil: snapshot.plusUntil }, now) && (snapshot.planAudience || 'buyer') === 'buyer') {
     return { ok: true, unlimited: true, next: snapshot }
   }
   const day = utcDayStart(now)
@@ -215,9 +221,15 @@ export function serializeSubscription(row: Subscription): SubscriptionDto {
 export async function activatePlus(userId: string, subscriptionId: string, now = new Date(), client: Db = prisma) {
   const current = await client.subscription.findUnique({ where: { id: subscriptionId } })
   if (!current) throw new SubscriptionError('Subscription not found', 404)
-  const meta = (current.metadata ?? {}) as { periodDays?: number }
+  const meta = (current.metadata ?? {}) as { periodDays?: number; fromSubscriptionId?: string; refundUsd?: number; mode?: string; creditUsd?: number; fromPlan?: string; kind?: string }
   const days = typeof meta.periodDays === 'number' && meta.periodDays > 0 ? meta.periodDays : PLUS_PERIOD_DAYS
   const { periodStart, periodEnd } = plusPeriod(now, days)
+  if (meta.fromSubscriptionId) {
+    await client.subscription.updateMany({
+      where: { id: meta.fromSubscriptionId, userId },
+      data: { status: 'expired', periodEnd: now },
+    })
+  }
   const updated = await client.subscription.update({
     where: { id: subscriptionId },
     data: {
@@ -226,11 +238,37 @@ export async function activatePlus(userId: string, subscriptionId: string, now =
       periodEnd,
     },
   })
+  const planRow = await client.buyerPlan.findUnique({ where: { slug: current.plan } })
   await ensureUserProfile(userId, client)
   await client.userProfile.update({
     where: { userId },
-    data: { subscriptionPlan: current.plan || PLUS_PLAN, plusUntil: periodEnd },
+    data: {
+      subscriptionPlan: current.plan || PLUS_PLAN,
+      plusUntil: periodEnd,
+      planAudience: planRow?.audience ?? 'buyer',
+    },
   })
+  if (meta.kind === 'plan_change' && meta.fromPlan) {
+    const refundUsd = typeof meta.refundUsd === 'number' ? meta.refundUsd : 0
+    let refundStatus = refundUsd > 0 ? 'recorded' : 'none'
+    if (refundUsd > 0 && meta.fromSubscriptionId) {
+      const previous = await client.subscription.findUnique({ where: { id: meta.fromSubscriptionId } })
+      if (previous) refundStatus = await refundUnusedCredit(previous, refundUsd)
+    }
+    await client.planAdjustment.create({
+      data: {
+        userId,
+        fromPlan: meta.fromPlan,
+        toPlan: current.plan,
+        kind: 'change',
+        mode: meta.mode || 'neither',
+        creditUsd: typeof meta.creditUsd === 'number' ? meta.creditUsd : 0,
+        chargeUsd: current.amountUsd,
+        refundUsd,
+        refundStatus,
+      },
+    })
+  }
   return updated
 }
 
@@ -248,6 +286,7 @@ export async function startPlusCheckout(input: {
   requestedProvider?: 'stripe' | 'flutterwave'
   returnOrigin?: string
   planSlug?: string
+  accountType?: string | null
 }) {
   const profile = await ensureUserProfile(input.userId)
   const now = new Date()
@@ -257,6 +296,10 @@ export async function startPlusCheckout(input: {
   }
 
   const offer = await resolveCheckoutPlan(input.planSlug || PLUS_PLAN)
+  const audience = planAudienceForAccount(input.accountType)
+  if (audience && offer.audience !== audience) {
+    throw new SubscriptionError('That plan is for a different account type', 403)
+  }
   const staleBefore = new Date(Date.now() - 30 * 60_000)
   const existing = await prisma.subscription.findFirst({
     where: {
@@ -415,7 +458,143 @@ export async function completeDevSubscription(subscriptionId: string) {
   return fulfillSubscription(subscriptionId, `dev_${subscriptionId}`)
 }
 
-export async function cancelPlus(userId: string, subscriptionId?: string) {
+async function refundUnusedCredit(previous: Subscription, refundUsd: number) {
+  if (refundUsd <= 0) return 'none'
+  if (previous.provider !== 'stripe' || !previous.providerRef) return 'recorded'
+  try {
+    const secrets = await paymentSecrets()
+    const secret = usableStripeSecret(secrets.stripeSecret)
+    if (!secret) return 'recorded'
+    const stripe = new Stripe(secret)
+    const session = await stripe.checkout.sessions.retrieve(previous.providerRef)
+    const paymentIntent = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+    if (!paymentIntent) return 'recorded'
+    await stripe.refunds.create({ payment_intent: paymentIntent, amount: Math.round(refundUsd * 100) })
+    return 'refunded'
+  } catch {
+    return 'recorded'
+  }
+}
+
+export async function quoteSubscriptionChange(input: { userId: string; accountType?: string | null; planSlug: string }) {
+  const audience = planAudienceForAccount(input.accountType)
+  if (!audience) throw new SubscriptionError('This account does not use a subscription plan', 400)
+  const next = await resolveCheckoutPlan(input.planSlug)
+  if (next.audience !== audience) throw new SubscriptionError('That plan is for a different account type', 403)
+  const profile = await expirePlusIfNeeded(await ensureUserProfile(input.userId))
+  if (!isPlusActive(profile)) throw new SubscriptionError('Subscribe before changing plans', 400)
+  const current = await prisma.subscription.findFirst({
+    where: { userId: input.userId, plan: profile.subscriptionPlan, status: { in: ['active', 'cancelled'] } },
+    orderBy: { periodEnd: 'desc' },
+  })
+  if (!current?.periodStart || !current.periodEnd) throw new SubscriptionError('The current plan has no billing period', 400)
+  const policy = await loadPlanPolicy()
+  const creditUsd = unusedCreditUsd(current.amountUsd, current.periodStart, current.periodEnd)
+  const quote = quotePlanChange({
+    currentPrice: current.amountUsd,
+    nextPrice: next.priceUsd,
+    creditUsd,
+    mode: policy.downgradeMode,
+  })
+  return { quote, next, current, creditUsd, audience }
+}
+
+export async function changePlan(input: {
+  userId: string
+  email: string
+  name: string
+  country?: string | null
+  accountType?: string | null
+  planSlug: string
+  returnOrigin?: string
+  requestedProvider?: 'stripe' | 'flutterwave'
+}) {
+  const { quote, next, current, creditUsd } = await quoteSubscriptionChange(input)
+  if (current.plan === next.slug) throw new SubscriptionError('That plan is already active', 409)
+  const metadata = {
+    buyerEmail: input.email,
+    kind: 'plan_change',
+    planSlug: next.slug,
+    planName: next.name,
+    periodDays: next.periodDays,
+    fromSubscriptionId: current.id,
+    fromPlan: current.plan,
+    refundUsd: quote.refundUsd,
+    creditUsd,
+    mode: quote.mode,
+  } as Prisma.InputJsonValue
+
+  if (quote.chargeUsd <= 0) {
+    const row = await prisma.subscription.create({
+      data: {
+        userId: input.userId,
+        plan: next.slug,
+        status: 'pending',
+        amountUsd: 0,
+        currency: 'USD',
+        amountLocal: 0,
+        provider: current.provider,
+        metadata,
+      },
+    })
+    const subscription = await activatePlus(input.userId, row.id)
+    return { subscription, checkout: null, quote }
+  }
+
+  const secrets = await paymentSecrets()
+  assertStripeSecretUsable(secrets, input.requestedProvider)
+  const country = input.country
+    ? await prisma.country.findUnique({ where: { code: input.country.toUpperCase() } })
+    : null
+  const provider = chooseProvider({
+    requested: input.requestedProvider,
+    stripe: Boolean(usableStripeSecret(secrets.stripeSecret)),
+    flutterwave: Boolean(secrets.flutterwaveSecret),
+    africanBuyer: country?.region === 'africa',
+    allowDev: config.isDev,
+  })
+  const pricing = await pricingForCountry(input.country)
+  const currency = provider === 'flutterwave' ? flutterwaveCurrency(pricing.currency.toUpperCase()) : 'USD'
+  const amountUsd = quote.chargeUsd
+  const amountLocal = currency === 'USD' ? amountUsd : convertFromUsd(amountUsd, pricing.rateToUsd)
+  const origin = (input.returnOrigin || config.webUrl).replace(/\/$/, '')
+  const subscription = await prisma.subscription.create({
+    data: {
+      userId: input.userId,
+      plan: next.slug,
+      status: 'pending',
+      amountUsd,
+      currency,
+      amountLocal,
+      provider,
+      metadata,
+    },
+  })
+  const checkout = await openGatewayCheckout({
+    checkoutId: subscription.id,
+    provider,
+    amountUsd,
+    amountLocal,
+    currency,
+    buyerEmail: input.email,
+    buyerName: input.name,
+    description: `${quote.kind === 'upgrade' ? 'Upgrade' : 'Downgrade'} to ${next.name}`,
+    successUrl: `${origin}/checkout/plus/${subscription.id}`,
+    cancelUrl: `${origin}/account?checkout=cancelled`,
+    metadata: { subscriptionId: subscription.id },
+    secrets,
+  })
+  const updated = await prisma.subscription.update({
+    where: { id: subscription.id },
+    data: { checkoutUrl: checkout.url, providerRef: checkout.ref },
+  })
+  return { subscription: updated, checkout, quote }
+}
+
+export async function cancelPlus(userId: string, subscriptionId: string | undefined, reason: { reason: string; detail?: string }) {
+  if (reason.reason === 'other' && !reason.detail?.trim()) {
+    throw new SubscriptionError('Tell us a little more about why you are cancelling', 400)
+  }
   const now = new Date()
   const row = subscriptionId
     ? await prisma.subscription.findUnique({ where: { id: subscriptionId } })
@@ -423,12 +602,22 @@ export async function cancelPlus(userId: string, subscriptionId?: string) {
         where: { userId, status: 'active' },
         orderBy: { periodEnd: 'desc' },
       })
-  if (!row || row.userId !== userId) throw new SubscriptionError('Active Vuekumi+ subscription not found', 404)
+  if (!row || row.userId !== userId) throw new SubscriptionError('Active subscription not found', 404)
   if (row.status === 'cancelled') return row
-  if (row.status !== 'active') throw new SubscriptionError('Only an active Vuekumi+ period can be cancelled', 400)
+  if (row.status !== 'active') throw new SubscriptionError('Only an active plan can be cancelled', 400)
 
-  return prisma.subscription.update({
+  const updated = await prisma.subscription.update({
     where: { id: row.id },
     data: { status: 'cancelled', cancelledAt: now },
   })
+  await prisma.subscriptionCancellation.create({
+    data: {
+      userId,
+      subscriptionId: updated.id,
+      plan: updated.plan,
+      reason: reason.reason,
+      detail: reason.detail?.trim() || null,
+    },
+  })
+  return updated
 }
