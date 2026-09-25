@@ -33,6 +33,7 @@ import { processPhotoAssets } from '../lib/process-photo.js'
 import { contributorHasAgreement } from '../lib/rights.js'
 import { serializePhoto } from '../lib/serialize.js'
 import { approvalRate } from '../lib/follows.js'
+import { payoutQuoteForContributor } from '../lib/payout-fx.js'
 import { earningsMonthSeries } from '../lib/payouts.js'
 import {
   PhotoEditError,
@@ -200,6 +201,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       report,
       availableUsd: available._sum.amountUsd ?? 0,
       thisMonthUsd: month._sum.amountUsd ?? 0,
+      payout: await payoutQuoteForContributor(contributorId),
       series: earningsMonthSeries(seriesRows),
       topPhotos: top.map((p) => serializePhoto(p, handle, true)),
       actingAsUserId: isImpersonatingStaff(request.authUser) ? contributorId : null,

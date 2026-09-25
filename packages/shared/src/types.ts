@@ -7,6 +7,7 @@ import type {
 } from './rights.js'
 import type { CreatorKind } from './creators.js'
 import type { BookingAvailability } from './bookings.js'
+import type { EarningsPayoutQuote } from './payouts.js'
 
 export type AccountType = 'admin' | 'photographer' | 'photo_influencer' | 'contributor' | 'user' | 'agency' | 'model'
 export type UserStatus = 'active' | 'suspended' | 'pending'
@@ -321,6 +322,7 @@ export interface ContributorStatsDto {
   report: string[]
   availableUsd: number
   thisMonthUsd: number
+  payout: EarningsPayoutQuote
   series: { month: string; earnings: number }[]
   topPhotos: PhotoDto[]
   /** Set when staff with content.impersonate_creator is acting as this creator. */

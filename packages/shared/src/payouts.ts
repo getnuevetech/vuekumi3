@@ -51,6 +51,20 @@ export interface PayoutDto {
   processedAt: string | null
 }
 
+/** How a contributor's USD ledger is shown in their home currency. */
+export interface EarningsPayoutQuote {
+  countryCode: string | null
+  countryName: string | null
+  currency: string
+  currencyName: string
+  /** Local currency units for 1 USD. Null when no payout partner has returned a rate. */
+  rateToUsd: number | null
+  partnerName: string | null
+  partnerSlug: string | null
+  source: 'primary' | 'alternate' | 'usd' | 'unavailable'
+  fetchedAt: string | null
+}
+
 export interface EarningsSummaryDto {
   availableUsd: number
   pendingUsd: number
@@ -61,6 +75,7 @@ export interface EarningsSummaryDto {
   minPayoutUsd: number
   canRequest: boolean
   requestBlocker: string | null
+  payout: EarningsPayoutQuote
   items: {
     id: string
     photoTitle: string

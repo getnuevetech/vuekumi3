@@ -132,6 +132,7 @@ export const adminLinks: PortalLink[] = [
       { to: '/admin/plans', label: 'Plans', icon: icons.money },
       { to: '/admin/shares', label: 'Profit sharing', icon: icons.money },
       { to: '/admin/rates', label: 'FX rates', icon: icons.money },
+      { to: '/admin/payout-rates', label: 'Payout rates', icon: icons.money },
     ],
   },
   {

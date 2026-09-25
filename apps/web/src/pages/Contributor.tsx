@@ -8,6 +8,7 @@ import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionSta
 import { creatorPortalLabel, isNonCommercialCreator, PHOTO_CATEGORIES, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
 import { CountrySelect, PortalShell, StatCard, SectionHead, StatusPill, countryNameFromSuggestion, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
+import { formatPayoutMoney, formatQuotedAmount, payoutQuoteLine } from '../lib/format';
 import { api, ApiError, getActAsCreatorId, getActAsCreatorLabel, setActAsCreator, type GeoCountry } from '../api/client';
 import { AiSuggestPanel } from '../components/AiSuggestPanel';
 import { PermissionStateField } from '../components/PermissionStateField';
@@ -226,7 +227,12 @@ export function ContributorDashboard() {
       })
   }, [actAsId, staffNeedsTarget])
   const firstName = (stats?.name ?? 'there').split(' ')[0]
-  const chartData = stats?.series?.length ? stats.series : [{ month: '—', earnings: 0 }]
+  const chartData = (stats?.series?.length ? stats.series : [{ month: '—', earnings: 0 }]).map((row) => ({
+    ...row,
+    earnings: stats?.payout?.rateToUsd && stats.payout.currency !== 'USD' && stats.payout.source !== 'unavailable'
+      ? Math.round(row.earnings * stats.payout.rateToUsd * 100) / 100
+      : row.earnings,
+  }))
   return (
     <Shell>
       {staffNeedsTarget && (
@@ -276,12 +282,13 @@ export function ContributorDashboard() {
       </div>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard label="Available balance" value={money(stats?.availableUsd ?? 0)} sub={`${money(stats?.thisMonthUsd ?? 0)} earned this month`} />
+        <StatCard label="Available balance" value={formatPayoutMoney(stats?.availableUsd ?? 0, stats?.payout)} sub={`${formatPayoutMoney(stats?.thisMonthUsd ?? 0, stats?.payout)} earned this month`} />
         <StatCard label="Downloads" value={fmt(stats?.downloads ?? 0)} sub={`${stats?.photosCount ?? 0} live photographs`} />
         <StatCard label="Profile views" value={fmt(stats?.profileViews ?? 0)} sub={`${fmt(stats?.followers ?? 0)} followers`} />
         <StatCard label="Approval rate" value={`${stats?.approvalRate ?? 0}%`} sub={`${fmt(stats?.views ?? 0)} photo views`} />
         <StatCard label="Favorites" value={fmt(stats?.favorites ?? 0)} sub={`${fmt(stats?.licences ?? 0)} licences`} />
       </div>
+      {stats?.payout && <p className="mt-3 max-w-2xl text-sm text-ink-soft">{payoutQuoteLine(stats.payout)}</p>}
       {(stats?.report ?? []).length > 0 && (
         <ul className="mt-4 space-y-1 text-sm text-ink-soft">
           {stats?.report.map((line) => (
@@ -306,7 +313,7 @@ export function ContributorDashboard() {
                 <XAxis dataKey="month" tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, sans-serif' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, sans-serif' }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  formatter={(v: number) => [money(v), 'Earnings']}
+                  formatter={(v: number) => [formatQuotedAmount(v, stats?.payout), 'Earnings']}
                   contentStyle={{ border: '1px solid #d5e1ef', borderRadius: 12, fontSize: 13, fontFamily: 'Source Sans 3, sans-serif', background: '#ffffff' }}
                 />
                 <Area type="monotone" dataKey="earnings" stroke="#1e5aa8" strokeWidth={2} fill="url(#eg)" />
@@ -778,23 +785,30 @@ export function ContributorEarnings() {
   }
   useEffect(() => { load() }, [])
 
-  const chartData = ledger?.series?.length ? ledger.series : [{ month: '—', earnings: 0 }]
+  const chartData = (ledger?.series?.length ? ledger.series : [{ month: '—', earnings: 0 }]).map((row) => ({
+    ...row,
+    earnings: ledger?.payout?.rateToUsd && ledger.payout.currency !== 'USD' && ledger.payout.source !== 'unavailable'
+      ? Math.round(row.earnings * ledger.payout.rateToUsd * 100) / 100
+      : row.earnings,
+  }))
 
   return (
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Earnings</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your income.</h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        50% of each paid licence. Request a payout when your available balance is at least {money(ledger?.minPayoutUsd ?? 10)}.
+      <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+        {ledger?.payout ? `${payoutQuoteLine(ledger.payout)} ` : ''}
+        Sales are booked in USD. Request a payout when the available balance is at least {formatPayoutMoney(ledger?.minPayoutUsd ?? 10, ledger?.payout)}
+        {ledger?.payout?.rateToUsd && ledger.payout.currency !== 'USD' ? ` (${money(ledger.minPayoutUsd)})` : ''}.
         Vuekumi sends it over mobile money or bank transfer.
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard label="Available balance" value={money(ledger?.availableUsd ?? 0)} sub="cleared and unpaid" />
-        <StatCard label="Held" value={money(ledger?.heldUsd ?? 0)} sub="dispute or new-seller hold" />
-        <StatCard label="In payout" value={money(ledger?.pendingUsd ?? 0)} sub="requested, not yet sent" />
-        <StatCard label="Paid out" value={money(ledger?.paidUsd ?? 0)} sub="already transferred" />
-        <StatCard label="All time" value={money(ledger?.allTimeUsd ?? 0)} sub={`${money(ledger?.thisMonthUsd ?? 0)} this month`} />
+        <StatCard label="Available balance" value={formatPayoutMoney(ledger?.availableUsd ?? 0, ledger?.payout)} sub="cleared and unpaid" />
+        <StatCard label="Held" value={formatPayoutMoney(ledger?.heldUsd ?? 0, ledger?.payout)} sub="dispute or new-seller hold" />
+        <StatCard label="In payout" value={formatPayoutMoney(ledger?.pendingUsd ?? 0, ledger?.payout)} sub="requested, not yet sent" />
+        <StatCard label="Paid out" value={formatPayoutMoney(ledger?.paidUsd ?? 0, ledger?.payout)} sub="already transferred" />
+        <StatCard label="All time" value={formatPayoutMoney(ledger?.allTimeUsd ?? 0, ledger?.payout)} sub={`${formatPayoutMoney(ledger?.thisMonthUsd ?? 0, ledger?.payout)} this month`} />
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -805,7 +819,7 @@ export function ContributorEarnings() {
             setBusy(true)
             try {
               const { payout } = await api.requestPayout()
-              toast.success(`Requested ${money(payout.amountUsd)}`)
+              toast.success(`Requested ${formatPayoutMoney(payout.amountUsd, ledger?.payout)}`)
               load()
             } catch (err) {
               toast.error(err instanceof ApiError ? err.message : 'Payout request failed')
@@ -833,7 +847,7 @@ export function ContributorEarnings() {
                   <p className="font-mono-tech text-[10px] text-ink-faint">{row.createdAt.slice(0, 10)} · {row.source}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium">{money(row.amountUsd)}</p>
+                  <p className="text-sm font-medium">{formatPayoutMoney(row.amountUsd, ledger?.payout)}</p>
                   <StatusPill status={row.status} />
                 </div>
               </div>
@@ -859,7 +873,7 @@ export function ContributorEarnings() {
                 <YAxis tick={{ fontSize: 13, fill: '#3c5270', fontFamily: 'Source Sans 3, sans-serif' }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ border: '1px solid #d5e1ef', borderRadius: 12, fontSize: 13, fontFamily: 'Source Sans 3, sans-serif', background: '#ffffff' }}
-                  formatter={(v: number) => [money(v), 'Earnings']}
+                  formatter={(v: number) => [formatQuotedAmount(v, ledger?.payout), 'Earnings']}
                 />
                 <Area type="monotone" dataKey="earnings" stroke="#1e5aa8" strokeWidth={2} fill="url(#eg2)" />
               </AreaChart>
@@ -975,7 +989,7 @@ export function ContributorEarnings() {
                   <td className="px-4 py-3 font-mono-tech text-xs">{p.id.slice(-8)}</td>
                   <td className="px-4 py-3">{p.requestedAt.slice(0, 10)}</td>
                   <td className="hidden px-4 py-3 sm:table-cell">{p.methodLabel}</td>
-                  <td className="px-4 py-3 text-right font-medium">{money(p.amountUsd)}</td>
+                  <td className="px-4 py-3 text-right font-medium">{formatPayoutMoney(p.amountUsd, ledger?.payout)}</td>
                   <td className="px-4 py-3 text-right"><StatusPill status={p.status} /></td>
                 </tr>
               ))}

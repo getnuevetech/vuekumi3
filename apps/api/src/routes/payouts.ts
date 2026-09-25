@@ -22,6 +22,7 @@ import {
   upsertDefaultMethod,
 } from '../lib/payouts.js'
 import { releaseEarningsHold, serializeEarningsHold } from '../lib/holds.js'
+import { payoutQuoteForContributor } from '../lib/payout-fx.js'
 import { prisma } from '../lib/prisma.js'
 import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 
@@ -98,6 +99,7 @@ export async function payoutRoutes(app: FastifyInstance) {
     const heldUsd = held._sum.amountUsd ?? 0
     const pendingCount = payouts.filter((p) => p.status === 'requested').length
     const staffActing = isImpersonatingStaff(request.authUser)
+    const payout = await payoutQuoteForContributor(contributorId)
 
     return {
       availableUsd,
@@ -123,6 +125,7 @@ export async function payoutRoutes(app: FastifyInstance) {
             pendingCount,
             hasMethod: methods.length > 0,
           }),
+      payout,
       items: items.map((row) => ({
         id: row.id,
         photoTitle: row.photo.title,

@@ -1568,6 +1568,8 @@ model Country {
 
   legalOverlay   LegalOverlay?
   policyVersions CountryPolicyVersion[]
+  payoutConfig   CountryPayoutConfig?
+  payoutRate     PayoutFxRate?
 
   @@index([region])
   @@index([contributorEligible])
@@ -1715,6 +1717,37 @@ model PaymentGateway {
   enabled     Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  payoutConfigs CountryPayoutConfig[]
+  payoutRates   PayoutFxRate[]
+}
+
+/// Which payout partner pays contributors in this country.
+/// Earnings stay on the USD ledger. The home-currency figure uses this partner's rate.
+model CountryPayoutConfig {
+  countryCode String   @id
+  gatewayId   String
+  updatedAt   DateTime @updatedAt
+
+  country Country        @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+  gateway PaymentGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+}
+
+/// Last exchange rate pulled from a payout partner for a contributor's country.
+/// rateToUsd is local currency units for 1 USD. Buyer display FX stays on ExchangeRate.
+model PayoutFxRate {
+  countryCode String   @id
+  currency    String
+  rateToUsd   Float
+  gatewayId   String?
+  partnerName String
+  partnerSlug String
+  source      String
+  fetchedAt   DateTime
+  updatedAt   DateTime @updatedAt
+
+  country Country         @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+  gateway PaymentGateway? @relation(fields: [gatewayId], references: [id], onDelete: SetNull)
 }
 
 /// Phase 57 — purpose is validated against AI_PROVIDER_PURPOSES at the

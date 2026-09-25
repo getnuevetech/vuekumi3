@@ -416,6 +416,7 @@ export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin/countries/activation': 'geo.activation.research',
   '/admin/legal': 'geo.countries.list',
   '/admin/rates': 'geo.fx.list',
+  '/admin/payout-rates': 'geo.fx.list',
   '/admin/gateways': 'integrations.gateways.read',
   '/admin/ai': 'integrations.ai.read',
   '/admin/settings': 'settings.read',

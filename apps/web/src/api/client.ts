@@ -1145,6 +1145,13 @@ export const api = {
       evidenceRequired: string[]
     }>('/api/policy/evaluate', { method: 'POST', body: JSON.stringify(body) }),
 
+  adminPayoutRates: () => request<PayoutRatePage>('/api/admin/payout-rates'),
+  assignPayoutPartner: (code: string, gatewayId: string | null) =>
+    request<{ ok: boolean; updated: number }>(`/api/admin/payout-rates/${code}`, {
+      method: 'PUT',
+      body: JSON.stringify({ gatewayId }),
+    }),
+  syncPayoutRates: () => request<{ updated: number; unchanged: number }>('/api/admin/payout-rates/sync', { method: 'POST' }),
   adminRates: () => request<{ rates: FxRate[] }>('/api/admin/exchange-rates'),
   syncRates: () => request<{ updated: number; currencies: string[] }>('/api/admin/exchange-rates/sync', { method: 'POST' }),
   overrideRate: (currency: string, overrideRate: number | null) =>
@@ -1251,6 +1258,37 @@ export interface PricingQuote {
 }
 
 export type AdminAccount = AdminAccountDto
+
+export interface PayoutRatePage {
+  gateways: Array<{
+    id: string
+    name: string
+    slug: string
+    kind: string
+    countries: string[]
+    currencies: string[]
+  }>
+  countries: Array<{
+    code: string
+    name: string
+    currency: string
+    currencyName: string
+    region: string
+    contributorEligible: boolean
+    gatewayId: string | null
+    effectiveGatewayId: string | null
+    effectiveGatewayName: string | null
+    automatic: boolean
+    rate: {
+      rateToUsd: number
+      currency: string
+      partnerName: string
+      partnerSlug: string
+      source: string
+      fetchedAt: string
+    } | null
+  }>
+}
 
 export interface FxRate {
   currency: string

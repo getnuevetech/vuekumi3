@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { StatusPill } from '../components/shared'
 import { api, ApiError, type CountryActivationRow, type CountryPolicyDetail, type FxRate, type GeoCountry } from '../api/client'
@@ -111,7 +112,8 @@ export function AdminRates() {
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Exchange rates</p>
           <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">FX to USD.</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            Live rates from currency-api (jsDelivr). Override any currency without stopping auto-sync for others.
+            Buyer prices use these rates. Contributor earnings use the payout partner rate on <Link to="/admin/payout-rates" className="text-terra">Payout rates</Link>.
+            Override any currency without stopping auto-sync for others.
           </p>
         </div>
         <button
