@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { adminHas, startPlusSchema } from '@vuekumi/shared'
+import { defaultPlusOffer } from '../lib/buyer-plans.js'
 import { writeAuditLog } from '../lib/audit.js'
 import { authenticate } from '../lib/auth-middleware.js'
 import { config } from '../config.js'
@@ -13,7 +14,6 @@ import {
   displayQuota,
   ensureUserProfile,
   expirePlusIfNeeded,
-  plusCatalog,
   serializeSubscription,
   startPlusCheckout,
   SubscriptionError,
@@ -42,7 +42,9 @@ export async function subscriptionRoutes(app: FastifyInstance) {
       orderBy: { createdAt: 'desc' },
     })
     const plan = displayPlan(profile, now)
-    const status = plan === 'plus'
+    const offer = await defaultPlusOffer()
+    const activePlan = plan === 'free' ? null : await prisma.buyerPlan.findUnique({ where: { slug: plan } })
+    const status = plan !== 'free'
       ? (current?.status === 'cancelled' ? 'cancelled' : 'active')
       : pending
         ? 'pending'
@@ -51,13 +53,14 @@ export async function subscriptionRoutes(app: FastifyInstance) {
           : 'none'
     return {
       plan,
-      plusUntil: plan === 'plus' && profile.plusUntil ? profile.plusUntil.toISOString() : null,
+      planName: activePlan?.name ?? (plan === 'plus' ? 'Vuekumi+' : null),
+      plusUntil: plan !== 'free' && profile.plusUntil ? profile.plusUntil.toISOString() : null,
       status,
       quota: displayQuota(profile, now),
       current: current ? serializeSubscription(current) : null,
       pending: pending ? serializeSubscription(pending) : null,
-      priceUsd: plusCatalog.priceUsd,
-      periodDays: plusCatalog.periodDays,
+      priceUsd: offer.priceUsd,
+      periodDays: offer.periodDays,
     }
   })
 
@@ -76,6 +79,7 @@ export async function subscriptionRoutes(app: FastifyInstance) {
         country: request.authUser?.country,
         requestedProvider: body.provider,
         returnOrigin: browserOrigin(request, config.webUrl),
+        planSlug: body.plan,
       })
       await writeAuditLog({
         actorId: request.userId,

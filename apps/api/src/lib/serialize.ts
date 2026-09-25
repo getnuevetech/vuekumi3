@@ -120,7 +120,7 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     agencyName: agencyMember?.agency?.name ?? null,
     agencyStatus: agencyMember?.agency?.status ?? null,
     subscriptionPlan: plan,
-    plusUntil: plan === 'plus' && user.userProfile?.plusUntil ? user.userProfile.plusUntil.toISOString() : null,
+    plusUntil: plan !== 'free' && user.userProfile?.plusUntil ? user.userProfile.plusUntil.toISOString() : null,
     downloadQuotaUsed: quota.used,
     downloadQuotaLimit: quota.limit,
     downloadQuotaRemaining: quota.remaining,

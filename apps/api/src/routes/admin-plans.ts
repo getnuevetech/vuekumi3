@@ -1,0 +1,57 @@
+import type { FastifyInstance } from 'fastify'
+import { createBuyerPlanSchema, patchBuyerPlanSchema } from '@vuekumi/shared'
+import { writeAuditLog } from '../lib/audit.js'
+import { requireAdminCapability } from '../lib/auth-middleware.js'
+import { createBuyerPlan, deleteBuyerPlan, listBuyerPlans, serializeBuyerPlan, updateBuyerPlan } from '../lib/buyer-plans.js'
+
+export async function adminPlanRoutes(app: FastifyInstance) {
+  const gate = { preHandler: requireAdminCapability(app, 'plans.manage') }
+
+  app.get('/admin/plans', gate, async () => {
+    const rows = await listBuyerPlans({ includeDisabled: true })
+    return { items: rows.map(serializeBuyerPlan) }
+  })
+
+  app.post('/admin/plans', gate, async (request) => {
+    const body = createBuyerPlanSchema.parse(request.body)
+    const row = await createBuyerPlan(body)
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.plans.create',
+      entityType: 'buyer_plan',
+      entityId: row.id,
+      metadata: { slug: row.slug, priceUsd: row.priceUsd, periodDays: row.periodDays },
+      ipAddress: request.ip,
+    })
+    return serializeBuyerPlan(row)
+  })
+
+  app.patch('/admin/plans/:id', gate, async (request) => {
+    const { id } = request.params as { id: string }
+    const body = patchBuyerPlanSchema.parse(request.body ?? {})
+    const row = await updateBuyerPlan(id, body)
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.plans.update',
+      entityType: 'buyer_plan',
+      entityId: row.id,
+      metadata: body,
+      ipAddress: request.ip,
+    })
+    return serializeBuyerPlan(row)
+  })
+
+  app.delete('/admin/plans/:id', gate, async (request) => {
+    const { id } = request.params as { id: string }
+    const row = await deleteBuyerPlan(id)
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.plans.delete',
+      entityType: 'buyer_plan',
+      entityId: row.id,
+      metadata: { slug: row.slug },
+      ipAddress: request.ip,
+    })
+    return { ok: true }
+  })
+}

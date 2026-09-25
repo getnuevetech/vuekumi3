@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import type { HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
+import type { HomeCategoryBannerDto, HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
 import { hasModelAccess, isCreatorAccount, isPhotographerAccount, creatorPortalLabel } from '@vuekumi/shared';
 import { Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -338,16 +338,38 @@ function IconRow() {
   );
 }
 
-/* ---------------- edge-to-edge hover strip ---------------- */
+/* ---------------- horizontal mouse-wheel strips ---------------- */
 
-function EdgeStrip({ photos }: { photos: PhotoDto[] }) {
+function useBidirectionalWheel(node: HTMLDivElement | null) {
+  useEffect(() => {
+    if (!node) return
+    const onWheel = (event: WheelEvent) => {
+      if (node.scrollWidth <= node.clientWidth + 1) return
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+      if (delta === 0) return
+      event.preventDefault()
+      node.scrollLeft += delta
+    }
+    node.addEventListener('wheel', onWheel, { passive: false })
+    return () => node.removeEventListener('wheel', onWheel)
+  }, [node])
+}
+
+function FeaturedStrip({ photos }: { photos: PhotoDto[] }) {
+  const [node, setNode] = useState<HTMLDivElement | null>(null)
+  useBidirectionalWheel(node)
+  if (photos.length === 0) return null
   return (
-    <section className="grid grid-cols-2 bg-noir lg:grid-cols-4">
-      {photos.map((p, i) => (
+    <section className="bg-noir" aria-label="Featured images">
+      <div
+        ref={setNode}
+        className="no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto overscroll-x-contain"
+      >
+        {photos.map((p, i) => (
           <Link
             key={p.id}
             to={`/photo/${p.id}`}
-            className="strip-cell group relative block aspect-[3/4] overflow-hidden"
+            className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 snap-start overflow-hidden sm:w-[46vw] lg:w-[28vw]"
           >
             <img src={p.src} alt={p.title} loading={i > 1 ? 'lazy' : undefined} className="h-full w-full object-cover" />
             <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
@@ -357,9 +379,44 @@ function EdgeStrip({ photos }: { photos: PhotoDto[] }) {
               </p>
             </div>
           </Link>
-      ))}
+        ))}
+      </div>
     </section>
-  );
+  )
+}
+
+function CategoryBanners({ banners }: { banners: HomeCategoryBannerDto[] }) {
+  const [node, setNode] = useState<HTMLDivElement | null>(null)
+  useBidirectionalWheel(node)
+  if (banners.length === 0) return null
+  return (
+    <section className="bg-noir pb-8" aria-label="Category banners">
+      <div className="px-5 pb-4 pt-10 md:px-10">
+        <p className="font-script text-3xl text-terra">browse by</p>
+        <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
+          Categories
+        </h2>
+      </div>
+      <div
+        ref={setNode}
+        className="no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto overscroll-x-contain px-1"
+      >
+        {banners.map((banner) => (
+          <Link
+            key={`${banner.category}-${banner.photo.id}`}
+            to={`/search?category=${encodeURIComponent(banner.category)}`}
+            className="strip-cell group relative block aspect-[16/9] w-[78vw] shrink-0 snap-start overflow-hidden sm:w-[48vw] lg:w-[32vw]"
+          >
+            <img src={banner.photo.src} alt={banner.category} loading="lazy" className="h-full w-full object-cover" />
+            <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
+              <p className="font-condensed text-lg font-medium uppercase tracking-[0.18em] text-paper">{banner.category}</p>
+              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">{banner.photo.title}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 /* ---------------- black CTA band ---------------- */
@@ -501,8 +558,16 @@ function InfiniteFeed() {
 
 function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsDto | null }) {
   const { user } = useAuth();
-  const a = photos[0];
-  const b = photos[1] ?? photos[0];
+  const [index, setIndex] = useState(0);
+  const photoKey = photos.map((photo) => photo.id).join(',')
+  useEffect(() => {
+    setIndex(0)
+    if (photos.length < 2) return
+    const timer = window.setInterval(() => setIndex((current) => (current + 1) % photos.length), 4500)
+    return () => window.clearInterval(timer)
+  }, [photoKey, photos.length])
+  const a = photos.length ? photos[index % photos.length] : undefined
+  const b = photos.length > 1 ? photos[(index + 1) % photos.length] : a
   const uploadHref = isCreatorAccount(user?.accountType)
     ? '/contributor/upload'
     : SELL_HREF;
@@ -858,8 +923,9 @@ export default function Home() {
       <NoirHeader />
       <HeroSlider photos={featured?.hero ?? []} stats={stats} />
       <Marquee categories={stats ? stats.categories.map((c) => c.value) : MARQUEE_FALLBACK} />
+      <FeaturedStrip photos={featured?.edge ?? []} />
       <IconRow />
-      <EdgeStrip photos={featured?.edge ?? []} />
+      <CategoryBanners banners={featured?.categories ?? []} />
       <CtaBand />
       <InfiniteFeed />
       <EditorialSplit photos={featured?.editorial ?? []} stats={stats} />

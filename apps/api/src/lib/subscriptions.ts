@@ -8,7 +8,6 @@ import {
   PLUS_PRICE_USD,
   type QuotaDto,
   type SubscriptionDto,
-  type SubscriptionPlan,
   type SubscriptionStatus,
 } from '@vuekumi/shared'
 import { config } from '../config.js'
@@ -22,6 +21,7 @@ import {
   paymentSecrets,
   usableStripeSecret,
 } from './payments-config.js'
+import { resolveCheckoutPlan } from './buyer-plans.js'
 import { prisma } from './prisma.js'
 
 type Tx = Prisma.TransactionClient
@@ -55,7 +55,8 @@ export function isPlusActive(
   profile: { subscriptionPlan: string; plusUntil: Date | null } | null | undefined,
   now = new Date(),
 ): boolean {
-  if (!profile || profile.subscriptionPlan !== PLUS_PLAN || !profile.plusUntil) return false
+  if (!profile || !profile.plusUntil) return false
+  if (!profile.subscriptionPlan || profile.subscriptionPlan === FREE_PLAN) return false
   return profile.plusUntil.getTime() > now.getTime()
 }
 
@@ -92,12 +93,13 @@ export function displayQuota(
 export function displayPlan(
   profile: { subscriptionPlan: string; plusUntil: Date | null } | null | undefined,
   now = new Date(),
-): SubscriptionPlan {
-  return isPlusActive(profile, now) ? PLUS_PLAN : FREE_PLAN
+): string {
+  if (!isPlusActive(profile, now) || !profile) return FREE_PLAN
+  return profile.subscriptionPlan
 }
 
 type QuotaSnapshot = {
-  plan: SubscriptionPlan
+  plan: string
   plusUntil: Date | null
   used: number
   resetAt: Date
@@ -149,7 +151,7 @@ export async function ensureUserProfile(userId: string, client: Db = prisma): Pr
 }
 
 export async function expirePlusIfNeeded(profile: UserProfile, now = new Date(), client: Db = prisma): Promise<UserProfile> {
-  if (profile.subscriptionPlan !== PLUS_PLAN) return profile
+  if (!profile.subscriptionPlan || profile.subscriptionPlan === FREE_PLAN) return profile
   if (profile.plusUntil && profile.plusUntil.getTime() > now.getTime()) return profile
 
   await client.subscription.updateMany({
@@ -196,7 +198,7 @@ export async function consumeRfQuota(userId: string, client: Db = prisma): Promi
 export function serializeSubscription(row: Subscription): SubscriptionDto {
   return {
     id: row.id,
-    plan: PLUS_PLAN,
+    plan: row.plan,
     status: row.status as SubscriptionStatus,
     amountUsd: row.amountUsd,
     currency: row.currency,
@@ -211,7 +213,11 @@ export function serializeSubscription(row: Subscription): SubscriptionDto {
 }
 
 export async function activatePlus(userId: string, subscriptionId: string, now = new Date(), client: Db = prisma) {
-  const { periodStart, periodEnd } = plusPeriod(now)
+  const current = await client.subscription.findUnique({ where: { id: subscriptionId } })
+  if (!current) throw new SubscriptionError('Subscription not found', 404)
+  const meta = (current.metadata ?? {}) as { periodDays?: number }
+  const days = typeof meta.periodDays === 'number' && meta.periodDays > 0 ? meta.periodDays : PLUS_PERIOD_DAYS
+  const { periodStart, periodEnd } = plusPeriod(now, days)
   const updated = await client.subscription.update({
     where: { id: subscriptionId },
     data: {
@@ -223,7 +229,7 @@ export async function activatePlus(userId: string, subscriptionId: string, now =
   await ensureUserProfile(userId, client)
   await client.userProfile.update({
     where: { userId },
-    data: { subscriptionPlan: PLUS_PLAN, plusUntil: periodEnd },
+    data: { subscriptionPlan: current.plan || PLUS_PLAN, plusUntil: periodEnd },
   })
   return updated
 }
@@ -241,6 +247,7 @@ export async function startPlusCheckout(input: {
   country?: string | null
   requestedProvider?: 'stripe' | 'flutterwave'
   returnOrigin?: string
+  planSlug?: string
 }) {
   const profile = await ensureUserProfile(input.userId)
   const now = new Date()
@@ -249,6 +256,7 @@ export async function startPlusCheckout(input: {
     throw new SubscriptionError('Vuekumi+ is already active on this account', 409)
   }
 
+  const offer = await resolveCheckoutPlan(input.planSlug || PLUS_PLAN)
   const staleBefore = new Date(Date.now() - 30 * 60_000)
   const existing = await prisma.subscription.findFirst({
     where: {
@@ -260,7 +268,12 @@ export async function startPlusCheckout(input: {
   })
   const origin = (input.returnOrigin || config.webUrl).replace(/\/$/, '')
   const configuredOrigin = config.webUrl.replace(/\/$/, '')
-  if (existing?.checkoutUrl && origin === configuredOrigin) return existing
+  if (
+    existing?.checkoutUrl
+    && origin === configuredOrigin
+    && existing.plan === offer.slug
+    && existing.amountUsd === offer.priceUsd
+  ) return existing
 
   const secrets = await paymentSecrets()
   assertStripeSecretUsable(secrets, input.requestedProvider)
@@ -280,21 +293,42 @@ export async function startPlusCheckout(input: {
     provider === 'flutterwave'
       ? flutterwaveCurrency((pricing.currency).toUpperCase())
       : 'USD'
-  const amountUsd = PLUS_PRICE_USD
+  const amountUsd = offer.priceUsd
   const amountLocal = currency === 'USD' ? amountUsd : convertFromUsd(amountUsd, pricing.rateToUsd)
+  const metadata = {
+    buyerEmail: input.email,
+    kind: 'buyer_plan',
+    planSlug: offer.slug,
+    planName: offer.name,
+    periodDays: offer.periodDays,
+  } as Prisma.InputJsonValue
 
-  const subscription = existing ?? await prisma.subscription.create({
-    data: {
-      userId: input.userId,
-      plan: PLUS_PLAN,
-      status: 'pending',
-      amountUsd,
-      currency,
-      amountLocal,
-      provider,
-      metadata: { buyerEmail: input.email, kind: 'plus' } as Prisma.InputJsonValue,
-    },
-  })
+  const subscription = existing
+    ? await prisma.subscription.update({
+        where: { id: existing.id },
+        data: {
+          plan: offer.slug,
+          amountUsd,
+          currency,
+          amountLocal,
+          provider,
+          metadata,
+          checkoutUrl: null,
+          providerRef: null,
+        },
+      })
+    : await prisma.subscription.create({
+        data: {
+          userId: input.userId,
+          plan: offer.slug,
+          status: 'pending',
+          amountUsd,
+          currency,
+          amountLocal,
+          provider,
+          metadata,
+        },
+      })
 
   const checkout = await openGatewayCheckout({
     checkoutId: subscription.id,
@@ -304,7 +338,7 @@ export async function startPlusCheckout(input: {
     currency,
     buyerEmail: input.email,
     buyerName: input.name,
-    description: 'Vuekumi+ — 30 days of unlimited royalty-free downloads',
+    description: `${offer.name} — ${offer.periodDays} days of royalty-free downloads`,
     successUrl: `${origin}/checkout/plus/${subscription.id}`,
     cancelUrl: `${origin}/pricing?checkout=cancelled`,
     metadata: { subscriptionId: subscription.id },

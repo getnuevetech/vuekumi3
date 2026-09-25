@@ -22,8 +22,8 @@ test('home slots prefer unique photos across hero, edge, editorial, and pricing'
   const slots = assignHomeSlots({ byDownloads, byNewest, byLikes })
   const ids = [...slots.hero, ...slots.edge, ...slots.editorial, ...slots.pricing, slots.statsBackground]
   assert.equal(slots.hero.length, 3)
-  assert.equal(slots.edge.length, 4)
-  assert.equal(slots.editorial.length, 2)
+  assert.equal(slots.edge.length, 8)
+  assert.equal(slots.editorial.length, 6)
   assert.equal(slots.pricing.length, 3)
   assert.equal(slots.statsBackground, 'd11')
   assert.equal(new Set(ids).size, ids.length)

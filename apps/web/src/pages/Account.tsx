@@ -113,7 +113,7 @@ export default function Account() {
             <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="font-serif-display text-2xl font-light">
-                  {plan?.plan === 'plus' ? 'Plus' : 'Free'} plan
+                  {plan && plan.plan !== 'free' ? (plan.planName || plan.plan) : 'Free'} plan
                 </h2>
                 <p className="mt-1 text-sm text-ink-soft">
                   {plan?.quota.unlimited
@@ -127,7 +127,7 @@ export default function Account() {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {plan?.plan !== 'plus' && (
+                {plan?.plan === 'free' || !plan ? (
                   <button
                     type="button"
                     disabled={planBusy}
@@ -143,10 +143,10 @@ export default function Account() {
                     }}
                     className="bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50"
                   >
-                    {planBusy ? 'Starting…' : 'Go Vuekumi+ · $19'}
+                    {planBusy ? 'Starting…' : `Go Vuekumi+ · $${plan?.priceUsd ?? 19}`}
                   </button>
-                )}
-                {plan?.plan === 'plus' && plan.current && plan.status !== 'cancelled' && (
+                ) : null}
+                {plan && plan.plan !== 'free' && plan.current && plan.status !== 'cancelled' && (
                   <button
                     type="button"
                     disabled={planBusy}
@@ -155,7 +155,7 @@ export default function Account() {
                       setPlanBusy(true)
                       try {
                         await api.cancelSubscription(plan.current.id)
-                        toast.success('Vuekumi+ will end after this period')
+                        toast.success('This plan will end after the current period')
                         await refresh()
                         loadPlan()
                       } catch (err) {

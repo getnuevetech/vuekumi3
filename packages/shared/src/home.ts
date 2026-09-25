@@ -19,15 +19,20 @@ export type HomeFeaturedSlotKey = (typeof HOME_FEATURED_SLOT_KEYS)[number]
 
 export const HOME_FEATURED_CAPACITY: Record<HomeFeaturedSlotKey, number> = {
   hero: 3,
-  edge: 4,
-  editorial: 2,
+  edge: 8,
+  editorial: 6,
   pricing: 3,
   stats_background: 1,
 }
 
+export const HOME_CATEGORY_BANNER_CAPACITY = 8
+
+export const HOME_EDITORIAL_MODES = ['pins', 'category'] as const
+export type HomeEditorialMode = (typeof HOME_EDITORIAL_MODES)[number]
+
 export const HOME_FEATURED_SLOT_LABEL: Record<HomeFeaturedSlotKey, string> = {
   hero: 'Hero slider',
-  edge: 'Edge strip',
+  edge: 'Featured images',
   editorial: 'Editorial split',
   pricing: 'Pricing cards',
   stats_background: 'Stats background',
@@ -41,6 +46,12 @@ function pinArray(slot: HomeFeaturedSlotKey) {
   return z.array(z.string().min(1).nullable()).max(HOME_FEATURED_CAPACITY[slot])
 }
 
+export const categoryBannerPinSchema = z.object({
+  photoId: z.string().min(1).nullable(),
+  category: z.string().trim().min(1).max(80).nullable(),
+})
+export type CategoryBannerPin = z.infer<typeof categoryBannerPinSchema>
+
 export const patchHomeFeaturedSchema = z.object({
   pins: z.object({
     hero: pinArray('hero').optional(),
@@ -49,8 +60,23 @@ export const patchHomeFeaturedSchema = z.object({
     pricing: pinArray('pricing').optional(),
     stats_background: pinArray('stats_background').optional(),
   }),
+  categoryBanners: z.array(categoryBannerPinSchema).max(HOME_CATEGORY_BANNER_CAPACITY).optional(),
+  editorial: z.object({
+    mode: z.enum(HOME_EDITORIAL_MODES),
+    category: z.string().trim().min(1).max(80).nullable().optional(),
+  }).optional(),
 })
 export type PatchHomeFeaturedInput = z.infer<typeof patchHomeFeaturedSchema>
+
+export function normalizeCategoryBanners(input?: CategoryBannerPin[] | null): CategoryBannerPin[] {
+  const raw = input ?? []
+  return Array.from({ length: HOME_CATEGORY_BANNER_CAPACITY }, (_, i) => {
+    const row = raw[i]
+    const photoId = typeof row?.photoId === 'string' && row.photoId.trim() ? row.photoId.trim() : null
+    const category = typeof row?.category === 'string' && row.category.trim() ? row.category.trim() : null
+    return { photoId, category }
+  })
+}
 
 export type HomeSlotPins = {
   [K in HomeFeaturedSlotKey]?: (string | null)[]
@@ -99,12 +125,20 @@ export interface PublicStatsDto {
   categories: HomeCategoryShare[]
 }
 
+export interface HomeCategoryBannerDto {
+  category: string
+  photo: PhotoDto
+}
+
 export interface HomeFeaturedDto {
   hero: PhotoDto[]
   edge: PhotoDto[]
   editorial: PhotoDto[]
   pricing: PhotoDto[]
   statsBackground: PhotoDto | null
+  categories: HomeCategoryBannerDto[]
+  editorialMode: HomeEditorialMode
+  editorialCategory: string | null
 }
 
 export interface HomePageDto {
@@ -121,9 +155,21 @@ export interface HomeFeaturedPositionDto {
   ineligibleReason: string | null
 }
 
+export interface HomeCategoryBannerAdminDto {
+  position: number
+  photoId: string | null
+  category: string | null
+  photo: PhotoDto | null
+  source: 'pinned' | 'auto'
+}
+
 export interface HomeFeaturedAdminDto {
   capacities: Record<HomeFeaturedSlotKey, number>
   labels: Record<HomeFeaturedSlotKey, string>
+  categoryBannerCapacity: number
   pins: Record<HomeFeaturedSlotKey, (string | null)[]>
   slots: Record<HomeFeaturedSlotKey, HomeFeaturedPositionDto[]>
+  categoryBanners: HomeCategoryBannerAdminDto[]
+  editorialMode: HomeEditorialMode
+  editorialCategory: string | null
 }

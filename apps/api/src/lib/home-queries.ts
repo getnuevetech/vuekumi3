@@ -1,5 +1,5 @@
-import type { HomePageDto, HomeSlotPins } from '@vuekumi/shared'
-import { HOME_FEATURED_SLOT_KEYS, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
+import type { HomeCategoryBannerDto, HomePageDto, HomeSlotPins } from '@vuekumi/shared'
+import { HOME_CATEGORY_BANNER_CAPACITY, HOME_FEATURED_CAPACITY, HOME_FEATURED_SLOT_KEYS, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares } from './home.js'
 import {
   catalogPhotoInclude,
@@ -48,19 +48,19 @@ export async function loadHomePage(): Promise<HomePageDto> {
         where: LIVE,
         include: catalogPhotoInclude,
         orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
-        take: 16,
+        take: 24,
       }),
       prisma.photo.findMany({
         where: LIVE,
         include: catalogPhotoInclude,
         orderBy: [{ createdAt: 'desc' }],
-        take: 12,
+        take: 24,
       }),
       prisma.photo.findMany({
         where: LIVE,
         include: catalogPhotoInclude,
         orderBy: [{ likes: 'desc' }, { createdAt: 'desc' }],
-        take: 8,
+        take: 16,
       }),
       loadHomePins(),
     ])
@@ -84,6 +84,20 @@ export async function loadHomePage(): Promise<HomePageDto> {
     liveIds,
   })
   const statsPhoto = slots.statsBackground ? lookup.get(slots.statsBackground) : undefined
+  const editorialConfig = await prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } })
+  const editorialMode = editorialConfig?.mode === 'category' ? 'category' as const : 'pins' as const
+  const editorialCategory = editorialConfig?.category ?? null
+  let editorial = mapSlot(slots.editorial, lookup)
+  if (editorialMode === 'category' && editorialCategory) {
+    const rows = await prisma.photo.findMany({
+      where: { ...LIVE, category: editorialCategory },
+      include: catalogPhotoInclude,
+      orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
+      take: HOME_FEATURED_CAPACITY.editorial,
+    })
+    editorial = rows.map((photo) => serializeCatalogPhoto(photo))
+  }
+  const categories = await loadCategoryBanners()
 
   return {
     stats: {
@@ -99,9 +113,61 @@ export async function loadHomePage(): Promise<HomePageDto> {
     featured: {
       hero: mapSlot(slots.hero, lookup),
       edge: mapSlot(slots.edge, lookup),
-      editorial: mapSlot(slots.editorial, lookup),
+      editorial,
       pricing: mapSlot(slots.pricing, lookup),
       statsBackground: statsPhoto ? serializeCatalogPhoto(statsPhoto) : null,
+      categories,
+      editorialMode,
+      editorialCategory,
     },
   }
+}
+
+async function loadCategoryBanners(): Promise<HomeCategoryBannerDto[]> {
+  const rows = await prisma.homeFeaturedPin.findMany({
+    where: { slot: 'categories' },
+    orderBy: { position: 'asc' },
+  })
+  const configured = rows.filter((row) => row.category)
+  if (configured.length === 0) {
+    const photos = await prisma.photo.findMany({
+      where: LIVE,
+      include: catalogPhotoInclude,
+      orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
+      take: 80,
+    })
+    const seen = new Set<string>()
+    const banners: HomeCategoryBannerDto[] = []
+    for (const photo of photos) {
+      if (!photo.category || seen.has(photo.category)) continue
+      seen.add(photo.category)
+      banners.push({ category: photo.category, photo: serializeCatalogPhoto(photo) })
+      if (banners.length >= HOME_CATEGORY_BANNER_CAPACITY) break
+    }
+    return banners
+  }
+
+  const pinnedIds = configured.map((row) => row.photoId).filter((id): id is string => Boolean(id))
+  const pinned = pinnedIds.length
+    ? await prisma.photo.findMany({ where: { id: { in: pinnedIds }, ...LIVE }, include: catalogPhotoInclude })
+    : []
+  const pinnedById = new Map(pinned.map((photo) => [photo.id, photo]))
+  const used = new Set<string>()
+  const banners: HomeCategoryBannerDto[] = []
+  for (const row of configured) {
+    if (!row.category) continue
+    let photo = row.photoId ? pinnedById.get(row.photoId) : undefined
+    if (photo && used.has(photo.id)) photo = undefined
+    if (!photo) {
+      photo = await prisma.photo.findFirst({
+        where: { ...LIVE, category: row.category, id: { notIn: [...used] } },
+        include: catalogPhotoInclude,
+        orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
+      }) ?? undefined
+    }
+    if (!photo) continue
+    used.add(photo.id)
+    banners.push({ category: row.category, photo: serializeCatalogPhoto(photo) })
+  }
+  return banners
 }

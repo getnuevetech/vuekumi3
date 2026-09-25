@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { paidLicenceSplit, isCreatorAccount } from '@vuekumi/shared'
+import { paidLicenceSplit, isCreatorAccount, type BuyerPlanDto } from '@vuekumi/shared'
 import { Reveal, SectionHead, SiteHeader, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
@@ -34,9 +34,10 @@ export default function Pricing() {
   const { format, quote } = useCurrency()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [plusBusy, setPlusBusy] = useState(false)
+  const [plusBusy, setPlusBusy] = useState<string | null>(null)
   const [share, setShare] = useState(0.5)
-  const plusActive = user?.subscriptionPlan === 'plus'
+  const [buyerPlans, setBuyerPlans] = useState<BuyerPlanDto[] | null>(null)
+  const paidActive = Boolean(user?.subscriptionPlan && user.subscriptionPlan !== 'free')
   const split = paidLicenceSplit(share)
   const earnHref = isCreatorAccount(user?.accountType)
     ? '/contributor'
@@ -48,29 +49,39 @@ export default function Pricing() {
         if (typeof c.contributorShare === 'number') setShare(c.contributorShare)
       })
       .catch(() => setShare(0.5))
+    api.publicPlans()
+      .then((data) => setBuyerPlans(data.items))
+      .catch(() => setBuyerPlans(null))
   }, [])
 
-  async function goPlus() {
+  async function goPlus(slug = 'plus') {
     if (!user) {
       navigate('/login?redirect=/pricing')
       return
     }
-    if (plusActive) {
+    if (paidActive) {
       navigate('/account')
       return
     }
-    setPlusBusy(true)
+    setPlusBusy(slug)
     try {
-      const { checkout } = await api.startPlusCheckout()
+      const { checkout } = await api.startPlusCheckout({ plan: slug })
       window.location.assign(checkout.url)
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not start Vuekumi+ checkout')
-      setPlusBusy(false)
+      toast.error(err instanceof ApiError ? err.message : 'Could not start checkout')
+      setPlusBusy(null)
     }
   }
 
+  const catalog = buyerPlans && buyerPlans.length > 0
+    ? buyerPlans
+    : [{ id: 'plus', slug: 'plus', name: 'Vuekumi+', priceUsd: 19, periodDays: 30, description: 'Unlimited royalty-free downloads from the free collection.', enabled: true, sortOrder: 0 }]
+
   const plans = [
     {
+      key: 'free',
+      slug: null as string | null,
+      badge: undefined as string | undefined,
       name: 'Free',
       price: format(0),
       per: 'forever',
@@ -85,23 +96,27 @@ export default function Pricing() {
         'Community support',
       ],
     },
-    {
-      name: 'Vuekumi+',
-      price: format(19),
-      per: 'per 30 days',
-      tone: 'ink' as const,
-      cta: plusActive ? 'Manage plan' : plusBusy ? 'Starting…' : 'Go Vuekumi+',
-      badge: 'Most popular',
+    ...catalog.map((plan) => ({
+      key: plan.slug,
+      slug: plan.slug,
+      name: plan.name,
+      price: format(plan.priceUsd),
+      per: `per ${plan.periodDays} days`,
+      tone: plan.slug === 'plus' ? 'ink' as const : 'paper' as const,
+      badge: plan.slug === 'plus' ? 'Most popular' : undefined,
+      cta: paidActive ? 'Manage plan' : plusBusy === plan.slug ? 'Starting…' : `Go ${plan.name}`,
+      to: undefined as string | undefined,
       features: [
-        'Everything in Free',
-        'Unlimited royalty-free downloads from the free collection',
+        plan.description || `${plan.name} for ${plan.periodDays} days`,
+        'Royalty-free downloads from the free collection',
         'Premium images still billed per licence',
-        'Commercial RF use, no attribution',
-        'Priority support',
         'Cancel anytime — access lasts through the paid period',
       ],
-    },
+    })),
     {
+      key: 'extended',
+      slug: null as string | null,
+      badge: undefined as string | undefined,
       name: 'Extended',
       price: format(49),
       per: 'per image',
@@ -139,9 +154,9 @@ export default function Pricing() {
           </div>
         </Reveal>
 
-        <div className="mt-16 grid gap-4 md:grid-cols-3">
+        <div className="mt-16 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {plans.map((p, i) => (
-            <Reveal key={p.name} delay={i * 90}>
+            <Reveal key={p.key} delay={i * 90}>
               <div
                 className={`relative flex h-full flex-col rounded-3xl border p-8 ${
                   p.tone === 'ink'
@@ -174,12 +189,16 @@ export default function Pricing() {
                     </li>
                   ))}
                 </ul>
-                {p.name === 'Vuekumi+' ? (
+                {p.slug ? (
                   <button
                     type="button"
-                    disabled={plusBusy}
-                    onClick={() => void goPlus()}
-                    className="mt-8 rounded-full bg-paper py-3 text-center font-mono-tech text-[11px] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-terra hover:text-paper disabled:opacity-50"
+                    disabled={Boolean(plusBusy)}
+                    onClick={() => void goPlus(p.slug!)}
+                    className={`mt-8 rounded-full py-3 text-center font-mono-tech text-[11px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50 ${
+                      p.tone === 'ink'
+                        ? 'bg-paper text-ink hover:bg-terra hover:text-paper'
+                        : 'border border-ink/20 text-ink hover:bg-ink hover:text-paper'
+                    }`}
                   >
                     {p.cta}
                   </button>

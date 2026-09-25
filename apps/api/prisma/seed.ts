@@ -60,6 +60,7 @@ async function main() {
   await prisma.copyrightAuthorization.deleteMany()
   await prisma.rightsLedgerEvent.deleteMany()
   await prisma.homeFeaturedPin.deleteMany()
+  await prisma.homeSectionConfig.deleteMany()
   await prisma.representationInquiry.deleteMany()
   await prisma.representation.deleteMany()
   await prisma.campaignPitch.deleteMany()
@@ -1024,6 +1025,21 @@ async function main() {
 
   await prisma.homeFeaturedPin.create({
     data: { slot: 'hero', position: 0, photoId: 'afr-014' },
+  })
+
+  await prisma.buyerPlan.upsert({
+    where: { slug: 'plus' },
+    update: {},
+    create: {
+      id: 'plan_vuekumi_plus',
+      slug: 'plus',
+      name: 'Vuekumi+',
+      priceUsd: 19,
+      periodDays: 30,
+      description: 'Unlimited royalty-free downloads from the free collection for 30 days. Premium images stay billed per licence.',
+      enabled: true,
+      sortOrder: 0,
+    },
   })
 
   const unnamed = await prisma.user.findMany({

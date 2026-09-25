@@ -51,7 +51,7 @@ export interface AuthUser {
   agencyRole?: AgencyRole | null
   agencyName?: string | null
   agencyStatus?: 'pending' | 'active' | 'suspended' | null
-  subscriptionPlan?: 'free' | 'plus'
+  subscriptionPlan?: string
   plusUntil?: string | null
   downloadQuotaUsed?: number
   downloadQuotaLimit?: number | null

@@ -39,6 +39,7 @@ import type {
   SubscriptionStatusDto,
   SubscriptionDto,
   SubscriptionCheckoutDto,
+  BuyerPlanDto,
   RightsReportDto,
   PublicReportResult,
   CreateRightsReportInput,
@@ -193,6 +194,19 @@ export const api = {
   publicConfig: () => request<PublicConfigDto>('/api/public/config'),
 
   home: () => request<HomePageDto>('/api/public/home'),
+
+  publicPlans: () => request<{ items: BuyerPlanDto[] }>('/api/plans'),
+
+  adminPlans: () => request<{ items: BuyerPlanDto[] }>('/api/admin/plans'),
+
+  createBuyerPlan: (body: { name: string; slug?: string; priceUsd: number; periodDays: number; description?: string; enabled?: boolean; sortOrder?: number }) =>
+    request<BuyerPlanDto>('/api/admin/plans', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateBuyerPlan: (id: string, body: { name?: string; priceUsd?: number; periodDays?: number; description?: string | null; enabled?: boolean; sortOrder?: number }) =>
+    request<BuyerPlanDto>(`/api/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  deleteBuyerPlan: (id: string) =>
+    request<{ ok: boolean }>(`/api/admin/plans/${id}`, { method: 'DELETE' }),
 
   adminHomepage: () => request<import('@vuekumi/shared').HomeFeaturedAdminDto>('/api/admin/homepage'),
 
@@ -559,10 +573,10 @@ export const api = {
 
   subscription: () => request<SubscriptionStatusDto>('/api/subscriptions'),
 
-  startPlusCheckout: (provider?: 'stripe' | 'flutterwave') =>
+  startPlusCheckout: (providerOrPlan?: 'stripe' | 'flutterwave' | { provider?: 'stripe' | 'flutterwave'; plan?: string }) =>
     request<{ checkout: SubscriptionCheckoutDto }>('/api/subscriptions', {
       method: 'POST',
-      body: JSON.stringify({ provider }),
+      body: JSON.stringify(typeof providerOrPlan === 'string' ? { provider: providerOrPlan } : (providerOrPlan ?? {})),
     }),
 
   subscriptionById: (id: string) =>

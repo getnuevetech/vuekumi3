@@ -48,6 +48,7 @@ export const ADMIN_CAPABILITIES = [
   'payouts.pay',
   'payouts.reject',
   'payouts.holds.manage',
+  'plans.manage',
   'geo.countries.list',
   'geo.countries.write',
   'geo.activation.research',
@@ -133,7 +134,7 @@ export const ADMIN_CAPABILITY_GROUPS: { label: string; keys: AdminCapability[] }
   },
   {
     label: 'Money',
-    keys: ['payouts.list', 'payouts.pay', 'payouts.reject', 'payouts.holds.manage'],
+    keys: ['payouts.list', 'payouts.pay', 'payouts.reject', 'payouts.holds.manage', 'plans.manage'],
   },
   {
     label: 'Platform',
@@ -218,6 +219,7 @@ const FINANCE: AdminCapability[] = [
   'geo.fx.sync',
   'geo.fx.override',
   'accounts.read',
+  'plans.manage',
 ]
 
 export const PRESET_CAPABILITIES: Record<AdminRole, readonly AdminCapability[]> = {
@@ -404,6 +406,7 @@ export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin/representation': 'representation.list',
   '/admin/partner-api': 'partner.keys.list',
   '/admin/payouts': 'payouts.list',
+  '/admin/plans': 'plans.manage',
   '/admin/countries': 'geo.countries.list',
   '/admin/countries/activation': 'geo.activation.research',
   '/admin/legal': 'geo.countries.list',

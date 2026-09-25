@@ -11,7 +11,7 @@ export async function adminHomepageRoutes(app: FastifyInstance) {
 
   app.put('/admin/homepage', gate, async (request) => {
     const body = patchHomeFeaturedSchema.parse(request.body)
-    const page = await replaceHomePins(body.pins)
+    const page = await replaceHomePins(body)
     await writeAuditLog({
       actorId: request.userId,
       action: 'admin.homepage.featured',
