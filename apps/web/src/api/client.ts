@@ -897,17 +897,32 @@ export const api = {
 
   contributorPhotos: () => request<{ items: PhotoDto[] }>('/api/contributor/photos'),
 
-  adminContent: (params?: { q?: string; status?: string; page?: number; locked?: boolean }) => {
+  adminContent: (params?: { q?: string; status?: string; page?: number; locked?: boolean; category?: string }) => {
     const qs = new URLSearchParams()
     if (params?.q) qs.set('q', params.q)
     if (params?.status) qs.set('status', params.status)
     if (params?.page) qs.set('page', String(params.page))
     if (params?.locked) qs.set('locked', '1')
+    if (params?.category) qs.set('category', params.category)
     const q = qs.toString()
     return request<{ items: AdminContentRow[]; total: number }>(`/api/admin/content${q ? `?${q}` : ''}`)
   },
 
   adminContentDetail: (id: string) => request<AdminContentDetail>(`/api/admin/content/${id}`),
+
+  adminShares: () => request<import('@vuekumi/shared').ShareAdminDto>('/api/admin/shares'),
+
+  searchShareAccounts: (q: string) =>
+    request<{ items: import('@vuekumi/shared').ShareAccountSearchDto[] }>(`/api/admin/shares/accounts?q=${encodeURIComponent(q)}`),
+
+  saveShareGroup: (groupKey: string, body: import('@vuekumi/shared').ShareFormulaInput) =>
+    request<import('@vuekumi/shared').ShareAdminDto>(`/api/admin/shares/groups/${groupKey}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  saveShareAccount: (body: import('@vuekumi/shared').ShareFormulaInput & { userId: string }) =>
+    request<import('@vuekumi/shared').ShareAdminDto>('/api/admin/shares/accounts', { method: 'PUT', body: JSON.stringify(body) }),
+
+  clearShareAccount: (userId: string) =>
+    request<import('@vuekumi/shared').ShareAdminDto>(`/api/admin/shares/accounts/${userId}`, { method: 'DELETE' }),
 
   patchRights: (id: string, body: Record<string, unknown>) =>
     request<{ photo: PhotoDto }>(`/api/admin/content/${id}/rights`, { method: 'PATCH', body: JSON.stringify(body) }),

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import type { HomeCategoryBannerDto, HomeIconKey, HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto, SiteFacts } from '@vuekumi/shared';
-import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible } from '@vuekumi/shared';
+import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass } from '@vuekumi/shared';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { LogoMark, Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -33,6 +34,8 @@ function NoirHeader() {
   const { user, logout } = useAuth();
   const { content } = useSiteContent();
   const links = content.menu.filter((link) => menuLinkVisible(link, user));
+  const menuClass = `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`;
+  const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -49,18 +52,20 @@ function NoirHeader() {
       >
         <div className="flex items-center justify-between px-5 py-4 md:px-10">
           <LogoMark dark condensed accent="#bc773f" />
-          <nav className="hidden items-center gap-8 lg:flex">
+          <nav className="hidden items-center gap-5 lg:flex">
             {links.map((l) => (
               <Link
                 key={l.label}
                 to={l.to}
-                className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
+                style={menuStyle}
+                className={menuClass}
               >
                 {l.label}
               </Link>
             ))}
           </nav>
           <div className="hidden items-center gap-4 lg:flex">
+            <ThemeToggle tone="dark" />
             <SearchForm dark compact />
             {user ? (
               <>
@@ -352,14 +357,55 @@ function useBidirectionalWheel(node: HTMLDivElement | null) {
   useEffect(() => {
     if (!node) return
     const onWheel = (event: WheelEvent) => {
-      if (node.scrollWidth <= node.clientWidth + 1) return
+      const max = node.scrollWidth - node.clientWidth
+      if (max <= 1) return
       const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
       if (delta === 0) return
+      const atStart = node.scrollLeft <= 0 && delta < 0
+      const atEnd = node.scrollLeft >= max - 1 && delta > 0
+      if (atStart || atEnd) return
       event.preventDefault()
-      node.scrollLeft += delta
+      node.scrollLeft = Math.max(0, Math.min(max, node.scrollLeft + delta))
+    }
+    let dragging = false
+    let moved = false
+    let startX = 0
+    let startLeft = 0
+    const onDown = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return
+      dragging = true
+      moved = false
+      startX = event.clientX
+      startLeft = node.scrollLeft
+    }
+    const onMove = (event: PointerEvent) => {
+      if (!dragging) return
+      const dx = event.clientX - startX
+      if (Math.abs(dx) < 5) return
+      moved = true
+      node.scrollLeft = startLeft - dx
+    }
+    const onUp = () => { dragging = false }
+    const onClick = (event: MouseEvent) => {
+      if (!moved) return
+      event.preventDefault()
+      event.stopPropagation()
+      moved = false
     }
     node.addEventListener('wheel', onWheel, { passive: false })
-    return () => node.removeEventListener('wheel', onWheel)
+    node.addEventListener('pointerdown', onDown)
+    node.addEventListener('pointermove', onMove)
+    node.addEventListener('pointerup', onUp)
+    node.addEventListener('pointercancel', onUp)
+    node.addEventListener('click', onClick, true)
+    return () => {
+      node.removeEventListener('wheel', onWheel)
+      node.removeEventListener('pointerdown', onDown)
+      node.removeEventListener('pointermove', onMove)
+      node.removeEventListener('pointerup', onUp)
+      node.removeEventListener('pointercancel', onUp)
+      node.removeEventListener('click', onClick, true)
+    }
   }, [node])
 }
 
@@ -371,13 +417,14 @@ function FeaturedStrip({ photos }: { photos: PhotoDto[] }) {
     <section className="bg-noir" aria-label="Featured images">
       <div
         ref={setNode}
-        className="no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto overscroll-x-contain"
+        data-strip="featured"
+        className="no-scrollbar flex cursor-grab gap-1 overflow-x-auto overscroll-x-contain active:cursor-grabbing"
       >
         {photos.map((p, i) => (
           <Link
             key={p.id}
             to={`/photo/${p.id}`}
-            className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 snap-start overflow-hidden sm:w-[46vw] lg:w-[28vw]"
+            className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 overflow-hidden sm:w-[46vw] lg:w-[28vw]"
           >
             <img src={p.src} alt={p.title} loading={i > 1 ? 'lazy' : undefined} className="h-full w-full object-cover" />
             <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
@@ -408,13 +455,14 @@ function CategoryBanners({ banners }: { banners: HomeCategoryBannerDto[] }) {
       </div>
       <div
         ref={setNode}
-        className="no-scrollbar flex snap-x snap-mandatory gap-1 overflow-x-auto overscroll-x-contain px-1"
+        data-strip="categories"
+        className="no-scrollbar flex cursor-grab gap-1 overflow-x-auto overscroll-x-contain px-1 active:cursor-grabbing"
       >
         {banners.map((banner) => (
           <Link
             key={`${banner.category}-${banner.photo.id}`}
             to={`/search?category=${encodeURIComponent(banner.category)}`}
-            className="strip-cell group relative block aspect-[16/9] w-[78vw] shrink-0 snap-start overflow-hidden sm:w-[48vw] lg:w-[32vw]"
+            className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 overflow-hidden sm:w-[46vw] lg:w-[28vw]"
           >
             <img src={banner.photo.src} alt={banner.category} loading="lazy" className="h-full w-full object-cover" />
             <div className="strip-meta absolute inset-x-0 bottom-0 p-5">

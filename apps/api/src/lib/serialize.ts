@@ -129,6 +129,7 @@ export function serializeUser(user: UserWithRelations): AuthUser {
     downloadQuotaLimit: quota.limit,
     downloadQuotaRemaining: quota.remaining,
     downloadQuotaUnlimited: quota.unlimited,
+    theme: user.theme === 'light' || user.theme === 'dark' ? user.theme : null,
   }
 }
 

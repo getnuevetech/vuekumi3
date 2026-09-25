@@ -40,6 +40,21 @@ export const siteMenuLinkSchema = z.object({
 })
 export type SiteMenuLink = z.infer<typeof siteMenuLinkSchema>
 
+export const MENU_FONTS = ['condensed', 'serif', 'mono'] as const
+export type MenuFont = (typeof MENU_FONTS)[number]
+
+export const siteMenuStyleSchema = z.object({
+  font: z.enum(MENU_FONTS),
+  sizePx: z.number().int().min(8).max(18),
+})
+export type SiteMenuStyle = z.infer<typeof siteMenuStyleSchema>
+
+export function menuTypeClass(font: MenuFont): string {
+  if (font === 'serif') return 'font-serif-display'
+  if (font === 'mono') return 'font-mono-tech'
+  return 'font-condensed'
+}
+
 export const siteContentSchema = z.object({
   brand: z.object({
     name: line(40),
@@ -48,6 +63,7 @@ export const siteContentSchema = z.object({
   }),
   searchPlaceholder: line(60),
   menu: z.array(siteMenuLinkSchema).min(1).max(24),
+  menuStyle: siteMenuStyleSchema,
   actions: z.object({
     login: line(40),
     logout: line(40),
@@ -172,6 +188,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     { label: 'Contributor', to: '/contributor', audience: 'creator' },
     { label: 'Admin', to: '/admin', audience: 'admin' },
   ],
+  menuStyle: { font: 'condensed', sizePx: 10 },
   actions: { login: 'Log in', logout: 'Log out', sell: 'Sell your photos' },
   footer: {
     blurb: "The stock image platform for authentic African photography. Free and premium images, licensed directly from the continent's photographers.",

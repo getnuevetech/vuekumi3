@@ -66,6 +66,7 @@ export const updateProfileSchema = z.object({
   handle: z.string().min(3).max(40).optional(),
   availability: bookingAvailabilitySchema.optional(),
   dayRateUsd: z.number().min(0).max(1_000_000).nullable().optional(),
+  theme: z.enum(['light', 'dark']).nullable().optional(),
 })
 
 export const changePasswordSchema = z.object({

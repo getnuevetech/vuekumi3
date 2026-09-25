@@ -331,3 +331,57 @@ body.portal-theme .has-checked\:bg-terra\/5:has(:checked) { background-color: rg
 body.portal-theme .has-checked\:border-terra:has(:checked) { border-color: #1a4f91; }
 body.portal-theme svg [stroke="#bc773f"] { stroke: #1e5aa8; }
 body.portal-theme svg [fill="#bc773f"] { fill: #1e5aa8; }
+
+/* Light look: the public noir homepage becomes sand. Portals stay navy and white. */
+html[data-theme='light'] body:not(.portal-theme) .bg-noir { background-color: #f6f1ea; }
+html[data-theme='light'] body:not(.portal-theme) .bg-noir-soft { background-color: #efe6da; }
+html[data-theme='light'] body:not(.portal-theme) .bg-noir\/85 { background-color: rgb(246 241 234 / 0.92); }
+html[data-theme='light'] body:not(.portal-theme) .bg-noir\/95 { background-color: rgb(246 241 234 / 0.97); }
+html[data-theme='light'] body:not(.portal-theme) .text-paper { color: #1c140f; }
+html[data-theme='light'] body:not(.portal-theme) .text-paper-soft { color: #4a3d32; }
+html[data-theme='light'] body:not(.portal-theme) .text-paper-faint { color: #6d5c4e; }
+html[data-theme='light'] body:not(.portal-theme) .border-noir { border-color: #e4d8c8; }
+html[data-theme='light'] body:not(.portal-theme) .border-paper\/70 { border-color: rgb(28 20 15 / 0.45); }
+html[data-theme='light'] body:not(.portal-theme) .text-noir-soft { color: #6a5848; }
+html[data-theme='light'] body:not(.portal-theme) .bg-paper.text-noir,
+html[data-theme='light'] body:not(.portal-theme) .text-noir { color: #1c140f; }
+
+/* Dark look: portals and sand pages darken. The homepage is already noir. */
+html[data-theme='dark'] body.portal-theme {
+  background-color: #071426;
+  color: #e7eef8;
+}
+html[data-theme='dark'] body.portal-theme .bg-paper { background-color: #071426; }
+html[data-theme='dark'] body.portal-theme .bg-white { background-color: #10243f; color: #e7eef8; }
+html[data-theme='dark'] body.portal-theme .bg-cream { background-color: #0d1c33; }
+html[data-theme='dark'] body.portal-theme .text-ink { color: #e7eef8; }
+html[data-theme='dark'] body.portal-theme .text-ink-soft { color: #c5d4ea; }
+html[data-theme='dark'] body.portal-theme .text-ink-faint { color: #93a8c7; }
+html[data-theme='dark'] body.portal-theme .border-sand,
+html[data-theme='dark'] body.portal-theme .border-sand-soft { border-color: #27466f; }
+html[data-theme='dark'] body.portal-theme input,
+html[data-theme='dark'] body.portal-theme textarea,
+html[data-theme='dark'] body.portal-theme select {
+  background-color: #0d1c33;
+  color: #e7eef8;
+  border-color: #27466f;
+}
+html[data-theme='dark'] body:not(.portal-theme) {
+  background-color: #0b0a09;
+  color: #f3ece3;
+}
+html[data-theme='dark'] body:not(.portal-theme) .bg-paper { background-color: #141210; }
+html[data-theme='dark'] body:not(.portal-theme) .bg-white { background-color: #1c1916; color: #f3ece3; }
+html[data-theme='dark'] body:not(.portal-theme) .bg-cream { background-color: #1c1916; }
+html[data-theme='dark'] body:not(.portal-theme) .text-ink { color: #f3ece3; }
+html[data-theme='dark'] body:not(.portal-theme) .text-ink-soft { color: #cbbba8; }
+html[data-theme='dark'] body:not(.portal-theme) .text-ink-faint { color: #9c8d80; }
+html[data-theme='dark'] body:not(.portal-theme) .border-sand,
+html[data-theme='dark'] body:not(.portal-theme) .border-sand-soft { border-color: #3a322b; }
+html[data-theme='dark'] body:not(.portal-theme) input,
+html[data-theme='dark'] body:not(.portal-theme) textarea,
+html[data-theme='dark'] body:not(.portal-theme) select {
+  background-color: #1c1916;
+  color: #f3ece3;
+  border-color: #3a322b;
+}

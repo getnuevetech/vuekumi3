@@ -2,7 +2,7 @@ import type { GrantLicenseType, LicenseGrant, LicenseProduct, Photo, Prisma } fr
 import { BUYER_LICENCE_AGREEMENT } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 import { assertCanGrant, certificateCode } from './rights.js'
-import { getContributorShare } from './payments-config.js'
+import { contributorEarning } from './share-formulas.js'
 import { appendRightsLedgerEvent } from './ledger.js'
 import { decideGrantEarningsStatus } from './holds.js'
 import { assertNewLicenseAllowed } from './policy-decision.js'
@@ -119,9 +119,13 @@ export async function issueGrant(
     })
   }
 
-  if (input.amountUsd > 0) {
-    const share = await getContributorShare()
-    const amount = Math.round(input.amountUsd * share * 100) / 100
+  if (input.amountUsd > 0 && photo.contributor.accountType !== 'model') {
+    const amount = await contributorEarning({
+      userId: photo.contributorId,
+      accountType: photo.contributor.accountType,
+      saleUsd: input.amountUsd,
+    }, client)
+    if (amount <= 0) return created
     const hold = await decideGrantEarningsStatus({
       contributorId: photo.contributorId,
       contributorCreatedAt: photo.contributor.createdAt,

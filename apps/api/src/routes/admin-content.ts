@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import type { PermissionState } from '@vuekumi/shared'
+import { PHOTO_CATEGORIES, type PermissionState } from '@vuekumi/shared'
 import { canMarkAgencyProtected, CONSENT_VERSION, authorizeGuardianSchema, twoPartyCommercialCleared } from '@vuekumi/shared'
 import { decideModerationSchema, patchRightsSchema, reviewModelReleaseSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
@@ -28,11 +28,16 @@ export async function adminContentRoutes(app: FastifyInstance) {
   const moderationDecide = { preHandler: requireAdminCapability(app, 'moderation.decide') }
 
   app.get('/admin/content', list, async (request) => {
-    const query = request.query as { q?: string; status?: string; page?: string; locked?: string }
+    const query = request.query as { q?: string; status?: string; page?: string; locked?: string; category?: string }
     const page = Math.max(1, Number(query.page) || 1)
     const limit = 25
     const lockedOnly = query.locked === '1' || query.locked === 'true'
+    const category = query.category?.trim()
+    if (category && !(PHOTO_CATEGORIES as readonly string[]).includes(category)) {
+      return { total: 0, page, items: [] }
+    }
     const where = {
+      ...(category ? { category } : {}),
       ...(query.status ? { status: query.status as 'draft' | 'pending' | 'active' | 'rejected' | 'delisted' } : {}),
       ...(lockedOnly ? { commercialLocked: true } : {}),
       ...(query.q

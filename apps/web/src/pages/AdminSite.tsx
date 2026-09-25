@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import type { SiteMenuAudience } from '@vuekumi/shared'
+import type { MenuFont, SiteMenuAudience } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import {
   HOME_ICON_KEYS,
+  MENU_FONTS,
   SITE_MENU_AUDIENCES,
   type HomeIconKey,
   type SiteContent,
@@ -99,7 +100,34 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
 
       <section id="menu" className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">Header menu</h2>
-        <p className="mt-1 text-sm text-ink-soft">Label, path on this site, and who should see the link.</p>
+        <p className="mt-1 text-sm text-ink-soft">Label, path on this site, and who should see the link. Font and size apply to the top menu.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <label className="block">
+            <span className={label}>Menu font</span>
+            <select
+              value={content.menuStyle.font}
+              onChange={(e) => set({ ...content, menuStyle: { ...content.menuStyle, font: e.target.value as MenuFont } })}
+              className={field}
+              aria-label="Menu font"
+            >
+              {MENU_FONTS.map((font) => (
+                <option key={font} value={font}>{font === 'condensed' ? 'Condensed' : font === 'serif' ? 'Serif' : 'Mono'}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className={label}>Menu size (px)</span>
+            <input
+              type="number"
+              min={8}
+              max={18}
+              value={content.menuStyle.sizePx}
+              onChange={(e) => set({ ...content, menuStyle: { ...content.menuStyle, sizePx: Number(e.target.value) } })}
+              className={field}
+              aria-label="Menu size"
+            />
+          </label>
+        </div>
         <div className="mt-4 space-y-3">
           {content.menu.map((link, index) => (
             <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_16rem_auto]">

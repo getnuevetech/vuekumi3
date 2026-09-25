@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import { CurrencyProvider } from './context/CurrencyContext'
 import { SiteContentProvider } from './context/SiteContentContext'
+import { ThemeProvider } from './context/ThemeContext'
 import { initWebSentry } from './lib/sentry'
 
 const queryClient = new QueryClient({
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
+          <ThemeProvider>
           <CurrencyProvider>
             <SiteContentProvider>
               <ErrorBoundary>
@@ -32,6 +34,7 @@ createRoot(document.getElementById('root')!).render(
               <Toaster position="top-center" richColors />
             </SiteContentProvider>
           </CurrencyProvider>
+          </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

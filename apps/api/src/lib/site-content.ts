@@ -1,6 +1,7 @@
 import { mergeSiteContent, siteContentSchema, type SiteContent, type SitePublicDto } from '@vuekumi/shared'
 import { MIN_PAYOUT_USD } from './payouts.js'
 import { getContributorShare } from './payments-config.js'
+import { advertisedPhotographerShare } from './share-formulas.js'
 import { prisma } from './prisma.js'
 
 const SITE_ID = 'public'
@@ -23,7 +24,7 @@ async function resolveLogoUrl(ref: string | null): Promise<string | null> {
 }
 
 async function facts() {
-  const share = await getContributorShare()
+  const share = await advertisedPhotographerShare().catch(() => getContributorShare())
   return {
     photographerPct: Math.round(share * 100),
     payoutMinimumUsd: MIN_PAYOUT_USD,

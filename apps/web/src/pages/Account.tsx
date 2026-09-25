@@ -4,6 +4,7 @@ import type { BookingAvailability, BuyerPlanDto, CancellationReason, PlanChangeQ
 import { CANCELLATION_REASON_LABEL, CANCELLATION_REASONS, planAudienceForAccount, splitDisplayName } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS, hasModelAccess, isCreatorWorkspaceAccount } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { toast } from 'sonner'
@@ -122,6 +123,15 @@ export default function Account() {
           {dualRole ? ' · photographer and model' : ''}
           {user.emailVerified ? '' : ' · email not verified'}
         </p>
+        <section className="mt-8 border border-sand bg-white p-6">
+          <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Appearance</p>
+          <h2 className="font-serif-display mt-2 text-2xl font-light">Light or dark.</h2>
+          <p className="mt-1 text-sm text-ink-soft">This follows you on this browser and on your account.</p>
+          <div className="mt-4">
+            <ThemeToggle />
+          </div>
+        </section>
+
         {dualRole && (
           <p className="mt-2 text-sm text-ink-soft">
             One account, both roles. You keep this photographer login and a model profile on the same email. Models do not earn.

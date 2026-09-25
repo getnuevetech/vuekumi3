@@ -255,6 +255,7 @@ model User {
   city            String?
   bio             String?
   location        String?
+  theme           String?
   emailVerifiedAt DateTime?
   rightsStrikeCount Int       @default(0)
   repeatInfringerAt DateTime?
@@ -314,9 +315,27 @@ model User {
   dmcaNoticesReviewed     DmcaNotice[]             @relation("DmcaReviewer")
   rightsStrikes           RightsStrike[]           @relation("StrikeSubject")
   rightsStrikesRecorded   RightsStrike[]           @relation("StrikeActor")
+  shareFormula            ShareFormula?
 
   @@index([accountType])
   @@index([status])
+}
+
+/// Group or per-account payout formula. An account row wins over its group.
+model ShareFormula {
+  id        String   @id @default(cuid())
+  scope     String
+  groupKey  String?
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode      String
+  percent   Float    @default(50)
+  fixedUsd  Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([scope, groupKey])
+  @@index([scope])
 }
 
 model PartnerApiKey {

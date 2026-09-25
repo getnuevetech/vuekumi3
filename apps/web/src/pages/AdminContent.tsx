@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import type { CommercialLockReasonCode, PermissionState, RightsLedgerDto } from '@vuekumi/shared'
 import {
@@ -23,6 +24,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export function AdminContent() {
+  const [params] = useSearchParams()
+  const category = params.get('category') ?? ''
   const [q, setQ] = useState('')
   const [lockedOnly, setLockedOnly] = useState(false)
   const [items, setItems] = useState<AdminContentRow[]>([])
@@ -34,13 +37,13 @@ export function AdminContent() {
   const [lockReason, setLockReason] = useState<CommercialLockReasonCode>('staff_quarantine')
 
   const load = () => {
-    api.adminContent({ q, locked: lockedOnly || undefined }).then((d) => {
+    api.adminContent({ q, locked: lockedOnly || undefined, category: category || undefined }).then((d) => {
       setItems(d.items)
       setTotal(d.total)
     }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load'))
   }
 
-  useEffect(() => { load() }, [q, lockedOnly])
+  useEffect(() => { load() }, [q, lockedOnly, category])
 
   const open = (id: string) => {
     api.adminContentDetail(id).then((next) => {
@@ -60,9 +63,9 @@ export function AdminContent() {
 
   return (
     <Shell>
-      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Content</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Library & rights.</h1>
-      <p className="mt-1 text-sm text-ink-soft">{total} photographs. Click a row for the rights panel.</p>
+      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{category || 'Content'}</p>
+      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{category ? `${category}.` : 'Library & rights.'}</h1>
+      <p className="mt-1 text-sm text-ink-soft">{total} photographs{category ? ` in ${category}` : ''}. Click a row for the rights panel.</p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <input

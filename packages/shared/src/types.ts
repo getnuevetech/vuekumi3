@@ -61,6 +61,7 @@ export interface AuthUser {
   downloadQuotaLimit?: number | null
   downloadQuotaRemaining?: number | null
   downloadQuotaUnlimited?: boolean
+  theme?: 'light' | 'dark' | null
 }
 
 export interface RightsDto {

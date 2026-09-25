@@ -19,7 +19,7 @@ import {
 } from './pages/Contributor'
 import { ContributorPhotoEdit } from './pages/ContributorPhoto'
 import {
-  AdminDashboard, AdminModeration, AdminPayouts,
+  AdminDashboard, AdminHolds, AdminModeration, AdminPayouts,
 } from './pages/Admin'
 import { AdminQuotes } from './pages/AdminQuotes'
 import AdminRepresentation from './pages/AdminRepresentation'
@@ -39,6 +39,7 @@ import { AdminContent } from './pages/AdminContent'
 import AdminHomepage from './pages/AdminHomepage'
 import AdminSite from './pages/AdminSite'
 import AdminPlans from './pages/AdminPlans'
+import AdminShares from './pages/AdminShares'
 import AdminProfileFields from './pages/AdminProfileFields'
 import AdminBookings from './pages/AdminBookings'
 import AdminCampaigns from './pages/AdminCampaigns'
@@ -174,7 +175,9 @@ export default function App() {
         <Route path="/admin/representation" element={<ProtectedRoute allowed={['admin']} capability="representation.list"><AdminRepresentation /></ProtectedRoute>} />
         <Route path="/admin/partner-api" element={<ProtectedRoute allowed={['admin']} capability="partner.keys.list"><AdminPartnerKeys /></ProtectedRoute>} />
         <Route path="/admin/payouts" element={<ProtectedRoute allowed={['admin']} capability="payouts.list"><AdminPayouts /></ProtectedRoute>} />
+        <Route path="/admin/holds" element={<ProtectedRoute allowed={['admin']} capability="payouts.holds.manage"><AdminHolds /></ProtectedRoute>} />
         <Route path="/admin/plans" element={<ProtectedRoute allowed={['admin']} capability="plans.manage"><AdminPlans /></ProtectedRoute>} />
+        <Route path="/admin/shares" element={<ProtectedRoute allowed={['admin']} capability="plans.manage"><AdminShares /></ProtectedRoute>} />
         <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminCountries /></ProtectedRoute>} />
         <Route path="/admin/countries/activation" element={<ProtectedRoute allowed={['admin']} capability="geo.activation.research"><AdminCountryActivation /></ProtectedRoute>} />
         <Route path="/admin/legal" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminLegal /></ProtectedRoute>} />

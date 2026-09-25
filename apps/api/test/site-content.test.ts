@@ -14,6 +14,8 @@ test('missing site content falls back to the built-in homepage words', () => {
   assert.equal(content.brand.name, 'Vuekumi')
   assert.equal(content.home.hero.slides[0]?.title, 'AFRICA')
   assert.equal(content.menu.some((link) => link.label === 'Library'), true)
+  assert.equal(content.menuStyle.font, 'condensed')
+  assert.equal(content.menuStyle.sizePx, 10)
 })
 
 test('admin can change the public menu and logo words', async () => {

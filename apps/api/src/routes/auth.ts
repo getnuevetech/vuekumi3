@@ -300,6 +300,15 @@ export async function authRoutes(app: FastifyInstance) {
     if (phone && !/^\d{6,15}$/.test(phone)) {
       return reply.code(400).send({ error: 'Mobile number should be digits only, without the country code' })
     }
+    if (body.theme !== undefined) {
+      const onlyTheme = (Object.keys(body) as (keyof typeof body)[]).every((key) => key === 'theme' || body[key] === undefined)
+      if (onlyTheme) {
+        await prisma.user.update({ where: { id: userId }, data: { theme: body.theme } })
+        const full = await prisma.user.findUnique({ where: { id: userId }, include: authUserInclude })
+        return { user: serializeUser(full!) }
+      }
+    }
+
     const required = await requiredProfileFields(existing.accountType)
     const filled: Record<string, boolean> = {
       avatar: Boolean(avatarUrl),
@@ -336,6 +345,7 @@ export async function authRoutes(app: FastifyInstance) {
           city,
           bio,
           location,
+          ...(body.theme !== undefined ? { theme: body.theme } : {}),
         },
       })
       const availabilityData = {

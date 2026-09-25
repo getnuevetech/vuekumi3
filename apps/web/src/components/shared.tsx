@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { menuTypeClass } from '@vuekumi/shared'
 import { menuLinkVisible, type PhotoDto } from '@vuekumi/shared'
 import { fmt, type Photo } from '../data/content'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { useCurrency } from '../context/CurrencyContext'
+import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { useSiteContent } from '../context/SiteContentContext'
 import { toast } from 'sonner'
@@ -189,6 +191,8 @@ export function SiteHeader() {
   const { user, logout } = useAuth()
   const { content } = useSiteContent()
   const links = content.menu.filter((link) => menuLinkVisible(link, user))
+  const menuClass = menuTypeClass(content.menuStyle.font)
+  const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' }
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -204,12 +208,13 @@ export function SiteHeader() {
       >
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
           <LogoMark />
-          <nav className="hidden items-center gap-7 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:flex">
+          <nav className={`hidden items-center gap-5 uppercase text-ink-soft lg:flex ${menuClass}`}>
             {links.map((link) => (
-              <Link key={`${link.to}-${link.label}`} to={link.to} className="link-slide hover:text-terra">{link.label}</Link>
+              <Link key={`${link.to}-${link.label}`} to={link.to} style={menuStyle} className="link-slide hover:text-terra">{link.label}</Link>
             ))}
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
+            <ThemeToggle />
             <SearchForm compact defaultQuery="" />
             <CurrencySelect />
             {user ? (
@@ -443,14 +448,24 @@ function isPortalRootPath(to: string) {
   return to === '/contributor' || to === '/admin' || to === '/agency' || to === '/model'
 }
 
-export function portalLinkActive(pathname: string, to: string | undefined): boolean {
+export function portalLinkActive(pathname: string, to: string | undefined, search = ''): boolean {
   if (!to) return false
-  return pathname === to || (!isPortalRootPath(to) && pathname.startsWith(`${to}/`))
+  const [path, query] = to.split('?')
+  const actual = new URLSearchParams(search)
+  if (query) {
+    const expected = new URLSearchParams(query)
+    for (const [key, value] of expected) {
+      if (actual.get(key) !== value) return false
+    }
+    return pathname === path
+  }
+  if (path === '/admin/content' && actual.get('category')) return false
+  return pathname === path || (!isPortalRootPath(path!) && pathname.startsWith(`${path}/`))
 }
 
-function portalGroupActive(pathname: string, link: PortalLink): boolean {
-  if (portalLinkActive(pathname, link.to)) return true
-  return (link.children ?? []).some((child) => portalGroupActive(pathname, child))
+function portalGroupActive(pathname: string, link: PortalLink, search = ''): boolean {
+  if (portalLinkActive(pathname, link.to, search)) return true
+  return (link.children ?? []).some((child) => portalGroupActive(pathname, child, search))
 }
 
 export function flattenPortalLeaves(links: PortalLink[]): PortalLink[] {
@@ -467,17 +482,19 @@ function leafKey(link: PortalLink, fallback: string) {
 function NavLeaf({
   link,
   pathname,
+  search = '',
   index,
   nested = false,
 }: {
   link: PortalLink
   pathname: string
+  search?: string
   index?: number
   nested?: boolean
 }) {
   const to = link.to
   if (!to) return null
-  const active = portalLinkActive(pathname, to)
+  const active = portalLinkActive(pathname, to, search)
   return (
     <Link
       to={to}
@@ -497,18 +514,20 @@ function NavLeaf({
 function NavGroup({
   link,
   pathname,
+  search,
   index,
   open,
   onToggle,
 }: {
   link: PortalLink
   pathname: string
+  search: string
   index: number
   open: boolean
   onToggle: () => void
 }) {
   const children = link.children ?? []
-  const groupActive = portalGroupActive(pathname, link)
+  const groupActive = portalGroupActive(pathname, link, search)
   return (
     <div className="hidden lg:block">
       <button
@@ -540,6 +559,7 @@ function NavGroup({
               key={leafKey(child, `${link.label}-${child.label}`)}
               link={child}
               pathname={pathname}
+              search={search}
               nested
             />
           ))}
@@ -563,13 +583,13 @@ export function PortalShell({
   /** Admin opens every section so pages are not tucked behind a collapsed group. */
   expandGroups?: boolean
 }) {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const { user, logout } = useAuth()
   const mobileLeaves = flattenPortalLeaves(links)
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const open = new Set<string>()
     for (const link of links) {
-      if (link.children?.length && (expandGroups || portalGroupActive(pathname, link) || link.children.length === 1)) {
+      if (link.children?.length && (expandGroups || portalGroupActive(pathname, link, search) || link.children.length === 1)) {
         open.add(link.label)
       }
     }
@@ -580,7 +600,7 @@ export function PortalShell({
       let changed = false
       const next = new Set(prev)
       for (const link of links) {
-        const auto = Boolean(link.children?.length && (expandGroups || portalGroupActive(pathname, link) || link.children.length === 1))
+        const auto = Boolean(link.children?.length && (expandGroups || portalGroupActive(pathname, link, search) || link.children.length === 1))
         if (auto && !next.has(link.label)) {
           next.add(link.label)
           changed = true
@@ -588,7 +608,7 @@ export function PortalShell({
       }
       return changed ? next : prev
     })
-  }, [pathname, links, expandGroups])
+  }, [pathname, search, links, expandGroups])
 
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
@@ -603,7 +623,7 @@ export function PortalShell({
         <nav className="flex gap-1 overflow-x-auto px-4 pb-4 no-scrollbar lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-0 lg:overflow-y-auto lg:px-3 lg:pb-0 lg:pt-4">
           {mobileLeaves.map((l, i) => (
             <div key={leafKey(l, `m-${i}`)} className="lg:hidden">
-              <NavLeaf link={l} pathname={pathname} index={i} />
+              <NavLeaf link={l} pathname={pathname} search={search} index={i} />
             </div>
           ))}
           {links.map((l, i) => {
@@ -613,6 +633,7 @@ export function PortalShell({
                   key={l.label}
                   link={l}
                   pathname={pathname}
+                  search={search}
                   index={i}
                   open={expanded.has(l.label)}
                   onToggle={() => {
@@ -628,7 +649,7 @@ export function PortalShell({
             }
             return (
               <div key={leafKey(l, `d-${i}`)} className="hidden lg:block">
-                <NavLeaf link={l} pathname={pathname} index={i} />
+                <NavLeaf link={l} pathname={pathname} search={search} index={i} />
               </div>
             )
           })}

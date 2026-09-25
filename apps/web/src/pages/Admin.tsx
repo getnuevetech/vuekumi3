@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import type { AdminOverviewDto, EarningsHoldDto, LicenseQuoteDto, PayoutDto, RightsReportDto } from '@vuekumi/shared';
-import { adminHas, ADMIN_NAV_CAPABILITY } from '@vuekumi/shared';
+import { adminHas, ADMIN_NAV_CAPABILITY, PHOTO_CATEGORIES } from '@vuekumi/shared';
 import { api, ApiError, type AdminModerationRow } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -78,15 +78,38 @@ export const adminLinks: PortalLink[] = [
     ],
   },
   {
+    label: 'Content',
+    icon: icons.grid,
+    children: [
+      { to: '/admin/content', label: 'All content', icon: icons.grid },
+      ...PHOTO_CATEGORIES.map((category) => ({
+        to: `/admin/content?category=${encodeURIComponent(category)}`,
+        label: category,
+        icon: icons.grid,
+      })),
+    ],
+  },
+  {
+    label: 'Site',
+    icon: icons.dash,
+    children: [
+      { to: '/admin/homepage', label: 'Homepage', icon: icons.dash },
+      { to: '/admin/site', label: 'Site content', icon: icons.dash },
+    ],
+  },
+  {
     label: 'Rights',
     icon: icons.rights,
     children: [
-      { to: '/admin/content', label: 'Content', icon: icons.grid },
-      { to: '/admin/homepage', label: 'Homepage', icon: icons.dash },
-      { to: '/admin/site', label: 'Site content', icon: icons.dash },
       { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
       { to: '/admin/reports', label: 'Reports', icon: icons.shield },
       { to: '/admin/dmca', label: 'DMCA', icon: icons.rights },
+    ],
+  },
+  {
+    label: 'Marketplace',
+    icon: icons.grid,
+    children: [
       { to: '/admin/quotes', label: 'Quotes', icon: icons.money },
       { to: '/admin/bookings', label: 'Bookings', icon: icons.grid },
       { to: '/admin/campaigns', label: 'Campaigns', icon: icons.grid },
@@ -105,7 +128,9 @@ export const adminLinks: PortalLink[] = [
     icon: icons.money,
     children: [
       { to: '/admin/payouts', label: 'Payouts', icon: icons.money },
+      { to: '/admin/holds', label: 'Earnings holds', icon: icons.money },
       { to: '/admin/plans', label: 'Plans', icon: icons.money },
+      { to: '/admin/shares', label: 'Profit sharing', icon: icons.money },
       { to: '/admin/rates', label: 'FX rates', icon: icons.money },
     ],
   },
@@ -132,7 +157,8 @@ function filterAdminNav(links: PortalLink[], user: ReturnType<typeof useAuth>['u
       continue
     }
     if (!link.to) continue
-    const cap = ADMIN_NAV_CAPABILITY[link.to]
+    const path = link.to.split('?')[0]?.split('#')[0] ?? link.to
+    const cap = ADMIN_NAV_CAPABILITY[path]
     if (!cap || adminHas(user, cap)) out.push(link)
   }
   return out
@@ -533,10 +559,10 @@ export function AdminPayouts() {
         Manual payouts for now — record the transfer, then mark paid. Earnings return to the contributor if you reject.
       </p>
 
-      {holds.length > 0 && (
-        <div className="mt-10">
+      <div className="mt-10" id="holds">
           <h2 className="font-serif-display text-2xl font-light">Payout holds</h2>
-          <div className="mt-4 overflow-hidden rounded-2xl border border-sand-soft bg-white">
+          {holds.length === 0 && <p className="mt-3 text-sm text-ink-soft">No earnings are held.</p>}
+          {holds.length > 0 && <div className="mt-4 overflow-hidden rounded-2xl border border-sand-soft bg-white">
             {holds.map((row) => (
               <div key={row.id} className="flex items-center justify-between border-b border-sand-soft px-4 py-3 last:border-0">
                 <div>
@@ -569,9 +595,69 @@ export function AdminPayouts() {
                 </div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
-      )}
     </Shell>
   );
+}
+
+export function AdminHolds() {
+  const [holds, setHolds] = useState<EarningsHoldDto[]>([])
+  const [heldTotal, setHeldTotal] = useState(0)
+  const [busy, setBusy] = useState<string | null>(null)
+
+  const load = () => {
+    api.adminEarningsHolds()
+      .then((d) => {
+        setHolds(d.items)
+        setHeldTotal(d.totalUsd)
+      })
+      .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load holds'))
+  }
+  useEffect(() => { load() }, [])
+
+  return (
+    <Shell>
+      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Money</p>
+      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Earnings holds.</h1>
+      <p className="mt-1 text-sm text-ink-soft">
+        {holds.length} held · {money(heldTotal)}. A held licence earning stays off the payout until it is released.
+      </p>
+      <div className="mt-8 overflow-hidden rounded-2xl border border-sand-soft bg-white">
+        {holds.map((row) => (
+          <div key={row.id} className="flex items-center justify-between border-b border-sand-soft px-4 py-3 last:border-0">
+            <div>
+              <p className="text-sm font-medium">{row.photoTitle}</p>
+              <p className="font-mono-tech text-[10px] text-ink-faint">
+                @{row.contributorHandle ?? row.contributorName} · {row.holdReason ?? 'held'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <p className="text-sm font-medium">{money(row.amountUsd)}</p>
+              <button
+                type="button"
+                disabled={busy === row.id}
+                onClick={async () => {
+                  setBusy(row.id)
+                  try {
+                    await api.releaseEarningsHold(row.id)
+                    toast.success('Hold released')
+                    load()
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Could not release hold')
+                  } finally {
+                    setBusy(null)
+                  }
+                }}
+                className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] hover:border-ink disabled:opacity-50"
+              >
+                Release
+              </button>
+            </div>
+          </div>
+        ))}
+        {holds.length === 0 && <p className="px-4 py-6 text-sm text-ink-soft">No earnings are held.</p>}
+      </div>
+    </Shell>
+  )
 }
