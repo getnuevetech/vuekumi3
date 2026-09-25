@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { menuTypeClass } from '@vuekumi/shared'
+import { menuTypeClass, sortMenuLinks } from '@vuekumi/shared'
 import { menuLinkVisible, type PhotoDto } from '@vuekumi/shared'
 import { fmt, type Photo } from '../data/content'
 import { api, ApiError, type GeoCountry } from '../api/client'
@@ -190,7 +190,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false)
   const { user, logout } = useAuth()
   const { content } = useSiteContent()
-  const links = content.menu.filter((link) => menuLinkVisible(link, user))
+  const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user))
   const menuClass = menuTypeClass(content.menuStyle.font)
   const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' }
   useEffect(() => {

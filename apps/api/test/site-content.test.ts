@@ -16,6 +16,13 @@ test('missing site content falls back to the built-in homepage words', () => {
   assert.equal(content.menu.some((link) => link.label === 'Library'), true)
   assert.equal(content.menuStyle.font, 'condensed')
   assert.equal(content.menuStyle.sizePx, 10)
+  assert.equal(content.menu[0]?.sort, 1)
+  assert.deepEqual(mergeSiteContent({
+    menu: [
+      { label: 'Library', to: '/search', audience: 'always', sort: 20 },
+      { label: 'Creators', to: '/creators', audience: 'always', sort: 2 },
+    ],
+  }).menu.slice(0, 2).map((link) => link.label), ['Creators', 'Library'])
 })
 
 test('admin can change the public menu and logo words', async () => {

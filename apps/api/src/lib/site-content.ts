@@ -1,4 +1,4 @@
-import { mergeSiteContent, siteContentSchema, type SiteContent, type SitePublicDto } from '@vuekumi/shared'
+import { mergeSiteContent, normalizeSiteContent, siteContentSchema, type SiteContent, type SitePublicDto } from '@vuekumi/shared'
 import { MIN_PAYOUT_USD } from './payouts.js'
 import { getContributorShare } from './payments-config.js'
 import { advertisedPhotographerShare } from './share-formulas.js'
@@ -42,7 +42,7 @@ export async function loadSitePublic(): Promise<SitePublicDto> {
 }
 
 export async function saveSiteContent(input: SiteContent): Promise<SitePublicDto> {
-  const content = siteContentSchema.parse(input)
+  const content = normalizeSiteContent(siteContentSchema.parse(input))
   if (content.brand.logoRef && !content.brand.logoRef.startsWith('/') && !/^https?:\/\//i.test(content.brand.logoRef)) {
     const photo = await prisma.photo.findUnique({
       where: { id: content.brand.logoRef },

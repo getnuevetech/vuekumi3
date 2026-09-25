@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import type { HomeCategoryBannerDto, HomeIconKey, HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto, SiteFacts } from '@vuekumi/shared';
-import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass } from '@vuekumi/shared';
+import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass, sortMenuLinks } from '@vuekumi/shared';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LogoMark, Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -33,7 +33,7 @@ function NoirHeader() {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuth();
   const { content } = useSiteContent();
-  const links = content.menu.filter((link) => menuLinkVisible(link, user));
+  const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user));
   const menuClass = `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`;
   const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' };
 
@@ -934,7 +934,7 @@ function NoirFooter() {
         {content.footer.blurb}
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-        {content.footer.links.map((s) => (
+        {sortMenuLinks(content.footer.links).map((s) => (
           <Link key={`${s.to}-${s.label}`} to={s.to} className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
             {s.label}
           </Link>

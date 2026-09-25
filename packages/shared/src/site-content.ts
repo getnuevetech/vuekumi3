@@ -33,12 +33,30 @@ const sitePath = z
 const line = (max: number) => z.string().trim().min(1).max(max)
 const note = (max: number) => z.string().trim().min(1).max(max)
 
+const menuSort = z.number().int().min(0).max(999).optional()
+
 export const siteMenuLinkSchema = z.object({
   label: line(40),
   to: sitePath,
   audience: z.enum(SITE_MENU_AUDIENCES),
+  sort: menuSort,
 })
 export type SiteMenuLink = z.infer<typeof siteMenuLinkSchema>
+
+export const siteFooterLinkSchema = z.object({
+  label: line(40),
+  to: sitePath,
+  sort: menuSort,
+})
+export type SiteFooterLink = z.infer<typeof siteFooterLinkSchema>
+
+/** Lower numbers appear first. A missing number keeps the link in its current place. Ties keep that order. */
+export function sortMenuLinks<T extends { sort?: number }>(links: T[]): Array<T & { sort: number }> {
+  return links
+    .map((link, index) => ({ link, index, sort: typeof link.sort === 'number' && Number.isFinite(link.sort) ? link.sort : index + 1 }))
+    .sort((a, b) => a.sort - b.sort || a.index - b.index)
+    .map(({ link, sort }) => ({ ...link, sort }))
+}
 
 export const MENU_FONTS = ['condensed', 'serif', 'mono'] as const
 export type MenuFont = (typeof MENU_FONTS)[number]
@@ -72,7 +90,7 @@ export const siteContentSchema = z.object({
   footer: z.object({
     blurb: note(400),
     copyright: line(160),
-    links: z.array(z.object({ label: line(40), to: sitePath })).min(1).max(16),
+    links: z.array(siteFooterLinkSchema).min(1).max(16),
   }),
   home: z.object({
     hero: z.object({
@@ -380,9 +398,17 @@ function deepMerge(base: unknown, patch: unknown): unknown {
   return patch === undefined ? base : patch
 }
 
+export function normalizeSiteContent(content: SiteContent): SiteContent {
+  return {
+    ...content,
+    menu: sortMenuLinks(content.menu),
+    footer: { ...content.footer, links: sortMenuLinks(content.footer.links) },
+  }
+}
+
 export function mergeSiteContent(stored: unknown): SiteContent {
   const parsed = siteContentSchema.safeParse(deepMerge(DEFAULT_SITE_CONTENT, stored))
-  return parsed.success ? parsed.data : DEFAULT_SITE_CONTENT
+  return parsed.success ? normalizeSiteContent(parsed.data) : DEFAULT_SITE_CONTENT
 }
 
 export function fillSiteTokens(text: string, tokens: Record<string, string | number>): string {

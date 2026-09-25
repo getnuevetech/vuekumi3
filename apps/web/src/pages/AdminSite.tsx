@@ -6,6 +6,7 @@ import {
   HOME_ICON_KEYS,
   MENU_FONTS,
   SITE_MENU_AUDIENCES,
+  sortMenuLinks,
   type HomeIconKey,
   type SiteContent,
 } from '@vuekumi/shared'
@@ -24,6 +25,11 @@ const MENU_AUDIENCE_LABEL: Record<SiteMenuAudience, string> = {
   model: 'Models',
   agency: 'Agencies',
   admin: 'Admins',
+}
+
+function readSort(value: string, fallback: number) {
+  const raw = Number(value)
+  return Number.isFinite(raw) ? Math.max(0, Math.min(999, Math.round(raw))) : fallback
 }
 
 function TextField({ title, value, onChange, area = false }: { title: string; value: string; onChange: (value: string) => void; area?: boolean }) {
@@ -100,7 +106,7 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
 
       <section id="menu" className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">Header menu</h2>
-        <p className="mt-1 text-sm text-ink-soft">Label, path on this site, and who should see the link. Font and size apply to the top menu.</p>
+        <p className="mt-1 text-sm text-ink-soft">Label, path on this site, who should see the link, and the sort number. Lower numbers appear first. The same number keeps the current order. Font and size apply to the top menu.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <label className="block">
             <span className={label}>Menu font</span>
@@ -130,7 +136,31 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
         </div>
         <div className="mt-4 space-y-3">
           {content.menu.map((link, index) => (
-            <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_16rem_auto]">
+            <div key={`${link.label}|${link.to}|${link.audience}`} className="grid gap-2 md:grid-cols-[5rem_1fr_1fr_16rem_auto]">
+              <input
+                type="number"
+                min={0}
+                max={999}
+                value={link.sort ?? index + 1}
+                onChange={(e) => {
+                  const sort = readSort(e.target.value, index + 1)
+                  setContent((current) => {
+                    if (!current) return current
+                    const menu = current.menu.map((row, i) => i === index ? { ...row, sort } : row)
+                    return { ...current, menu }
+                  })
+                }}
+                onBlur={(e) => {
+                  const sort = readSort(e.currentTarget.value, index + 1)
+                  setContent((current) => {
+                    if (!current) return current
+                    const menu = current.menu.map((row, i) => i === index ? { ...row, sort } : row)
+                    return { ...current, menu: sortMenuLinks(menu) }
+                  })
+                }}
+                className={field}
+                aria-label={`Menu sort ${index + 1}`}
+              />
               <input value={link.label} onChange={(e) => {
                 const menu = content.menu.map((row, i) => i === index ? { ...row, label: e.target.value } : row)
                 set({ ...content, menu })
@@ -148,7 +178,10 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
               <button type="button" onClick={() => set({ ...content, menu: content.menu.filter((_, i) => i !== index) })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={() => set({ ...content, menu: [...content.menu, { label: 'New link', to: '/search', audience: 'always' }] })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Add menu link</button>
+          <button type="button" onClick={() => {
+            const sort = content.menu.reduce((max, link) => Math.max(max, link.sort ?? 0), 0) + 1
+            set({ ...content, menu: sortMenuLinks([...content.menu, { label: 'New link', to: '/search', audience: 'always', sort }]) })
+          }} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Add menu link</button>
         </div>
       </section>
 
@@ -184,7 +217,31 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
         )}
         <div className="mt-4 space-y-3">
           {content.footer.links.map((link, index) => (
-            <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+            <div key={`${link.label}|${link.to}`} className="grid gap-2 md:grid-cols-[5rem_1fr_1fr_auto]">
+              <input
+                type="number"
+                min={0}
+                max={999}
+                value={link.sort ?? index + 1}
+                aria-label={`Footer sort ${index + 1}`}
+                onChange={(e) => {
+                  const sort = readSort(e.target.value, index + 1)
+                  setContent((current) => {
+                    if (!current) return current
+                    const links = current.footer.links.map((row, i) => i === index ? { ...row, sort } : row)
+                    return { ...current, footer: { ...current.footer, links } }
+                  })
+                }}
+                onBlur={(e) => {
+                  const sort = readSort(e.currentTarget.value, index + 1)
+                  setContent((current) => {
+                    if (!current) return current
+                    const links = current.footer.links.map((row, i) => i === index ? { ...row, sort } : row)
+                    return { ...current, footer: { ...current.footer, links: sortMenuLinks(links) } }
+                  })
+                }}
+                className={field}
+              />
               <input value={link.label} aria-label={`Footer label ${index + 1}`} onChange={(e) => {
                 const links = content.footer.links.map((row, i) => i === index ? { ...row, label: e.target.value } : row)
                 set({ ...content, footer: { ...content.footer, links } })
@@ -196,7 +253,10 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
               <button type="button" onClick={() => set({ ...content, footer: { ...content.footer, links: content.footer.links.filter((_, i) => i !== index) } })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={() => set({ ...content, footer: { ...content.footer, links: [...content.footer.links, { label: 'New link', to: '/search' }] } })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Add footer link</button>
+          <button type="button" onClick={() => {
+            const sort = content.footer.links.reduce((max, link) => Math.max(max, link.sort ?? 0), 0) + 1
+            set({ ...content, footer: { ...content.footer, links: sortMenuLinks([...content.footer.links, { label: 'New link', to: '/search', sort }]) } })
+          }} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Add footer link</button>
         </div>
       </section>
 
