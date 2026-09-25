@@ -1,16 +1,16 @@
 /**
- * Idempotent insert for the category demo photographs (afr-030 … afr-038).
+ * Idempotent insert for the category demo photographs (afr-030 … afr-039).
  * Full seed wipes the database, so existing environments should run this instead.
  */
 import { PrismaClient } from '@prisma/client'
 import { photos } from './seed-data.js'
 
 const prisma = new PrismaClient()
-const peopleCategories = new Set(['People', 'Fashion'])
+const peopleCategories = new Set(['People', 'Model', 'Fashion'])
 const peopleTags = new Set(['portrait', 'model', 'woman', 'man', 'dance', 'maasai'])
 
 async function main() {
-  const demos = photos.filter((photo) => /^afr-03[0-8]$/.test(photo.id))
+  const demos = photos.filter((photo) => /^afr-03[0-9]$/.test(photo.id))
   for (const photo of demos) {
     const contributor = await prisma.contributorProfile.findUnique({
       where: { handle: photo.photographer },

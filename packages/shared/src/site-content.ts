@@ -230,7 +230,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       secondaryLabel: 'License & pricing',
       secondaryTo: '/pricing',
     },
-    marqueeFallback: ['People', 'Wildlife', 'Landscape', 'Urban', 'Culture', 'Food & Craft', 'Coast', 'Fashion', 'Architecture'],
+    marqueeFallback: ['People', 'Model', 'Wildlife', 'Landscape', 'Urban', 'Culture', 'Food & Craft', 'Coast', 'Fashion', 'Architecture'],
     messages: [
       {
         icon: 'frame',

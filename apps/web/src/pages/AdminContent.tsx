@@ -65,7 +65,7 @@ export function AdminContent() {
     <Shell>
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{category || 'Content'}</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{category ? `${category}.` : 'Library & rights.'}</h1>
-      <p className="mt-1 text-sm text-ink-soft">{total} photographs{category ? ` in ${category}` : ''}. Click a row for the rights panel.</p>
+      <p className="mt-1 text-sm text-ink-soft">{total} photograph{total === 1 ? '' : 's'}{category ? ` in ${category}` : ''}. Click a row for the rights panel.</p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <input

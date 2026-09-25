@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto, RepresentationDto } from '@vuekumi/shared';
-import { creatorPortalLabel, isNonCommercialCreator, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
+import { creatorPortalLabel, isNonCommercialCreator, PHOTO_CATEGORIES, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
 import { CountrySelect, PortalShell, StatCard, SectionHead, StatusPill, countryNameFromSuggestion, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
 import { api, ApiError, getActAsCreatorId, getActAsCreatorLabel, setActAsCreator, type GeoCountry } from '../api/client';
@@ -544,7 +544,7 @@ export function ContributorUpload() {
           <div className="grid gap-4 sm:grid-cols-2">
             <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
             <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm outline-none focus:border-terra">
-              {['People', 'Wildlife', 'Landscape', 'Urban', 'Culture', 'Food & Craft', 'Coast', 'Fashion', 'Architecture'].map((c) => (
+              {PHOTO_CATEGORIES.map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </select>

@@ -35,6 +35,7 @@ export interface Photo {
 export const categories = [
   'All',
   'People',
+  'Model',
   'Wildlife',
   'Landscape',
   'Urban',
@@ -94,6 +95,7 @@ export const photos: Photo[] = [
   { id: 'afr-036', src: `${P}/coast-fishing-boats.jpg`, title: 'Boats Before the Tide', category: 'Coast', country: 'Tanzania', photographer: 'lekan-adeyemi', license: 'free', price: 0, downloads: 920, views: 4700, likes: 330, tags: ['boats', 'coast', 'fishing', 'ocean'] },
   { id: 'afr-037', src: `${P}/fashion-ankara-studio.jpg`, title: 'Ankara Studio', category: 'Fashion', country: 'Nigeria', photographer: 'amara-okafor', license: 'premium', price: 18, downloads: 710, views: 3400, likes: 280, tags: ['fashion', 'ankara', 'model', 'studio'] },
   { id: 'afr-038', src: `${P}/architecture-courtyard.jpg`, title: 'Courtyard Shade', category: 'Architecture', country: 'Morocco', photographer: 'selam-tesfaye', license: 'free', price: 0, downloads: 690, views: 3200, likes: 190, tags: ['courtyard', 'architecture', 'shade', 'stone'] },
+  { id: 'afr-039', src: `${P}/model-studio-portrait.jpg`, title: 'Studio Pose, Lagos', category: 'Model', country: 'Nigeria', photographer: 'amara-okafor', license: 'premium', price: 16, downloads: 540, views: 2600, likes: 210, tags: ['model', 'portrait', 'studio', 'editorial'] },
 ]
 
 export const photoById = (id: string) => photos.find((p) => p.id === id)

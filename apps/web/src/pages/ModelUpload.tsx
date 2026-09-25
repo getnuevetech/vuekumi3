@@ -1,7 +1,7 @@
 import { useEffect, useState, type DragEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { CREATION_CLAIM_LABEL, type CreationClaim } from '@vuekumi/shared'
+import { CREATION_CLAIM_LABEL, PHOTO_CATEGORIES, type CreationClaim } from '@vuekumi/shared'
 import { CountrySelect, PortalShell, countryNameFromSuggestion } from '../components/shared'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -20,7 +20,7 @@ export function ModelUpload() {
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('People')
+  const [category, setCategory] = useState('Model')
   const [country, setCountry] = useState(user?.country ?? '')
   const [tags, setTags] = useState('')
   const [copyrightHolder, setCopyrightHolder] = useState(user?.name ?? '')
@@ -179,7 +179,7 @@ export function ModelUpload() {
         <div className="grid gap-4 sm:grid-cols-2">
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="rounded-xl border border-sand-soft px-4 py-2.5 text-sm outline-none focus:border-terra" />
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-sand-soft bg-white px-4 py-2.5 text-sm">
-            {['People', 'Fashion', 'Culture', 'Urban', 'Lifestyle'].map((c) => <option key={c}>{c}</option>)}
+            {PHOTO_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
           </select>
           <CountrySelect
             by="name"

@@ -228,7 +228,7 @@ async function main() {
     data: { agencyId: agency.id, userId: agencyManager.id, agencyRole: 'manager' },
   })
 
-  const peopleCategories = new Set(['People', 'Fashion'])
+  const peopleCategories = new Set(['People', 'Model', 'Fashion'])
   const peopleTags = new Set(['portrait', 'model', 'woman', 'man', 'dance', 'maasai'])
 
   for (const p of photos) {

@@ -3,6 +3,7 @@ import { permissionStateSchema } from './permissions.js'
 
 export const PHOTO_CATEGORIES = [
   'People',
+  'Model',
   'Wildlife',
   'Landscape',
   'Urban',

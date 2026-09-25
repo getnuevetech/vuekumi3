@@ -33,6 +33,7 @@ export interface Photo {
 export const categories = [
   'All',
   'People',
+  'Model',
   'Wildlife',
   'Landscape',
   'Urban',
