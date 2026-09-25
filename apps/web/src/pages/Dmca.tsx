@@ -3,9 +3,12 @@ import { Link, useParams } from 'react-router'
 import type { CreateDmcaNoticeInput, DmcaNoticeDto, DmcaPublicPageDto } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { SiteHeader } from '../components/shared'
+import { useSiteContent } from '../context/SiteContentContext'
 import { api, ApiError } from '../api/client'
 
 export default function DmcaPage() {
+  const { content } = useSiteContent()
+  const pageCopy = content.pages.dmca
   const { id } = useParams()
   const [page, setPage] = useState<DmcaPublicPageDto | null>(null)
   const [notice, setNotice] = useState<DmcaNoticeDto | null>(null)
@@ -47,12 +50,11 @@ export default function DmcaPage() {
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
       <div className="mx-auto max-w-2xl px-6 pb-24 pt-28">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Copyright</p>
-        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">DMCA notices.</h1>
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
+        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>
         <p className="mt-3 text-sm text-ink-soft">
-          This form is for copyright claims only. Likeness, privacy, and contract complaints use the
-          {' '}<Link to="/search" className="text-terra">photograph page report</Link>, not DMCA.
-          VueKumi sells usage permission, not ownership. Existing licence certificates are not silently voided.
+          {pageCopy.intro}{' '}
+          <Link to="/report-content" className="text-terra">Report content</Link>
         </p>
 
         {page && (

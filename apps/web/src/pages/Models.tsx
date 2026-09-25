@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import type { ModelPublicDto } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
+import { useSiteContent } from '../context/SiteContentContext'
 import { api } from '../api/client'
 
 export default function Models() {
@@ -9,6 +10,8 @@ export default function Models() {
   const [items, setItems] = useState<ModelPublicDto[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const { content } = useSiteContent()
+  const page = content.pages.models
   const q = params.get('q') ?? ''
 
   useEffect(() => {
@@ -36,14 +39,9 @@ export default function Models() {
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-28 md:px-8">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">People</p>
-        <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">Models.</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          Public portfolios assembled from photographs a model approved. Copyright stays with
-          the photographer. Vuekumi sells usage permission, not ownership. Models do not earn
-          from licences. Open a portfolio to book when the model is available — settlement is
-          off-platform and Vuekumi takes no booking commission.
-        </p>
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{page.kicker}</p>
+        <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">{page.title}</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{page.intro}</p>
 
         <form
           className="mt-8 max-w-md"

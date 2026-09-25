@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import type { CreatorKind, PhotographerDto } from '@vuekumi/shared'
 import { creatorKindLabel, creatorKindSchema } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
+import { useSiteContent } from '../context/SiteContentContext'
 import { api } from '../api/client'
 import { fmt } from '../data/content'
 
@@ -17,6 +18,8 @@ export default function Creators() {
   const [items, setItems] = useState<PhotographerDto[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const { content } = useSiteContent()
+  const page = content.pages.creators
   const q = params.get('q') ?? ''
   const kindParam = creatorKindSchema.safeParse(params.get('kind'))
   const kind: CreatorKind | '' = kindParam.success ? kindParam.data : ''
@@ -46,13 +49,9 @@ export default function Creators() {
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-28 md:px-8">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">The makers</p>
-        <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">Creators.</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          Photographers and photo influencers are different account types. Every
-          creator keeps copyright; Vuekumi sells usage permission, not ownership. Photographers
-          license commercial stock. Photo influencers are discovery creators, not commercial inventory.
-        </p>
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{page.kicker}</p>
+        <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">{page.title}</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{page.intro}</p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <div className="flex border border-sand bg-white p-1">

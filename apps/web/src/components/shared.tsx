@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { hasModelAccess, type PhotoDto } from '@vuekumi/shared'
+import { menuLinkVisible, type PhotoDto } from '@vuekumi/shared'
 import { fmt, type Photo } from '../data/content'
 import { api, ApiError, type GeoCountry } from '../api/client'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
+import { useSiteContent } from '../context/SiteContentContext'
 import { toast } from 'sonner'
 
 /* ---------------- Reveal on scroll ---------------- */
@@ -109,17 +110,29 @@ function CurrencySelect() {
 
 /* ---------------- Logo ---------------- */
 
-export function LogoMark({ dark = false, accent = '#bc773f' }: { dark?: boolean; accent?: string }) {
+export function LogoMark({ dark = false, accent = '#bc773f', condensed = false }: { dark?: boolean; accent?: string; condensed?: boolean }) {
+  const { content, logoUrl } = useSiteContent()
+  const name = content.brand.name
+  const mark = content.brand.accent
+  const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name
   return (
     <Link to="/" className="flex items-center gap-2.5">
-      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-        <circle cx="13" cy="13" r="12" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
-        <circle cx="13" cy="13" r="6.5" stroke={accent} strokeWidth="1.4" />
-        <circle cx="13" cy="13" r="2" fill={accent} />
-        <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
-      </svg>
-      <span className={`font-serif-display text-xl tracking-tight ${dark ? 'text-paper' : 'text-ink'}`}>
-        Vuekumi
+      {logoUrl ? (
+        <img src={logoUrl} alt="" className="h-7 w-7 object-contain" />
+      ) : (
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <circle cx="13" cy="13" r="12" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
+          <circle cx="13" cy="13" r="6.5" stroke={accent} strokeWidth="1.4" />
+          <circle cx="13" cy="13" r="2" fill={accent} />
+          <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
+        </svg>
+      )}
+      <span className={condensed
+        ? 'font-condensed text-lg font-medium uppercase tracking-[0.24em] text-paper'
+        : `font-serif-display text-xl tracking-tight ${dark ? 'text-paper' : 'text-ink'}`}
+      >
+        {highlight}
+        {mark && name.endsWith(mark) ? <span className={condensed ? '' : 'text-terra'}>{mark}</span> : null}
       </span>
     </Link>
   )
@@ -137,6 +150,7 @@ export function SearchForm({
   compact?: boolean
 }) {
   const reactId = useId()
+  const { content } = useSiteContent()
   const [q, setQ] = useState(defaultQuery)
   const navigate = useNavigate()
   const inputId = dark ? `noir-search-${reactId}` : `site-search-${reactId}`
@@ -158,7 +172,7 @@ export function SearchForm({
         id={inputId}
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search Africa…"
+        placeholder={content.searchPlaceholder}
         className={`w-full px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] outline-none ${
           dark
             ? 'border border-paper/30 bg-transparent text-paper placeholder:text-paper-soft/70 focus:border-terra'
@@ -173,6 +187,8 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const { user, logout } = useAuth()
+  const { content } = useSiteContent()
+  const links = content.menu.filter((link) => menuLinkVisible(link, user))
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -189,24 +205,9 @@ export function SiteHeader() {
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
           <LogoMark />
           <nav className="hidden items-center gap-7 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:flex">
-            <Link to="/search" className="link-slide hover:text-terra">Library</Link>
-            <Link to="/creators" className="link-slide hover:text-terra">Creators</Link>
-            <Link to="/models" className="link-slide hover:text-terra">Models</Link>
-            <Link to="/pricing" className="link-slide hover:text-terra">License & Pricing</Link>
-            {user && <Link to="/bookings" className="link-slide hover:text-terra">Bookings</Link>}
-            {user && user.accountType !== 'model' && <Link to="/campaigns" className="link-slide hover:text-terra">Campaigns</Link>}
-            {user && user.accountType !== 'model' && <Link to="/favorites" className="link-slide hover:text-terra">Favorites</Link>}
-            {user && user.accountType !== 'model' && <Link to="/following" className="link-slide hover:text-terra">Following</Link>}
-            {user && user.accountType !== 'model' && <Link to="/collections" className="link-slide hover:text-terra">Collections</Link>}
-            {user && user.accountType !== 'model' && <Link to="/licenses" className="link-slide hover:text-terra">Licences</Link>}
-            {(user?.accountType === 'agency' || user?.agencyId) && (
-              <Link to="/agency" className="link-slide hover:text-terra">Agency</Link>
-            )}
-            {user && hasModelAccess(user) && (
-              <Link to="/model" className="link-slide hover:text-terra">Model</Link>
-            )}
-            <Link to="/contributor" className="link-slide hover:text-terra">Contributor</Link>
-            <Link to="/admin" className="link-slide hover:text-terra">Admin</Link>
+            {links.map((link) => (
+              <Link key={`${link.to}-${link.label}`} to={link.to} className="link-slide hover:text-terra">{link.label}</Link>
+            ))}
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
             <SearchForm compact defaultQuery="" />
@@ -224,7 +225,7 @@ export function SiteHeader() {
                   onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
                   className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
                 >
-                  Log out
+                  {content.actions.logout}
                 </button>
               </>
             ) : (
@@ -233,13 +234,13 @@ export function SiteHeader() {
                   to="/login"
                   className="font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra"
                 >
-                  Log in
+                  {content.actions.login}
                 </Link>
                 <Link
-                  to="/login"
+                  to="/login?redirect=/contributor/upload&signup=photographer"
                   className="bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra"
                 >
-                  Become a contributor
+                  {content.actions.sell}
                 </Link>
               </>
             )}
@@ -260,25 +261,10 @@ export function SiteHeader() {
         }`}
       >
         <div className="flex h-full flex-col justify-center gap-1 px-8">
-          {[
-            { label: 'Library', href: '/search' },
-            { label: 'Creators', href: '/creators' },
-            { label: 'Models', href: '/models' },
-            { label: 'License & Pricing', href: '/pricing' },
-            ...(user ? [{ label: 'Bookings', href: '/bookings' }] : []),
-            ...(user && user.accountType !== 'model' ? [{ label: 'Campaigns', href: '/campaigns' }] : []),
-            ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', href: '/favorites' }] : []),
-            ...(user && user.accountType !== 'model' ? [{ label: 'Following', href: '/following' }] : []),
-            ...(user && user.accountType !== 'model' ? [{ label: 'Collections', href: '/collections' }] : []),
-            ...(user ? [{ label: 'Account', href: '/account' }] : []),
-            ...(user && hasModelAccess(user) ? [{ label: 'Model portal', href: '/model' }] : []),
-            { label: 'Contributor Portal', href: '/contributor' },
-            { label: 'Admin Portal', href: '/admin' },
-            { label: 'Log in', href: '/login' },
-          ].map((item, i) => (
-            <a
-              key={item.label}
-              href={item.href}
+          {links.map((item, i) => (
+            <Link
+              key={`${item.to}-${item.label}`}
+              to={item.to}
               onClick={() => setOpen(false)}
               className="group flex items-baseline gap-4 border-b border-sand-soft py-4"
             >
@@ -286,7 +272,7 @@ export function SiteHeader() {
               <span className="font-serif-display text-3xl tracking-tight text-ink transition-colors group-hover:text-terra">
                 {item.label}
               </span>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

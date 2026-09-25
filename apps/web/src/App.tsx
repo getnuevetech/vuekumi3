@@ -37,6 +37,7 @@ import { AdminCountries, AdminCountryActivation, AdminRates } from './pages/Admi
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
 import AdminHomepage from './pages/AdminHomepage'
+import AdminSite from './pages/AdminSite'
 import AdminPlans from './pages/AdminPlans'
 import AdminBookings from './pages/AdminBookings'
 import AdminCampaigns from './pages/AdminCampaigns'
@@ -160,6 +161,7 @@ export default function App() {
         <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']} capability="accounts.admins.list"><AdminAdmins /></ProtectedRoute>} />
         <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']} capability="content.list"><AdminContent /></ProtectedRoute>} />
         <Route path="/admin/homepage" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminHomepage /></ProtectedRoute>} />
+        <Route path="/admin/site" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminSite /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']} capability="moderation.list"><AdminModeration /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute allowed={['admin']} capability="reports.list"><AdminReports /></ProtectedRoute>} />
         <Route path="/admin/dmca" element={<ProtectedRoute allowed={['admin']} capability="dmca.manage"><AdminDmca /></ProtectedRoute>} />

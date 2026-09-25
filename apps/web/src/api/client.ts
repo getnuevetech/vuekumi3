@@ -195,6 +195,13 @@ export const api = {
 
   home: () => request<HomePageDto>('/api/public/home'),
 
+  site: () => request<import('@vuekumi/shared').SitePublicDto>('/api/public/site'),
+
+  adminSite: () => request<import('@vuekumi/shared').SitePublicDto>('/api/admin/site'),
+
+  saveSite: (body: import('@vuekumi/shared').SiteContent) =>
+    request<import('@vuekumi/shared').SitePublicDto>('/api/admin/site', { method: 'PUT', body: JSON.stringify(body) }),
+
   publicPlans: () => request<import('@vuekumi/shared').PublicPlansDto>('/api/plans'),
 
   adminPlans: () => request<import('@vuekumi/shared').PublicPlansDto>('/api/admin/plans'),

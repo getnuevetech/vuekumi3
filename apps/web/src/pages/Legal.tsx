@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import type { LegalOverlayDto, LegalStandardDto } from '@vuekumi/shared'
 import { CountrySelect, SiteHeader } from '../components/shared'
+import { useSiteContent } from '../context/SiteContentContext'
 import { api, type GeoCountry } from '../api/client'
 
 export default function LegalPage() {
+  const { content } = useSiteContent()
+  const pageCopy = content.pages.legal
   const [params] = useSearchParams()
   const [page, setPage] = useState<LegalStandardDto | null>(null)
   const [code, setCode] = useState((params.get('country') ?? 'NG').toUpperCase())
@@ -30,8 +33,8 @@ export default function LegalPage() {
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
       <div className="mx-auto max-w-2xl px-6 pb-24 pt-28">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Product engine</p>
-        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Global Rights Standard.</h1>
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
+        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>
         <p className="mt-3 text-sm text-ink-soft">
           {page?.contractingNote}
         </p>

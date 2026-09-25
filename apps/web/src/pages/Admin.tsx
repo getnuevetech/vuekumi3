@@ -81,6 +81,7 @@ export const adminLinks: PortalLink[] = [
     children: [
       { to: '/admin/content', label: 'Content', icon: icons.grid },
       { to: '/admin/homepage', label: 'Homepage', icon: icons.dash },
+      { to: '/admin/site', label: 'Site content', icon: icons.dash },
       { to: '/admin/moderation', label: 'Moderation', icon: icons.shield },
       { to: '/admin/reports', label: 'Reports', icon: icons.shield },
       { to: '/admin/dmca', label: 'DMCA', icon: icons.rights },

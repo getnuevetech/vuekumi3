@@ -10,6 +10,7 @@ import {
 } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { SiteHeader } from '../components/shared'
+import { useSiteContent } from '../context/SiteContentContext'
 import { api, ApiError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
@@ -29,6 +30,8 @@ function initialPhotoLink(params: URLSearchParams): string {
 
 export default function ReportContentPage() {
   const { user } = useAuth()
+  const { content } = useSiteContent()
+  const pageCopy = content.pages.report
   const [params] = useSearchParams()
 
   const [photoLink, setPhotoLink] = useState(() => initialPhotoLink(params))
@@ -104,14 +107,13 @@ export default function ReportContentPage() {
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
       <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Trust</p>
-        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Report content.</h1>
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
+        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-          Paste the photograph page link, then choose a category. Guests welcome.
-          Statutory copyright takedown is a separate{' '}
+          {pageCopy.intro}{' '}
           <Link to="/dmca" className="text-terra">DMCA notice</Link>
-          {' '}— not for likeness, privacy, or safety. Invited models and photographers review usage on{' '}
-          <Link to="/rights" className="text-terra">Your rights</Link>.
+          {' '}·{' '}
+          <Link to="/rights" className="text-terra">Your rights</Link>
         </p>
 
         {done ? (

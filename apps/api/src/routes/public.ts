@@ -5,6 +5,7 @@ import { getSettingSafe } from '../lib/settings.js'
 import { getContributorShare } from '../lib/payments-config.js'
 import { listBuyerPlans, loadHomePricingCopy } from '../lib/buyer-plans.js'
 import { loadHomePage } from '../lib/home-queries.js'
+import { loadSitePublic } from '../lib/site-content.js'
 
 export async function publicRoutes(app: FastifyInstance) {
   app.get('/public/config', async () => {
@@ -21,6 +22,8 @@ export async function publicRoutes(app: FastifyInstance) {
   })
 
   app.get('/public/home', async () => loadHomePage())
+
+  app.get('/public/site', async () => loadSitePublic())
 
   app.get('/plans', async () => {
     const [items, home] = await Promise.all([

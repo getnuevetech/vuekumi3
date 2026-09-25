@@ -23,6 +23,7 @@ import { licenseRoutes } from './routes/licenses.js'
 import { contributorRoutes } from './routes/contributor.js'
 import { adminContentRoutes } from './routes/admin-content.js'
 import { adminHomepageRoutes } from './routes/admin-homepage.js'
+import { adminSiteRoutes } from './routes/admin-site.js'
 import { adminPlanRoutes } from './routes/admin-plans.js'
 import { mediaRoutes } from './routes/media.js'
 import { paymentRoutes } from './routes/payments.js'
@@ -115,6 +116,7 @@ export async function buildApp() {
     await api.register(contributorRoutes)
     await api.register(adminContentRoutes)
     await api.register(adminHomepageRoutes)
+    await api.register(adminSiteRoutes)
     await api.register(adminPlanRoutes)
     await api.register(mediaRoutes)
     await api.register(paymentRoutes)

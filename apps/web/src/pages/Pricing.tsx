@@ -1,38 +1,24 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { paidLicenceSplit, isCreatorAccount, type BuyerPlanDto } from '@vuekumi/shared'
+import { fillSiteTokens, paidLicenceSplit, isCreatorAccount, type BuyerPlanDto } from '@vuekumi/shared'
 import { Reveal, SectionHead, SiteHeader, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
+import { useSiteContent } from '../context/SiteContentContext'
 import { api, ApiError } from '../api/client'
 import { toast } from 'sonner'
-
-const faqs = [
-  {
-    q: 'What is the standard license?',
-    a: 'Use images in websites, social, presentations and editorial — free for commercial and personal work. Resale of the unmodified image itself is not allowed.',
-  },
-  {
-    q: 'What does Vuekumi+ include?',
-    a: 'Plus is $19 for 30 days of unlimited royalty-free downloads from the free collection. Premium, extended, editorial, rights-managed and exclusive licences are still billed per image. Photographers keep 50% of those paid sales. Plus does not pay contributors for free-collection downloads.',
-  },
-  {
-    q: 'How do contributors earn?',
-    a: 'Paid licences (commercial, extended, editorial, rights-managed and exclusive) split 50/50 with the photographer after payment clears. Royalty-free grants from the free collection are $0 and do not credit the earnings ledger. Payouts are requested from the contributor portal once the available balance is at least $10, over mobile money or bank transfer.',
-  },
-  {
-    q: 'Can I use images for client work?',
-    a: 'Yes — both the standard and Vuekumi+ royalty-free grants cover client projects. Only merchandise/resale use requires an Extended license.',
-  },
-  {
-    q: 'Who owns the copyright?',
-    a: 'The photographer, always. Vuekumi licenses usage rights; copyright stays with the contributor.',
-  },
-]
 
 export default function Pricing() {
   const { format, quote } = useCurrency()
   const { user } = useAuth()
+  const { content, facts } = useSiteContent()
+  const page = content.pages.pricing
+  const tokens = {
+    photographerPct: facts.photographerPct,
+    platformPct: 100 - facts.photographerPct,
+    share: `${facts.photographerPct}%`,
+    minimum: facts.payoutMinimumUsd,
+  }
   const navigate = useNavigate()
   const [plusBusy, setPlusBusy] = useState<string | null>(null)
   const [share, setShare] = useState(0.5)
@@ -93,16 +79,15 @@ export default function Pricing() {
       <div className="mx-auto max-w-[1400px] px-6 md:px-12">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="font-mono-tech text-[10px] uppercase tracking-[0.3em] text-terra">Licence &amp; pricing</p>
+            <p className="font-mono-tech text-[10px] uppercase tracking-[0.3em] text-terra">{page.kicker}</p>
             <h1 className="font-serif-display mt-4 text-5xl font-light leading-[1.05] tracking-tight md:text-6xl">
-              Simple plans,
+              {page.title}
               <br />
-              <em className="text-terra">fair for everyone.</em>
+              <em className="text-terra">{page.titleEmphasis}</em>
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink-soft">
-              Free for discovery, paid licences for creators. Every paid sale splits {split.photographerPct}/{split.platformPct}
-              {' '}between the photographer and Vuekumi. Vuekumi+ lifts your daily royalty-free quota — it is not a
-              contributor download pool. Prices shown in {quote.currency}{quote.countryName ? ` · ${quote.countryName}` : ''}
+              {fillSiteTokens(page.intro, tokens)}
+              {' '}Prices shown in {quote.currency}{quote.countryName ? ` · ${quote.countryName}` : ''}
               {quote.source === 'default' ? ' (USD default)' : ''}.
             </p>
           </div>
@@ -165,19 +150,12 @@ export default function Pricing() {
 
         <Reveal>
           <div className="mt-20">
-            <SectionHead kicker="Licence types" title="Permission, not ownership." />
+            <SectionHead kicker={page.licenceKicker} title={page.licenceTitle} />
             <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                { name: 'Royalty-Free', note: 'Free collection. $0 grant. 50 downloads / UTC day on Free; unlimited on Vuekumi+. Does not pay the photographer.' },
-                { name: 'Commercial', note: `Premium collection at the photo price. Full resolution. ${split.photographerPct}% to the photographer.` },
-                { name: 'Extended Commercial', note: `$49. Merchandise, unlimited print, broadcast. ${split.photographerPct}% to the photographer.` },
-                { name: 'Editorial', note: 'News and commentary only. Model release not required. Paid sale, same split.' },
-                { name: 'Rights-Managed', note: 'Quoted by territory, duration and channels. Not a fixed price. Paid sale, same split.' },
-                { name: 'Exclusive', note: 'Contributor opt-in per photo. Sale delists the image. Paid sale, same split.' },
-              ].map((item) => (
+              {page.licences.map((item) => (
                 <div key={item.name} className="border border-sand-soft bg-white p-5">
                   <h3 className="font-serif-display text-xl font-light">{item.name}</h3>
-                  <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{item.note}</p>
+                  <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{fillSiteTokens(item.note, tokens)}</p>
                 </div>
               ))}
             </div>
@@ -188,14 +166,12 @@ export default function Pricing() {
           <div className="mt-24 rounded-3xl bg-cream p-8 md:p-12">
             <div className="grid gap-10 md:grid-cols-2 md:items-center">
               <div>
-                <p className="font-mono-tech text-[10px] uppercase tracking-[0.3em] text-terra">For contributors</p>
+                <p className="font-mono-tech text-[10px] uppercase tracking-[0.3em] text-terra">{page.contributorKicker}</p>
                 <h2 className="font-serif-display mt-4 text-4xl font-light leading-tight">
-                  Where the money goes.
+                  {page.contributorTitle}
                 </h2>
                 <p className="mt-4 text-sm leading-relaxed text-ink-soft">
-                  Paid licences split {split.photographerPct}/{split.platformPct} after payment clears — the same split
-                  written to the earnings ledger. Royalty-free downloads from the free collection are a $0 grant.
-                  Vuekumi+ only raises a buyer&apos;s daily quota; it does not fund a per-download pool.
+                  {fillSiteTokens(page.contributorBody, tokens)}
                 </p>
               </div>
               <div className="space-y-4">
@@ -228,18 +204,12 @@ export default function Pricing() {
         <div className="mt-24">
           <SectionHead kicker="Questions" title="Good to know." />
           <div className="grid gap-px overflow-hidden rounded-2xl border border-sand-soft bg-sand-soft md:grid-cols-2">
-            {faqs.map((f) => {
-              const plusPlan = (buyerPlans ?? []).find((plan) => plan.slug === 'plus')
-              const answer = f.q === 'What does Vuekumi+ include?' && plusPlan
-                ? `${plusPlan.name} is ${format(plusPlan.priceUsd)} for ${plusPlan.periodDays} days of royalty-free downloads from the free collection. Premium, extended, editorial, rights-managed and exclusive licences are still billed per image. Photographers keep 50% of those paid sales. ${plusPlan.name} does not pay contributors for free-collection downloads.`
-                : f.a
-              return (
+            {page.faqs.map((f) => (
               <div key={f.q} className="bg-white p-7">
                 <h3 className="font-serif-display text-lg font-light">{f.q}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{answer}</p>
+                <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{fillSiteTokens(f.a, tokens)}</p>
               </div>
-              )
-            })}
+            ))}
           </div>
         </div>
       </div>

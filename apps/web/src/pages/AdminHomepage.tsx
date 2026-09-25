@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import {
   HOME_FEATURED_SLOT_KEYS,
@@ -110,7 +111,7 @@ export default function AdminHomepage() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Homepage</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Featured slots.</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-        Featuring a photograph is curation, not a licence and not AI-training consent.
+        Words, the menu, and the logo are edited under <Link to="/admin/site" className="text-terra">Site content</Link>. Featuring a photograph is curation, not a licence and not AI-training consent.
         Private, portfolio, and agency-protected inventory cannot appear on the public homepage.
         Featured images scroll sideways above the three homepage messages. Category banners sit below those messages and link to the category you choose.
         Empty positions fall back to live ranking so the page never goes blank.

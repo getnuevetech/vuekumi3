@@ -1,15 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import type { HomeCategoryBannerDto, HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto } from '@vuekumi/shared';
-import { hasModelAccess, isCreatorAccount, isPhotographerAccount, creatorPortalLabel } from '@vuekumi/shared';
-import { Reveal, SearchForm } from '../components/shared';
+import type { HomeCategoryBannerDto, HomeIconKey, HomePageDto, ModelPublicDto, PhotoDto, PhotographerDto, PublicStatsDto, SiteFacts } from '@vuekumi/shared';
+import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible } from '@vuekumi/shared';
+import { LogoMark, Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { useSiteContent } from '../context/SiteContentContext';
 import { api } from '../api/client';
 import { fmt } from '../lib/format';
 
 const SELL_HREF = '/login?redirect=/contributor/upload&signup=photographer';
-const MARQUEE_FALLBACK = ['People', 'Wildlife', 'Landscape', 'Urban', 'Culture', 'Food & Craft', 'Coast', 'Fashion', 'Architecture'];
+
+function siteTokens(facts: SiteFacts, extra: Record<string, string | number> = {}) {
+  return {
+    share: `${facts.photographerPct}%`,
+    minimum: facts.payoutMinimumUsd,
+    photographerPct: facts.photographerPct,
+    platformPct: 100 - facts.photographerPct,
+    ...extra,
+  };
+}
 
 function contributorPortalHref(accountType?: string) {
   return isCreatorAccount(accountType) ? '/contributor' : SELL_HREF;
@@ -21,28 +31,14 @@ function NoirHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { content } = useSiteContent();
+  const links = content.menu.filter((link) => menuLinkVisible(link, user));
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  const links = [
-    { label: 'Library', to: '/search' },
-    { label: 'Creators', to: '/creators' },
-    { label: 'Models', to: '/models' },
-    { label: 'License & Pricing', to: '/pricing' },
-    ...(user && user.accountType !== 'model' ? [{ label: 'Favorites', to: '/favorites' }] : []),
-    ...(user && user.accountType !== 'model' ? [{ label: 'Following', to: '/following' }] : []),
-    ...(user && user.accountType !== 'model' ? [{ label: 'Collections', to: '/collections' }] : []),
-    ...(user ? [{ label: 'Account', to: '/account' }] : []),
-    ...(user && user.accountType !== 'model' ? [{ label: 'Licences', to: '/licenses' }] : []),
-    ...((user?.accountType === 'agency' || user?.agencyId) ? [{ label: 'Agency', to: '/agency' }] : []),
-    ...(user && hasModelAccess(user) ? [{ label: 'Model', to: '/model' }] : []),
-    ...((isCreatorAccount(user?.accountType)) ? [{ label: creatorPortalLabel(user?.accountType), to: '/contributor' }] : []),
-    ...(user?.accountType === 'admin' ? [{ label: 'Admin', to: '/admin' }] : []),
-  ];
 
   return (
     <>
@@ -52,17 +48,7 @@ function NoirHeader() {
         }`}
       >
         <div className="flex items-center justify-between px-5 py-4 md:px-10">
-          <Link to="/" className="flex items-center gap-2.5">
-            <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-              <circle cx="13" cy="13" r="12" stroke="#faf6f3" strokeWidth="1.4" />
-              <circle cx="13" cy="13" r="6.5" stroke="#bc773f" strokeWidth="1.4" />
-              <circle cx="13" cy="13" r="2" fill="#bc773f" />
-              <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke="#faf6f3" strokeWidth="1.4" />
-            </svg>
-            <span className="font-condensed text-lg font-medium uppercase tracking-[0.24em] text-paper">
-              Vuekumi
-            </span>
-          </Link>
+          <LogoMark dark condensed accent="#bc773f" />
           <nav className="hidden items-center gap-8 lg:flex">
             {links.map((l) => (
               <Link
@@ -89,7 +75,7 @@ function NoirHeader() {
                   onClick={() => { void logout().then(() => { window.location.href = '/login' }) }}
                   className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
                 >
-                  Log out
+                  {content.actions.logout}
                 </button>
               </>
             ) : (
@@ -98,13 +84,13 @@ function NoirHeader() {
                   to="/login"
                   className="font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra"
                 >
-                  Log in
+                  {content.actions.login}
                 </Link>
                 <Link
                   to={contributorPortalHref()}
                   className="border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
                 >
-                  Sell your photos
+                  {content.actions.sell}
                 </Link>
               </>
             )}
@@ -132,7 +118,7 @@ function NoirHeader() {
             </Link>
           ))}
           <Link to={contributorPortalHref(user?.accountType)} onClick={() => setOpen(false)} className="mt-4 border border-terra px-8 py-3 font-condensed text-sm uppercase tracking-[0.25em] text-terra">
-            Sell your photos
+            {content.actions.sell}
           </Link>
         </div>
       )}
@@ -145,27 +131,19 @@ function NoirHeader() {
 function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsDto | null }) {
   const [active, setActive] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { content, facts } = useSiteContent();
   const photosLive = stats?.photosLive ?? 0;
   const countries = stats?.countries ?? 0;
-  const copy = [
-    {
-      script: 'the real',
-      title: 'AFRICA',
-      sub: 'Unfiltered light, colour and story — shot by the people who live it.',
-    },
-    {
-      script: 'in every',
-      title: 'FRAME',
-      sub: photosLive > 0
-        ? `${photosLive.toLocaleString('en-US')} authentic images from ${countries} ${countries === 1 ? 'country' : 'countries'}. Free and premium.`
-        : 'Authentic images from across the continent. Free and premium.',
-    },
-    {
-      script: 'your next',
-      title: 'STORY',
-      sub: 'License instantly. Photographers keep copyright — and 50% of paid licences.',
-    },
-  ];
+  const copy = content.home.hero.slides.map((item) => ({
+    ...item,
+    sub: item.sub.includes('{photos}') && photosLive === 0
+      ? 'Authentic images from across the continent. Free and premium.'
+      : fillSiteTokens(item.sub, siteTokens(facts, {
+        photos: photosLive.toLocaleString('en-US'),
+        countries,
+        countryWord: countries === 1 ? 'country' : 'countries',
+      })),
+  }));
   const slides = copy.map((item, i) => {
     const photo = photos[i] ?? photos[0];
     return {
@@ -209,17 +187,26 @@ function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsD
         </h1>
         <p className="mt-5 max-w-md text-sm leading-relaxed text-paper-soft">{slide.sub}</p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <a
-            href="#feed"
-            className="bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
-          >
-            Explore the library
-          </a>
+          {content.home.hero.primaryTo.startsWith('#') ? (
+            <a
+              href={content.home.hero.primaryTo}
+              className="bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
+            >
+              {content.home.hero.primaryLabel}
+            </a>
+          ) : (
+            <Link
+              to={content.home.hero.primaryTo}
+              className="bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
+            >
+              {content.home.hero.primaryLabel}
+            </Link>
+          )}
           <Link
-            to="/pricing"
+            to={content.home.hero.secondaryTo}
             className="border border-paper/50 px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-paper transition-colors hover:border-terra hover:text-terra"
           >
-            License & pricing
+            {content.home.hero.secondaryLabel}
           </Link>
         </div>
       </div>
@@ -263,7 +250,8 @@ function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsD
 /* ---------------- marquee ticker ---------------- */
 
 function Marquee({ categories }: { categories: string[] }) {
-  const items = categories.length ? categories : MARQUEE_FALLBACK;
+  const { content } = useSiteContent();
+  const items = categories.length ? categories : content.home.marqueeFallback;
   const row = [...items, ...items];
   return (
     <div className="overflow-hidden border-y border-noir bg-noir py-4">
@@ -286,40 +274,59 @@ function Marquee({ categories }: { categories: string[] }) {
 
 /* ---------------- icon features row ---------------- */
 
+function HomeIcon({ name }: { name: HomeIconKey }) {
+  const common = { viewBox: '0 0 24 24', className: 'h-8 w-8', fill: 'none', stroke: 'currentColor', strokeWidth: 1.4 } as const;
+  if (name === 'shield') {
+    return (
+      <svg {...common}>
+        <path d="M12 3l8 3v6c0 4.5-3.2 7.7-8 9-4.8-1.3-8-4.5-8-9V6l8-3z" strokeLinejoin="round" />
+        <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (name === 'plus') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M8 12h8M12 8v8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === 'camera') {
+    return (
+      <svg {...common}>
+        <path d="M4 8h3l2-2h6l2 2h3v10H4V8z" strokeLinejoin="round" />
+        <circle cx="12" cy="13" r="3" />
+      </svg>
+    );
+  }
+  if (name === 'globe') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3c2.5 2.8 3.8 5.8 3.8 9S14.5 18.2 12 21c-2.5-2.8-3.8-5.8-3.8-9S9.5 5.8 12 3z" />
+      </svg>
+    );
+  }
+  if (name === 'star') {
+    return (
+      <svg {...common}>
+        <path d="M12 3.5l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16l-4.8 2.4.9-5.4L4.2 9.2l5.4-.8L12 3.5z" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.8" />
+      <path d="M21 15l-5-5L5 21" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconRow() {
-  const feats = [
-    {
-      title: 'Staff featured',
-      text: 'Homepage highlights are staff-pinned live stock; empty slots follow ranking. Featuring is not a licence — commercial sales still need cleared rights.',
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8.5" cy="8.5" r="1.8" />
-          <path d="M21 15l-5-5L5 21" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Copyright protected',
-      text: 'Photographers keep 100% of their copyright. Licences are issued per image, on record.',
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <path d="M12 3l8 3v6c0 4.5-3.2 7.7-8 9-4.8-1.3-8-4.5-8-9V6l8-3z" strokeLinejoin="round" />
-          <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Instant licence',
-      text: 'Free downloads with attribution, or premium and extended licences bought in one click.',
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M8 12h8M12 8v8" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-  ];
+  const { content } = useSiteContent();
+  const feats = content.home.messages;
   return (
     <section className="bg-noir px-6 py-20 md:px-10 md:py-28">
       <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-3 md:gap-8">
@@ -327,7 +334,7 @@ function IconRow() {
           <Reveal key={f.title} delay={i * 90}>
             <div className="text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-noir bg-noir-soft text-terra">
-                {f.icon}
+                <HomeIcon name={f.icon} />
               </div>
               <h3 className="font-condensed mt-5 text-lg font-medium uppercase tracking-[0.25em] text-paper">{f.title}</h3>
               <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-noir-soft">{f.text}</p>
@@ -387,15 +394,16 @@ function FeaturedStrip({ photos }: { photos: PhotoDto[] }) {
 }
 
 function CategoryBanners({ banners }: { banners: HomeCategoryBannerDto[] }) {
+  const { content } = useSiteContent();
   const [node, setNode] = useState<HTMLDivElement | null>(null)
   useBidirectionalWheel(node)
   if (banners.length === 0) return null
   return (
     <section className="bg-noir pb-8" aria-label="Category banners">
       <div className="px-5 pb-4 pt-10 md:px-10">
-        <p className="font-script text-3xl text-terra">browse by</p>
+        <p className="font-script text-3xl text-terra">{content.home.categories.kicker}</p>
         <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-          Categories
+          {content.home.categories.title}
         </h2>
       </div>
       <div
@@ -424,17 +432,18 @@ function CategoryBanners({ banners }: { banners: HomeCategoryBannerDto[] }) {
 
 function CtaBand() {
   const { user } = useAuth();
+  const { content } = useSiteContent();
   return (
     <section className="border-y border-noir bg-noir-soft">
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-14 md:flex-row md:items-center md:px-10">
         <h2 className="font-condensed max-w-2xl text-2xl font-light uppercase leading-snug tracking-[0.12em] text-paper md:text-3xl">
-          Your work deserves an audience of the whole world — <span className="text-terra">and a fair cut of it.</span>
+          {content.home.cta.text}<span className="text-terra">{content.home.cta.emphasis}</span>
         </h2>
         <Link
           to={contributorPortalHref(user?.accountType)}
           className="shrink-0 bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
         >
-          {isPhotographerAccount(user?.accountType) ? 'Open photographer portal' : user?.accountType === 'photo_influencer' ? 'Open photo influencer portal' : isCreatorAccount(user?.accountType) ? 'Open contributor portal' : 'Become a photographer'}
+          {isPhotographerAccount(user?.accountType) ? 'Open photographer portal' : user?.accountType === 'photo_influencer' ? 'Open photo influencer portal' : isCreatorAccount(user?.accountType) ? 'Open contributor portal' : content.actions.sell}
         </Link>
       </div>
     </section>
@@ -470,6 +479,7 @@ function FeedCard({ photo }: { photo: PhotoDto }) {
 }
 
 function InfiniteFeed() {
+  const { content } = useSiteContent();
   const [items, setItems] = useState<PhotoDto[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -519,13 +529,13 @@ function InfiniteFeed() {
     <section id="feed" className="bg-noir">
       <div className="flex items-end justify-between px-5 pb-6 pt-16 md:px-10">
         <div>
-          <p className="font-script text-3xl text-terra">the library</p>
+          <p className="font-script text-3xl text-terra">{content.home.feed.kicker}</p>
           <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-6xl">
-            Endless<span className="text-outline-paper"> Scroll</span>
+            {content.home.feed.title}<span className="text-outline-paper">{content.home.feed.titleAccent}</span>
           </h2>
         </div>
         <Link to="/search" className="hidden font-mono-tech text-[10px] uppercase tracking-[0.2em] text-noir-soft hover:text-terra md:block">
-          {total ? `${fmt(total)} images` : 'Browse'} — search the catalog →
+          {total ? `${fmt(total)} images` : 'Browse'} — {content.home.feed.browseLabel}
         </Link>
       </div>
 
@@ -542,12 +552,12 @@ function InfiniteFeed() {
             <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.15s' }} />
             <span className="feed-pulse h-1.5 w-1.5 rounded-full bg-terra" style={{ animationDelay: '0.3s' }} />
             <span className="ml-2 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-              Loading more from the continent
+              {content.home.feed.loading}
             </span>
           </>
         ) : (
           <span className="font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-            That is the live library — {fmt(total)} photographs
+            {content.home.feed.end} — {fmt(total)} photographs
           </span>
         )}
       </div>
@@ -559,6 +569,8 @@ function InfiniteFeed() {
 
 function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsDto | null }) {
   const { user } = useAuth();
+  const { content, facts } = useSiteContent();
+  const editorial = content.home.editorial;
   const [index, setIndex] = useState(0);
   const photoKey = photos.map((photo) => photo.id).join(',')
   useEffect(() => {
@@ -576,7 +588,7 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
     <section className="relative flex flex-col bg-noir lg:flex-row">
       <div className="hidden w-16 shrink-0 items-center justify-center border-r border-noir lg:flex">
         <span className="v-text font-condensed text-sm font-light uppercase tracking-[0.4em] text-noir-soft">
-          Shot by the continent — Est. 2026
+          {editorial.side}
         </span>
       </div>
       <div className="relative flex-1">
@@ -588,20 +600,18 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
         )}
       </div>
       <div className="flex flex-1 flex-col justify-center px-6 py-14 md:px-14">
-        <p className="font-script text-4xl text-terra">our promise</p>
+        <p className="font-script text-4xl text-terra">{editorial.kicker}</p>
         <h2 className="font-condensed mt-2 text-4xl font-semibold uppercase leading-[1.02] tracking-[0.05em] text-paper md:text-5xl">
-          Paid licences pay their maker
+          {editorial.title}
         </h2>
         <p className="mt-5 max-w-md text-sm leading-relaxed text-noir-soft">
-          Vuekumi is built backwards from the contributor: 50% of every paid licence,
-          copyright stays with the photographer, and payouts over bank transfer or mobile
-          money when you request them — $10 minimum. Free-collection downloads are a $0 grant.
+          {fillSiteTokens(editorial.body, siteTokens(facts))}
         </p>
         <div className="mt-8 grid grid-cols-3 gap-4 border-t border-noir pt-6">
           {[
-            ['50%', 'royalty on premium'],
-            [fmt(stats?.photosLive ?? 0), 'photographs live'],
-            [String(stats?.countries ?? 0), 'countries in the library'],
+            [`${facts.photographerPct}%`, editorial.royaltyLabel],
+            [fmt(stats?.photosLive ?? 0), editorial.photosLabel],
+            [String(stats?.countries ?? 0), editorial.countriesLabel],
           ].map(([v, l]) => (
             <div key={l}>
               <p className="font-condensed text-3xl font-medium text-terra">{v}</p>
@@ -613,7 +623,7 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
           to={uploadHref}
           className="mt-8 w-fit border border-terra px-7 py-3 font-condensed text-[12px] uppercase tracking-[0.25em] text-terra transition-colors hover:bg-terra hover:text-paper"
         >
-          Start uploading
+          {editorial.cta}
         </Link>
       </div>
       <div className="relative flex-1">
@@ -659,6 +669,7 @@ function StatsBand({
   categories: PublicStatsDto['categories']
   background: PhotoDto | null
 }) {
+  const { content } = useSiteContent();
   return (
     <section className="relative overflow-hidden">
       {background ? (
@@ -676,7 +687,7 @@ function StatsBand({
           </div>
         </Reveal>
         <p className="mt-12 text-center font-mono-tech text-[10px] uppercase tracking-[0.25em] text-paper-soft">
-          Share of the live library by genre{background ? ` — ${background.title}, ${background.country}` : ''}
+          {content.home.statsCaption}{background ? ` — ${background.title}, ${background.country}` : ''}
         </p>
       </div>
     </section>
@@ -686,6 +697,8 @@ function StatsBand({
 /* ---------------- contributors rail ---------------- */
 
 function ContributorsRail() {
+  const { content } = useSiteContent();
+  const copy = content.home.contributors;
   const [makers, setMakers] = useState<PhotographerDto[]>([]);
 
   useEffect(() => {
@@ -696,13 +709,13 @@ function ContributorsRail() {
     <section className="bg-noir py-20 md:py-24">
       <div className="flex items-end justify-between px-5 md:px-10">
         <div>
-          <p className="font-script text-3xl text-terra">the makers</p>
+          <p className="font-script text-3xl text-terra">{copy.kicker}</p>
           <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-            Contributors
+            {copy.title}
           </h2>
         </div>
         <Link to="/creators" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
-          Browse creators →
+          {copy.linkLabel}
         </Link>
       </div>
       <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
@@ -729,8 +742,8 @@ function ContributorsRail() {
           className="flex w-[70vw] shrink-0 snap-start items-center justify-center border border-noir bg-noir-soft transition-colors hover:border-terra sm:w-[44vw] lg:w-[30vw]"
         >
           <span className="text-center">
-            <span className="font-script block text-4xl text-terra">you?</span>
-            <span className="font-condensed mt-2 block text-sm uppercase tracking-[0.3em] text-paper-soft">Become a contributor</span>
+            <span className="font-script block text-4xl text-terra">{copy.joinScript}</span>
+            <span className="font-condensed mt-2 block text-sm uppercase tracking-[0.3em] text-paper-soft">{copy.joinLabel}</span>
           </span>
         </Link>
       </div>
@@ -739,6 +752,8 @@ function ContributorsRail() {
 }
 
 function ModelsRail() {
+  const { content } = useSiteContent();
+  const copy = content.home.models;
   const [people, setPeople] = useState<ModelPublicDto[]>([]);
 
   useEffect(() => {
@@ -751,13 +766,13 @@ function ModelsRail() {
     <section className="bg-noir pb-20 md:pb-24">
       <div className="flex items-end justify-between px-5 md:px-10">
         <div>
-          <p className="font-script text-3xl text-terra">the people</p>
+          <p className="font-script text-3xl text-terra">{copy.kicker}</p>
           <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-            In the photographs
+            {copy.title}
           </h2>
         </div>
         <Link to="/models" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
-          Browse models →
+          {copy.linkLabel}
         </Link>
       </div>
       <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
@@ -780,7 +795,7 @@ function ModelsRail() {
         ))}
       </div>
       <p className="mt-6 px-5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-noir-soft md:px-10">
-        Likeness permission — copyright stays with the photographer
+        {copy.note}
       </p>
     </section>
   );
@@ -790,6 +805,7 @@ function ModelsRail() {
 
 function NoirPricing({ photos }: { photos: PhotoDto[] }) {
   const { format } = useCurrency();
+  const { content } = useSiteContent();
   const [pack, setPack] = useState<import('@vuekumi/shared').PublicPlansDto | null>(null);
   useEffect(() => {
     api.publicPlans().then(setPack).catch(() => setPack({ items: [], home: { kicker: 'studio rates', title: 'Pick a licence' } }));
@@ -843,7 +859,7 @@ function NoirPricing({ photos }: { photos: PhotoDto[] }) {
                   to="/pricing"
                   className="mt-7 block border border-paper/30 py-3 text-center font-condensed text-[11px] uppercase tracking-[0.3em] text-paper transition-colors hover:border-terra hover:bg-terra"
                 >
-                  View more
+                  {content.home.pricingCta}
                 </Link>
               </div>
             </div>
@@ -857,35 +873,27 @@ function NoirPricing({ photos }: { photos: PhotoDto[] }) {
 /* ---------------- footer + back-to-top ---------------- */
 
 function NoirFooter() {
+  const { content } = useSiteContent();
+  const name = content.brand.name;
+  const mark = content.brand.accent;
+  const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name;
   return (
     <footer className="border-t border-noir bg-noir px-6 py-16 text-center">
       <Link to="/" className="font-condensed text-3xl font-semibold uppercase tracking-[0.3em] text-paper">
-        Vue<span className="text-terra">kumi</span>
+        {highlight}{mark && name.endsWith(mark) ? <span className="text-terra">{mark}</span> : null}
       </Link>
       <p className="mx-auto mt-4 max-w-md text-[13px] leading-relaxed text-noir-soft">
-        The stock image platform for authentic African photography. Free and premium
-        images, licensed directly from the continent's photographers.
+        {content.footer.blurb}
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-        {[
-          { label: 'Library', href: '/search' },
-          { label: 'Creators', href: '/creators' },
-          { label: 'Models', href: '/models' },
-          { label: 'License & Pricing', href: '/pricing' },
-          { label: 'DMCA', href: '/dmca' },
-          { label: 'Your rights', href: '/rights' },
-          { label: 'Report content', href: '/report-content' },
-          { label: 'Legal', href: '/legal' },
-          { label: 'Contribute', href: SELL_HREF },
-          { label: 'Account', href: '/account' },
-        ].map((s) => (
-          <Link key={s.label} to={s.href} className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
+        {content.footer.links.map((s) => (
+          <Link key={`${s.to}-${s.label}`} to={s.to} className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
             {s.label}
           </Link>
         ))}
       </div>
       <p className="mt-10 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-        © 2026 Vuekumi — usage permission, never ownership
+        {content.footer.copyright}
       </p>
     </footer>
   );
@@ -925,7 +933,7 @@ export default function Home() {
     <div className="min-h-screen bg-noir font-sans text-paper antialiased">
       <NoirHeader />
       <HeroSlider photos={featured?.hero ?? []} stats={stats} />
-      <Marquee categories={stats ? stats.categories.map((c) => c.value) : MARQUEE_FALLBACK} />
+      <Marquee categories={stats ? stats.categories.map((c) => c.value) : []} />
       <FeaturedStrip photos={featured?.edge ?? []} />
       <IconRow />
       <CategoryBanners banners={featured?.categories ?? []} />

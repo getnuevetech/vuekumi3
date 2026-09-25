@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import type { CatalogFacets, PhotoDto, PhotoSort } from '@vuekumi/shared'
+import { fillSiteTokens, type CatalogFacets, type PhotoDto, type PhotoSort } from '@vuekumi/shared'
 import { PhotoMasonry, SearchForm, SiteHeader } from '../components/shared'
 import { api } from '../api/client'
+import { useSiteContent } from '../context/SiteContentContext'
 import { categories } from '../data/content'
 
 const sorts: { value: PhotoSort; label: string }[] = [
@@ -17,6 +18,8 @@ function param(params: URLSearchParams, key: string) {
 }
 
 export default function Search() {
+  const { content } = useSiteContent()
+  const library = content.pages.search
   const [params, setParams] = useSearchParams()
   const [items, setItems] = useState<PhotoDto[]>([])
   const [facets, setFacets] = useState<CatalogFacets | undefined>()
@@ -96,16 +99,16 @@ export default function Search() {
     setPage(next)
   }
 
-  const heading = q ? `Results for “${q}”` : tag ? `Tagged ${tag}` : photographer ? `@${photographer}` : 'The library'
+  const heading = q ? `Results for “${q}”` : tag ? `Tagged ${tag}` : photographer ? `@${photographer}` : library.title
 
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-28 md:px-8">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Catalog</p>
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{library.kicker}</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight md:text-5xl">{heading}</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          {loading ? 'Searching…' : `${total} photograph${total === 1 ? '' : 's'} from African contributors.`}
+          {loading ? 'Searching…' : fillSiteTokens(library.intro, { count: total })}
         </p>
 
         <div className="mt-8">

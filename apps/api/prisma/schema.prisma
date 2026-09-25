@@ -692,6 +692,13 @@ model HomeFeaturedPin {
 
 /// Homepage section behaviour that is not a single photograph pin.
 /// Editorial is either a slideshow of pinned photographs or live images from one category.
+/// Public words, menu, and logo. The body is the site-content document.
+model SiteContent {
+  id        String   @id
+  body      Json
+  updatedAt DateTime @updatedAt
+}
+
 model HomeSectionConfig {
   slot      String   @id
   mode      String   @default("pins")

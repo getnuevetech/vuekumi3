@@ -8,6 +8,7 @@ import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import { CurrencyProvider } from './context/CurrencyContext'
+import { SiteContentProvider } from './context/SiteContentContext'
 import { initWebSentry } from './lib/sentry'
 
 const queryClient = new QueryClient({
@@ -24,10 +25,12 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <CurrencyProvider>
-            <ErrorBoundary>
-              <App />
-            </ErrorBoundary>
-            <Toaster position="top-center" richColors />
+            <SiteContentProvider>
+              <ErrorBoundary>
+                <App />
+              </ErrorBoundary>
+              <Toaster position="top-center" richColors />
+            </SiteContentProvider>
           </CurrencyProvider>
         </AuthProvider>
       </BrowserRouter>

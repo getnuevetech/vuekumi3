@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { api, ApiError } from '../api/client'
 import { SiteHeader, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
+import { useSiteContent } from '../context/SiteContentContext'
 
 type HubMode = 'landing' | 'loading' | 'likeness' | 'copyright' | 'missing' | 'model'
 
@@ -27,6 +28,8 @@ export default function RightsHubPage() {
   const [params] = useSearchParams()
   const token = (pathToken ?? params.get('token') ?? '').trim()
   const { user, refresh } = useAuth()
+  const { content } = useSiteContent()
+  const pageCopy = content.pages.rights
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<HubMode>(token ? 'loading' : 'landing')
@@ -71,11 +74,11 @@ export default function RightsHubPage() {
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
       <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Rights</p>
-        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Your rights.</h1>
+        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
+        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-          Review likeness or copyright invites, approve or reject usage, without inventing fees.
-          Compensation negotiation is not on this hub yet. To dispute a listing, use{' '}
+          {pageCopy.intro}{' '}
+          To dispute a listing, use{' '}
           <Link to="/report-content" className="text-terra">Report content</Link>
           {' '}or statutory <Link to="/dmca" className="text-terra">DMCA</Link>.
         </p>
