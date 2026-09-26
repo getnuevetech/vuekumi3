@@ -2,8 +2,50 @@ import { useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode
 import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router'
 import { CollectionPicker } from './CollectionPicker'
+import { api, type GeoCountry } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
+
+let countryList: GeoCountry[] | null = null
+let countryLoad: Promise<GeoCountry[]> | null = null
+
+function loadCountries() {
+  if (!countryLoad) {
+    countryLoad = api.countries().then((data) => {
+      countryList = data.countries
+      return data.countries
+    }).catch(() => {
+      countryList = []
+      return []
+    })
+  }
+  return countryLoad
+}
+
+function useCountryCode(country: string) {
+  const [code, setCode] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    const known = countryList?.find((row) => row.name.toLowerCase() === country.toLowerCase() || row.code.toLowerCase() === country.toLowerCase())
+    if (known) {
+      setCode(known.code)
+      return
+    }
+    loadCountries().then((rows) => {
+      if (cancelled) return
+      const hit = rows.find((row) => row.name.toLowerCase() === country.toLowerCase() || row.code.toLowerCase() === country.toLowerCase())
+      setCode(hit?.code ?? null)
+    })
+    return () => { cancelled = true }
+  }, [country])
+  return code
+}
+
+function flagEmoji(code: string) {
+  const pair = code.toUpperCase()
+  if (!/^[A-Z]{2}$/.test(pair)) return ''
+  return String.fromCodePoint(...[...pair].map((char) => 0x1F1E6 + char.charCodeAt(0) - 65))
+}
 
 export type HoverPhoto = {
   id: string
@@ -15,21 +57,31 @@ export type HoverPhoto = {
 }
 
 export function CountryMark({ country, className = 'left-2 top-2' }: { country: string; className?: string }) {
+  const code = useCountryCode(country)
+  const [imageFailed, setImageFailed] = useState(false)
   if (!country) return null
+  const src = code && !imageFailed ? `https://flagcdn.com/w40/${code.toLowerCase()}.png` : null
   return (
-    <span data-country={country} className={`pointer-events-none absolute z-10 inline-flex max-w-[75%] items-center gap-1 bg-noir/75 px-2 py-1 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-paper backdrop-blur-sm ${className}`}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-        <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z" />
-        <circle cx="12" cy="10" r="2.5" />
-      </svg>
-      <span className="truncate">{country}</span>
+    <span data-country={country} title={country} aria-label={country} className={`pointer-events-none absolute z-10 ${className}`}>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          width={24}
+          height={18}
+          className="h-[18px] w-6 object-cover shadow-[0_1px_2px_rgba(0,0,0,0.65)]"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <span className="text-lg leading-none drop-shadow">{code ? flagEmoji(code) : ''}</span>
+      )}
     </span>
   )
 }
 
 function DownloadIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M12 3v12" />
       <path d="M7 11l5 5 5-5" />
       <path d="M5 21h14" />
@@ -39,13 +91,13 @@ function DownloadIcon() {
 
 function CollectionIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M3 7h5l2 2h11v10H3z" />
     </svg>
   )
 }
 
-const iconButton = 'pointer-events-auto flex h-8 w-8 items-center justify-center bg-paper/90 text-ink transition-colors hover:bg-terra hover:text-paper'
+const iconButton = 'pointer-events-auto flex h-9 w-9 items-center justify-center bg-transparent text-white transition-colors [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.9))] hover:text-terra'
 
 function stop(event: ReactMouseEvent | { stopPropagation: () => void; preventDefault?: () => void }) {
   event.stopPropagation()

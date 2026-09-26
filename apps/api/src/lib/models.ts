@@ -191,7 +191,7 @@ export function serializeAppearance(
       processingStatus?: string | null
       contributor?: { name: string } | null
     } | null
-    modelUser?: (Pick<User, 'id'> & { modelProfile?: { handle: string } | null }) | null
+    modelUser?: (Pick<User, 'id' | 'avatarUrl'> & { modelProfile?: { handle: string } | null }) | null
     likenessChecks?: {
       status: string
       consentedAt: Date
@@ -245,6 +245,7 @@ export function serializeAppearance(
     aiTraining: Boolean((row as { aiTraining?: boolean }).aiTraining),
     confirmedLikeness: row.confirmedLikeness,
     modelHandle: row.modelUser?.modelProfile?.handle ?? null,
+    modelAvatarUrl: row.modelUser?.avatarUrl ?? null,
     invitedAt: row.invitedAt ? row.invitedAt.toISOString() : null,
     claimedAt: row.claimedAt ? row.claimedAt.toISOString() : null,
     decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,

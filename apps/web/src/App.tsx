@@ -55,6 +55,7 @@ import Bookings from './pages/Bookings'
 import Campaigns from './pages/Campaigns'
 import Creators from './pages/Creators'
 import Models from './pages/Models'
+import Category from './pages/Category'
 import Favorites from './pages/Favorites'
 import Following from './pages/Following'
 import Collections from './pages/Collections'
@@ -111,6 +112,7 @@ export default function App() {
         <Route path="/m/:handle" element={<ModelProfile />} />
         <Route path="/creators" element={<Creators />} />
         <Route path="/models" element={<Models />} />
+        <Route path="/category/:slug" element={<Category />} />
         <Route path="/hire/:handle" element={<BookCreator kind="photographer" />} />
         <Route path="/book/:handle" element={<BookCreator kind="model" />} />
         <Route path="/bookings" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin', 'model']}><Bookings /></ProtectedRoute>} />

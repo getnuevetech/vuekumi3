@@ -365,7 +365,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     models: {
       kicker: 'People',
       title: 'Models.',
-      intro: 'Public portfolios assembled from photographs a model approved. Copyright stays with the photographer. Vuekumi sells usage permission, not ownership. Models do not earn from licences. Open a portfolio to book when the model is available — settlement is off-platform and Vuekumi takes no booking commission.',
+      intro: 'Photographs of models, loaded as you scroll. The model’s portrait sits above the title and name. Copyright stays with the photographer. Vuekumi sells usage permission, not ownership. Models do not earn from licences.',
     },
     search: {
       kicker: 'Catalog',

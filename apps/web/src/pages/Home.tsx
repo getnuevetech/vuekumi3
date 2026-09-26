@@ -4,6 +4,7 @@ import { PHOTO_CATEGORIES, type HomeCategoryBannerDto, type HomeIconKey, type Ho
 import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass, sortMenuLinks } from '@vuekumi/shared';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { CountryMark, PhotoHoverActions } from '../components/PhotoActions';
+import { categoryPath } from '../lib/categories';
 import { AccountMenu, LogoMark, Reveal, SearchForm } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -244,7 +245,7 @@ function Marquee({ categories }: { categories: string[] }) {
         {row.map((t, i) => (
           <span key={i} className="flex items-center gap-10 whitespace-nowrap">
             <Link
-              to={`/search?category=${encodeURIComponent(t)}`}
+              to={categoryPath(t)}
               className="font-condensed text-xl font-light uppercase tracking-[0.3em] text-paper-soft hover:text-terra"
             >
               {t}
@@ -443,7 +444,7 @@ function CategoryBanners({ banners }: { banners: HomeCategoryBannerDto[] }) {
         {banners.map((banner) => (
           <Link
             key={`${banner.category}-${banner.photo.id}`}
-            to={`/search?category=${encodeURIComponent(banner.category)}`}
+            to={categoryPath(banner.category)}
             className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 overflow-hidden sm:w-[46vw] lg:w-[28vw]"
           >
             <img src={banner.photo.src} alt={banner.category} loading="lazy" className="h-full w-full object-cover" />
@@ -502,7 +503,7 @@ function FeedCard({ photo }: { photo: PhotoDto }) {
         </div>
       </div>
       {photo.license === 'premium' && (
-        <span className="absolute left-3 top-3 bg-terra px-2 py-0.5 font-mono-tech text-[8px] uppercase tracking-[0.18em] text-paper">
+        <span className="absolute left-2 top-8 bg-terra px-2 py-0.5 font-mono-tech text-[8px] uppercase tracking-[0.18em] text-paper">
           Premium
         </span>
       )}

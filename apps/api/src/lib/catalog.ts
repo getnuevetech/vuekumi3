@@ -62,6 +62,16 @@ export function buildPhotoWhere(query: PhotoListQuery): Prisma.PhotoWhereInput {
   if (query.category && query.category !== 'All') {
     where.category = query.category
   }
+  if (query.featuring === 'model') {
+    const modelScope: Prisma.PhotoWhereInput = {
+      OR: [
+        { category: 'Model' },
+        { appearances: { some: { status: 'approved' } } },
+      ],
+    }
+    const existing = where.AND
+    where.AND = [...(Array.isArray(existing) ? existing : existing ? [existing] : []), modelScope]
+  }
   if (query.country) where.country = query.country
   if (query.license) where.licenseType = query.license
   if (tag) {
@@ -81,6 +91,7 @@ export function buildPhotoWhere(query: PhotoListQuery): Prisma.PhotoWhereInput {
       { tags: { some: { tag: { contains: q, mode: 'insensitive' } } } },
       { contributor: { name: { contains: q, mode: 'insensitive' } } },
       { contributor: { contributorProfile: { handle: { contains: q, mode: 'insensitive' } } } },
+      { appearances: { some: { status: 'approved', displayName: { contains: q, mode: 'insensitive' } } } },
     ]
   }
 

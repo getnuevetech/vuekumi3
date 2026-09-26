@@ -94,6 +94,7 @@ export interface PhotoAppearanceDto {
   aiTraining?: boolean
   confirmedLikeness: boolean
   modelHandle?: string | null
+  modelAvatarUrl?: string | null
   invitedAt?: string | null
   claimedAt?: string | null
   decidedAt?: string | null

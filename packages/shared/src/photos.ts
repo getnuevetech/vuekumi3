@@ -12,6 +12,7 @@ export const photoListQuerySchema = z.object({
   q: z.string().optional(),
   tag: z.string().optional(),
   photographer: z.string().optional(),
+  featuring: z.enum(['model']).optional(),
   sort: photoSortSchema.default('newest'),
   facets: z.enum(['0', '1']).optional(),
 })

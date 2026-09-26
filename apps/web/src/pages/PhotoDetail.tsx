@@ -9,6 +9,7 @@ import { BlurImage, PhotoMasonry, SectionHead, SiteHeader } from '../components/
 import { CollectionPicker } from '../components/CollectionPicker'
 import { FollowButton } from '../components/FollowButton'
 import { api, ApiError } from '../api/client'
+import { categoryPath } from '../lib/categories'
 import { toast } from 'sonner'
 
 function AgencyInquiryPanel({ photoId }: { photoId: string }) {
@@ -235,7 +236,7 @@ export default function PhotoDetail() {
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">
           <Link to="/search" className="hover:text-terra">Library</Link>
           <span className="mx-2 text-ink-faint">/</span>
-          <Link to={`/search?category=${encodeURIComponent(view.category)}`} className="hover:text-terra">{view.category}</Link>
+          <Link to={categoryPath(view.category)} className="hover:text-terra">{view.category}</Link>
           <span className="mx-2 text-ink-faint">/</span>
           <span className="text-terra">{view.id.toUpperCase()}</span>
         </p>

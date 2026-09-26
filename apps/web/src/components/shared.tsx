@@ -425,15 +425,6 @@ export function PhotoCard({
       {/* hover overlay */}
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/30 via-transparent to-black/55 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
         <div className="flex items-start justify-end gap-1 p-2">
-          {photo.license === 'premium' ? (
-            <span className="mr-auto mt-8 bg-terra px-2 py-1 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-paper">
-              Premium · ${photo.price}
-            </span>
-          ) : (
-            <span className="mr-auto mt-8 bg-paper/90 px-2 py-1 font-mono-tech text-[9px] uppercase tracking-[0.14em] text-ink">
-              Free
-            </span>
-          )}
           <PhotoHoverActions
             inline
             photo={{ id: photo.id, src: photo.src, title: photo.title, country: photo.country, license: photo.license, price: photo.price }}
@@ -442,11 +433,11 @@ export function PhotoCard({
             type="button"
             onClick={(e) => { void toggle(e) }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="pointer-events-auto flex h-8 w-8 items-center justify-center bg-paper/90 transition-colors hover:bg-terra hover:text-paper"
+            className="pointer-events-auto flex h-9 w-9 items-center justify-center bg-transparent text-white transition-colors [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.9))] hover:text-terra"
             aria-label={liked ? 'Remove from favorites' : 'Save to favorites'}
             aria-pressed={liked}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? '#bc773f' : 'none'} stroke="currentColor" strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={liked ? '#bc773f' : 'none'} stroke="currentColor" strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
