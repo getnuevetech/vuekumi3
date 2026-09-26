@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { patchHomeFeaturedSchema } from '@vuekumi/shared'
+import { z } from 'zod'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { loadHomeFeaturedAdmin, replaceHomePins } from '../lib/home-featured.js'
@@ -11,13 +12,16 @@ export async function adminHomepageRoutes(app: FastifyInstance) {
   app.get('/admin/homepage', gate, async () => loadHomeFeaturedAdmin())
 
   app.get('/admin/homepage/contributors', gate, async (request) => {
-    const query = request.query as { q?: string }
+    const query = z.object({
+      q: z.string().optional(),
+      accountType: z.enum(['photographer', 'photo_influencer', 'contributor']).optional(),
+    }).parse(request.query)
     const q = query.q?.trim() ?? ''
     const users = await prisma.user.findMany({
       where: {
         status: 'active',
         contributorProfile: { isNot: null },
-        accountType: { in: ['photographer', 'photo_influencer', 'contributor'] },
+        accountType: query.accountType ? query.accountType : { in: ['photographer', 'photo_influencer', 'contributor'] },
         ...(q
           ? {
               OR: [

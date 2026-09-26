@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { DEFAULT_FEATURED_FRAME, PHOTO_CATEGORIES, type FeaturedFrame, type HomeCategoryBannerDto, type HomeIconKey, type HomePageDto, type ModelPublicDto, type PhotoDto, type PhotographerDto, type PublicStatsDto, type SiteFacts } from '@vuekumi/shared';
+import { DEFAULT_CATEGORY_BANNER_FRAME, DEFAULT_FEATURED_FRAME, DEFAULT_HOME_SECTION_ORDER, DEFAULT_PEOPLE_FRAME, PHOTO_CATEGORIES, type FeaturedFrame, type HomeCategoryBannerDto, type HomeIconKey, type HomePageDto, type HomeStaticBannerDto, type ModelPublicDto, type PhotoDto, type PhotographerDto, type PublicStatsDto, type SectionFrame, type SiteFacts } from '@vuekumi/shared';
 import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass, sortMenuLinks } from '@vuekumi/shared';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { CountryMark, PhotoHoverActions } from '../components/PhotoActions';
@@ -13,6 +13,7 @@ import { api } from '../api/client';
 import { fmt } from '../lib/format';
 
 const SELL_HREF = '/login?redirect=/contributor/upload&signup=photographer';
+const INFLUENCER_JOIN = '/login?redirect=/contributor/upload&signup=photo_influencer';
 
 function siteTokens(facts: SiteFacts, extra: Record<string, string | number> = {}) {
   return {
@@ -427,7 +428,7 @@ function FeaturedStrip({ photos, frame }: { photos: PhotoDto[]; frame: FeaturedF
   )
 }
 
-function CategoryBanners({ banners }: { banners: HomeCategoryBannerDto[] }) {
+function CategoryBanners({ banners, frame }: { banners: HomeCategoryBannerDto[]; frame: SectionFrame }) {
   const { content } = useSiteContent();
   const [node, setNode] = useState<HTMLDivElement | null>(null)
   useBidirectionalWheel(node)
@@ -449,9 +450,10 @@ function CategoryBanners({ banners }: { banners: HomeCategoryBannerDto[] }) {
           <Link
             key={`${banner.category}-${banner.photo.id}`}
             to={categoryPath(banner.category)}
-            className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 overflow-hidden sm:w-[46vw] lg:w-[28vw]"
+            className="strip-cell group relative block shrink-0 overflow-hidden"
+            style={{ width: `min(92vw, ${frame.widthVw}vw)`, aspectRatio: `${frame.widthVw} / ${frame.heightVw}` }}
           >
-            <img src={banner.photo.src} alt={banner.category} loading="lazy" className="h-full w-full object-cover" />
+            <img src={banner.photo.src} alt={banner.category} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
             <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
               <p className="font-condensed text-lg font-medium uppercase tracking-[0.18em] text-paper">{banner.category}</p>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">{banner.photo.title}</p>
@@ -726,15 +728,27 @@ function StatsBand({
   );
 }
 
-function PhotographersRail() {
-  const { content } = useSiteContent();
-  const copy = content.home.photographers;
-  const [makers, setMakers] = useState<PhotographerDto[]>([]);
+function cardFrame(frame: SectionFrame): { width: string; aspectRatio: string } {
+  return {
+    width: `min(92vw, ${frame.widthVw}vw)`,
+    aspectRatio: `${frame.widthVw} / ${frame.heightVw}`,
+  }
+}
 
-  useEffect(() => {
-    api.photographers({ kind: 'photographer', limit: 20 }).then((d) => setMakers(d.items)).catch(() => setMakers([]));
-  }, []);
-
+function PeopleRail({
+  copy,
+  people,
+  frame,
+  joinTo,
+  badge,
+}: {
+  copy: { kicker: string; title: string; linkLabel: string; joinScript: string; joinLabel: string }
+  people: PhotographerDto[]
+  frame: SectionFrame
+  joinTo: string
+  badge?: string
+}) {
+  const shape = cardFrame(frame)
   return (
     <section className="bg-noir py-20 md:py-24">
       <div className="flex items-end justify-between px-5 md:px-10">
@@ -749,26 +763,29 @@ function PhotographersRail() {
         </Link>
       </div>
       <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
-        {makers.map((ph) => (
+        {people.map((ph) => (
           <Link
             key={ph.handle}
             to={`/p/${ph.handle}`}
-            className="strip-cell group relative w-[70vw] shrink-0 snap-start overflow-hidden sm:w-[44vw] lg:w-[30vw]"
+            className="strip-cell group relative shrink-0 snap-start overflow-hidden"
+            style={shape}
           >
-            <img src={ph.avatarUrl ?? '/images/avatars/photographer-bw.jpg'} alt={ph.name} loading="lazy" className="aspect-[4/5] w-full object-cover" />
+            <img src={ph.avatarUrl ?? '/images/avatars/photographer-bw.jpg'} alt={ph.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
             <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-5 pt-12">
               <p className="font-condensed text-xl font-medium uppercase tracking-[0.15em] text-paper">
                 {ph.name} <span className="mx-1 text-terra">—</span> <span className="text-sm font-light text-paper-soft">{ph.location}</span>
               </p>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
+                {badge ? `${badge} · ` : ''}
                 {fmt(ph.followers)} followers · {ph.photosCount} photographs
               </p>
             </div>
           </Link>
         ))}
         <Link
-          to="/creators"
-          className="flex w-[70vw] shrink-0 snap-start items-center justify-center border border-noir bg-noir-soft transition-colors hover:border-terra sm:w-[44vw] lg:w-[30vw]"
+          to={joinTo}
+          className="flex shrink-0 snap-start items-center justify-center border border-noir bg-noir-soft transition-colors hover:border-terra"
+          style={shape}
         >
           <span className="text-center">
             <span className="font-script block text-4xl text-terra">{copy.joinScript}</span>
@@ -780,66 +797,36 @@ function PhotographersRail() {
   );
 }
 
-/* ---------------- contributors rail ---------------- */
-
-function ContributorsRail({ people }: { people?: PhotographerDto[] }) {
-  const { content } = useSiteContent();
-  const copy = content.home.contributors;
-  const [makers, setMakers] = useState<PhotographerDto[]>([]);
-
-  useEffect(() => {
-    if (!people) return
-    if (people.length) {
-      setMakers(people)
-      return
-    }
-    api.photographers({ listing: 'community', limit: 20 }).then((d) => setMakers(d.items)).catch(() => setMakers([]));
-  }, [people]);
-
+function StaticBannerSection({ banner }: { banner: HomeStaticBannerDto }) {
+  if (!banner.images.length && !banner.title) return null
   return (
-    <section className="bg-noir py-20 md:py-24">
-      <div className="flex items-end justify-between px-5 md:px-10">
-        <div>
-          <p className="font-script text-3xl text-terra">{copy.kicker}</p>
-          <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-            {copy.title}
-          </h2>
-        </div>
-        <Link to="/creators" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
-          {copy.linkLabel}
-        </Link>
-      </div>
-      <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
-        {makers.map((ph) => (
-          <Link
-            key={ph.handle}
-            to={`/p/${ph.handle}`}
-            className="strip-cell group relative w-[70vw] shrink-0 snap-start overflow-hidden sm:w-[44vw] lg:w-[30vw]"
-          >
-            <img src={ph.avatarUrl ?? '/images/avatars/photographer-bw.jpg'} alt={ph.name} loading="lazy" className="aspect-[4/5] w-full object-cover" />
-            <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-5 pt-12">
-              <p className="font-condensed text-xl font-medium uppercase tracking-[0.15em] text-paper">
-                {ph.name} <span className="mx-1 text-terra">—</span> <span className="text-sm font-light text-paper-soft">{ph.location}</span>
-              </p>
-              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
-                {ph.creatorKind === 'photo_influencer' ? 'Photo influencer · ' : ''}
-                {fmt(ph.followers)} followers · {ph.photosCount} photographs
-              </p>
-            </div>
-          </Link>
-        ))}
-        <Link
-          to={SELL_HREF}
-          className="flex w-[70vw] shrink-0 snap-start items-center justify-center border border-noir bg-noir-soft transition-colors hover:border-terra sm:w-[44vw] lg:w-[30vw]"
+    <section className="bg-noir px-5 py-12 md:px-10" aria-label={banner.title}>
+      <h2 className="font-condensed text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
+        {banner.title}
+      </h2>
+      {banner.images.length > 0 && (
+        <div
+          className="mx-auto mt-8 grid gap-1"
+          style={{
+            width: '100%',
+            maxWidth: `calc(${banner.columns} * ${banner.widthVw}vw)`,
+            gridTemplateColumns: `repeat(${banner.columns}, minmax(0, 1fr))`,
+          }}
         >
-          <span className="text-center">
-            <span className="font-script block text-4xl text-terra">{copy.joinScript}</span>
-            <span className="font-condensed mt-2 block text-sm uppercase tracking-[0.3em] text-paper-soft">{copy.joinLabel}</span>
-          </span>
-        </Link>
-      </div>
+          {banner.images.map((src, index) => (
+            <img
+              key={`${banner.id}-${index}`}
+              src={src}
+              alt=""
+              loading="lazy"
+              className="w-full object-cover"
+              style={{ aspectRatio: `${banner.widthVw} / ${banner.heightVw}` }}
+            />
+          ))}
+        </div>
+      )}
     </section>
-  );
+  )
 }
 
 function ModelsRail() {
@@ -1011,6 +998,7 @@ function BackToTop() {
 /* ---------------- page ---------------- */
 
 export default function Home() {
+  const { content } = useSiteContent();
   const [home, setHome] = useState<HomePageDto | null>(null);
 
   useEffect(() => {
@@ -1019,23 +1007,73 @@ export default function Home() {
 
   const stats = home?.stats ?? null;
   const featured = home?.featured;
+  const layout = home?.layout;
+  const order = layout?.order?.length ? layout.order : DEFAULT_HOME_SECTION_ORDER;
+  const bannerFrame = layout?.categoryBannerFrame ?? DEFAULT_CATEGORY_BANNER_FRAME;
+
+  const section = (key: string) => {
+    switch (key) {
+      case 'hero':
+        return <HeroSlider photos={featured?.hero ?? []} stats={stats} />;
+      case 'marquee':
+        return <Marquee categories={stats ? stats.categories.map((c) => c.value) : []} />;
+      case 'featured':
+        return <FeaturedStrip photos={featured?.edge ?? []} frame={featured?.frame ?? DEFAULT_FEATURED_FRAME} />;
+      case 'icons':
+        return <IconRow />;
+      case 'category_banners':
+        return <CategoryBanners banners={featured?.categories ?? []} frame={bannerFrame} />;
+      case 'cta':
+        return <CtaBand />;
+      case 'feed':
+        return <InfiniteFeed />;
+      case 'editorial':
+        return <EditorialSplit photos={featured?.editorial ?? []} stats={stats} />;
+      case 'stats':
+        return <StatsBand categories={stats?.categories ?? []} background={featured?.statsBackground ?? null} />;
+      case 'photo_influencers':
+        return (
+          <PeopleRail
+            copy={content.home.influencers}
+            people={layout?.people.photo_influencers.people ?? []}
+            frame={layout?.people.photo_influencers.frame ?? DEFAULT_PEOPLE_FRAME}
+            joinTo={INFLUENCER_JOIN}
+            badge="Photo influencer"
+          />
+        );
+      case 'photographers':
+        return (
+          <PeopleRail
+            copy={content.home.photographers}
+            people={layout?.people.photographers.people ?? []}
+            frame={layout?.people.photographers.frame ?? DEFAULT_PEOPLE_FRAME}
+            joinTo="/creators"
+          />
+        );
+      case 'contributors':
+        return (
+          <PeopleRail
+            copy={content.home.contributors}
+            people={layout?.people.contributors.people ?? home?.contributors ?? []}
+            frame={layout?.people.contributors.frame ?? DEFAULT_PEOPLE_FRAME}
+            joinTo={SELL_HREF}
+          />
+        );
+      case 'models':
+        return <ModelsRail />;
+      case 'pricing':
+        return <NoirPricing photos={featured?.pricing ?? []} />;
+      default: {
+        const banner = layout?.staticBanners.find((row) => `banner:${row.id}` === key);
+        return banner ? <StaticBannerSection banner={banner} /> : null;
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-noir font-sans text-paper antialiased">
       <NoirHeader />
-      <HeroSlider photos={featured?.hero ?? []} stats={stats} />
-      <Marquee categories={stats ? stats.categories.map((c) => c.value) : []} />
-      <FeaturedStrip photos={featured?.edge ?? []} frame={featured?.frame ?? DEFAULT_FEATURED_FRAME} />
-      <IconRow />
-      <CategoryBanners banners={featured?.categories ?? []} />
-      <CtaBand />
-      <InfiniteFeed />
-      <EditorialSplit photos={featured?.editorial ?? []} stats={stats} />
-      <StatsBand categories={stats?.categories ?? []} background={featured?.statsBackground ?? null} />
-      <PhotographersRail />
-      <ContributorsRail people={home?.contributors} />
-      <ModelsRail />
-      <NoirPricing photos={featured?.pricing ?? []} />
+      {order.map((key) => <Fragment key={key}>{section(key)}</Fragment>)}
       <NoirFooter />
       <BackToTop />
     </div>

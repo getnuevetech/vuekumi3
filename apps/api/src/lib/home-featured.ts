@@ -17,6 +17,7 @@ import {
 } from '@vuekumi/shared'
 import { assignHomeSlots } from './home.js'
 import { catalogPhotoInclude, serializeCatalogPhoto, type CatalogPhoto } from './catalog.js'
+import { loadHomeLayoutAdmin, planHomeLayout, writeHomeLayout } from './home-layout.js'
 import { loadHomePins } from './home-queries.js'
 import { prisma } from './prisma.js'
 import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
@@ -68,17 +69,7 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
     throw httpError('Choose a category for the editorial slides.')
   }
   assertKnownCategory(editorial?.category, 'the editorial split')
-  const contributorInput = 'pins' in input ? input.contributors : undefined
-  if (contributorInput) {
-    const ids = [...new Set(contributorInput.ids)]
-    if (ids.length) {
-      const people = await prisma.user.findMany({
-        where: { id: { in: ids }, status: 'active', contributorProfile: { isNot: null } },
-        select: { id: true },
-      })
-      if (people.length !== ids.length) throw httpError('Choose active contributors.')
-    }
-  }
+  const layoutPlan = 'pins' in input ? await planHomeLayout(input) : null
 
   const uniqueIds = [...new Set([...wanted.map((row) => row.photoId), ...bannerPhotoIds])]
   const photos = uniqueIds.length
@@ -135,14 +126,7 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
         update: { widthVw: size.widthVw, heightVw: size.heightVw },
       })
     }
-    if ('pins' in input && input.contributors) {
-      const ids = [...new Set(input.contributors.ids)]
-      await tx.homeSectionConfig.upsert({
-        where: { slot: 'contributors' },
-        create: { slot: 'contributors', mode: 'picked', contributorIds: ids, randomize: input.contributors.randomize },
-        update: { contributorIds: ids, randomize: input.contributors.randomize },
-      })
-    }
+    if (layoutPlan) await writeHomeLayout(tx, layoutPlan)
   })
   return loadHomeFeaturedAdmin()
 }
@@ -221,11 +205,11 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     slots[slot] = positions
   }
 
-  const [bannerRows, editorialConfig, frameConfig, contributorConfig] = await Promise.all([
+  const [bannerRows, editorialConfig, frameConfig, layoutAdmin] = await Promise.all([
     prisma.homeFeaturedPin.findMany({ where: { slot: CATEGORY_SLOT }, orderBy: { position: 'asc' } }),
     prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } }),
     prisma.homeSectionConfig.findUnique({ where: { slot: 'edge' } }),
-    prisma.homeSectionConfig.findUnique({ where: { slot: 'contributors' } }),
+    loadHomeLayoutAdmin(),
   ])
   const bannerPins = normalizeCategoryBanners(
     Array.from({ length: HOME_CATEGORY_BANNER_CAPACITY }, (_, position) => {
@@ -263,14 +247,7 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
   }
 
   const editorialMode: HomeEditorialMode = editorialConfig?.mode === 'category' ? 'category' : 'pins'
-  const contributorIds = contributorConfig?.contributorIds ?? []
-  const contributorPeople = contributorIds.length
-    ? await prisma.user.findMany({
-        where: { id: { in: contributorIds } },
-        select: { id: true, name: true, avatarUrl: true, contributorProfile: { select: { handle: true, location: true } } },
-      })
-    : []
-  const contributorById = new Map(contributorPeople.map((person) => [person.id, person]))
+  const contributors = layoutAdmin.people.contributors
 
   return {
     capacities: HOME_FEATURED_CAPACITY,
@@ -283,20 +260,14 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     editorialCategory: editorialConfig?.category ?? null,
     frame: normalizeFeaturedFrame(frameConfig),
     contributors: {
-      ids: contributorIds,
-      randomize: contributorConfig?.randomize ?? false,
-      people: contributorIds.flatMap((id) => {
-        const person = contributorById.get(id)
-        if (!person?.contributorProfile) return []
-        return [{
-          id: person.id,
-          name: person.name,
-          handle: person.contributorProfile.handle,
-          avatarUrl: person.avatarUrl,
-          location: person.contributorProfile.location,
-        }]
-      }),
+      ids: contributors.ids,
+      randomize: contributors.randomize,
+      people: contributors.people,
     },
+    layoutOrder: layoutAdmin.layoutOrder,
+    people: layoutAdmin.people,
+    categoryBannerFrame: layoutAdmin.categoryBannerFrame,
+    staticBanners: layoutAdmin.staticBanners,
   }
 }
 

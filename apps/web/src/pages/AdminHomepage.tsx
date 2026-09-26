@@ -2,13 +2,22 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import {
+  DEFAULT_CATEGORY_BANNER_FRAME,
+  DEFAULT_PEOPLE_FRAME,
   HOME_FEATURED_SLOT_KEYS,
+  HOME_PEOPLE_ACCOUNT,
+  HOME_PEOPLE_SLOTS,
+  HOME_PEOPLE_SLOT_LABEL,
   PHOTO_CATEGORIES,
+  homeSectionLabel,
   type CategoryBannerPin,
   type HomeContributorPick,
   type HomeEditorialMode,
   type HomeFeaturedAdminDto,
   type HomeFeaturedSlotKey,
+  type HomePeopleMode,
+  type HomePeopleSlot,
+  type HomeStaticBannerDto,
   type PhotoDto,
 } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
@@ -51,6 +60,8 @@ export default function AdminHomepage() {
   const [hits, setHits] = useState<PhotoDto[]>([])
   const [target, setTarget] = useState<PinTarget | null>(null)
   const [busy, setBusy] = useState(false)
+  const [bannerWidth, setBannerWidth] = useState(String(DEFAULT_CATEGORY_BANNER_FRAME.widthVw))
+  const [bannerHeight, setBannerHeight] = useState(String(DEFAULT_CATEGORY_BANNER_FRAME.heightVw))
 
   const load = () => {
     api.adminHomepage()
@@ -60,6 +71,8 @@ export default function AdminHomepage() {
         setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category, imageSrc: row.imageSrc })))
         setEditorialMode(next.editorialMode)
         setEditorialCategory(next.editorialCategory ?? '')
+        setBannerWidth(String(next.categoryBannerFrame.widthVw))
+        setBannerHeight(String(next.categoryBannerFrame.heightVw))
       })
       .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load homepage'))
   }
@@ -114,6 +127,12 @@ export default function AdminHomepage() {
 
   const save = async () => {
     if (!pins || !banners) return
+    const widthVw = Number(bannerWidth)
+    const heightVw = Number(bannerHeight)
+    if (!Number.isFinite(widthVw) || !Number.isFinite(heightVw)) {
+      toast.error('Enter a width and a height for the category banners.')
+      return
+    }
     setBusy(true)
     try {
       const next = await api.saveHomepage({
@@ -125,12 +144,15 @@ export default function AdminHomepage() {
         },
         categoryBanners: banners,
         editorial: { mode: editorialMode, category: editorialCategory || null },
+        categoryBannerFrame: { widthVw, heightVw },
       })
       setPage(next)
       setPins(emptyPins(next))
       setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category, imageSrc: row.imageSrc })))
       setEditorialMode(next.editorialMode)
       setEditorialCategory(next.editorialCategory ?? '')
+      setBannerWidth(String(next.categoryBannerFrame.widthVw))
+      setBannerHeight(String(next.categoryBannerFrame.heightVw))
       toast.success('Homepage featured slots saved')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not save')
@@ -140,15 +162,17 @@ export default function AdminHomepage() {
   }
 
   return (
-    <AdminShell subtitle="Featured images, category banners, and the editorial slideshow.">
+    <AdminShell subtitle="Section order, people rows, category banners, and static banners.">
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Homepage</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Featured slots.</h1>
+      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Homepage layout.</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
         The public menu is edited under <Link to="/admin/menu" className="text-terra">Menu</Link>. Other words and the logo are under <Link to="/admin/site" className="text-terra">Site content</Link>. Featuring a photograph is curation, not a licence and not AI-training consent.
         Private, portfolio, and agency-protected inventory cannot appear on the public homepage.
         The homepage featured strip is edited only on <Link to="/admin/featured" className="text-terra">Featured images</Link>, including the switch on each photograph in Content.
         Category banners sit below the three messages. Upload a banner image here, or choose a live photograph. Empty positions fall back to live ranking so the page never goes blank.
       </p>
+
+      <SectionArrangement page={page} onSaved={load} />
 
       <div className="mt-6 flex flex-wrap items-end gap-3">
         <label className="block">
@@ -276,16 +300,29 @@ export default function AdminHomepage() {
             </div>
           </section>
         ))}
-        <FrontpageContributors page={page} busy={busy} onSaved={load} />
+        {HOME_PEOPLE_SLOTS.map((slot) => (
+          <PeopleEditor key={slot} slot={slot} page={page} busy={busy} onSaved={load} />
+        ))}
         <section className="mt-10">
                 <h2 className="font-serif-display text-2xl font-light">Category banners</h2>
                 <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
                   {page?.categoryBannerCapacity ?? banners?.length ?? 0} positions
                 </p>
                 <p className="mt-2 max-w-2xl text-sm text-ink-soft">
-                  These banners sit below the three homepage messages and scroll sideways with the mouse wheel.
+                  These banners scroll sideways with the mouse wheel.
                   Upload an image for a category, or choose a live photograph. Leave a banner blank to use a live image from that category.
+                  Width and height are a percent of the screen width. The starting size is {DEFAULT_CATEGORY_BANNER_FRAME.widthVw} wide and {DEFAULT_CATEGORY_BANNER_FRAME.heightVw} tall.
                 </p>
+                <div className="mt-4 flex flex-wrap items-end gap-3">
+                  <label className="block">
+                    <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Banner width</span>
+                    <input type="number" min={8} max={90} step={0.01} value={bannerWidth} aria-label="Category banner width" onChange={(e) => setBannerWidth(e.target.value)} className="mt-1 w-32 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+                  </label>
+                  <label className="block">
+                    <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Banner height</span>
+                    <input type="number" min={8} max={120} step={0.01} value={bannerHeight} aria-label="Category banner height" onChange={(e) => setBannerHeight(e.target.value)} className="mt-1 w-32 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+                  </label>
+                </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {(page?.categoryBanners ?? []).map((row) => {
                     const draft = banners?.[row.position]
@@ -355,93 +392,357 @@ export default function AdminHomepage() {
                   })}
                 </div>
         </section>
+        <StaticBanners page={page} busy={busy} onSaved={load} />
       </div>
     </AdminShell>
   )
 }
 
-function FrontpageContributors({ page, busy, onSaved }: { page: HomeFeaturedAdminDto | null; busy: boolean; onSaved: () => void }) {
-  const [people, setPeople] = useState<HomeContributorPick[]>([])
-  const [randomize, setRandomize] = useState(false)
-  const [query, setQuery] = useState('')
-  const [hits, setHits] = useState<HomeContributorPick[]>([])
+function moveItem(list: string[], index: number, direction: -1 | 1) {
+  const nextIndex = index + direction
+  if (nextIndex < 0 || nextIndex >= list.length) return list
+  const next = [...list]
+  const [item] = next.splice(index, 1)
+  next.splice(nextIndex, 0, item!)
+  return next
+}
+
+function SectionArrangement({ page, onSaved }: { page: HomeFeaturedAdminDto | null; onSaved: () => void }) {
+  const [order, setOrder] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!page) return
-    setPeople(page.contributors.people)
-    setRandomize(page.contributors.randomize)
+    setOrder(page?.layoutOrder ?? [])
   }, [page])
-
-  useEffect(() => {
-    const term = query.trim()
-    if (term.length < 2) {
-      setHits([])
-      return
-    }
-    const handle = window.setTimeout(() => {
-      api.homepageContributors(term)
-        .then((data) => setHits(data.items))
-        .catch(() => setHits([]))
-    }, 200)
-    return () => window.clearTimeout(handle)
-  }, [query])
 
   const save = async () => {
     setSaving(true)
     try {
-      await api.saveHomepage({ pins: {}, contributors: { ids: people.map((person) => person.id), randomize } })
-      toast.success(randomize ? 'Frontpage contributors will shuffle on each visit' : 'Frontpage contributors saved')
+      await api.saveHomepage({ pins: {}, layoutOrder: order })
+      toast.success('Homepage section order saved')
       onSaved()
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not save contributors')
+      toast.error(err instanceof ApiError ? err.message : 'Could not save the section order')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <section className="rounded-3xl border border-sand-soft bg-white p-5">
-      <h2 className="font-serif-display text-2xl font-light">Frontpage contributors</h2>
+    <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
+      <h2 className="font-serif-display text-2xl font-light">Section arrangement</h2>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
-        Choose who appears in the contributor row on the homepage. Leave this empty and the row keeps the live ranking.
-        Shuffle changes the order of the people you chose on each visit.
+        Move each homepage section up or down. Photo influencers start where the photographer row used to sit, and photographers start where the contributor row used to sit.
+        The header, footer, and back-to-top stay in place.
       </p>
-      <label className="mt-4 flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={randomize} onChange={(e) => setRandomize(e.target.checked)} />
-        Shuffle these contributors
-      </label>
-      <div className="mt-4 space-y-2">
-        {people.map((person, index) => (
-          <div key={person.id} className="flex items-center justify-between gap-3 rounded-2xl border border-sand-soft px-3 py-2">
-            <p className="text-sm">{index + 1}. {person.name} <span className="text-ink-faint">@{person.handle}</span></p>
-            <button type="button" onClick={() => setPeople((rows) => rows.filter((row) => row.id !== person.id))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em]">Remove</button>
-          </div>
+      <ol className="mt-4 space-y-2">
+        {order.map((key, index) => (
+          <li key={key} className="flex items-center justify-between gap-3 rounded-2xl border border-sand-soft px-3 py-2">
+            <p className="text-sm">{index + 1}. {homeSectionLabel(key, page?.staticBanners ?? [])}</p>
+            <div className="flex gap-2">
+              <button type="button" aria-label={`Move ${homeSectionLabel(key, page?.staticBanners ?? [])} up`} disabled={index === 0} onClick={() => setOrder((rows) => moveItem(rows, index, -1))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] disabled:opacity-40">Up</button>
+              <button type="button" aria-label={`Move ${homeSectionLabel(key, page?.staticBanners ?? [])} down`} disabled={index === order.length - 1} onClick={() => setOrder((rows) => moveItem(rows, index, 1))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] disabled:opacity-40">Down</button>
+            </div>
+          </li>
         ))}
-        {people.length === 0 && <p className="text-sm text-ink-soft">No contributors chosen yet.</p>}
-      </div>
-      <label className="mt-4 block max-w-sm">
-        <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Find a contributor</span>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or handle" className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
-      </label>
-      {hits.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {hits.map((person) => (
-            <button
-              key={person.id}
-              type="button"
-              disabled={people.some((row) => row.id === person.id) || people.length >= 24}
-              onClick={() => setPeople((rows) => rows.some((row) => row.id === person.id) ? rows : [...rows, person])}
-              className="rounded-full border border-sand px-3 py-1.5 text-sm disabled:opacity-40"
-            >
-              {person.name}
-            </button>
-          ))}
-        </div>
-      )}
-      <button type="button" disabled={busy || saving} onClick={() => void save()} className="mt-4 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
-        Save frontpage contributors
+      </ol>
+      <button type="button" disabled={saving || order.length === 0} onClick={() => void save()} className="mt-4 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
+        Save section order
       </button>
     </section>
   )
 }
+
+function PeopleEditor({ slot, page, busy, onSaved }: { slot: HomePeopleSlot; page: HomeFeaturedAdminDto | null; busy: boolean; onSaved: () => void }) {
+  const saved = page?.people[slot]
+  const [mode, setMode] = useState<HomePeopleMode>('downloads')
+  const [people, setPeople] = useState<HomeContributorPick[]>([])
+  const [randomize, setRandomize] = useState(false)
+  const [width, setWidth] = useState(String(DEFAULT_PEOPLE_FRAME.widthVw))
+  const [height, setHeight] = useState(String(DEFAULT_PEOPLE_FRAME.heightVw))
+  const [query, setQuery] = useState('')
+  const [hits, setHits] = useState<HomeContributorPick[]>([])
+  const [saving, setSaving] = useState(false)
+  const label = HOME_PEOPLE_SLOT_LABEL[slot]
+  const accountType = HOME_PEOPLE_ACCOUNT[slot]
+
+  useEffect(() => {
+    if (!saved) return
+    setMode(saved.mode)
+    setPeople(saved.people)
+    setRandomize(saved.randomize)
+    setWidth(String(saved.frame.widthVw))
+    setHeight(String(saved.frame.heightVw))
+  }, [saved])
+
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2 || mode === 'downloads') {
+      setHits([])
+      return
+    }
+    const handle = window.setTimeout(() => {
+      api.homepageContributors(term, accountType)
+        .then((data) => setHits(data.items))
+        .catch(() => setHits([]))
+    }, 200)
+    return () => window.clearTimeout(handle)
+  }, [query, accountType, mode])
+
+  const save = async () => {
+    const widthVw = Number(width)
+    const heightVw = Number(height)
+    if (!Number.isFinite(widthVw) || !Number.isFinite(heightVw)) {
+      toast.error(`Enter a width and a height for ${label.toLowerCase()}.`)
+      return
+    }
+    setSaving(true)
+    try {
+      await api.saveHomepage({
+        pins: {},
+        people: { [slot]: { mode, ids: people.map((person) => person.id), randomize, frame: { widthVw, heightVw } } },
+      })
+      toast.success(`${label} saved`)
+      onSaved()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : `Could not save ${label.toLowerCase()}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
+      <h2 className="font-serif-display text-2xl font-light">{label}</h2>
+      <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+        Show chosen profiles, rank by number of downloads, or show chosen profiles first and fill the rest by downloads.
+        Width and height are a percent of the screen width. The starting card is {DEFAULT_PEOPLE_FRAME.widthVw} wide and {DEFAULT_PEOPLE_FRAME.heightVw} tall.
+      </p>
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <label className="block">
+          <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Who appears</span>
+          <select aria-label={`${label} on the homepage`} value={mode} onChange={(e) => setMode(e.target.value as HomePeopleMode)} className="mt-1 rounded-full border border-sand-soft bg-white px-4 py-2 text-sm outline-none focus:border-terra">
+            <option value="downloads">Number of downloads</option>
+            <option value="profiles">Chosen profiles</option>
+            <option value="both">Chosen profiles, then downloads</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Width</span>
+          <input type="number" min={8} max={90} step={0.1} value={width} aria-label={`${label} width`} onChange={(e) => setWidth(e.target.value)} className="mt-1 w-28 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+        </label>
+        <label className="block">
+          <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Height</span>
+          <input type="number" min={8} max={120} step={0.1} value={height} aria-label={`${label} height`} onChange={(e) => setHeight(e.target.value)} className="mt-1 w-28 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+        </label>
+      </div>
+      {mode !== 'downloads' && (
+        <>
+          <label className="mt-4 flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={randomize} onChange={(e) => setRandomize(e.target.checked)} />
+            Shuffle the chosen profiles on each visit
+          </label>
+          <div className="mt-4 space-y-2">
+            {people.map((person, index) => (
+              <div key={person.id} className="flex items-center justify-between gap-3 rounded-2xl border border-sand-soft px-3 py-2">
+                <p className="text-sm">{index + 1}. {person.name} <span className="text-ink-faint">@{person.handle}</span></p>
+                <button type="button" onClick={() => setPeople((rows) => rows.filter((row) => row.id !== person.id))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em]">Remove</button>
+              </div>
+            ))}
+            {people.length === 0 && <p className="text-sm text-ink-soft">No profiles chosen yet.</p>}
+          </div>
+          <label className="mt-4 block max-w-sm">
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Find a profile</span>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or handle" aria-label={`Find a ${label.toLowerCase()} profile`} className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+          </label>
+          {hits.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {hits.map((person) => (
+                <button
+                  key={person.id}
+                  type="button"
+                  disabled={people.some((row) => row.id === person.id) || people.length >= 24}
+                  onClick={() => setPeople((rows) => rows.some((row) => row.id === person.id) ? rows : [...rows, person])}
+                  className="rounded-full border border-sand px-3 py-1.5 text-sm disabled:opacity-40"
+                >
+                  {person.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      <button type="button" disabled={busy || saving} onClick={() => void save()} className="mt-4 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
+        Save {label.toLowerCase()}
+      </button>
+    </section>
+  )
+}
+
+type BannerDraft = {
+  key: string
+  id?: string
+  title: string
+  columns: number
+  rows: number
+  widthVw: string
+  heightVw: string
+  images: string[]
+}
+
+function draftsFrom(banners: HomeStaticBannerDto[]): BannerDraft[] {
+  return banners.map((banner) => ({
+    key: banner.id,
+    id: banner.id,
+    title: banner.title,
+    columns: banner.columns,
+    rows: banner.rows,
+    widthVw: String(banner.widthVw),
+    heightVw: String(banner.heightVw),
+    images: banner.images,
+  }))
+}
+
+function StaticBanners({ page, busy, onSaved }: { page: HomeFeaturedAdminDto | null; busy: boolean; onSaved: () => void }) {
+  const [banners, setBanners] = useState<BannerDraft[]>([])
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setBanners(draftsFrom(page?.staticBanners ?? []))
+  }, [page])
+
+  const update = (key: string, patch: Partial<BannerDraft>) => {
+    setBanners((rows) => rows.map((row) => row.key === key ? { ...row, ...patch } : row))
+  }
+
+  const upload = async (key: string, file: File) => {
+    const banner = banners.find((row) => row.key === key)
+    if (!banner) return
+    if (banner.images.length >= banner.rows * banner.columns) {
+      toast.error(`This section holds ${banner.rows * banner.columns} images.`)
+      return
+    }
+    try {
+      const dataBase64 = await fileToBase64(file)
+      const saved = await api.uploadSiteImage({ kind: 'banners', contentType: file.type || 'image/jpeg', dataBase64 })
+      update(key, { images: [...banner.images, saved.src] })
+      toast.success('Image ready. Save the banner section to keep it.')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not upload the image')
+    }
+  }
+
+  const save = async () => {
+    const payload = []
+    for (const banner of banners) {
+      const widthVw = Number(banner.widthVw)
+      const heightVw = Number(banner.heightVw)
+      if (!banner.title.trim()) {
+        toast.error('Give each banner section a title.')
+        return
+      }
+      if (!Number.isFinite(widthVw) || !Number.isFinite(heightVw)) {
+        toast.error(`Enter a width and a height for ${banner.title}.`)
+        return
+      }
+      payload.push({
+        id: banner.id,
+        title: banner.title.trim(),
+        columns: banner.columns,
+        rows: banner.rows,
+        frame: { widthVw, heightVw },
+        images: banner.images,
+      })
+    }
+    setSaving(true)
+    try {
+      await api.saveHomepage({ pins: {}, staticBanners: payload })
+      toast.success('Static banner sections saved')
+      onSaved()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save banner sections')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
+      <h2 className="font-serif-display text-2xl font-light">Static banner sections</h2>
+      <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+        Add a grid of uploaded images. Set the rows, columns, and the size of each image. The section joins the arrangement list so you can move it.
+      </p>
+      <div className="mt-4 space-y-4">
+        {banners.map((banner, index) => {
+          const cap = banner.rows * banner.columns
+          return (
+            <article key={banner.key} className="rounded-2xl border border-sand-soft p-4">
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="block min-w-48 flex-1">
+                  <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Title</span>
+                  <input value={banner.title} aria-label={`Banner section ${index + 1} title`} onChange={(e) => update(banner.key, { title: e.target.value })} className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+                </label>
+                <label className="block">
+                  <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Columns</span>
+                  <input type="number" min={1} max={6} value={banner.columns} aria-label={`Banner section ${index + 1} columns`} onChange={(e) => update(banner.key, { columns: Math.min(6, Math.max(1, Number(e.target.value) || 1)) })} className="mt-1 w-24 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+                </label>
+                <label className="block">
+                  <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Rows</span>
+                  <input type="number" min={1} max={6} value={banner.rows} aria-label={`Banner section ${index + 1} rows`} onChange={(e) => update(banner.key, { rows: Math.min(6, Math.max(1, Number(e.target.value) || 1)) })} className="mt-1 w-24 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+                </label>
+                <label className="block">
+                  <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Image width</span>
+                  <input type="number" min={8} max={90} step={0.1} value={banner.widthVw} aria-label={`Banner section ${index + 1} width`} onChange={(e) => update(banner.key, { widthVw: e.target.value })} className="mt-1 w-28 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+                </label>
+                <label className="block">
+                  <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Image height</span>
+                  <input type="number" min={8} max={120} step={0.1} value={banner.heightVw} aria-label={`Banner section ${index + 1} height`} onChange={(e) => update(banner.key, { heightVw: e.target.value })} className="mt-1 w-28 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+                </label>
+              </div>
+              <p className="mt-3 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">{banner.images.length} of {cap} images</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {banner.images.map((src, imageIndex) => (
+                  <button key={`${src}-${imageIndex}`} type="button" onClick={() => update(banner.key, { images: banner.images.filter((_, i) => i !== imageIndex) })} className="relative">
+                    <img src={src} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                    <span className="absolute inset-x-0 bottom-0 bg-noir/70 text-center font-mono-tech text-[8px] uppercase tracking-[0.12em] text-paper">Remove</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <label className="block font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                  Upload image
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    aria-label={`Upload banner section ${index + 1}`}
+                    className="mt-1 block w-full text-sm"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      e.target.value = ''
+                      if (!file) return
+                      void upload(banner.key, file)
+                    }}
+                  />
+                </label>
+                <button type="button" onClick={() => setBanners((rows) => rows.filter((row) => row.key !== banner.key))} className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.12em]">Remove section</button>
+              </div>
+            </article>
+          )
+        })}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setBanners((rows) => [...rows, { key: `new-${Date.now()}`, title: 'Banner', columns: 3, rows: 1, widthVw: '24', heightVw: '16', images: [] }])}
+          className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]"
+        >
+          Add a banner section
+        </button>
+        <button type="button" disabled={busy || saving} onClick={() => void save()} className="rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
+          Save banner sections
+        </button>
+      </div>
+    </section>
+  )
+}
+

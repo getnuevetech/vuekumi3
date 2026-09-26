@@ -168,6 +168,13 @@ export const siteContentSchema = z.object({
       joinScript: line(20),
       joinLabel: line(40),
     }),
+    influencers: z.object({
+      kicker: line(40),
+      title: line(60),
+      linkLabel: line(40),
+      joinScript: line(20),
+      joinLabel: line(40),
+    }),
     models: z.object({
       kicker: line(40),
       title: line(60),
@@ -364,6 +371,13 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       linkLabel: 'Browse photographers →',
       joinScript: 'hire',
       joinLabel: 'Book a photographer',
+    },
+    influencers: {
+      kicker: 'the voices',
+      title: 'Photo influencers',
+      linkLabel: 'Browse creators →',
+      joinScript: 'share',
+      joinLabel: 'Become a photo influencer',
     },
     models: {
       kicker: 'the people',

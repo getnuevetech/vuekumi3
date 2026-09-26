@@ -247,8 +247,10 @@ export const api = {
 
   adminHomepage: () => request<import('@vuekumi/shared').HomeFeaturedAdminDto>('/api/admin/homepage'),
 
-  homepageContributors: (q: string) =>
-    request<{ items: import('@vuekumi/shared').HomeContributorPick[] }>(`/api/admin/homepage/contributors?q=${encodeURIComponent(q)}`),
+  homepageContributors: (q: string, accountType?: 'photographer' | 'photo_influencer' | 'contributor') =>
+    request<{ items: import('@vuekumi/shared').HomeContributorPick[] }>(
+      `/api/admin/homepage/contributors?q=${encodeURIComponent(q)}${accountType ? `&accountType=${accountType}` : ''}`,
+    ),
 
   uploadSiteImage: (body: import('@vuekumi/shared').SiteImageUploadInput) =>
     request<{ src: string }>('/api/admin/site-images', { method: 'POST', body: JSON.stringify(body) }),
