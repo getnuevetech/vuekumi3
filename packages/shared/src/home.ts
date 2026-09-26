@@ -49,6 +49,7 @@ function pinArray(slot: HomeFeaturedSlotKey) {
 export const categoryBannerPinSchema = z.object({
   photoId: z.string().min(1).nullable(),
   category: z.string().trim().min(1).max(80).nullable(),
+  imageSrc: z.string().trim().max(500).nullable().optional(),
 })
 export type CategoryBannerPin = z.infer<typeof categoryBannerPinSchema>
 
@@ -96,6 +97,10 @@ export const patchHomeFeaturedSchema = z.object({
     category: z.string().trim().min(1).max(80).nullable().optional(),
   }).optional(),
   frame: featuredFrameSchema.optional(),
+  contributors: z.object({
+    ids: z.array(z.string().trim().min(1).max(80)).max(24),
+    randomize: z.boolean(),
+  }).optional(),
 })
 export type PatchHomeFeaturedInput = z.infer<typeof patchHomeFeaturedSchema>
 
@@ -105,7 +110,8 @@ export function normalizeCategoryBanners(input?: CategoryBannerPin[] | null): Ca
     const row = raw[i]
     const photoId = typeof row?.photoId === 'string' && row.photoId.trim() ? row.photoId.trim() : null
     const category = typeof row?.category === 'string' && row.category.trim() ? row.category.trim() : null
-    return { photoId, category }
+    const imageSrc = typeof row?.imageSrc === 'string' && row.imageSrc.trim() ? row.imageSrc.trim() : null
+    return { photoId, category, imageSrc }
   })
 }
 
@@ -176,6 +182,7 @@ export interface HomeFeaturedDto {
 export interface HomePageDto {
   stats: PublicStatsDto
   featured: HomeFeaturedDto
+  contributors: import('./types.js').PhotographerDto[]
 }
 
 export interface HomeFeaturedPositionDto {
@@ -187,12 +194,21 @@ export interface HomeFeaturedPositionDto {
   ineligibleReason: string | null
 }
 
+export interface HomeContributorPick {
+  id: string
+  name: string
+  handle: string
+  avatarUrl: string | null
+  location: string | null
+}
+
 export interface HomeCategoryBannerAdminDto {
   position: number
   photoId: string | null
   category: string | null
+  imageSrc: string | null
   photo: PhotoDto | null
-  source: 'pinned' | 'auto'
+  source: 'pinned' | 'auto' | 'upload'
 }
 
 export interface HomeFeaturedAdminDto {
@@ -205,4 +221,9 @@ export interface HomeFeaturedAdminDto {
   editorialMode: HomeEditorialMode
   editorialCategory: string | null
   frame: FeaturedFrame
+  contributors: {
+    ids: string[]
+    randomize: boolean
+    people: HomeContributorPick[]
+  }
 }

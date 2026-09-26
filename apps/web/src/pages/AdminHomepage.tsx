@@ -5,6 +5,7 @@ import {
   HOME_FEATURED_SLOT_KEYS,
   PHOTO_CATEGORIES,
   type CategoryBannerPin,
+  type HomeContributorPick,
   type HomeEditorialMode,
   type HomeFeaturedAdminDto,
   type HomeFeaturedSlotKey,
@@ -18,9 +19,22 @@ function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
 }
 
 const SLOT_NOTE: Partial<Record<HomeFeaturedSlotKey, string>> = {
-  edge: 'These are the featured images. Choose them by category on Featured images. On the homepage they sit above the three messages and scroll left or right with the mouse wheel.',
+  edge: 'Featured images are edited only on Featured images, and from the switch on each photograph in Content.',
   editorial: 'Pin several photographs and they change on a timer, or choose a category and the slides pull live images from that category.',
   pricing: 'These photographs fill homepage pricing cards that do not have their own image. Plan names, prices, and the lines on the cards are edited under Buyer plans.',
+}
+
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const value = String(reader.result ?? '')
+      const marker = value.indexOf(',')
+      resolve(marker >= 0 ? value.slice(marker + 1) : value)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
 }
 
 type PinTarget =
@@ -43,7 +57,7 @@ export default function AdminHomepage() {
       .then((next) => {
         setPage(next)
         setPins(emptyPins(next))
-        setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category })))
+        setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category, imageSrc: row.imageSrc })))
         setEditorialMode(next.editorialMode)
         setEditorialCategory(next.editorialCategory ?? '')
       })
@@ -84,18 +98,37 @@ export default function AdminHomepage() {
     })
   }
 
+  const uploadBanner = async (position: number, file: File) => {
+    setBusy(true)
+    try {
+      const dataBase64 = await fileToBase64(file)
+      const saved = await api.uploadSiteImage({ kind: 'banners', contentType: file.type || 'image/jpeg', dataBase64 })
+      setBanner(position, { imageSrc: saved.src, photoId: null })
+      toast.success('Banner image ready. Save featured slots to keep it.')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not upload the banner')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const save = async () => {
     if (!pins || !banners) return
     setBusy(true)
     try {
       const next = await api.saveHomepage({
-        pins,
+        pins: {
+          hero: pins.hero,
+          editorial: pins.editorial,
+          pricing: pins.pricing,
+          stats_background: pins.stats_background,
+        },
         categoryBanners: banners,
         editorial: { mode: editorialMode, category: editorialCategory || null },
       })
       setPage(next)
       setPins(emptyPins(next))
-      setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category })))
+      setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category, imageSrc: row.imageSrc })))
       setEditorialMode(next.editorialMode)
       setEditorialCategory(next.editorialCategory ?? '')
       toast.success('Homepage featured slots saved')
@@ -113,8 +146,8 @@ export default function AdminHomepage() {
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
         The public menu is edited under <Link to="/admin/menu" className="text-terra">Menu</Link>. Other words and the logo are under <Link to="/admin/site" className="text-terra">Site content</Link>. Featuring a photograph is curation, not a licence and not AI-training consent.
         Private, portfolio, and agency-protected inventory cannot appear on the public homepage.
-        Featured images scroll sideways above the three homepage messages. Choose that list by category on <Link to="/admin/featured" className="text-terra">Featured images</Link>. Category banners sit below those messages and link to the category you choose.
-        Empty positions fall back to live ranking so the page never goes blank.
+        The homepage featured strip is edited only on <Link to="/admin/featured" className="text-terra">Featured images</Link>, including the switch on each photograph in Content.
+        Category banners sit below the three messages. Upload a banner image here, or choose a live photograph. Empty positions fall back to live ranking so the page never goes blank.
       </p>
 
       <div className="mt-6 flex flex-wrap items-end gap-3">
@@ -148,7 +181,7 @@ export default function AdminHomepage() {
                   toast.message(`Select a slot, then pin ${photo.id}`)
                   return
                 }
-                if (target.kind === 'banner') setBanner(target.position, { photoId: photo.id })
+                if (target.kind === 'banner') setBanner(target.position, { photoId: photo.id, imageSrc: null })
                 else setPin(target.slot, target.position, photo.id)
               }}
               className="flex items-center gap-3 rounded-2xl border border-sand-soft bg-white p-2 text-left hover:border-terra"
@@ -164,7 +197,7 @@ export default function AdminHomepage() {
       )}
 
       <div className="mt-10 space-y-10">
-        {HOME_FEATURED_SLOT_KEYS.map((slot) => (
+        {HOME_FEATURED_SLOT_KEYS.filter((slot) => slot !== 'edge').map((slot) => (
           <section key={slot}>
             <h2 className="font-serif-display text-2xl font-light">{page?.labels[slot] ?? slot}</h2>
             <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
@@ -241,16 +274,17 @@ export default function AdminHomepage() {
                 )
               })}
             </div>
-            {slot === 'edge' && (
-              <section className="mt-10">
+          </section>
+        ))}
+        <FrontpageContributors page={page} busy={busy} onSaved={load} />
+        <section className="mt-10">
                 <h2 className="font-serif-display text-2xl font-light">Category banners</h2>
                 <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
                   {page?.categoryBannerCapacity ?? banners?.length ?? 0} positions
                 </p>
                 <p className="mt-2 max-w-2xl text-sm text-ink-soft">
                   These banners sit below the three homepage messages and scroll sideways with the mouse wheel.
-                  Choose the category each image links to. Leave a photograph blank to use a live image from that category.
-                  Leave every banner blank and the homepage shows one live photograph per category.
+                  Upload an image for a category, or choose a live photograph. Leave a banner blank to use a live image from that category.
                 </p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {(page?.categoryBanners ?? []).map((row) => {
@@ -262,12 +296,12 @@ export default function AdminHomepage() {
                         className={`rounded-2xl border bg-white p-3 ${selected ? 'border-terra' : 'border-sand-soft'}`}
                       >
                         <button type="button" className="w-full text-left" onClick={() => setTarget({ kind: 'banner', position: row.position })}>
-                          {row.photo ? (
-                            <img src={row.photo.src} alt="" className="h-28 w-full rounded-xl object-cover" />
+                          {(draft?.imageSrc || row.photo) ? (
+                            <img src={draft?.imageSrc || row.photo?.src} alt="" className="h-28 w-full rounded-xl object-cover" />
                           ) : (
                             <div className="flex h-28 items-center justify-center rounded-xl bg-cream text-sm text-ink-faint">Empty — auto fill</div>
                           )}
-                          <p className="mt-2 text-sm font-medium">{row.photo?.title ?? 'No photograph yet'}</p>
+                          <p className="mt-2 text-sm font-medium">{draft?.imageSrc ? 'Uploaded banner' : (row.photo?.title ?? 'No photograph yet')}</p>
                           <p className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
                             #{row.position + 1} · {draft?.category || 'no category'} · {row.source}
                           </p>
@@ -288,28 +322,126 @@ export default function AdminHomepage() {
                             <input
                               value={draft?.photoId ?? ''}
                               onFocus={() => setTarget({ kind: 'banner', position: row.position })}
-                              onChange={(e) => setBanner(row.position, { photoId: e.target.value.trim() || null })}
+                              onChange={(e) => setBanner(row.position, { photoId: e.target.value.trim() || null, imageSrc: null })}
                               placeholder="Photo id or leave blank"
                               className="min-w-0 flex-1 rounded-full border border-sand-soft px-3 py-1.5 font-mono-tech text-[11px] outline-none focus:border-terra"
                             />
                             <button
                               type="button"
-                              onClick={() => setBanner(row.position, { photoId: null, category: null })}
+                              onClick={() => setBanner(row.position, { photoId: null, category: null, imageSrc: null })}
                               className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft"
                             >
                               Auto
                             </button>
                           </div>
+                          <label className="block font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                            Upload banner
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              aria-label={`Upload banner ${row.position + 1}`}
+                              className="mt-1 block w-full text-sm"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                e.target.value = ''
+                                if (!file) return
+                                void uploadBanner(row.position, file)
+                              }}
+                            />
+                          </label>
                         </div>
                       </article>
                     )
                   })}
                 </div>
-              </section>
-            )}
-          </section>
-        ))}
+        </section>
       </div>
     </AdminShell>
+  )
+}
+
+function FrontpageContributors({ page, busy, onSaved }: { page: HomeFeaturedAdminDto | null; busy: boolean; onSaved: () => void }) {
+  const [people, setPeople] = useState<HomeContributorPick[]>([])
+  const [randomize, setRandomize] = useState(false)
+  const [query, setQuery] = useState('')
+  const [hits, setHits] = useState<HomeContributorPick[]>([])
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!page) return
+    setPeople(page.contributors.people)
+    setRandomize(page.contributors.randomize)
+  }, [page])
+
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2) {
+      setHits([])
+      return
+    }
+    const handle = window.setTimeout(() => {
+      api.homepageContributors(term)
+        .then((data) => setHits(data.items))
+        .catch(() => setHits([]))
+    }, 200)
+    return () => window.clearTimeout(handle)
+  }, [query])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await api.saveHomepage({ pins: {}, contributors: { ids: people.map((person) => person.id), randomize } })
+      toast.success(randomize ? 'Frontpage contributors will shuffle on each visit' : 'Frontpage contributors saved')
+      onSaved()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save contributors')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="rounded-3xl border border-sand-soft bg-white p-5">
+      <h2 className="font-serif-display text-2xl font-light">Frontpage contributors</h2>
+      <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+        Choose who appears in the contributor row on the homepage. Leave this empty and the row keeps the live ranking.
+        Shuffle changes the order of the people you chose on each visit.
+      </p>
+      <label className="mt-4 flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={randomize} onChange={(e) => setRandomize(e.target.checked)} />
+        Shuffle these contributors
+      </label>
+      <div className="mt-4 space-y-2">
+        {people.map((person, index) => (
+          <div key={person.id} className="flex items-center justify-between gap-3 rounded-2xl border border-sand-soft px-3 py-2">
+            <p className="text-sm">{index + 1}. {person.name} <span className="text-ink-faint">@{person.handle}</span></p>
+            <button type="button" onClick={() => setPeople((rows) => rows.filter((row) => row.id !== person.id))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em]">Remove</button>
+          </div>
+        ))}
+        {people.length === 0 && <p className="text-sm text-ink-soft">No contributors chosen yet.</p>}
+      </div>
+      <label className="mt-4 block max-w-sm">
+        <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Find a contributor</span>
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or handle" className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+      </label>
+      {hits.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {hits.map((person) => (
+            <button
+              key={person.id}
+              type="button"
+              disabled={people.some((row) => row.id === person.id) || people.length >= 24}
+              onClick={() => setPeople((rows) => rows.some((row) => row.id === person.id) ? rows : [...rows, person])}
+              className="rounded-full border border-sand px-3 py-1.5 text-sm disabled:opacity-40"
+            >
+              {person.name}
+            </button>
+          ))}
+        </div>
+      )}
+      <button type="button" disabled={busy || saving} onClick={() => void save()} className="mt-4 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
+        Save frontpage contributors
+      </button>
+    </section>
   )
 }

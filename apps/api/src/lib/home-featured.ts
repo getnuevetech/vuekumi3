@@ -59,12 +59,26 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
   const bannerPhotoIds = (banners ?? []).map((row) => row.photoId).filter((id): id is string => Boolean(id))
   for (const row of banners ?? []) {
     assertKnownCategory(row.category, 'this category banner')
-    if (row.photoId && !row.category) throw httpError('Choose a category for each category banner.')
+    if ((row.photoId || row.imageSrc) && !row.category) throw httpError('Choose a category for each category banner.')
+    if (row.imageSrc && !row.imageSrc.startsWith('/api/media/site/banners/')) {
+      throw httpError('Upload the category banner from this page.')
+    }
   }
   if (editorial?.mode === 'category' && !editorial.category) {
     throw httpError('Choose a category for the editorial slides.')
   }
   assertKnownCategory(editorial?.category, 'the editorial split')
+  const contributorInput = 'pins' in input ? input.contributors : undefined
+  if (contributorInput) {
+    const ids = [...new Set(contributorInput.ids)]
+    if (ids.length) {
+      const people = await prisma.user.findMany({
+        where: { id: { in: ids }, status: 'active', contributorProfile: { isNot: null } },
+        select: { id: true },
+      })
+      if (people.length !== ids.length) throw httpError('Choose active contributors.')
+    }
+  }
 
   const uniqueIds = [...new Set([...wanted.map((row) => row.photoId), ...bannerPhotoIds])]
   const photos = uniqueIds.length
@@ -93,7 +107,9 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
     if (banners) {
       await tx.homeFeaturedPin.deleteMany({ where: { slot: CATEGORY_SLOT } })
       const rows = banners.flatMap((row, position) =>
-        row.photoId || row.category ? [{ slot: CATEGORY_SLOT, position, photoId: row.photoId, category: row.category }] : [],
+        row.photoId || row.category || row.imageSrc
+          ? [{ slot: CATEGORY_SLOT, position, photoId: row.imageSrc ? null : row.photoId, category: row.category, imageSrc: row.imageSrc }]
+          : [],
       )
       if (rows.length) await tx.homeFeaturedPin.createMany({ data: rows })
     }
@@ -117,6 +133,14 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
         where: { slot: 'edge' },
         create: { slot: 'edge', mode: 'pins', widthVw: size.widthVw, heightVw: size.heightVw },
         update: { widthVw: size.widthVw, heightVw: size.heightVw },
+      })
+    }
+    if ('pins' in input && input.contributors) {
+      const ids = [...new Set(input.contributors.ids)]
+      await tx.homeSectionConfig.upsert({
+        where: { slot: 'contributors' },
+        create: { slot: 'contributors', mode: 'picked', contributorIds: ids, randomize: input.contributors.randomize },
+        update: { contributorIds: ids, randomize: input.contributors.randomize },
       })
     }
   })
@@ -197,15 +221,16 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     slots[slot] = positions
   }
 
-  const [bannerRows, editorialConfig, frameConfig] = await Promise.all([
+  const [bannerRows, editorialConfig, frameConfig, contributorConfig] = await Promise.all([
     prisma.homeFeaturedPin.findMany({ where: { slot: CATEGORY_SLOT }, orderBy: { position: 'asc' } }),
     prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } }),
     prisma.homeSectionConfig.findUnique({ where: { slot: 'edge' } }),
+    prisma.homeSectionConfig.findUnique({ where: { slot: 'contributors' } }),
   ])
   const bannerPins = normalizeCategoryBanners(
     Array.from({ length: HOME_CATEGORY_BANNER_CAPACITY }, (_, position) => {
       const row = bannerRows.find((item) => item.position === position)
-      return { photoId: row?.photoId ?? null, category: row?.category ?? null }
+      return { photoId: row?.photoId ?? null, category: row?.category ?? null, imageSrc: row?.imageSrc ?? null }
     }),
   )
   const bannerPhotoIds = bannerPins.map((row) => row.photoId).filter((id): id is string => Boolean(id))
@@ -217,9 +242,9 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
   const categoryBanners = [] as HomeFeaturedAdminDto['categoryBanners']
   for (let i = 0; i < HOME_CATEGORY_BANNER_CAPACITY; i++) {
     const pin = bannerPins[i]!
-    let photo = pin.photoId ? lookup.get(pin.photoId) : undefined
-    let source: 'pinned' | 'auto' = pin.photoId ? 'pinned' : 'auto'
-    if (!photo && pin.category) {
+    let photo = pin.imageSrc ? undefined : pin.photoId ? lookup.get(pin.photoId) : undefined
+    let source: 'pinned' | 'auto' | 'upload' = pin.imageSrc ? 'upload' : pin.photoId ? 'pinned' : 'auto'
+    if (!photo && !pin.imageSrc && pin.category) {
       photo = await prisma.photo.findFirst({
         where: { ...LIVE, category: pin.category },
         include: catalogPhotoInclude,
@@ -231,12 +256,21 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
       position: i,
       photoId: pin.photoId,
       category: pin.category,
+      imageSrc: pin.imageSrc ?? null,
       photo: photo ? serializeCatalogPhoto(photo) : null,
-      source: pin.photoId || pin.category ? source : 'auto',
+      source: pin.imageSrc || pin.photoId || pin.category ? source : 'auto',
     })
   }
 
   const editorialMode: HomeEditorialMode = editorialConfig?.mode === 'category' ? 'category' : 'pins'
+  const contributorIds = contributorConfig?.contributorIds ?? []
+  const contributorPeople = contributorIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: contributorIds } },
+        select: { id: true, name: true, avatarUrl: true, contributorProfile: { select: { handle: true, location: true } } },
+      })
+    : []
+  const contributorById = new Map(contributorPeople.map((person) => [person.id, person]))
 
   return {
     capacities: HOME_FEATURED_CAPACITY,
@@ -248,5 +282,42 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     editorialMode,
     editorialCategory: editorialConfig?.category ?? null,
     frame: normalizeFeaturedFrame(frameConfig),
+    contributors: {
+      ids: contributorIds,
+      randomize: contributorConfig?.randomize ?? false,
+      people: contributorIds.flatMap((id) => {
+        const person = contributorById.get(id)
+        if (!person?.contributorProfile) return []
+        return [{
+          id: person.id,
+          name: person.name,
+          handle: person.contributorProfile.handle,
+          avatarUrl: person.avatarUrl,
+          location: person.contributorProfile.location,
+        }]
+      }),
+    },
   }
+}
+
+export async function setPhotoFeatured(photoId: string, featured: boolean) {
+  const photo = await prisma.photo.findUnique({
+    where: { id: photoId },
+    select: { id: true, status: true, permissionState: true },
+  })
+  const block = homeFeaturedBlocked(photo)
+  if (featured && block) throw httpError(block)
+  const pins = normalizeHomePins(await loadHomePins())
+  const edge = [...pins.edge]
+  const at = edge.indexOf(photoId)
+  if (featured) {
+    if (at >= 0) return { featured: true }
+    const slot = edge.findIndex((id) => !id)
+    if (slot < 0) throw httpError('The featured list is full. Remove one before adding another.')
+    edge[slot] = photoId
+  } else if (at >= 0) {
+    edge[at] = null
+  }
+  await replaceHomePins({ pins: { edge } })
+  return { featured }
 }

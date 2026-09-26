@@ -132,7 +132,7 @@ export default function AdminFeatured() {
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Featured images</p>
       <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Featured images.</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-        This list is what visitors scroll on the homepage. Choose photographs from any category. Contributors cannot mark their own images as featured.
+        This is the only place the homepage featured strip is edited. The same photographs can be switched on from Content, and they appear in this list. Choose photographs from any category. Contributors cannot mark their own images as featured.
         A paid featuring offer for contributors can be added later. It is not available from contributor accounts.
         Other homepage slots stay on <Link to="/admin/homepage" className="text-terra">Homepage</Link>.
         Empty places fill from the live library until you choose a photograph.

@@ -45,6 +45,17 @@ export function AdminContent() {
 
   useEffect(() => { load() }, [q, lockedOnly, category])
 
+  const toggleFeatured = async (photo: AdminContentRow) => {
+    const featured = !photo.featured
+    try {
+      await api.setContentFeatured(photo.id, featured)
+      setItems((rows) => rows.map((row) => row.id === photo.id ? { ...row, featured } : row))
+      toast.success(featured ? 'Added to featured images' : 'Removed from featured images')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update featured images')
+    }
+  }
+
   const open = (id: string) => {
     api.adminContentDetail(id).then((next) => {
       setDetail(next)
@@ -89,7 +100,7 @@ export function AdminContent() {
         <table className="w-full min-w-[920px] text-left text-sm">
           <thead>
             <tr className="border-b border-sand-soft font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">
-              {['Image', 'Licence', 'Permission', 'People', 'Two-party', 'Copyright', 'Platform', 'Status'].map((c) => (
+              {['Image', 'Featured', 'Licence', 'Permission', 'People', 'Two-party', 'Copyright', 'Platform', 'Status'].map((c) => (
                 <th key={c} className="px-4 py-3 font-medium">{c}</th>
               ))}
             </tr>
@@ -105,6 +116,20 @@ export function AdminContent() {
                       <p className="font-mono-tech text-[10px] text-ink-faint">{p.id} · @{p.photographer}</p>
                     </div>
                   </div>
+                </td>
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    aria-pressed={Boolean(p.featured)}
+                    aria-label={p.featured ? `Remove ${p.title} from featured` : `Feature ${p.title}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      void toggleFeatured(p)
+                    }}
+                    className={`rounded-full border px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] ${p.featured ? 'border-terra bg-terra text-paper' : 'border-sand text-ink-soft'}`}
+                  >
+                    {p.featured ? 'Featured' : 'Feature'}
+                  </button>
                 </td>
                 <td className="px-4 py-3"><StatusPill status={p.license} /></td>
                 <td className="px-4 py-3"><StatusPill status={p.permissionState ?? (p.exclusiveAvailable ? 'exclusive' : 'commercial')} /></td>

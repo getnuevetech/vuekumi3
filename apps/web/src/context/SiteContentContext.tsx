@@ -17,7 +17,10 @@ function fallbackPanels(): Record<StaticPanelKey, SitePanelPublic> {
       slides: source.slides.map((slide) => ({
         src: isDirectImageRef(slide.imageRef) ? slide.imageRef : null,
         quote: slide.quote,
-        credit: slide.credit,
+        credit: isDirectImageRef(slide.imageRef) ? slide.credit : '',
+        title: '',
+        country: '',
+        contributorName: '',
       })),
     }
   }

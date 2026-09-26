@@ -31,11 +31,33 @@ async function resolvePanels(content: SiteContent): Promise<Record<StaticPanelKe
   const panels = {} as Record<StaticPanelKey, SitePanelPublic>
   for (const panel of STATIC_PANELS) {
     const source = content.panels[panel.key]
-    const slides = await Promise.all(source.slides.map(async (slide) => ({
-      src: await resolveImageRef(slide.imageRef),
-      quote: slide.quote,
-      credit: slide.credit,
-    })))
+    const slides = await Promise.all(source.slides.map(async (slide) => {
+      if (isDirectImageRef(slide.imageRef)) {
+        return {
+          src: slide.imageRef,
+          quote: slide.quote,
+          credit: slide.credit,
+          title: '',
+          country: '',
+          contributorName: '',
+        }
+      }
+      const photo = await prisma.photo.findUnique({
+        where: { id: slide.imageRef },
+        select: { src: true, status: true, title: true, country: true, contributor: { select: { name: true } } },
+      })
+      if (!photo || photo.status !== 'active') {
+        return { src: null, quote: slide.quote, credit: '', title: '', country: '', contributorName: '' }
+      }
+      return {
+        src: photo.src,
+        quote: slide.quote,
+        credit: '',
+        title: photo.title,
+        country: photo.country,
+        contributorName: photo.contributor.name,
+      }
+    }))
     panels[panel.key] = { intervalSec: source.intervalSec, slides }
   }
   return panels

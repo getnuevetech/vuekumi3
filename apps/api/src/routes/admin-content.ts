@@ -16,6 +16,7 @@ import {
   permissionWriteData,
   resolvePermissionState,
 } from '../lib/permissions.js'
+import { setPhotoFeatured } from '../lib/home-featured.js'
 
 export async function adminContentRoutes(app: FastifyInstance) {
   const list = { preHandler: requireAdminCapability(app, 'content.list') }
@@ -51,7 +52,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
         : {}),
     }
 
-    const [total, photos] = await Promise.all([
+    const [total, photos, featuredRows] = await Promise.all([
       prisma.photo.count({ where }),
       prisma.photo.findMany({
         where,
@@ -67,7 +68,12 @@ export async function adminContentRoutes(app: FastifyInstance) {
         skip: (page - 1) * limit,
         take: limit,
       }),
+      prisma.homeFeaturedPin.findMany({
+        where: { slot: 'edge', photoId: { not: null } },
+        select: { photoId: true },
+      }),
     ])
+    const featuredIds = new Set(featuredRows.map((row) => row.photoId).filter((id): id is string => Boolean(id)))
 
     return {
       total,
@@ -80,8 +86,28 @@ export async function adminContentRoutes(app: FastifyInstance) {
         ),
         modelReleases: p.modelReleases,
         grantsCount: p.licenseGrants.length,
+        featured: featuredIds.has(p.id),
       })),
     }
+  })
+
+  app.post('/admin/content/:id/featured', { preHandler: requireAdminCapability(app, 'content.featured') }, async (request) => {
+    const { id } = request.params as { id: string }
+    const body = request.body as { featured?: boolean }
+    if (typeof body?.featured !== 'boolean') {
+      const err = new Error('Choose whether this photograph is featured') as Error & { statusCode?: number }
+      err.statusCode = 400
+      throw err
+    }
+    const result = await setPhotoFeatured(id, body.featured)
+    await writeAuditLog({
+      actorId: request.userId,
+      action: body.featured ? 'admin.content.feature' : 'admin.content.unfeature',
+      entityType: 'photo',
+      entityId: id,
+      ipAddress: request.ip,
+    })
+    return result
   })
 
   app.get('/admin/content/:id', read, async (request, reply) => {

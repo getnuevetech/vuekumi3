@@ -95,3 +95,46 @@ test('staff can pin a live stock photo onto the homepage hero; finance cannot; p
 
   await app.close()
 })
+
+test('content featured switch adds and removes a homepage featured image', async () => {
+  const app = await buildApp()
+  const admin = await login(app, 'admin@vuekumi.com', 'Admin123!')
+  const before = await prisma.homeFeaturedPin.findMany({ where: { slot: 'edge', photoId: 'afr-011' } })
+  try {
+    const on = await app.inject({
+      method: 'POST',
+      url: '/api/admin/content/afr-011/featured',
+      headers: { cookie: admin },
+      payload: { featured: true },
+    })
+    assert.equal(on.statusCode, 200, on.body)
+    assert.equal((on.json() as { featured: boolean }).featured, true)
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/api/admin/content?q=afr-011',
+      headers: { cookie: admin },
+    })
+    const row = (listed.json() as { items: { id: string; featured?: boolean }[] }).items.find((item) => item.id === 'afr-011')
+    assert.equal(row?.featured, true)
+
+    const home = await app.inject({ method: 'GET', url: '/api/admin/homepage', headers: { cookie: admin } })
+    const edge = (home.json() as { pins: { edge: (string | null)[] } }).pins.edge
+    assert.equal(edge.includes('afr-011'), true)
+
+    const off = await app.inject({
+      method: 'POST',
+      url: '/api/admin/content/afr-011/featured',
+      headers: { cookie: admin },
+      payload: { featured: false },
+    })
+    assert.equal(off.statusCode, 200, off.body)
+    const after = await app.inject({ method: 'GET', url: '/api/admin/homepage', headers: { cookie: admin } })
+    assert.equal((after.json() as { pins: { edge: (string | null)[] } }).pins.edge.includes('afr-011'), false)
+  } finally {
+    if (!before.length) {
+      await prisma.homeFeaturedPin.deleteMany({ where: { slot: 'edge', photoId: 'afr-011' } })
+    }
+    await app.close()
+  }
+})

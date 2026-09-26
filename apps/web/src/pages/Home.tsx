@@ -728,14 +728,19 @@ function StatsBand({
 
 /* ---------------- contributors rail ---------------- */
 
-function ContributorsRail() {
+function ContributorsRail({ people }: { people?: PhotographerDto[] }) {
   const { content } = useSiteContent();
   const copy = content.home.contributors;
   const [makers, setMakers] = useState<PhotographerDto[]>([]);
 
   useEffect(() => {
+    if (!people) return
+    if (people.length) {
+      setMakers(people)
+      return
+    }
     api.photographers({ limit: 20 }).then((d) => setMakers(d.items)).catch(() => setMakers([]));
-  }, []);
+  }, [people]);
 
   return (
     <section className="bg-noir py-20 md:py-24">
@@ -973,7 +978,7 @@ export default function Home() {
       <InfiniteFeed />
       <EditorialSplit photos={featured?.editorial ?? []} stats={stats} />
       <StatsBand categories={stats?.categories ?? []} background={featured?.statsBackground ?? null} />
-      <ContributorsRail />
+      <ContributorsRail people={home?.contributors} />
       <ModelsRail />
       <NoirPricing photos={featured?.pricing ?? []} />
       <NoirFooter />

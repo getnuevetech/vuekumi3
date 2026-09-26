@@ -1,7 +1,27 @@
 import { useEffect, useState } from 'react'
-import type { SitePanelPublic } from '@vuekumi/shared'
+import type { SitePanelPublic, SitePanelSlidePublic } from '@vuekumi/shared'
 
 const FALLBACK_SRC = '/images/photos/fashion-portrait.jpg'
+
+function SlideCaption({ slide }: { slide: SitePanelSlidePublic }) {
+  const facts = [slide.title, slide.country, slide.contributorName].filter(Boolean)
+  const line = facts.length ? facts.join(' · ') : slide.credit
+  if (!slide.quote && !line) return null
+  return (
+    <div className="absolute bottom-10 left-10 right-10">
+      {slide.quote && (
+        <p className="font-serif-display text-3xl font-light leading-snug text-paper">
+          <QuoteText text={slide.quote} />
+        </p>
+      )}
+      {line && (
+        <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.25em] text-paper-faint">
+          {line}
+        </p>
+      )}
+    </div>
+  )
+}
 
 function QuoteText({ text }: { text: string }) {
   const match = text.match(/That['\u2019]s the point\./)
@@ -15,13 +35,16 @@ function QuoteText({ text }: { text: string }) {
 }
 
 export function PageImagePanel({ panel }: { panel: SitePanelPublic }) {
-  const live = panel.slides.filter((slide): slide is { src: string; quote: string; credit: string } => Boolean(slide.src))
+  const live = panel.slides.filter((slide): slide is SitePanelSlidePublic & { src: string } => Boolean(slide.src))
   const slides = live.length
     ? live
     : [{
         src: FALLBACK_SRC,
         quote: panel.slides[0]?.quote ?? '',
         credit: panel.slides[0]?.credit ?? '',
+        title: panel.slides[0]?.title ?? '',
+        country: panel.slides[0]?.country ?? '',
+        contributorName: panel.slides[0]?.contributorName ?? '',
       }]
   const signature = slides.map((slide) => slide.src).join('\n')
   const [index, setIndex] = useState(0)
@@ -52,20 +75,7 @@ export function PageImagePanel({ panel }: { panel: SitePanelPublic }) {
         />
       ))}
       <div className="absolute inset-0 bg-gradient-to-t from-ink-deep/80 via-ink-deep/10 to-ink-deep/40" />
-      {(current.quote || current.credit) && (
-        <div className="absolute bottom-10 left-10 right-10">
-          {current.quote && (
-            <p className="font-serif-display text-3xl font-light leading-snug text-paper">
-              <QuoteText text={current.quote} />
-            </p>
-          )}
-          {current.credit && (
-            <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.25em] text-paper-faint">
-              {current.credit}
-            </p>
-          )}
-        </div>
-      )}
+      <SlideCaption slide={current} />
     </div>
   )
 }

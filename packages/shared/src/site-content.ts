@@ -39,14 +39,16 @@ export const STATIC_PANELS = [
 ] as const
 export type StaticPanelKey = (typeof STATIC_PANELS)[number]['key']
 
+export const PAGE_PANEL_SLIDE_LIMIT = 40
+
 const pagePanelSlideSchema = z.object({
   imageRef: z.string().trim().min(1).max(500),
   quote: z.string().trim().max(240),
-  credit: z.string().trim().max(80),
+  credit: z.string().trim().max(160),
 })
 const pagePanelSchema = z.object({
   intervalSec: z.number().int().min(3).max(30),
-  slides: z.array(pagePanelSlideSchema).min(1).max(8),
+  slides: z.array(pagePanelSlideSchema).min(1).max(PAGE_PANEL_SLIDE_LIMIT),
 })
 export type PagePanel = z.infer<typeof pagePanelSchema>
 
@@ -205,7 +207,17 @@ export interface SitePanelSlidePublic {
   src: string | null
   quote: string
   credit: string
+  title: string
+  country: string
+  contributorName: string
 }
+
+export const siteImageUploadSchema = z.object({
+  kind: z.enum(['banners', 'panels']),
+  contentType: z.string().trim().min(1).max(80),
+  dataBase64: z.string().min(1).max(12_000_000),
+})
+export type SiteImageUploadInput = z.infer<typeof siteImageUploadSchema>
 
 export interface SitePanelPublic {
   intervalSec: number

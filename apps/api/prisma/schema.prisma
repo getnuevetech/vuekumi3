@@ -706,6 +706,8 @@ model HomeFeaturedPin {
   photoId   String?
   /// Category banners store the category the image links to. Editorial pins leave this empty.
   category  String?
+  /// A banner image uploaded for this slot, separate from catalog photographs.
+  imageSrc  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -735,6 +737,9 @@ model HomeSectionConfig {
   /// Featured strip size on a desktop screen, as a percent of the screen width.
   widthVw   Float?
   heightVw  Float?
+  /// Frontpage contributor rail. Other slots leave these empty.
+  contributorIds String[] @default([])
+  randomize      Boolean  @default(false)
   updatedAt DateTime @updatedAt
 }
 

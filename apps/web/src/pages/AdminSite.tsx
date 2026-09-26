@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import {
   HOME_ICON_KEYS,
   MENU_FONTS,
+  PAGE_PANEL_SLIDE_LIMIT,
   PHOTO_CATEGORIES,
   SITE_MENU_AUDIENCES,
   STATIC_PANELS,
@@ -56,6 +57,25 @@ function readInterval(value: string, fallback: number) {
   return Math.max(3, Math.min(30, Math.round(raw)))
 }
 
+type SlideFacts = { title: string; country: string; contributorName: string }
+
+function isContentRef(ref: string) {
+  return !ref.startsWith('/') && !/^https?:\/\//i.test(ref)
+}
+
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const value = String(reader.result ?? '')
+      const marker = value.indexOf(',')
+      resolve(marker >= 0 ? value.slice(marker + 1) : value)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
 function previewSrc(ref: string, previews: Record<string, string>) {
   if (previews[ref]) return previews[ref]
   if (ref.startsWith('/') || /^https?:\/\//i.test(ref)) return ref
@@ -67,11 +87,15 @@ function PageImagesEditor({
   setContent,
   previews,
   setPreviews,
+  facts,
+  setFacts,
 }: {
   content: SiteContent
   setContent: (next: SiteContent) => void
   previews: Record<string, string>
   setPreviews: (next: Record<string, string> | ((current: Record<string, string>) => Record<string, string>)) => void
+  facts: Record<string, SlideFacts>
+  setFacts: (next: Record<string, SlideFacts> | ((current: Record<string, SlideFacts>) => Record<string, SlideFacts>)) => void
 }) {
   const [active, setActive] = useState<StaticPanelKey>(STATIC_PANELS[0].key)
   const [selected, setSelected] = useState(0)
@@ -112,24 +136,51 @@ function PageImagesEditor({
     })
   }
 
-  const usePhoto = (photo: AdminContentRow, mode: 'replace' | 'add') => {
+  const rememberPhoto = (photo: AdminContentRow) => {
     setPreviews((current) => ({ ...current, [photo.id]: photo.src }))
+    setFacts((current) => ({
+      ...current,
+      [photo.id]: {
+        title: photo.title,
+        country: photo.country,
+        contributorName: photo.photographerName ?? photo.photographer,
+      },
+    }))
+  }
+
+  const usePhoto = (photo: AdminContentRow, mode: 'replace' | 'add') => {
+    rememberPhoto(photo)
     if (mode === 'add') {
-      if (panel.slides.length >= 8) return
+      if (panel.slides.length >= PAGE_PANEL_SLIDE_LIMIT) return
       const slides = [...panel.slides, { imageRef: photo.id, quote: '', credit: '' }]
       writePanel(slides)
       setSelected(slides.length - 1)
       return
     }
     const index = Math.min(selected, panel.slides.length - 1)
-    writePanel(panel.slides.map((slide, i) => i === index ? { ...slide, imageRef: photo.id } : slide))
+    writePanel(panel.slides.map((slide, i) => i === index ? { ...slide, imageRef: photo.id, credit: '' } : slide))
+  }
+
+  const useUpload = async (file: File, mode: 'replace' | 'add') => {
+    if (mode === 'add' && panel.slides.length >= PAGE_PANEL_SLIDE_LIMIT) return
+    const dataBase64 = await fileToBase64(file)
+    const saved = await api.uploadSiteImage({ kind: 'panels', contentType: file.type || 'image/jpeg', dataBase64 })
+    setPreviews((current) => ({ ...current, [saved.src]: saved.src }))
+    if (mode === 'add') {
+      const slides = [...panel.slides, { imageRef: saved.src, quote: '', credit: '' }]
+      writePanel(slides)
+      setSelected(slides.length - 1)
+      return
+    }
+    const index = Math.min(selected, panel.slides.length - 1)
+    writePanel(panel.slides.map((slide, i) => i === index ? { ...slide, imageRef: saved.src } : slide))
   }
 
   return (
     <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
       <h2 className="font-serif-display text-2xl font-light">Page images</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Decorative photographs on static pages. Each page can show several images, changing on the interval you set. Choose a live photograph, then save site content.
+        Decorative photographs on static pages. Add as many as you need, including an image uploaded for this page. A photograph from the library keeps its title, country, and contributor name. An uploaded image can carry a credit you write. Save site content when the row looks right.
       </p>
       <div className="mt-4 space-y-8">
         {STATIC_PANELS.map((item) => {
@@ -192,20 +243,29 @@ function PageImagesEditor({
                           className={field}
                         />
                       </label>
-                      <label className="block">
-                        <span className={label}>Credit</span>
-                        <input
-                          value={slide.credit}
-                          maxLength={80}
-                          aria-label={`${item.label} credit ${index + 1}`}
-                          onChange={(e) => {
-                            const credit = e.target.value
-                            const slides = source.slides.map((row, i) => i === index ? { ...row, credit } : row)
-                            setContent({ ...content, panels: { ...content.panels, [item.key]: { ...source, slides } } })
-                          }}
-                          className={field}
-                        />
-                      </label>
+                      {isContentRef(slide.imageRef) ? (
+                        <div>
+                          <span className={label}>From the photograph</span>
+                          <p className="mt-2 text-sm">{facts[slide.imageRef]?.title || 'Title loads with the photograph'}</p>
+                          <p className="text-sm text-ink-soft">{facts[slide.imageRef]?.country || 'Country'}</p>
+                          <p className="text-sm text-ink-soft">{facts[slide.imageRef]?.contributorName || 'Contributor'}</p>
+                        </div>
+                      ) : (
+                        <label className="block">
+                          <span className={label}>Credit</span>
+                          <input
+                            value={slide.credit}
+                            maxLength={160}
+                            aria-label={`${item.label} credit ${index + 1}`}
+                            onChange={(e) => {
+                              const credit = e.target.value
+                              const slides = source.slides.map((row, i) => i === index ? { ...row, credit } : row)
+                              setContent({ ...content, panels: { ...content.panels, [item.key]: { ...source, slides } } })
+                            }}
+                            className={field}
+                          />
+                        </label>
+                      )}
                       <button
                         type="button"
                         disabled={source.slides.length <= 1}
@@ -230,8 +290,40 @@ function PageImagesEditor({
       <div className="mt-8">
         <h3 className="font-serif-display text-xl font-light">Choose a photograph</h3>
         <p className="mt-1 text-sm text-ink-soft">
-          Use on selected replaces image {Math.min(selected, panel.slides.length - 1) + 1} on {panelLabel}. Add image keeps the quote blank.
+          Use on selected replaces image {Math.min(selected, panel.slides.length - 1) + 1} on {panelLabel}. Add image keeps the quote blank. Upload stores an image that is not in the library.
         </p>
+        <div className="mt-4 flex flex-wrap gap-4">
+          <label className="block text-sm">
+            Upload onto selected
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Upload page image"
+              className="mt-1 block w-full text-sm"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (!file) return
+                void useUpload(file, 'replace').catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not upload the image'))
+              }}
+            />
+          </label>
+          <label className="block text-sm">
+            Upload as a new image
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Upload another page image"
+              className="mt-1 block w-full text-sm"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (!file) return
+                void useUpload(file, 'add').catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not upload the image'))
+              }}
+            />
+          </label>
+        </div>
         <label className="mt-4 block max-w-xs">
           <span className={label}>Category</span>
           <select
@@ -267,7 +359,7 @@ function PageImagesEditor({
                 </button>
                 <button
                   type="button"
-                  disabled={panel.slides.length >= 8}
+                  disabled={panel.slides.length >= PAGE_PANEL_SLIDE_LIMIT}
                   onClick={() => usePhoto(photo, 'add')}
                   className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40"
                 >
@@ -303,6 +395,7 @@ function TextField({ title, value, onChange, area = false }: { title: string; va
 export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) {
   const [content, setContent] = useState<SiteContent | null>(null)
   const [previews, setPreviews] = useState<Record<string, string>>({})
+  const [facts, setFacts] = useState<Record<string, SlideFacts>>({})
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -310,13 +403,22 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
       .then((page) => {
         setContent(page.content)
         const next: Record<string, string> = {}
+        const nextFacts: Record<string, SlideFacts> = {}
         for (const panel of STATIC_PANELS) {
           page.content.panels[panel.key].slides.forEach((slide, index) => {
-            const src = page.panels?.[panel.key]?.slides[index]?.src
-            if (slide.imageRef && src) next[slide.imageRef] = src
+            const resolved = page.panels?.[panel.key]?.slides[index]
+            if (slide.imageRef && resolved?.src) next[slide.imageRef] = resolved.src
+            if (resolved && isContentRef(slide.imageRef)) {
+              nextFacts[slide.imageRef] = {
+                title: resolved.title,
+                country: resolved.country,
+                contributorName: resolved.contributorName,
+              }
+            }
           })
         }
         setPreviews(next)
+        setFacts(nextFacts)
       })
       .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load site content'))
   }, [])
@@ -327,6 +429,20 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
     try {
       const next = await api.saveSite(content)
       setContent(next.content)
+      const nextFacts: Record<string, SlideFacts> = {}
+      for (const panel of STATIC_PANELS) {
+        next.content.panels[panel.key].slides.forEach((slide, index) => {
+          const resolved = next.panels[panel.key]?.slides[index]
+          if (resolved && isContentRef(slide.imageRef)) {
+            nextFacts[slide.imageRef] = {
+              title: resolved.title,
+              country: resolved.country,
+              contributorName: resolved.contributorName,
+            }
+          }
+        })
+      }
+      setFacts(nextFacts)
       toast.success('Site content saved')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not save')
@@ -534,7 +650,7 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
         <p className="mt-2 text-sm text-ink-soft">Leave the image blank to keep the aperture mark. A photo id must be a live photograph.</p>
       </section>
 
-      <PageImagesEditor content={content} setContent={set} previews={previews} setPreviews={setPreviews} />
+      <PageImagesEditor content={content} setContent={set} previews={previews} setPreviews={setPreviews} facts={facts} setFacts={setFacts} />
 
       <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">Header</h2>

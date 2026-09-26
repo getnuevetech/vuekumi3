@@ -1,7 +1,8 @@
-import type { HomeCategoryBannerDto, HomePageDto, HomeSlotPins } from '@vuekumi/shared'
+import type { HomeCategoryBannerDto, HomePageDto, HomeSlotPins, PhotographerDto, PhotoDto } from '@vuekumi/shared'
 import { HOME_CATEGORY_BANNER_CAPACITY, HOME_FEATURED_CAPACITY, HOME_FEATURED_SLOT_KEYS, STOCK_PERMISSION_STATES, normalizeFeaturedFrame } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares } from './home.js'
 import {
+  PROFILE_PHOTO_FILTER,
   catalogPhotoInclude,
   serializeCatalogPhoto,
   type CatalogPhoto,
@@ -100,7 +101,7 @@ export async function loadHomePage(): Promise<HomePageDto> {
     })
     editorial = rows.map((photo) => serializeCatalogPhoto(photo))
   }
-  const categories = await loadCategoryBanners()
+  const [categories, contributors] = await Promise.all([loadCategoryBanners(), loadFrontpageContributors()])
 
   return {
     stats: {
@@ -124,7 +125,79 @@ export async function loadHomePage(): Promise<HomePageDto> {
       editorialCategory,
       frame: normalizeFeaturedFrame(frameConfig),
     },
+    contributors,
   }
+}
+
+function uploadedBannerPhoto(src: string, category: string): PhotoDto {
+  return {
+    id: `banner-${category}`,
+    src,
+    title: category,
+    category,
+    country: '',
+    photographer: '',
+    license: 'free',
+    price: 0,
+    downloads: 0,
+    views: 0,
+    likes: 0,
+    tags: [],
+    status: 'active',
+  }
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const next = [...items]
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const current = next[i]!
+    next[i] = next[j]!
+    next[j] = current
+  }
+  return next
+}
+
+async function loadFrontpageContributors(): Promise<PhotographerDto[]> {
+  const config = await prisma.homeSectionConfig.findUnique({ where: { slot: 'contributors' } })
+  const ids = config?.contributorIds ?? []
+  if (!ids.length) return []
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids }, status: 'active', contributorProfile: { isNot: null } },
+    include: {
+      contributorProfile: true,
+      modelProfile: { select: { handle: true } },
+      representation: { select: { status: true } },
+      photos: { where: PROFILE_PHOTO_FILTER, select: { downloads: true } },
+      _count: { select: { followers: true } },
+    },
+  })
+  const byId = new Map(users.map((user) => [user.id, user]))
+  const ordered = ids.flatMap((id) => {
+    const user = byId.get(id)
+    if (!user?.contributorProfile) return []
+    const photosCount = user.photos.length
+    const downloads = user.photos.reduce((sum, photo) => sum + photo.downloads, 0)
+    const hireable = user.accountType === 'photographer'
+    const row: PhotographerDto = {
+      handle: user.contributorProfile.handle,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+      location: user.contributorProfile.location,
+      bio: user.contributorProfile.bio,
+      creatorKind: user.contributorProfile.creatorKind,
+      availability: hireable ? user.contributorProfile.availability : 'unavailable',
+      dayRateUsd: hireable ? user.contributorProfile.dayRateUsd : null,
+      represented: user.representation?.status === 'represented',
+      photosCount,
+      downloads,
+      followers: user._count.followers,
+      profileViews: user.contributorProfile.profileViews,
+      modelHandle: user.modelProfile?.handle ?? null,
+    }
+    return [row]
+  })
+  return config?.randomize ? shuffle(ordered) : ordered
 }
 
 async function loadCategoryBanners(): Promise<HomeCategoryBannerDto[]> {
@@ -160,6 +233,10 @@ async function loadCategoryBanners(): Promise<HomeCategoryBannerDto[]> {
   const banners: HomeCategoryBannerDto[] = []
   for (const row of configured) {
     if (!row.category) continue
+    if (row.imageSrc) {
+      banners.push({ category: row.category, photo: uploadedBannerPhoto(row.imageSrc, row.category) })
+      continue
+    }
     let photo = row.photoId ? pinnedById.get(row.photoId) : undefined
     if (photo && used.has(photo.id)) photo = undefined
     if (!photo) {

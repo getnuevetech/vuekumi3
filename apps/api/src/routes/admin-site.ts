@@ -1,13 +1,19 @@
 import type { FastifyInstance } from 'fastify'
-import { siteContentSchema } from '@vuekumi/shared'
+import { siteContentSchema, siteImageUploadSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
 import { loadSitePublic, saveSiteContent } from '../lib/site-content.js'
+import { saveSiteImage } from '../lib/site-images.js'
 
 export async function adminSiteRoutes(app: FastifyInstance) {
   const gate = { preHandler: requireAdminCapability(app, 'content.featured') }
 
   app.get('/admin/site', gate, async () => loadSitePublic())
+
+  app.post('/admin/site-images', gate, async (request) => {
+    const body = siteImageUploadSchema.parse(request.body)
+    return saveSiteImage(body)
+  })
 
   app.put('/admin/site', gate, async (request) => {
     const body = siteContentSchema.parse(request.body)

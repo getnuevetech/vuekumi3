@@ -37,6 +37,17 @@ async function sendAsset(
 }
 
 export async function mediaRoutes(app: FastifyInstance) {
+  app.get('/media/site/:kind/:file', async (request, reply) => {
+    const { kind, file } = request.params as { kind: string; file: string }
+    if (kind !== 'banners' && kind !== 'panels') return reply.code(404).send({ error: 'Image not found' })
+    if (!/^[a-z0-9-]+\.(jpg|png|webp)$/i.test(file)) return reply.code(404).send({ error: 'Image not found' })
+    try {
+      return await sendAsset(reply, `site/${kind}/${file}`, 'image/jpeg', 'public, max-age=86400')
+    } catch {
+      return reply.code(404).send({ error: 'Image not found' })
+    }
+  })
+
   app.get('/media/:id/preview', async (request, reply) => {
     await optionalAuthenticate(app, request, reply)
     const { id } = request.params as { id: string }

@@ -238,6 +238,15 @@ export const api = {
 
   adminHomepage: () => request<import('@vuekumi/shared').HomeFeaturedAdminDto>('/api/admin/homepage'),
 
+  homepageContributors: (q: string) =>
+    request<{ items: import('@vuekumi/shared').HomeContributorPick[] }>(`/api/admin/homepage/contributors?q=${encodeURIComponent(q)}`),
+
+  uploadSiteImage: (body: import('@vuekumi/shared').SiteImageUploadInput) =>
+    request<{ src: string }>('/api/admin/site-images', { method: 'POST', body: JSON.stringify(body) }),
+
+  setContentFeatured: (id: string, featured: boolean) =>
+    request<{ featured: boolean }>(`/api/admin/content/${id}/featured`, { method: 'POST', body: JSON.stringify({ featured }) }),
+
   saveHomepage: (body: import('@vuekumi/shared').PatchHomeFeaturedInput) =>
     request<import('@vuekumi/shared').HomeFeaturedAdminDto>('/api/admin/homepage', {
       method: 'PUT',
@@ -1345,6 +1354,7 @@ export { AI_PROVIDER_PURPOSES, AI_PROVIDER_PURPOSE_LABELS, type AiProviderPurpos
 export interface AdminContentRow extends PhotoDto {
   modelReleases?: { id: string; fileName: string; status: string; notes: string | null }[]
   grantsCount?: number
+  featured?: boolean
 }
 
 export interface AdminContentDetail {
