@@ -1,5 +1,5 @@
 import type { HomeCategoryBannerDto, HomePageDto, HomeSlotPins } from '@vuekumi/shared'
-import { HOME_CATEGORY_BANNER_CAPACITY, HOME_FEATURED_CAPACITY, HOME_FEATURED_SLOT_KEYS, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
+import { HOME_CATEGORY_BANNER_CAPACITY, HOME_FEATURED_CAPACITY, HOME_FEATURED_SLOT_KEYS, STOCK_PERMISSION_STATES, normalizeFeaturedFrame } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares } from './home.js'
 import {
   catalogPhotoInclude,
@@ -84,7 +84,10 @@ export async function loadHomePage(): Promise<HomePageDto> {
     liveIds,
   })
   const statsPhoto = slots.statsBackground ? lookup.get(slots.statsBackground) : undefined
-  const editorialConfig = await prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } })
+  const [editorialConfig, frameConfig] = await Promise.all([
+    prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } }),
+    prisma.homeSectionConfig.findUnique({ where: { slot: 'edge' } }),
+  ])
   const editorialMode = editorialConfig?.mode === 'category' ? 'category' as const : 'pins' as const
   const editorialCategory = editorialConfig?.category ?? null
   let editorial = mapSlot(slots.editorial, lookup)
@@ -119,6 +122,7 @@ export async function loadHomePage(): Promise<HomePageDto> {
       categories,
       editorialMode,
       editorialCategory,
+      frame: normalizeFeaturedFrame(frameConfig),
     },
   }
 }

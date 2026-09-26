@@ -732,6 +732,9 @@ model HomeSectionConfig {
   /// Homepage pricing section words. Other slots leave these empty.
   kicker    String?
   title     String?
+  /// Featured strip size on a desktop screen, as a percent of the screen width.
+  widthVw   Float?
+  heightVw  Float?
   updatedAt DateTime @updatedAt
 }
 

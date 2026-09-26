@@ -16,6 +16,8 @@ export default function AdminFeatured() {
   const [catalogPage, setCatalogPage] = useState(1)
   const [catalog, setCatalog] = useState<AdminContentRow[]>([])
   const [catalogTotal, setCatalogTotal] = useState(0)
+  const [widthVw, setWidthVw] = useState('')
+  const [heightVw, setHeightVw] = useState('')
   const [busy, setBusy] = useState(false)
 
   const load = () => {
@@ -25,6 +27,12 @@ export default function AdminFeatured() {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (!page) return
+    setWidthVw(String(page.frame.widthVw))
+    setHeightVw(String(page.frame.heightVw))
+  }, [page])
 
   useEffect(() => {
     let cancelled = false
@@ -48,6 +56,25 @@ export default function AdminFeatured() {
       toast.success(message)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not update featured images')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const saveSize = async () => {
+    const width = Number(widthVw)
+    const height = Number(heightVw)
+    if (!Number.isFinite(width) || !Number.isFinite(height)) {
+      toast.error('Enter a width and a height')
+      return
+    }
+    setBusy(true)
+    try {
+      const next = await api.saveHomepage({ pins: {}, frame: { widthVw: width, heightVw: height } })
+      setPage(next)
+      toast.success('Featured image size saved')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save the size')
     } finally {
       setBusy(false)
     }
@@ -110,6 +137,50 @@ export default function AdminFeatured() {
         Other homepage slots stay on <Link to="/admin/homepage" className="text-terra">Homepage</Link>.
         Empty places fill from the live library until you choose a photograph.
       </p>
+
+      <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
+        <h2 className="font-serif-display text-2xl font-light">Size</h2>
+        <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+          Desktop width and height, each as a percent of the screen width. Phone and tablet keep this shape and scale with the screen.
+          The starting size is 23.52 wide and 41.81 tall.
+        </p>
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <label className="block">
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Width</span>
+            <input
+              type="number"
+              min={12}
+              max={70}
+              step={0.1}
+              value={widthVw}
+              aria-label="Featured width"
+              onChange={(e) => setWidthVw(e.target.value)}
+              className="mt-1 w-32 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra"
+            />
+          </label>
+          <label className="block">
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Height</span>
+            <input
+              type="number"
+              min={16}
+              max={95}
+              step={0.1}
+              value={heightVw}
+              aria-label="Featured height"
+              onChange={(e) => setHeightVw(e.target.value)}
+              className="mt-1 w-32 rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void saveSize()}
+            className="rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50"
+          >
+            Save size
+          </button>
+        </div>
+      </section>
 
       <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">On the homepage</h2>

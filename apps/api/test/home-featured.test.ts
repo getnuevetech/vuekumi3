@@ -69,8 +69,22 @@ test('staff can pin a live stock photo onto the homepage hero; finance cannot; p
 
   const home = await app.inject({ method: 'GET', url: '/api/public/home' })
   assert.equal(home.statusCode, 200)
-  const page = home.json() as { featured: { hero: { id: string }[] } }
+  const page = home.json() as { featured: { hero: { id: string }[]; frame: { widthVw: number; heightVw: number } } }
   assert.equal(page.featured.hero[0]?.id, 'afr-012')
+  assert.equal(page.featured.frame.widthVw, 23.52)
+  assert.equal(page.featured.frame.heightVw, 41.81)
+
+  const sized = await app.inject({
+    method: 'PUT',
+    url: '/api/admin/homepage',
+    headers: { cookie: admin },
+    payload: { pins: {}, frame: { widthVw: 30, heightVw: 50 } },
+  })
+  assert.equal(sized.statusCode, 200, sized.body)
+  assert.equal((sized.json() as { frame: { widthVw: number } }).frame.widthVw, 30)
+  const resized = await app.inject({ method: 'GET', url: '/api/public/home' })
+  assert.equal((resized.json() as { featured: { frame: { heightVw: number } } }).featured.frame.heightVw, 50)
+  await prisma.homeSectionConfig.deleteMany({ where: { slot: 'edge' } })
 
   await prisma.homeFeaturedPin.deleteMany({ where: { slot: 'hero', position: 0, photoId: 'afr-012' } })
   await prisma.homeFeaturedPin.upsert({

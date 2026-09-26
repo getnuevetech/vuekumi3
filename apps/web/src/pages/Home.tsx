@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { PHOTO_CATEGORIES, type HomeCategoryBannerDto, type HomeIconKey, type HomePageDto, type ModelPublicDto, type PhotoDto, type PhotographerDto, type PublicStatsDto, type SiteFacts } from '@vuekumi/shared';
+import { DEFAULT_FEATURED_FRAME, PHOTO_CATEGORIES, type FeaturedFrame, type HomeCategoryBannerDto, type HomeIconKey, type HomePageDto, type ModelPublicDto, type PhotoDto, type PhotographerDto, type PublicStatsDto, type SiteFacts } from '@vuekumi/shared';
 import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass, sortMenuLinks } from '@vuekumi/shared';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { CountryMark, PhotoHoverActions } from '../components/PhotoActions';
@@ -390,12 +390,16 @@ function useBidirectionalWheel(node: HTMLDivElement | null) {
   }, [node])
 }
 
-function FeaturedStrip({ photos }: { photos: PhotoDto[] }) {
+function FeaturedStrip({ photos, frame }: { photos: PhotoDto[]; frame: FeaturedFrame }) {
   const [node, setNode] = useState<HTMLDivElement | null>(null)
   useBidirectionalWheel(node)
   if (photos.length === 0) return null
   return (
-    <section className="bg-noir" aria-label="Featured images">
+    <section
+      className="bg-noir"
+      aria-label="Featured images"
+      style={{ ['--featured-width' as string]: `${frame.widthVw}vw`, ['--featured-height' as string]: `${frame.heightVw}vw` }}
+    >
       <div
         ref={setNode}
         data-strip="featured"
@@ -405,7 +409,7 @@ function FeaturedStrip({ photos }: { photos: PhotoDto[] }) {
           <Link
             key={p.id}
             to={`/photo/${p.id}`}
-            className="strip-cell group relative block aspect-[3/4] w-[calc(72vw*0.7)] shrink-0 overflow-hidden sm:w-[calc(46vw*0.7)] lg:w-[calc(28vw*0.7)]"
+            className="strip-cell featured-frame group relative block shrink-0 overflow-hidden"
           >
             <img src={p.src} alt={p.title} loading={i > 1 ? 'lazy' : undefined} className="h-full w-full object-cover" />
             <CountryMark country={p.country} />
@@ -962,7 +966,7 @@ export default function Home() {
       <NoirHeader />
       <HeroSlider photos={featured?.hero ?? []} stats={stats} />
       <Marquee categories={stats ? stats.categories.map((c) => c.value) : []} />
-      <FeaturedStrip photos={featured?.edge ?? []} />
+      <FeaturedStrip photos={featured?.edge ?? []} frame={featured?.frame ?? DEFAULT_FEATURED_FRAME} />
       <IconRow />
       <CategoryBanners banners={featured?.categories ?? []} />
       <CtaBand />

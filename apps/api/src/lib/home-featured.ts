@@ -6,6 +6,7 @@ import {
   PHOTO_CATEGORIES,
   featuredPinIneligibleReason,
   normalizeCategoryBanners,
+  normalizeFeaturedFrame,
   normalizeHomePins,
   type HomeEditorialMode,
   type HomeFeaturedAdminDto,
@@ -46,6 +47,7 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
   const pins: HomeSlotPins = 'pins' in input ? input.pins : input
   const categoryBanners = 'pins' in input ? input.categoryBanners : undefined
   const editorial = 'pins' in input ? input.editorial : undefined
+  const frame = 'pins' in input ? input.frame : undefined
   const current = normalizeHomePins(await loadHomePins())
   const normalized = normalizeHomePins({ ...current, ...pins })
   const wanted = HOME_FEATURED_SLOT_KEYS.flatMap((slot) =>
@@ -107,6 +109,14 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
           mode: editorial.mode,
           category: editorial.category ?? null,
         },
+      })
+    }
+    if (frame) {
+      const size = normalizeFeaturedFrame(frame)
+      await tx.homeSectionConfig.upsert({
+        where: { slot: 'edge' },
+        create: { slot: 'edge', mode: 'pins', widthVw: size.widthVw, heightVw: size.heightVw },
+        update: { widthVw: size.widthVw, heightVw: size.heightVw },
       })
     }
   })
@@ -187,9 +197,10 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     slots[slot] = positions
   }
 
-  const [bannerRows, editorialConfig] = await Promise.all([
+  const [bannerRows, editorialConfig, frameConfig] = await Promise.all([
     prisma.homeFeaturedPin.findMany({ where: { slot: CATEGORY_SLOT }, orderBy: { position: 'asc' } }),
     prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } }),
+    prisma.homeSectionConfig.findUnique({ where: { slot: 'edge' } }),
   ])
   const bannerPins = normalizeCategoryBanners(
     Array.from({ length: HOME_CATEGORY_BANNER_CAPACITY }, (_, position) => {
@@ -236,5 +247,6 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     categoryBanners,
     editorialMode,
     editorialCategory: editorialConfig?.category ?? null,
+    frame: normalizeFeaturedFrame(frameConfig),
   }
 }

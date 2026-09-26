@@ -52,6 +52,36 @@ export const categoryBannerPinSchema = z.object({
 })
 export type CategoryBannerPin = z.infer<typeof categoryBannerPinSchema>
 
+/** Desktop featured-image size before the admin controls, in viewport-width percent. */
+const FEATURED_FRAME_BASE = {
+  widthVw: 28 * 0.7,
+  heightVw: 28 * 0.7 * (4 / 3),
+}
+
+function round2(value: number) {
+  return Math.round(value * 100) / 100
+}
+
+/** Starting desktop size: 20% wider and 60% taller than the previous strip. */
+export const DEFAULT_FEATURED_FRAME = {
+  widthVw: round2(FEATURED_FRAME_BASE.widthVw * 1.2),
+  heightVw: round2(FEATURED_FRAME_BASE.heightVw * 1.6),
+}
+
+export const featuredFrameSchema = z.object({
+  widthVw: z.number().min(12).max(70),
+  heightVw: z.number().min(16).max(95),
+})
+export type FeaturedFrame = z.infer<typeof featuredFrameSchema>
+
+export function normalizeFeaturedFrame(input?: { widthVw?: number | null; heightVw?: number | null } | null): FeaturedFrame {
+  const parsed = featuredFrameSchema.safeParse({
+    widthVw: input?.widthVw ?? DEFAULT_FEATURED_FRAME.widthVw,
+    heightVw: input?.heightVw ?? DEFAULT_FEATURED_FRAME.heightVw,
+  })
+  return parsed.success ? parsed.data : { ...DEFAULT_FEATURED_FRAME }
+}
+
 export const patchHomeFeaturedSchema = z.object({
   pins: z.object({
     hero: pinArray('hero').optional(),
@@ -65,6 +95,7 @@ export const patchHomeFeaturedSchema = z.object({
     mode: z.enum(HOME_EDITORIAL_MODES),
     category: z.string().trim().min(1).max(80).nullable().optional(),
   }).optional(),
+  frame: featuredFrameSchema.optional(),
 })
 export type PatchHomeFeaturedInput = z.infer<typeof patchHomeFeaturedSchema>
 
@@ -139,6 +170,7 @@ export interface HomeFeaturedDto {
   categories: HomeCategoryBannerDto[]
   editorialMode: HomeEditorialMode
   editorialCategory: string | null
+  frame: FeaturedFrame
 }
 
 export interface HomePageDto {
@@ -172,4 +204,5 @@ export interface HomeFeaturedAdminDto {
   categoryBanners: HomeCategoryBannerAdminDto[]
   editorialMode: HomeEditorialMode
   editorialCategory: string | null
+  frame: FeaturedFrame
 }

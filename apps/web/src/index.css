@@ -100,6 +100,24 @@
     opacity: 1;
   }
 
+  /* Featured strip. Desktop size is set in admin; smaller screens keep that shape. */
+  .featured-frame {
+    width: calc(var(--featured-width) * 72 / 28);
+    height: calc(var(--featured-height) * 72 / 28);
+  }
+  @media (min-width: 640px) {
+    .featured-frame {
+      width: calc(var(--featured-width) * 46 / 28);
+      height: calc(var(--featured-height) * 46 / 28);
+    }
+  }
+  @media (min-width: 1024px) {
+    .featured-frame {
+      width: var(--featured-width);
+      height: var(--featured-height);
+    }
+  }
+
   /* edge-to-edge strip hover */
   .strip-cell .strip-meta {
     opacity: 0;

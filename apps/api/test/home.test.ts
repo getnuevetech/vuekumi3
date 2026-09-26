@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { DEFAULT_FEATURED_FRAME, normalizeFeaturedFrame } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares, heroHeadline } from '../src/lib/home.js'
 
 test('category shares are a percent of the live library, not fake rings', () => {
@@ -63,6 +64,17 @@ test('inactive pins are skipped so ranking still fills the homepage', () => {
   assert.equal(slots.hero[1], 'd0')
   assert.equal(slots.sources.hero[1], 'pinned')
   assert.equal(slots.hero.length, 3)
+})
+
+test('featured frame starts 20 percent wider and 60 percent taller', () => {
+  const previousWidth = 28 * 0.7
+  const previousHeight = previousWidth * (4 / 3)
+  assert.equal(DEFAULT_FEATURED_FRAME.widthVw, 23.52)
+  assert.equal(DEFAULT_FEATURED_FRAME.heightVw, 41.81)
+  assert.ok(Math.abs(DEFAULT_FEATURED_FRAME.widthVw / previousWidth - 1.2) < 0.001)
+  assert.ok(Math.abs(DEFAULT_FEATURED_FRAME.heightVw / previousHeight - 1.6) < 0.001)
+  assert.deepEqual(normalizeFeaturedFrame(null), DEFAULT_FEATURED_FRAME)
+  assert.equal(normalizeFeaturedFrame({ widthVw: 4, heightVw: 200 }).widthVw, 23.52)
 })
 
 test('hero headline uses live counts instead of a 212,400 claim', () => {
