@@ -25,6 +25,10 @@ test('missing site content falls back to the built-in homepage words', () => {
     ],
   }).accountMenu.map((link) => link.label), ['Account', 'Log out'])
   assert.equal(mergeSiteContent({ brand: { name: 'Vuekumi' } }).accountMenu[0]?.label, 'Account')
+  assert.ok(content.panels.auth.slides.length >= 2)
+  assert.equal(content.panels.auth.intervalSec, 6)
+  assert.equal(content.panels.auth.slides[0]?.imageRef, 'afr-011')
+  assert.equal(mergeSiteContent({ brand: { name: 'Vuekumi' } }).panels.auth.slides[0]?.imageRef, 'afr-011')
   assert.deepEqual(mergeSiteContent({
     menu: [
       { label: 'Library', to: '/search', audience: 'always', sort: 20 },

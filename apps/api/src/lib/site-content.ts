@@ -1,4 +1,4 @@
-import { mergeSiteContent, normalizeSiteContent, siteContentSchema, type SiteContent, type SitePublicDto } from '@vuekumi/shared'
+import { mergeSiteContent, normalizeSiteContent, siteContentSchema, STATIC_PANELS, type SiteContent, type SitePanelPublic, type SitePublicDto, type StaticPanelKey } from '@vuekumi/shared'
 import { MIN_PAYOUT_USD } from './payouts.js'
 import { getContributorShare } from './payments-config.js'
 import { advertisedPhotographerShare } from './share-formulas.js'
@@ -12,15 +12,33 @@ function httpError(message: string, statusCode = 400) {
   return err
 }
 
-async function resolveLogoUrl(ref: string | null): Promise<string | null> {
+function isDirectImageRef(ref: string) {
+  return ref.startsWith('/') || /^https?:\/\//i.test(ref)
+}
+
+async function resolveImageRef(ref: string | null): Promise<string | null> {
   if (!ref) return null
-  if (ref.startsWith('/') || /^https?:\/\//i.test(ref)) return ref
+  if (isDirectImageRef(ref)) return ref
   const photo = await prisma.photo.findUnique({
     where: { id: ref },
     select: { src: true, status: true },
   })
   if (!photo || photo.status !== 'active') return null
   return photo.src
+}
+
+async function resolvePanels(content: SiteContent): Promise<Record<StaticPanelKey, SitePanelPublic>> {
+  const panels = {} as Record<StaticPanelKey, SitePanelPublic>
+  for (const panel of STATIC_PANELS) {
+    const source = content.panels[panel.key]
+    const slides = await Promise.all(source.slides.map(async (slide) => ({
+      src: await resolveImageRef(slide.imageRef),
+      quote: slide.quote,
+      credit: slide.credit,
+    })))
+    panels[panel.key] = { intervalSec: source.intervalSec, slides }
+  }
+  return panels
 }
 
 async function facts() {
@@ -36,19 +54,34 @@ export async function loadSitePublic(): Promise<SitePublicDto> {
   const content = mergeSiteContent(row?.body ?? null)
   return {
     content,
-    logoUrl: await resolveLogoUrl(content.brand.logoRef),
+    logoUrl: await resolveImageRef(content.brand.logoRef),
+    panels: await resolvePanels(content),
     facts: await facts(),
   }
 }
 
 export async function saveSiteContent(input: SiteContent): Promise<SitePublicDto> {
   const content = normalizeSiteContent(siteContentSchema.parse(input))
-  if (content.brand.logoRef && !content.brand.logoRef.startsWith('/') && !/^https?:\/\//i.test(content.brand.logoRef)) {
-    const photo = await prisma.photo.findUnique({
-      where: { id: content.brand.logoRef },
-      select: { id: true, status: true },
+  const refs = [
+    content.brand.logoRef,
+    ...STATIC_PANELS.flatMap((panel) => content.panels[panel.key].slides.map((slide) => slide.imageRef)),
+  ].filter((ref): ref is string => typeof ref === 'string' && !isDirectImageRef(ref))
+  if (refs.length) {
+    const photos = await prisma.photo.findMany({
+      where: { id: { in: [...new Set(refs)] }, status: 'active' },
+      select: { id: true },
     })
-    if (!photo || photo.status !== 'active') throw httpError('Logo photograph not found')
+    const live = new Set(photos.map((photo) => photo.id))
+    if (content.brand.logoRef && !isDirectImageRef(content.brand.logoRef) && !live.has(content.brand.logoRef)) {
+      throw httpError('Logo photograph not found')
+    }
+    for (const panel of STATIC_PANELS) {
+      for (const slide of content.panels[panel.key].slides) {
+        if (!isDirectImageRef(slide.imageRef) && !live.has(slide.imageRef)) {
+          throw httpError(`Choose a live photograph for ${panel.label}.`)
+        }
+      }
+    }
   }
   await prisma.siteContent.upsert({
     where: { id: SITE_ID },
@@ -57,7 +90,8 @@ export async function saveSiteContent(input: SiteContent): Promise<SitePublicDto
   })
   return {
     content,
-    logoUrl: await resolveLogoUrl(content.brand.logoRef),
+    logoUrl: await resolveImageRef(content.brand.logoRef),
+    panels: await resolvePanels(content),
     facts: await facts(),
   }
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { PageImagePanel } from '../components/PageImagePanel'
 import { LogoMark } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
+import { useSiteContent } from '../context/SiteContentContext'
 import { api, ApiError, homeForUser, type GeoCountry } from '../api/client'
 import type { PublicConfigDto } from '@vuekumi/shared'
 
@@ -36,6 +38,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [oauth, setOauth] = useState<PublicConfigDto['oauth']>({ google: false, dev: false })
+  const { panels } = useSiteContent()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { login, register, completeSession } = useAuth()
@@ -367,19 +370,7 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="relative hidden overflow-hidden bg-ink-deep lg:block">
-        <img src="/images/photos/fashion-portrait.jpg" alt="" className="h-full w-full object-cover opacity-90" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink-deep/80 via-ink-deep/10 to-ink-deep/40" />
-        <div className="absolute bottom-10 left-10 right-10">
-          <p className="font-serif-display text-3xl font-light leading-snug text-paper">
-            “My photographs of Dakar now pay my rent in Lagos.
-            <em className="text-terra"> That&apos;s the point.”</em>
-          </p>
-          <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.25em] text-paper-faint">
-            Adaeze O. — Contributor since 2024
-          </p>
-        </div>
-      </div>
+      <PageImagePanel panel={panels.auth} />
     </div>
   )
 }

@@ -33,6 +33,23 @@ const sitePath = z
 const line = (max: number) => z.string().trim().min(1).max(max)
 const note = (max: number) => z.string().trim().min(1).max(max)
 
+/** Decorative photographs on static pages. Each panel can rotate several images. */
+export const STATIC_PANELS = [
+  { key: 'auth', label: 'Sign in and sign up' },
+] as const
+export type StaticPanelKey = (typeof STATIC_PANELS)[number]['key']
+
+const pagePanelSlideSchema = z.object({
+  imageRef: z.string().trim().min(1).max(500),
+  quote: z.string().trim().max(240),
+  credit: z.string().trim().max(80),
+})
+const pagePanelSchema = z.object({
+  intervalSec: z.number().int().min(3).max(30),
+  slides: z.array(pagePanelSlideSchema).min(1).max(8),
+})
+export type PagePanel = z.infer<typeof pagePanelSchema>
+
 const menuSort = z.number().int().min(0).max(999).optional()
 
 export const siteMenuLinkSchema = z.object({
@@ -172,6 +189,9 @@ export const siteContentSchema = z.object({
     dmca: z.object({ kicker: line(40), title: line(80), intro: note(500) }),
     report: z.object({ kicker: line(40), title: line(80), intro: note(500) }),
   }),
+  panels: z.object({
+    auth: pagePanelSchema,
+  }),
 })
 
 export type SiteContent = z.infer<typeof siteContentSchema>
@@ -181,10 +201,22 @@ export interface SiteFacts {
   payoutMinimumUsd: number
 }
 
+export interface SitePanelSlidePublic {
+  src: string | null
+  quote: string
+  credit: string
+}
+
+export interface SitePanelPublic {
+  intervalSec: number
+  slides: SitePanelSlidePublic[]
+}
+
 export interface SitePublicDto {
   content: SiteContent
   logoUrl: string | null
   facts: SiteFacts
+  panels: Record<StaticPanelKey, SitePanelPublic>
 }
 
 export const DEFAULT_SITE_CONTENT: SiteContent = {
@@ -387,6 +419,20 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       kicker: 'Trust',
       title: 'Report content.',
       intro: 'Paste the photograph page link, then choose a category. Guests welcome. Statutory copyright takedown is a separate DMCA notice — not for likeness, privacy, or safety.',
+    },
+  },
+  panels: {
+    auth: {
+      intervalSec: 6,
+      slides: [
+        {
+          imageRef: 'afr-011',
+          quote: '“My photographs of Dakar now pay my rent in Lagos. That’s the point.”',
+          credit: 'Adaeze O. — Contributor since 2024',
+        },
+        { imageRef: 'afr-008', quote: '', credit: '' },
+        { imageRef: 'afr-001', quote: '', credit: '' },
+      ],
     },
   },
 }
