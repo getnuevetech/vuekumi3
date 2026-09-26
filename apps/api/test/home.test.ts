@@ -17,12 +17,12 @@ test('category shares are a percent of the live library, not fake rings', () => 
 
 test('home slots prefer unique photos across hero, edge, editorial, and pricing', () => {
   const byDownloads = Array.from({ length: 12 }, (_, i) => ({ id: `d${i}`, category: i === 11 ? 'Landscape' : 'Urban' }))
-  const byNewest = Array.from({ length: 8 }, (_, i) => ({ id: `n${i}`, category: 'Culture' }))
+  const byNewest = Array.from({ length: 16 }, (_, i) => ({ id: `n${i}`, category: 'Culture' }))
   const byLikes = Array.from({ length: 6 }, (_, i) => ({ id: `l${i}`, category: 'People' }))
   const slots = assignHomeSlots({ byDownloads, byNewest, byLikes })
   const ids = [...slots.hero, ...slots.edge, ...slots.editorial, ...slots.pricing, slots.statsBackground]
   assert.equal(slots.hero.length, 3)
-  assert.equal(slots.edge.length, 8)
+  assert.equal(slots.edge.length, 16)
   assert.equal(slots.editorial.length, 6)
   assert.equal(slots.pricing.length, 3)
   assert.equal(slots.statsBackground, 'd11')

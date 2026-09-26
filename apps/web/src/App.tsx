@@ -38,6 +38,7 @@ import { AdminPayoutRates } from './pages/AdminPayoutRates'
 import { AdminAiProviders, AdminGateways } from './pages/AdminIntegrations'
 import { AdminContent } from './pages/AdminContent'
 import AdminHomepage from './pages/AdminHomepage'
+import AdminFeatured from './pages/AdminFeatured'
 import AdminSite from './pages/AdminSite'
 import AdminPlans from './pages/AdminPlans'
 import AdminShares from './pages/AdminShares'
@@ -167,6 +168,7 @@ export default function App() {
         <Route path="/admin/admins" element={<ProtectedRoute allowed={['admin']} capability="accounts.admins.list"><AdminAdmins /></ProtectedRoute>} />
         <Route path="/admin/content" element={<ProtectedRoute allowed={['admin']} capability="content.list"><AdminContent /></ProtectedRoute>} />
         <Route path="/admin/homepage" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminHomepage /></ProtectedRoute>} />
+        <Route path="/admin/featured" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminFeatured /></ProtectedRoute>} />
         <Route path="/admin/menu" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminSite menuOnly /></ProtectedRoute>} />
         <Route path="/admin/site" element={<ProtectedRoute allowed={['admin']} capability="content.featured"><AdminSite /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute allowed={['admin']} capability="moderation.list"><AdminModeration /></ProtectedRoute>} />

@@ -399,6 +399,7 @@ export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin/admins': 'accounts.admins.list',
   '/admin/content': 'content.list',
   '/admin/homepage': 'content.featured',
+  '/admin/featured': 'content.featured',
   '/admin/site': 'content.featured',
   '/admin/moderation': 'moderation.list',
   '/admin/reports': 'reports.list',

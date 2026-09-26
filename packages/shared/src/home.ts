@@ -19,7 +19,7 @@ export type HomeFeaturedSlotKey = (typeof HOME_FEATURED_SLOT_KEYS)[number]
 
 export const HOME_FEATURED_CAPACITY: Record<HomeFeaturedSlotKey, number> = {
   hero: 3,
-  edge: 8,
+  edge: 16,
   editorial: 6,
   pricing: 3,
   stats_background: 1,

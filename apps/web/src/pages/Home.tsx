@@ -405,7 +405,7 @@ function FeaturedStrip({ photos }: { photos: PhotoDto[] }) {
           <Link
             key={p.id}
             to={`/photo/${p.id}`}
-            className="strip-cell group relative block aspect-[3/4] w-[72vw] shrink-0 overflow-hidden sm:w-[46vw] lg:w-[28vw]"
+            className="strip-cell group relative block aspect-[3/4] w-[calc(72vw*0.7)] shrink-0 overflow-hidden sm:w-[calc(46vw*0.7)] lg:w-[calc(28vw*0.7)]"
           >
             <img src={p.src} alt={p.title} loading={i > 1 ? 'lazy' : undefined} className="h-full w-full object-cover" />
             <CountryMark country={p.country} />

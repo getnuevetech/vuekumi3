@@ -128,7 +128,7 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
       where: LIVE,
       include: catalogPhotoInclude,
       orderBy: [{ createdAt: 'desc' }],
-      take: 24,
+      take: 40,
     }),
     prisma.photo.findMany({
       where: LIVE,

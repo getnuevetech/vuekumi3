@@ -18,7 +18,7 @@ function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
 }
 
 const SLOT_NOTE: Partial<Record<HomeFeaturedSlotKey, string>> = {
-  edge: 'These are the featured images. On the homepage they sit above the three messages and scroll left or right with the mouse wheel.',
+  edge: 'These are the featured images. Choose them by category on Featured images. On the homepage they sit above the three messages and scroll left or right with the mouse wheel.',
   editorial: 'Pin several photographs and they change on a timer, or choose a category and the slides pull live images from that category.',
   pricing: 'These photographs fill homepage pricing cards that do not have their own image. Plan names, prices, and the lines on the cards are edited under Buyer plans.',
 }
@@ -113,7 +113,7 @@ export default function AdminHomepage() {
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
         The public menu is edited under <Link to="/admin/menu" className="text-terra">Menu</Link>. Other words and the logo are under <Link to="/admin/site" className="text-terra">Site content</Link>. Featuring a photograph is curation, not a licence and not AI-training consent.
         Private, portfolio, and agency-protected inventory cannot appear on the public homepage.
-        Featured images scroll sideways above the three homepage messages. Category banners sit below those messages and link to the category you choose.
+        Featured images scroll sideways above the three homepage messages. Choose that list by category on <Link to="/admin/featured" className="text-terra">Featured images</Link>. Category banners sit below those messages and link to the category you choose.
         Empty positions fall back to live ranking so the page never goes blank.
       </p>
 
