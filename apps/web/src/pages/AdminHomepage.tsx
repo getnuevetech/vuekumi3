@@ -553,7 +553,7 @@ function PeopleEditor({ slot, page, busy, onSaved }: { slot: HomePeopleSlot; pag
           </div>
           <label className="mt-4 block max-w-sm">
             <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Find a profile</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or handle" aria-label={`Find a ${label.toLowerCase()} profile`} className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or handle" aria-label={`Find a ${accountType === 'photo_influencer' ? 'photo influencer' : accountType}`} className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
           </label>
           {hits.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
