@@ -806,6 +806,8 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
           <TextField title="Stats caption" value={home.statsCaption} onChange={(statsCaption) => set({ ...content, home: { ...home, statsCaption } })} />
           <TextField title="Makers small line" value={home.contributors.kicker} onChange={(kicker) => set({ ...content, home: { ...home, contributors: { ...home.contributors, kicker } } })} />
           <TextField title="Makers heading" value={home.contributors.title} onChange={(title) => set({ ...content, home: { ...home, contributors: { ...home.contributors, title } } })} />
+          <TextField title="Photographers small line" value={home.photographers.kicker} onChange={(kicker) => set({ ...content, home: { ...home, photographers: { ...home.photographers, kicker } } })} />
+          <TextField title="Photographers heading" value={home.photographers.title} onChange={(title) => set({ ...content, home: { ...home, photographers: { ...home.photographers, title } } })} />
           <TextField title="People small line" value={home.models.kicker} onChange={(kicker) => set({ ...content, home: { ...home, models: { ...home.models, kicker } } })} />
           <TextField title="People heading" value={home.models.title} onChange={(title) => set({ ...content, home: { ...home, models: { ...home.models, title } } })} />
           <TextField title="People note" value={home.models.note} onChange={(note) => set({ ...content, home: { ...home, models: { ...home.models, note } } })} />

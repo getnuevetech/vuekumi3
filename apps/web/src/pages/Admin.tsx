@@ -69,6 +69,7 @@ export const adminLinks: PortalLink[] = [
     children: [
       { to: '/admin/users', label: 'Members', icon: icons.users },
       { to: '/admin/profile-fields', label: 'Profile fields', icon: icons.users },
+      { to: '/admin/account-types', label: 'Account types', icon: icons.users },
       { to: '/admin/photographers', label: 'Photographers', icon: icons.users },
       { to: '/admin/influencers', label: 'Photo influencers', icon: icons.users },
       { to: '/admin/contributors', label: 'Contributors', icon: icons.users },

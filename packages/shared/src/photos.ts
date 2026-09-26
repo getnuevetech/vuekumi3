@@ -22,6 +22,7 @@ export const photographerListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   q: z.string().optional(),
   kind: creatorKindSchema.optional(),
+  listing: z.enum(['community']).optional(),
 })
 
 export const modelListQuerySchema = photographerListQuerySchema.omit({ kind: true })

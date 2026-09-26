@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { PLAN_AUDIENCES, type BuyerPlanDto, type DowngradeMode, type PlanAudience, type SiteContent } from '@vuekumi/shared'
+import {
+  PLAN_AUDIENCES,
+  accountTypesForPlanAudience,
+  featuresForAccountTypes,
+  type AccountFeatureKey,
+  type AccountTypeConfigDto,
+  type BuyerPlanDto,
+  type DowngradeMode,
+  type PlanAudience,
+  type SiteContent,
+} from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { AdminShell } from './Admin'
 
@@ -10,7 +20,7 @@ const emptyDraft = {
   priceUsd: '',
   periodDays: '30',
   description: '',
-  features: '',
+  featureKeys: [] as AccountFeatureKey[],
   badge: '',
   highlighted: false,
   homePhotoId: '',
@@ -19,8 +29,45 @@ const emptyDraft = {
   audience: 'buyer' as PlanAudience,
 }
 
-function featureLines(value: string) {
-  return value.split('\n').map((line) => line.trim()).filter(Boolean).slice(0, 8)
+const AUDIENCE_LABEL: Record<PlanAudience, string> = {
+  buyer: 'Member and agency',
+  photographer: 'Photographer',
+  contributor: 'Contributor and photo influencer',
+  model: 'Model',
+}
+
+function FeatureChecks({
+  audience,
+  types,
+  selected,
+  onChange,
+}: {
+  audience: PlanAudience
+  types: AccountTypeConfigDto[]
+  selected: AccountFeatureKey[]
+  onChange: (next: AccountFeatureKey[]) => void
+}) {
+  const options = featuresForAccountTypes(accountTypesForPlanAudience(audience), types)
+  return (
+    <div className="md:col-span-2">
+      <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Features on this plan</span>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {options.map((feature) => (
+          <label key={feature.key} className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={selected.includes(feature.key)}
+              aria-label={`${AUDIENCE_LABEL[audience]} ${feature.label}`}
+              onChange={() => onChange(selected.includes(feature.key) ? selected.filter((key) => key !== feature.key) : [...selected, feature.key])}
+            />
+            <span>{feature.label}</span>
+          </label>
+        ))}
+        {options.length === 0 && <p className="text-sm text-ink-soft">This account type has no features turned on yet.</p>}
+      </div>
+    </div>
+  )
 }
 
 function readSort(value: string): number | null {
@@ -37,6 +84,7 @@ export default function AdminPlans() {
   const [licences, setLicences] = useState<SiteContent['pages']['pricing']['licences']>([])
   const [site, setSite] = useState<SiteContent | null>(null)
   const [cancellations, setCancellations] = useState<{ id: string; plan: string; reason: string; detail: string | null; email: string | null; createdAt: string }[]>([])
+  const [types, setTypes] = useState<AccountTypeConfigDto[]>([])
   const [draft, setDraft] = useState(emptyDraft)
   const [editing, setEditing] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -55,6 +103,7 @@ export default function AdminPlans() {
         setLicences(page.content.pages.pricing.licences)
       })
       .catch(() => setLicences([]))
+    api.publicAccountTypes().then((data) => setTypes(data.items)).catch(() => setTypes([]))
     api.planCancellations()
       .then((data) => setCancellations(data.items))
       .catch(() => setCancellations([]))
@@ -86,7 +135,7 @@ export default function AdminPlans() {
         priceUsd,
         periodDays,
         description: draft.description.trim() || undefined,
-        features: featureLines(draft.features),
+        featureKeys: draft.featureKeys,
         badge: draft.badge.trim() || null,
         highlighted: draft.highlighted,
         homePhotoId: draft.homePhotoId.trim() || null,
@@ -121,7 +170,7 @@ export default function AdminPlans() {
     }
   }
 
-  const saveRow = async (row: BuyerPlanDto, patch: { name: string; priceUsd: string; periodDays: string; description: string; features: string; badge: string; highlighted: boolean; homePhotoId: string; sortOrder: string; enabled: boolean; audience: PlanAudience }) => {
+  const saveRow = async (row: BuyerPlanDto, patch: { name: string; priceUsd: string; periodDays: string; description: string; featureKeys: AccountFeatureKey[]; badge: string; highlighted: boolean; homePhotoId: string; sortOrder: string; enabled: boolean; audience: PlanAudience }) => {
     const priceUsd = Number(patch.priceUsd)
     const periodDays = Number(patch.periodDays)
     const sortOrder = readSort(patch.sortOrder)
@@ -136,7 +185,7 @@ export default function AdminPlans() {
         priceUsd,
         periodDays,
         description: patch.description.trim() || null,
-        features: featureLines(patch.features),
+        featureKeys: patch.featureKeys,
         badge: patch.badge.trim() || null,
         highlighted: patch.highlighted,
         homePhotoId: patch.homePhotoId.trim() || null,
@@ -228,7 +277,7 @@ export default function AdminPlans() {
           <label className="block">
             <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Account type</span>
             <select value={draft.audience} onChange={(e) => setDraft({ ...draft, audience: e.target.value as PlanAudience })} className="mt-1 w-full rounded-full border border-sand-soft bg-white px-4 py-2 text-sm outline-none focus:border-terra">
-              {PLAN_AUDIENCES.map((audience) => <option key={audience} value={audience}>{audience}</option>)}
+              {PLAN_AUDIENCES.map((audience) => <option key={audience} value={audience}>{AUDIENCE_LABEL[audience]}</option>)}
             </select>
           </label>
           <label className="block">
@@ -251,10 +300,7 @@ export default function AdminPlans() {
               className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra"
             />
           </label>
-          <label className="block md:col-span-2">
-            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Card lines, one per line</span>
-            <textarea value={draft.features} onChange={(e) => setDraft({ ...draft, features: e.target.value })} rows={4} className="mt-1 w-full rounded-2xl border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
-          </label>
+          <FeatureChecks audience={draft.audience} types={types} selected={draft.featureKeys} onChange={(featureKeys) => setDraft({ ...draft, featureKeys })} />
           <label className="block">
             <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Badge</span>
             <input value={draft.badge} onChange={(e) => setDraft({ ...draft, badge: e.target.value })} placeholder="Most popular" className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
@@ -286,11 +332,11 @@ export default function AdminPlans() {
             .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
           return (
             <div key={audience}>
-              <h2 className="font-serif-display text-2xl font-light capitalize">{audience} plans</h2>
+              <h2 className="font-serif-display text-2xl font-light">{AUDIENCE_LABEL[audience]} plans</h2>
               {rows.length === 0 && <p className="mt-2 text-sm text-ink-soft">No {audience} plans yet. Add one above.</p>}
               <div className="mt-4 space-y-4">
                 {rows.map((row) => (
-                  <PlanRow key={row.id} row={row} editing={editing === row.id} busy={busy} onEdit={() => setEditing(row.id)} onCancel={() => setEditing(null)} onSave={(patch) => void saveRow(row, patch)} onDelete={() => void remove(row)} />
+                  <PlanRow key={row.id} row={row} types={types} editing={editing === row.id} busy={busy} onEdit={() => setEditing(row.id)} onCancel={() => setEditing(null)} onSave={(patch) => void saveRow(row, patch)} onDelete={() => void remove(row)} />
                 ))}
               </div>
             </div>
@@ -348,6 +394,7 @@ export default function AdminPlans() {
 
 function PlanRow({
   row,
+  types,
   editing,
   busy,
   onEdit,
@@ -356,18 +403,19 @@ function PlanRow({
   onDelete,
 }: {
   row: BuyerPlanDto
+  types: AccountTypeConfigDto[]
   editing: boolean
   busy: boolean
   onEdit: () => void
   onCancel: () => void
-  onSave: (patch: { name: string; priceUsd: string; periodDays: string; description: string; features: string; badge: string; highlighted: boolean; homePhotoId: string; sortOrder: string; enabled: boolean; audience: PlanAudience }) => void
+  onSave: (patch: { name: string; priceUsd: string; periodDays: string; description: string; featureKeys: AccountFeatureKey[]; badge: string; highlighted: boolean; homePhotoId: string; sortOrder: string; enabled: boolean; audience: PlanAudience }) => void
   onDelete: () => void
 }) {
   const [name, setName] = useState(row.name)
   const [priceUsd, setPriceUsd] = useState(String(row.priceUsd))
   const [periodDays, setPeriodDays] = useState(String(row.periodDays))
   const [description, setDescription] = useState(row.description ?? '')
-  const [features, setFeatures] = useState(row.features.join('\n'))
+  const [featureKeys, setFeatureKeys] = useState<AccountFeatureKey[]>(row.featureKeys)
   const [badge, setBadge] = useState(row.badge ?? '')
   const [highlighted, setHighlighted] = useState(row.highlighted)
   const [homePhotoId, setHomePhotoId] = useState(row.homePhotoId ?? '')
@@ -380,7 +428,7 @@ function PlanRow({
     setPriceUsd(String(row.priceUsd))
     setPeriodDays(String(row.periodDays))
     setDescription(row.description ?? '')
-    setFeatures(row.features.join('\n'))
+    setFeatureKeys(row.featureKeys)
     setBadge(row.badge ?? '')
     setHighlighted(row.highlighted)
     setHomePhotoId(row.homePhotoId ?? '')
@@ -417,10 +465,13 @@ function PlanRow({
           </label>
           {row.slug !== 'plus' && (
             <select value={audience} onChange={(e) => setAudience(e.target.value as PlanAudience)} className="rounded-full border border-sand-soft bg-white px-4 py-2 text-sm outline-none focus:border-terra">
-              {PLAN_AUDIENCES.map((item) => <option key={item} value={item}>{item}</option>)}
+              {PLAN_AUDIENCES.map((item) => <option key={item} value={item}>{AUDIENCE_LABEL[item]}</option>)}
             </select>
           )}
-          <textarea value={features} onChange={(e) => setFeatures(e.target.value)} rows={4} placeholder="Card lines, one per line" className="rounded-2xl border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra md:col-span-2" />
+          <FeatureChecks audience={audience} types={types} selected={featureKeys} onChange={setFeatureKeys} />
+          {row.featureKeys.length === 0 && row.features.length > 0 && (
+            <p className="text-sm text-ink-soft md:col-span-2">Current card lines stay until you check features: {row.features.join(' · ')}</p>
+          )}
           <input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Badge" className="rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
           <input value={homePhotoId} onChange={(e) => setHomePhotoId(e.target.value)} placeholder="Homepage photo id" className="rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
           <label className="block">
@@ -440,7 +491,7 @@ function PlanRow({
             Dark card on the pricing page
           </label>
           <div className="flex gap-2">
-            <button type="button" disabled={busy} onClick={() => onSave({ name, priceUsd, periodDays, description, features, badge, highlighted, homePhotoId, sortOrder, enabled, audience })} className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-paper disabled:opacity-50">Save</button>
+            <button type="button" disabled={busy} onClick={() => onSave({ name, priceUsd, periodDays, description, featureKeys, badge, highlighted, homePhotoId, sortOrder, enabled, audience })} className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-paper disabled:opacity-50">Save</button>
             <button type="button" onClick={onCancel} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Cancel</button>
           </div>
         </div>

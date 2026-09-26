@@ -4,7 +4,6 @@ import type { PermissionState } from '@vuekumi/shared'
 import {
   CONSENT_VERSION,
   applyScreeningToPeopleFlag,
-  canEnterCommercialInventory,
   commercialInventoryBlocked,
   declareSubjectAgeSchema,
   identifyAppearanceSchema,
@@ -23,6 +22,7 @@ import {
   updatePhotoSchema,
   uploadSignedReleaseSchema,
 } from '@vuekumi/shared'
+import { accountHasFeature, allowsCommercialStock } from '../lib/account-features.js'
 import { writeAuditLog } from '../lib/audit.js'
 import { syncAiTrainingEligible } from '../lib/ai-training.js'
 import { isImpersonatingStaff, resolveCreatorWorkspaceId } from '../lib/act-as-creator.js'
@@ -350,7 +350,7 @@ export async function contributorRoutes(app: FastifyInstance) {
       image,
     })
     const people = applyScreeningToPeopleFlag({ declaredPeople: body.hasRecognizablePeople, screening })
-    const commercialUploader = canEnterCommercialInventory(targetAccountType)
+    const commercialUploader = await allowsCommercialStock(targetAccountType ?? 'user')
     if (!commercialUploader && (body.licenseType === 'premium' || body.permissionState === 'commercial' || body.permissionState === 'exclusive')) {
       return reply.code(400).send({
         error: commercialInventoryBlocked(targetAccountType)
@@ -667,7 +667,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     if (!isImpersonatingStaff(request.authUser) && existing.contributorId !== request.userId) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
-    if (!isImpersonatingStaff(request.authUser) && isNonCommercialCreator(request.authUser?.accountType) && body.copyrightAiTraining) {
+    if (!isImpersonatingStaff(request.authUser) && !(await accountHasFeature(request.authUser?.accountType ?? '', 'ai_training_opt_in')) && body.copyrightAiTraining) {
       return reply.code(400).send({
         error: 'AI-training opt-in is for professional photographers. Dataset pricing is undecided.',
       })
@@ -688,7 +688,7 @@ export async function contributorRoutes(app: FastifyInstance) {
     if (inventoryBlock) {
       return reply.code(400).send({ error: inventoryBlock })
     }
-    if (!isImpersonatingStaff(request.authUser) && isNonCommercialCreator(request.authUser?.accountType) && body.licenseType === 'premium') {
+    if (!isImpersonatingStaff(request.authUser) && !(await allowsCommercialStock(request.authUser?.accountType ?? '')) && body.licenseType === 'premium') {
       return reply.code(400).send({
         error: commercialInventoryBlocked(request.authUser?.accountType)
           ?? 'This account type cannot enter commercial inventory.',
@@ -884,7 +884,7 @@ export async function contributorRoutes(app: FastifyInstance) {
 
   app.post('/contributor/photos/:id/releases', gate, async (request, reply) => {
     const { id } = request.params as { id: string }
-    if (isNonCommercialCreator(request.authUser?.accountType)) {
+    if (!isImpersonatingStaff(request.authUser) && !(await allowsCommercialStock(request.authUser?.accountType ?? ''))) {
       return reply.code(400).send({
         error: commercialInventoryBlocked(request.authUser?.accountType)
           ?? 'This account type cannot upload commercial model releases.',

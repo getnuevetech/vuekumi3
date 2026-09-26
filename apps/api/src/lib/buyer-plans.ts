@@ -5,6 +5,8 @@ import {
   PLUS_PLAN,
   PLUS_PRICE_USD,
   STOCK_PERMISSION_STATES,
+  accountFeatureLabel,
+  isAccountFeatureKey,
   featuredPinIneligibleReason,
   type BuyerPlanDto,
   type CreateBuyerPlanInput,
@@ -29,7 +31,10 @@ export function serializeBuyerPlan(row: BuyerPlan, homePhotoSrc: string | null =
     priceUsd: row.priceUsd,
     periodDays: row.periodDays,
     description: row.description,
-    features: row.features,
+    features: row.featureKeys.length
+      ? row.featureKeys.filter(isAccountFeatureKey).map(accountFeatureLabel)
+      : row.features,
+    featureKeys: row.featureKeys.filter(isAccountFeatureKey),
     badge: row.badge,
     highlighted: row.highlighted,
     homePhotoId: row.homePhotoId,
@@ -172,7 +177,10 @@ export async function createBuyerPlan(input: CreateBuyerPlanInput) {
         priceUsd: input.priceUsd,
         periodDays: input.periodDays,
         description: input.description?.trim() || null,
-        features: input.features ?? [],
+        features: input.featureKeys?.length
+          ? input.featureKeys.map(accountFeatureLabel)
+          : input.features ?? [],
+        featureKeys: input.featureKeys ?? [],
         badge: input.badge?.trim() || null,
         highlighted: input.highlighted ?? false,
         homePhotoId: input.homePhotoId ?? null,
@@ -200,7 +208,14 @@ export async function updateBuyerPlan(id: string, input: PatchBuyerPlanInput) {
       ...(input.priceUsd !== undefined ? { priceUsd: input.priceUsd } : {}),
       ...(input.periodDays !== undefined ? { periodDays: input.periodDays } : {}),
       ...(input.description !== undefined ? { description: input.description?.trim() || null } : {}),
-      ...(input.features !== undefined ? { features: input.features } : {}),
+      ...(input.featureKeys !== undefined
+        ? {
+            featureKeys: input.featureKeys,
+            features: input.featureKeys.length ? input.featureKeys.map(accountFeatureLabel) : existing.features,
+          }
+        : input.features !== undefined
+          ? { features: input.features }
+          : {}),
       ...(input.badge !== undefined ? { badge: input.badge?.trim() || null } : {}),
       ...(input.highlighted !== undefined ? { highlighted: input.highlighted } : {}),
       ...(input.homePhotoId !== undefined ? { homePhotoId: input.homePhotoId } : {}),

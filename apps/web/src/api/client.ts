@@ -204,6 +204,15 @@ export const api = {
 
   publicPlans: (audience?: string) => request<import('@vuekumi/shared').PublicPlansDto>(`/api/plans${audience ? `?audience=${encodeURIComponent(audience)}` : ''}`),
 
+  publicAccountTypes: () => request<{ items: import('@vuekumi/shared').AccountTypeConfigDto[] }>('/api/public/account-types'),
+
+  accountFeatures: () => request<{ accountType: string; enabled: boolean; features: import('@vuekumi/shared').AccountFeatureKey[] }>('/api/account/features'),
+
+  adminAccountTypes: () => request<{ items: import('@vuekumi/shared').AccountTypeConfigDto[] }>('/api/admin/account-types'),
+
+  saveAccountTypes: (body: import('@vuekumi/shared').PatchAccountTypesInput) =>
+    request<{ items: import('@vuekumi/shared').AccountTypeConfigDto[] }>('/api/admin/account-types', { method: 'PUT', body: JSON.stringify(body) }),
+
   adminPlans: () => request<import('@vuekumi/shared').PublicPlansDto & { policy: { downgradeMode: import('@vuekumi/shared').DowngradeMode } }>('/api/admin/plans'),
 
   savePlanPolicy: (body: { downgradeMode: import('@vuekumi/shared').DowngradeMode }) =>
@@ -227,10 +236,10 @@ export const api = {
   saveHomePricing: (body: { kicker: string; title: string }) =>
     request<{ home: import('@vuekumi/shared').HomePricingCopy }>('/api/admin/plans/home', { method: 'PUT', body: JSON.stringify(body) }),
 
-  createBuyerPlan: (body: { name: string; slug?: string; priceUsd: number; periodDays: number; description?: string; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number; audience?: import('@vuekumi/shared').PlanAudience }) =>
+  createBuyerPlan: (body: { name: string; slug?: string; priceUsd: number; periodDays: number; description?: string; features?: string[]; featureKeys?: import('@vuekumi/shared').AccountFeatureKey[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number; audience?: import('@vuekumi/shared').PlanAudience }) =>
     request<BuyerPlanDto>('/api/admin/plans', { method: 'POST', body: JSON.stringify(body) }),
 
-  updateBuyerPlan: (id: string, body: { name?: string; priceUsd?: number; periodDays?: number; description?: string | null; features?: string[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number; audience?: import('@vuekumi/shared').PlanAudience }) =>
+  updateBuyerPlan: (id: string, body: { name?: string; priceUsd?: number; periodDays?: number; description?: string | null; features?: string[]; featureKeys?: import('@vuekumi/shared').AccountFeatureKey[]; badge?: string | null; highlighted?: boolean; homePhotoId?: string | null; enabled?: boolean; sortOrder?: number; audience?: import('@vuekumi/shared').PlanAudience }) =>
     request<BuyerPlanDto>(`/api/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   deleteBuyerPlan: (id: string) =>

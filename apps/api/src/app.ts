@@ -28,6 +28,7 @@ import { adminSiteRoutes } from './routes/admin-site.js'
 import { adminPlanRoutes } from './routes/admin-plans.js'
 import { adminShareRoutes } from './routes/admin-shares.js'
 import { adminProfileRoutes } from './routes/admin-profile.js'
+import { adminAccountTypeRoutes } from './routes/admin-account-types.js'
 import { mediaRoutes } from './routes/media.js'
 import { paymentRoutes } from './routes/payments.js'
 import { aiRoutes } from './routes/ai.js'
@@ -124,6 +125,7 @@ export async function buildApp() {
     await api.register(adminPlanRoutes)
     await api.register(adminShareRoutes)
     await api.register(adminProfileRoutes)
+    await api.register(adminAccountTypeRoutes)
     await api.register(mediaRoutes)
     await api.register(paymentRoutes)
     await api.register(aiRoutes)

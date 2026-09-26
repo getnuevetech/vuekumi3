@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ACCOUNT_FEATURE_KEYS } from './account-features.js'
 
 export const PLUS_PLAN = 'plus' as const
 export const FREE_PLAN = 'free' as const
@@ -36,6 +37,7 @@ export interface BuyerPlanDto {
   periodDays: number
   description: string | null
   features: string[]
+  featureKeys: import('./account-features.js').AccountFeatureKey[]
   badge: string | null
   highlighted: boolean
   homePhotoId: string | null
@@ -52,7 +54,8 @@ export const buyerPlanSlugSchema = z
   .max(40)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use a short slug of lowercase letters, numbers, and hyphens')
 
-const planFeatureSchema = z.array(z.string().trim().min(1).max(160)).max(8)
+const planFeatureSchema = z.array(z.string().trim().min(1).max(160)).max(24)
+const planFeatureKeySchema = z.array(z.enum(ACCOUNT_FEATURE_KEYS)).max(ACCOUNT_FEATURE_KEYS.length)
 
 export const createBuyerPlanSchema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -61,6 +64,7 @@ export const createBuyerPlanSchema = z.object({
   periodDays: z.number().int().min(1).max(3650),
   description: z.string().trim().max(500).optional(),
   features: planFeatureSchema.optional(),
+  featureKeys: planFeatureKeySchema.optional(),
   badge: z.string().trim().max(40).nullable().optional(),
   highlighted: z.boolean().optional(),
   homePhotoId: z.string().trim().min(1).max(80).nullable().optional(),
@@ -76,6 +80,7 @@ export const patchBuyerPlanSchema = z.object({
   periodDays: z.number().int().min(1).max(3650).optional(),
   description: z.string().trim().max(500).nullable().optional(),
   features: planFeatureSchema.optional(),
+  featureKeys: planFeatureKeySchema.optional(),
   badge: z.string().trim().max(40).nullable().optional(),
   highlighted: z.boolean().optional(),
   homePhotoId: z.string().trim().min(1).max(80).nullable().optional(),

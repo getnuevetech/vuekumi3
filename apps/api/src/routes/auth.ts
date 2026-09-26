@@ -19,6 +19,7 @@ import {
   passwordChangeBlocked,
   summarizeUserAgent,
 } from '../lib/account.js'
+import { accountTypeEnabled, loadAccountTypeConfigs } from '../lib/account-features.js'
 import { registrationCreatorKind } from '../lib/creator-kind.js'
 import { handleTaken } from '../lib/models.js'
 import {
@@ -63,6 +64,9 @@ export async function authRoutes(app: FastifyInstance) {
     config: { rateLimit: AUTH_RATE_LIMIT },
   }, async (request, reply) => {
     const body = registerSchema.parse(request.body)
+    if (!(await accountTypeEnabled(body.accountType))) {
+      return reply.code(400).send({ error: 'This account type is not open for signup.' })
+    }
 
     const existing = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } })
     if (existing) {
@@ -389,6 +393,15 @@ export async function authRoutes(app: FastifyInstance) {
       include: authUserInclude,
     })
     return { user: serializeUser(full!) }
+  })
+
+  app.get('/account/features', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request) => {
+    const accountType = request.authUser?.accountType ?? 'user'
+    const items = await loadAccountTypeConfigs()
+    const row = items.find((item) => item.accountType === accountType)
+    return { accountType, enabled: row?.enabled ?? true, features: row?.features ?? [] }
   })
 
   app.get('/account/profile-fields', {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import type { BookingAvailability, BuyerPlanDto, CancellationReason, PlanChangeQuote, ProfileFieldKey, SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
+import type { AccountFeatureKey, BookingAvailability, BuyerPlanDto, CancellationReason, PlanChangeQuote, ProfileFieldKey, SessionDto, SubscriptionStatusDto } from '@vuekumi/shared'
 import { CANCELLATION_REASON_LABEL, CANCELLATION_REASONS, planAudienceForAccount, splitDisplayName } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS, hasModelAccess, isCreatorWorkspaceAccount } from '@vuekumi/shared'
 import { SiteHeader } from '../components/shared'
@@ -25,6 +25,7 @@ export default function Account() {
   const [bio, setBio] = useState('')
   const [location, setLocation] = useState('')
   const [requiredFields, setRequiredFields] = useState<ProfileFieldKey[]>([])
+  const [accountFeatures, setAccountFeatures] = useState<AccountFeatureKey[] | null>(null)
   const [availability, setAvailability] = useState<BookingAvailability>('open')
   const [dayRate, setDayRate] = useState('')
   const [countries, setCountries] = useState<GeoCountry[]>([])
@@ -69,6 +70,13 @@ export default function Account() {
     setAvailability(user.availability ?? 'open')
     setDayRate(user.dayRateUsd != null ? String(user.dayRateUsd) : '')
   }, [user])
+
+  useEffect(() => {
+    if (!user) return
+    api.accountFeatures().then((data) => setAccountFeatures(data.features)).catch(() => setAccountFeatures([]))
+  }, [user])
+
+  const bookable = Boolean(accountFeatures?.includes('receive_bookings') || accountFeatures?.includes('model_bookings'))
 
   useEffect(() => {
     api.countries(contributor)
@@ -428,7 +436,7 @@ export default function Account() {
                   ? `Shown as /p/${handle || 'your-handle'}`
                   : `Shown as /m/${handle || 'your-handle'}. Approving likeness does not transfer copyright.`}
               </p>
-              <div>
+              {bookable && <div>
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(AVAILABILITY_LABELS) as BookingAvailability[]).map((a) => (
                     <button
@@ -456,7 +464,7 @@ export default function Account() {
                   Booking visibility on your public profile. Payment is settled directly between
                   the parties — Vuekumi charges no booking fee in this phase.
                 </p>
-              </div>
+              </div>}
             </>
           )}
           <input

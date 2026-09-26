@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import type { ContributorStatsDto, EarningsSummaryDto, PayoutKind, PermissionState, PhotoDto, RepresentationDto } from '@vuekumi/shared';
-import { creatorPortalLabel, isNonCommercialCreator, PHOTO_CATEGORIES, REPRESENTATION_STATUS_LABELS } from '@vuekumi/shared';
+import { creatorPortalLabel, isNonCommercialCreator, PHOTO_CATEGORIES, REPRESENTATION_STATUS_LABELS, type AccountFeatureKey } from '@vuekumi/shared';
 import { CountrySelect, PortalShell, StatCard, SectionHead, StatusPill, countryNameFromSuggestion, type PortalLink } from '../components/shared';
 import { fmt, money, photoById } from '../data/content';
 import { formatPayoutMoney, formatQuotedAmount, payoutQuoteLine } from '../lib/format';
@@ -62,12 +62,25 @@ export function contributorPortalLinks(hasModelProfile?: boolean): PortalLink[] 
   return hasModelProfile ? [...contributorLinks, modelPortalLink] : contributorLinks;
 }
 
+function useAccountFeatures() {
+  const [features, setFeatures] = useState<AccountFeatureKey[] | null>(null)
+  useEffect(() => {
+    api.accountFeatures().then((data) => setFeatures(data.features)).catch(() => setFeatures([]))
+  }, [])
+  return features
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const features = useAccountFeatures()
   const actAsId = getActAsCreatorId();
   const actAsLabel = getActAsCreatorLabel();
   const staffActing = Boolean(user?.accountType === 'admin' && actAsId && adminHas(user, 'content.impersonate_creator'));
-  const community = isNonCommercialCreator(user?.accountType) && !staffActing;
+  const community = staffActing
+    ? false
+    : features
+      ? !features.includes('commercial_stock')
+      : isNonCommercialCreator(user?.accountType);
   return (
     <PortalShell
       title={staffActing ? 'Creator portal (staff)' : `${creatorPortalLabel(user?.accountType)} portal`}
@@ -75,7 +88,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         ? 'Acting as a creator. Staff JWT stays — payouts cannot be changed from here.'
         : community
           ? 'Portfolio and editorial sharing. Commercial stock is reserved for professional photographers.'
-          : 'Upload, rights, and 50% of every paid licence.'}
+          : 'Upload, bookings, commercial stock, and copyright income.'}
       links={contributorPortalLinks(staffActing ? false : user?.hasModelProfile)}
     >
       {staffActing && (
@@ -201,7 +214,12 @@ export function ContributorDashboard() {
   const { user } = useAuth()
   const actAsId = getActAsCreatorId()
   const staffNeedsTarget = user?.accountType === 'admin' && adminHas(user, 'content.impersonate_creator') && !actAsId
-  const community = isNonCommercialCreator(user?.accountType) && !actAsId
+  const features = useAccountFeatures()
+  const community = actAsId
+    ? false
+    : features
+      ? !features.includes('commercial_stock')
+      : isNonCommercialCreator(user?.accountType)
   const [stats, setStats] = useState<ContributorStatsDto | null>(null)
   const [statsError, setStatsError] = useState<string | null>(null)
   useEffect(() => {
@@ -353,7 +371,7 @@ export function ContributorDashboard() {
         )}
       </div>
 
-      {!community && !getActAsCreatorId() && <RepresentationCard />}
+      {!actAsId && (features ? features.includes('representation') : !community) && <RepresentationCard />}
     </Shell>
   );
 }
@@ -363,7 +381,8 @@ export function ContributorDashboard() {
 export function ContributorUpload() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const community = isNonCommercialCreator(user?.accountType);
+  const features = useAccountFeatures()
+  const community = features ? !features.includes('commercial_stock') : isNonCommercialCreator(user?.accountType);
   const [dragging, setDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState('');

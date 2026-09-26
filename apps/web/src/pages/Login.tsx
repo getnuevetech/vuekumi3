@@ -38,6 +38,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [oauth, setOauth] = useState<PublicConfigDto['oauth']>({ google: false, dev: false })
+  const [openTypes, setOpenTypes] = useState<string[] | null>(null)
   const { panels } = useSiteContent()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -98,6 +99,12 @@ export default function Login() {
       .catch(() => setError('Signed in with Google, but the session could not be loaded.'))
       .finally(() => setLoading(false))
   }, [completeSession, navigate, redirect, searchParams])
+
+  useEffect(() => {
+    api.publicAccountTypes()
+      .then((data) => setOpenTypes(data.items.filter((item) => item.enabled).map((item) => item.accountType === 'user' ? 'member' : item.accountType)))
+      .catch(() => setOpenTypes(null))
+  }, [])
 
   useEffect(() => {
     if (mode !== 'signup') return
@@ -161,12 +168,12 @@ export default function Login() {
               {(
                 [
                   { id: 'member' as Role, label: 'Member', note: 'License photos' },
-                  { id: 'photographer' as Role, label: 'Photographer', note: 'Commercial stock' },
-                  { id: 'photo_influencer' as Role, label: 'Photo influencer', note: 'Social & discovery' },
-                  { id: 'contributor' as Role, label: 'Contributor', note: 'Portfolio / community' },
+                  { id: 'photographer' as Role, label: 'Photographer', note: 'Bookings and commercial stock' },
+                  { id: 'photo_influencer' as Role, label: 'Photo influencer', note: 'Post photos and copyright income' },
+                  { id: 'contributor' as Role, label: 'Contributor', note: 'Post photos and copyright income' },
                   { id: 'model' as Role, label: 'Model', note: 'Likeness & upload' },
                   { id: 'agency' as Role, label: 'Agency', note: 'Enterprise' },
-                ]
+                ].filter((item) => !openTypes || openTypes.includes(item.id))
               ).map((r) => (
                 <button
                   key={r.id}

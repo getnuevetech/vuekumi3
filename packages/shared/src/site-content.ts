@@ -161,6 +161,13 @@ export const siteContentSchema = z.object({
       joinScript: line(20),
       joinLabel: line(40),
     }),
+    photographers: z.object({
+      kicker: line(40),
+      title: line(60),
+      linkLabel: line(40),
+      joinScript: line(20),
+      joinLabel: line(40),
+    }),
     models: z.object({
       kicker: line(40),
       title: line(60),
@@ -350,6 +357,13 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       linkLabel: 'Browse creators →',
       joinScript: 'you?',
       joinLabel: 'Become a contributor',
+    },
+    photographers: {
+      kicker: 'the professionals',
+      title: 'Photographers',
+      linkLabel: 'Browse photographers →',
+      joinScript: 'hire',
+      joinLabel: 'Book a photographer',
     },
     models: {
       kicker: 'the people',

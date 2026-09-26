@@ -391,6 +391,7 @@ export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin/menu': 'content.featured',
   '/admin/users': 'accounts.users.list',
   '/admin/profile-fields': 'accounts.users.list',
+  '/admin/account-types': 'accounts.users.write',
   '/admin/photographers': 'accounts.photographers.list',
   '/admin/influencers': 'accounts.influencers.list',
   '/admin/contributors': 'accounts.contributors.list',

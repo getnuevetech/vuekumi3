@@ -12,6 +12,7 @@ import {
   profilePhotoWhere,
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
+import { accountHasFeature, accountTypesWithFeature } from '../lib/account-features.js'
 import { creatorKindWhere } from '../lib/creator-kind.js'
 import { followBlocked } from '../lib/follows.js'
 import { prisma } from '../lib/prisma.js'
@@ -37,10 +38,10 @@ function toPhotographer(
   photosCount: number,
   downloads: number,
   followers: number,
-  extras?: { following?: boolean; profileViews?: number },
+  extras?: { following?: boolean; profileViews?: number; hireable?: boolean },
 ): PhotographerDto | null {
   if (!user.contributorProfile) return null
-  const hireable = user.accountType === 'photographer'
+  const hireable = extras?.hireable ?? user.accountType === 'photographer'
   return {
     handle: user.contributorProfile.handle,
     name: user.name,
@@ -66,11 +67,13 @@ export async function photographerRoutes(app: FastifyInstance) {
   }, async (request) => {
     const query = photographerListQuerySchema.parse(request.query)
     const q = normalizeQuery(query.q)
+    const communityTypes = query.listing === 'community' ? await accountTypesWithFeature('contributor_listing') : null
+    const bookableTypes = new Set<string>(await accountTypesWithFeature('receive_bookings'))
 
     const where: Prisma.UserWhereInput = {
       status: 'active',
       photos: { some: PROFILE_PHOTO_FILTER },
-      ...creatorKindWhere(query.kind),
+      ...(communityTypes ? { accountType: { in: communityTypes } } : creatorKindWhere(query.kind)),
       ...(q
         ? {
             OR: [
@@ -110,6 +113,7 @@ export async function photographerRoutes(app: FastifyInstance) {
         const downloads = user.photos.reduce((sum, p) => sum + p.downloads, 0)
         return toPhotographer(user, photosCount, downloads, user._count.followers, {
           following: followed ? followed.has(user.id) : undefined,
+          hireable: bookableTypes.has(user.accountType as 'photographer'),
         })
       })
       .filter((row): row is PhotographerDto => Boolean(row))
@@ -240,6 +244,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       {
         following: request.userId ? Boolean(followingRow) : undefined,
         profileViews: profile.profileViews,
+        hireable: await accountHasFeature(profile.user.accountType, 'receive_bookings'),
       },
     )
     if (!photographer) {

@@ -6,6 +6,7 @@ import { getContributorShare } from '../lib/payments-config.js'
 import { listBuyerPlans, loadHomePricingCopy } from '../lib/buyer-plans.js'
 import { loadHomePage } from '../lib/home-queries.js'
 import { loadSitePublic } from '../lib/site-content.js'
+import { loadAccountTypeConfigs } from '../lib/account-features.js'
 
 export async function publicRoutes(app: FastifyInstance) {
   app.get('/public/config', async () => {
@@ -24,6 +25,8 @@ export async function publicRoutes(app: FastifyInstance) {
   app.get('/public/home', async () => loadHomePage())
 
   app.get('/public/site', async () => loadSitePublic())
+
+  app.get('/public/account-types', async () => ({ items: await loadAccountTypeConfigs() }))
 
   app.get('/plans', async (request) => {
     const query = request.query as { audience?: string }

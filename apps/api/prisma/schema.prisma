@@ -761,7 +761,17 @@ model BuyerPlan {
   sortOrder   Int      @default(0)
   /// buyer, photographer, contributor, or model. Plans are not shared across these.
   audience    String   @default("buyer")
+  /// Feature keys chosen for this plan. Empty keeps the existing card lines.
+  featureKeys String[] @default([])
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Which features each public account type may use, and whether signup is open.
+model AccountTypeConfig {
+  accountType String   @id
+  enabled     Boolean  @default(true)
+  features    String[] @default([])
   updatedAt   DateTime @updatedAt
 }
 

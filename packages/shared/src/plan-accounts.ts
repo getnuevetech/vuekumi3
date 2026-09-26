@@ -41,8 +41,8 @@ export const DEFAULT_PROFILE_REQUIREMENTS: Record<string, ProfileFieldKey[]> = {
 
 export function planAudienceForAccount(accountType: string | null | undefined): PlanAudience | null {
   if (accountType === 'user' || accountType === 'agency') return 'buyer'
-  if (accountType === 'photographer' || accountType === 'photo_influencer') return 'photographer'
-  if (accountType === 'contributor') return 'contributor'
+  if (accountType === 'photographer') return 'photographer'
+  if (accountType === 'contributor' || accountType === 'photo_influencer') return 'contributor'
   if (accountType === 'model') return 'model'
   return null
 }

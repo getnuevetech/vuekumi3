@@ -726,6 +726,60 @@ function StatsBand({
   );
 }
 
+function PhotographersRail() {
+  const { content } = useSiteContent();
+  const copy = content.home.photographers;
+  const [makers, setMakers] = useState<PhotographerDto[]>([]);
+
+  useEffect(() => {
+    api.photographers({ kind: 'photographer', limit: 20 }).then((d) => setMakers(d.items)).catch(() => setMakers([]));
+  }, []);
+
+  return (
+    <section className="bg-noir py-20 md:py-24">
+      <div className="flex items-end justify-between px-5 md:px-10">
+        <div>
+          <p className="font-script text-3xl text-terra">{copy.kicker}</p>
+          <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
+            {copy.title}
+          </h2>
+        </div>
+        <Link to="/creators" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
+          {copy.linkLabel}
+        </Link>
+      </div>
+      <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
+        {makers.map((ph) => (
+          <Link
+            key={ph.handle}
+            to={`/p/${ph.handle}`}
+            className="strip-cell group relative w-[70vw] shrink-0 snap-start overflow-hidden sm:w-[44vw] lg:w-[30vw]"
+          >
+            <img src={ph.avatarUrl ?? '/images/avatars/photographer-bw.jpg'} alt={ph.name} loading="lazy" className="aspect-[4/5] w-full object-cover" />
+            <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-5 pt-12">
+              <p className="font-condensed text-xl font-medium uppercase tracking-[0.15em] text-paper">
+                {ph.name} <span className="mx-1 text-terra">—</span> <span className="text-sm font-light text-paper-soft">{ph.location}</span>
+              </p>
+              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
+                {fmt(ph.followers)} followers · {ph.photosCount} photographs
+              </p>
+            </div>
+          </Link>
+        ))}
+        <Link
+          to="/creators"
+          className="flex w-[70vw] shrink-0 snap-start items-center justify-center border border-noir bg-noir-soft transition-colors hover:border-terra sm:w-[44vw] lg:w-[30vw]"
+        >
+          <span className="text-center">
+            <span className="font-script block text-4xl text-terra">{copy.joinScript}</span>
+            <span className="font-condensed mt-2 block text-sm uppercase tracking-[0.3em] text-paper-soft">{copy.joinLabel}</span>
+          </span>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 /* ---------------- contributors rail ---------------- */
 
 function ContributorsRail({ people }: { people?: PhotographerDto[] }) {
@@ -739,7 +793,7 @@ function ContributorsRail({ people }: { people?: PhotographerDto[] }) {
       setMakers(people)
       return
     }
-    api.photographers({ limit: 20 }).then((d) => setMakers(d.items)).catch(() => setMakers([]));
+    api.photographers({ listing: 'community', limit: 20 }).then((d) => setMakers(d.items)).catch(() => setMakers([]));
   }, [people]);
 
   return (
@@ -978,6 +1032,7 @@ export default function Home() {
       <InfiniteFeed />
       <EditorialSplit photos={featured?.editorial ?? []} stats={stats} />
       <StatsBand categories={stats?.categories ?? []} background={featured?.statsBackground ?? null} />
+      <PhotographersRail />
       <ContributorsRail people={home?.contributors} />
       <ModelsRail />
       <NoirPricing photos={featured?.pricing ?? []} />

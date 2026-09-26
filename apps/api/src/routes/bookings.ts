@@ -15,6 +15,7 @@ import {
   bookingRequestEmail,
   sendEmail,
 } from '../lib/email.js'
+import { accountHasFeature, accountTypesWithFeature } from '../lib/account-features.js'
 import { prisma } from '../lib/prisma.js'
 
 const bookingInclude = {
@@ -103,7 +104,7 @@ export async function bookingRoutes(app: FastifyInstance) {
       body.kind === 'photographer'
         ? await prisma.user.findFirst({
             where: {
-              accountType: 'photographer',
+              accountType: { in: await accountTypesWithFeature('receive_bookings') },
               contributorProfile: { handle: { equals: body.handle, mode: 'insensitive' } },
             },
             include: { contributorProfile: true, modelProfile: true },
@@ -112,6 +113,12 @@ export async function bookingRoutes(app: FastifyInstance) {
             where: { modelProfile: { handle: { equals: body.handle, mode: 'insensitive' } } },
             include: { contributorProfile: true, modelProfile: true },
           })
+    if (target && body.kind === 'model' && !(await accountHasFeature(target.accountType, 'model_bookings'))) {
+      return reply.code(400).send({ error: 'This account is not open for bookings.' })
+    }
+    if (!target && body.kind === 'photographer') {
+      return reply.code(400).send({ error: 'This account is not open for bookings.' })
+    }
 
     const availability =
       body.kind === 'photographer'

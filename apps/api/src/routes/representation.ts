@@ -12,6 +12,7 @@ import type {
   RepresentationDto,
   RepresentationInquiryDto,
 } from '@vuekumi/shared'
+import { accountHasFeature } from '../lib/account-features.js'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
 import { optionalAuthenticate, requireAccountTypes, requireAdminCapability } from '../lib/auth-middleware.js'
@@ -78,6 +79,9 @@ export async function representationRoutes(app: FastifyInstance) {
 
   app.post('/representation', contributor, async (request, reply) => {
     const body = requestRepresentationSchema.parse(request.body)
+    if (request.authUser?.accountType !== 'admin' && !(await accountHasFeature(request.authUser?.accountType ?? '', 'representation'))) {
+      return reply.code(400).send({ error: 'Representation is not part of this account type.' })
+    }
     const existing = await prisma.representation.findUnique({
       where: { contributorId: request.userId! },
     })
