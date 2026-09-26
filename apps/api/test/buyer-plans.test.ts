@@ -133,3 +133,48 @@ test('homepage save stores a category banner and an editorial category', async (
   await prisma.homeFeaturedPin.create({ data: { slot: 'hero', position: 0, photoId: 'afr-014' } })
   await app.close()
 })
+
+test('buyer plans appear by sort number', async () => {
+  const app = await buildApp()
+  const admin = await login(app, 'admin@vuekumi.com', 'Admin123!')
+  const stamp = Date.now().toString(36)
+  const laterSlug = `sort-late-${stamp}`
+  const earlierSlug = `sort-early-${stamp}`
+  const created: string[] = []
+  try {
+    const later = await app.inject({
+      method: 'POST',
+      url: '/api/admin/plans',
+      headers: { cookie: admin },
+      payload: { name: 'Zebra Late', slug: laterSlug, priceUsd: 1, periodDays: 30, sortOrder: 40, audience: 'buyer' },
+    })
+    assert.equal(later.statusCode, 200, later.body)
+    created.push((later.json() as { id: string }).id)
+
+    const earlier = await app.inject({
+      method: 'POST',
+      url: '/api/admin/plans',
+      headers: { cookie: admin },
+      payload: { name: 'Alpha Early', slug: earlierSlug, priceUsd: 99, periodDays: 30, sortOrder: 5, audience: 'buyer' },
+    })
+    assert.equal(earlier.statusCode, 200, earlier.body)
+    created.push((earlier.json() as { id: string }).id)
+
+    const listed = await app.inject({ method: 'GET', url: '/api/plans?audience=buyer' })
+    assert.equal(listed.statusCode, 200, listed.body)
+    const slugs = (listed.json() as { items: { slug: string }[] }).items.map((row) => row.slug)
+    const plusAt = slugs.indexOf('plus')
+    const earlyAt = slugs.indexOf(earlierSlug)
+    const lateAt = slugs.indexOf(laterSlug)
+    assert.ok(plusAt >= 0 && earlyAt > plusAt && lateAt > earlyAt, slugs.join(','))
+
+    const adminList = await app.inject({ method: 'GET', url: '/api/admin/plans', headers: { cookie: admin } })
+    const adminSlugs = (adminList.json() as { items: { slug: string; audience: string }[] }).items
+      .filter((row) => row.audience === 'buyer')
+      .map((row) => row.slug)
+    assert.ok(adminSlugs.indexOf(earlierSlug) < adminSlugs.indexOf(laterSlug), adminSlugs.join(','))
+  } finally {
+    if (created.length) await prisma.buyerPlan.deleteMany({ where: { id: { in: created } } })
+    await app.close()
+  }
+})

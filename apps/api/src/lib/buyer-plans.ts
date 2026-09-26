@@ -117,7 +117,7 @@ export async function listBuyerPlans(opts: { includeDisabled: boolean; audience?
       ...(opts.includeDisabled ? {} : { enabled: true }),
       ...(opts.audience ? { audience: opts.audience } : {}),
     },
-    orderBy: [{ audience: 'asc' }, { sortOrder: 'asc' }, { priceUsd: 'asc' }, { name: 'asc' }],
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
   const srcs = await photoSrcById(rows.map((row) => row.homePhotoId ?? ''), !opts.includeDisabled)
   return rows.map((row) => serializeBuyerPlan(row, row.homePhotoId ? srcs.get(row.homePhotoId) ?? null : null))

@@ -23,6 +23,13 @@ function featureLines(value: string) {
   return value.split('\n').map((line) => line.trim()).filter(Boolean).slice(0, 8)
 }
 
+function readSort(value: string): number | null {
+  if (value.trim() === '') return null
+  const raw = Number(value)
+  if (!Number.isFinite(raw)) return null
+  return Math.max(0, Math.min(1000, Math.round(raw)))
+}
+
 export default function AdminPlans() {
   const [items, setItems] = useState<BuyerPlanDto[]>([])
   const [home, setHome] = useState({ kicker: 'studio rates', title: 'Pick a licence' })
@@ -55,11 +62,20 @@ export default function AdminPlans() {
 
   useEffect(() => { load() }, [])
 
+  useEffect(() => {
+    setDraft((current) => {
+      if (current.name || current.priceUsd || current.sortOrder !== emptyDraft.sortOrder) return current
+      const next = String(Math.min(1000, items.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 1))
+      return next === current.sortOrder ? current : { ...current, sortOrder: next }
+    })
+  }, [items])
+
   const saveNew = async () => {
     const priceUsd = Number(draft.priceUsd)
     const periodDays = Number(draft.periodDays)
-    if (!draft.name.trim() || !Number.isFinite(priceUsd) || !Number.isFinite(periodDays)) {
-      toast.error('Name, price, and period are required')
+    const sortOrder = readSort(draft.sortOrder)
+    if (!draft.name.trim() || !Number.isFinite(priceUsd) || !Number.isFinite(periodDays) || sortOrder === null) {
+      toast.error('Name, price, period, and sort number are required')
       return
     }
     setBusy(true)
@@ -74,7 +90,7 @@ export default function AdminPlans() {
         badge: draft.badge.trim() || null,
         highlighted: draft.highlighted,
         homePhotoId: draft.homePhotoId.trim() || null,
-        sortOrder: Number(draft.sortOrder) || 10,
+        sortOrder,
         enabled: draft.enabled,
         audience: draft.audience,
       })
@@ -108,8 +124,9 @@ export default function AdminPlans() {
   const saveRow = async (row: BuyerPlanDto, patch: { name: string; priceUsd: string; periodDays: string; description: string; features: string; badge: string; highlighted: boolean; homePhotoId: string; sortOrder: string; enabled: boolean; audience: PlanAudience }) => {
     const priceUsd = Number(patch.priceUsd)
     const periodDays = Number(patch.periodDays)
-    if (!patch.name.trim() || !Number.isFinite(priceUsd) || !Number.isFinite(periodDays)) {
-      toast.error('Name, price, and period are required')
+    const sortOrder = readSort(patch.sortOrder)
+    if (!patch.name.trim() || !Number.isFinite(priceUsd) || !Number.isFinite(periodDays) || sortOrder === null) {
+      toast.error('Name, price, period, and sort number are required')
       return
     }
     setBusy(true)
@@ -123,7 +140,7 @@ export default function AdminPlans() {
         badge: patch.badge.trim() || null,
         highlighted: patch.highlighted,
         homePhotoId: patch.homePhotoId.trim() || null,
-        sortOrder: Number(patch.sortOrder) || 0,
+        sortOrder,
         enabled: patch.enabled,
         audience: patch.audience,
       })
@@ -157,6 +174,7 @@ export default function AdminPlans() {
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
         Each plan belongs to buyers, photographers, contributors, or models. A buyer cannot buy a photographer plan.
         The homepage shows buyer plans. Vuekumi+ stays a buyer plan at the price you save and cannot be deleted.
+        Lower sort numbers appear first on the homepage, the pricing page, and the account page.
         Licence notes further down are the extra cards on the pricing page.
       </p>
 
@@ -221,6 +239,18 @@ export default function AdminPlans() {
             <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Period days</span>
             <input value={draft.periodDays} onChange={(e) => setDraft({ ...draft, periodDays: e.target.value })} inputMode="numeric" className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
           </label>
+          <label className="block">
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Sort</span>
+            <input
+              type="number"
+              min={0}
+              max={1000}
+              value={draft.sortOrder}
+              aria-label="New plan sort"
+              onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })}
+              className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra"
+            />
+          </label>
           <label className="block md:col-span-2">
             <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Card lines, one per line</span>
             <textarea value={draft.features} onChange={(e) => setDraft({ ...draft, features: e.target.value })} rows={4} className="mt-1 w-full rounded-2xl border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
@@ -250,7 +280,10 @@ export default function AdminPlans() {
 
       <div className="mt-8 space-y-8">
         {PLAN_AUDIENCES.map((audience) => {
-          const rows = items.filter((row) => row.audience === audience)
+          const rows = items
+            .filter((row) => row.audience === audience)
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
           return (
             <div key={audience}>
               <h2 className="font-serif-display text-2xl font-light capitalize">{audience} plans</h2>
@@ -362,7 +395,7 @@ function PlanRow({
         <div>
           <h2 className="font-serif-display text-2xl font-light">{row.name}</h2>
           <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
-            {row.audience} · {row.slug} · ${row.priceUsd} / {row.periodDays} days · {row.enabled ? 'enabled' : 'disabled'}
+            Sort {row.sortOrder} · {row.audience} · {row.slug} · ${row.priceUsd} / {row.periodDays} days · {row.enabled ? 'enabled' : 'disabled'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -390,7 +423,18 @@ function PlanRow({
           <textarea value={features} onChange={(e) => setFeatures(e.target.value)} rows={4} placeholder="Card lines, one per line" className="rounded-2xl border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra md:col-span-2" />
           <input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Badge" className="rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
           <input value={homePhotoId} onChange={(e) => setHomePhotoId(e.target.value)} placeholder="Homepage photo id" className="rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
-          <input value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} placeholder="Sort order" className="rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra" />
+          <label className="block">
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Sort</span>
+            <input
+              type="number"
+              min={0}
+              max={1000}
+              value={sortOrder}
+              aria-label={`Sort for ${row.name}`}
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="mt-1 w-full rounded-full border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra"
+            />
+          </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={highlighted} onChange={(e) => setHighlighted(e.target.checked)} />
             Dark card on the pricing page
