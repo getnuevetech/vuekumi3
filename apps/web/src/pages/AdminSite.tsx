@@ -11,7 +11,7 @@ import {
   type SiteContent,
 } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
-import { CATEGORY_PAGES } from '../lib/categories'
+import { menuPathChoices, menuPathLabel } from '../lib/menu-paths'
 import { AdminShell } from './Admin'
 
 const field = 'mt-1 w-full rounded-2xl border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra'
@@ -31,6 +31,20 @@ const MENU_AUDIENCE_LABEL: Record<SiteMenuAudience, string> = {
 function readSort(value: string, fallback: number) {
   const raw = Number(value)
   return Number.isFinite(raw) ? Math.max(0, Math.min(999, Math.round(raw))) : fallback
+}
+
+function MenuPathField({ value, ariaLabel, onChange }: { value: string; ariaLabel: string; onChange: (value: string) => void }) {
+  return (
+    <select value={value} aria-label={ariaLabel} className={field} onChange={(e) => onChange(e.target.value)}>
+      {menuPathChoices(value).map((group) => (
+        <optgroup key={group.label} label={group.label}>
+          {group.options.map((option) => (
+            <option key={option.path} value={option.path}>{menuPathLabel(option)}</option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  )
 }
 
 function TextField({ title, value, onChange, area = false }: { title: string; value: string; onChange: (value: string) => void; area?: boolean }) {
@@ -107,7 +121,7 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
 
       <section id="menu" className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">Header menu</h2>
-        <p className="mt-1 text-sm text-ink-soft">Label, path on this site, who should see the link, and the sort number. Lower numbers appear first. The same number keeps the current order. Font and size apply to the top menu. Category pages are {CATEGORY_PAGES.map((row) => row.path).join(', ')}.</p>
+        <p className="mt-1 text-sm text-ink-soft">Type the label, then choose the page from the list. Each choice names the page and shows its path, including every photograph category. Lower numbers appear first. The same number keeps the current order. Font and size apply to the top menu.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <label className="block">
             <span className={label}>Menu font</span>
@@ -169,13 +183,16 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
                   return { ...current, menu: current.menu.map((row, i) => i === index ? { ...row, label: value } : row) }
                 })
               }} className={field} aria-label={`Menu label ${index + 1}`} autoComplete="off" />
-              <input value={link.to} onChange={(e) => {
-                const value = e.target.value
-                setContent((current) => {
-                  if (!current) return current
-                  return { ...current, menu: current.menu.map((row, i) => i === index ? { ...row, to: value } : row) }
-                })
-              }} className={field} aria-label={`Menu path ${index + 1}`} autoComplete="off" />
+              <MenuPathField
+                value={link.to}
+                ariaLabel={`Menu path ${index + 1}`}
+                onChange={(value) => {
+                  setContent((current) => {
+                    if (!current) return current
+                    return { ...current, menu: current.menu.map((row, i) => i === index ? { ...row, to: value } : row) }
+                  })
+                }}
+              />
               <select value={link.audience} onChange={(e) => {
                 const menu = content.menu.map((row, i) => i === index ? { ...row, audience: e.target.value as SiteMenuAudience } : row)
                 set({ ...content, menu })
@@ -194,7 +211,7 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
 
       <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
         <h2 className="font-serif-display text-2xl font-light">Account menu</h2>
-        <p className="mt-1 text-sm text-ink-soft">These items appear when a signed-in visitor hovers the account icon. A path of #logout signs them out. Lower numbers appear first. Signed-out visitors see the Log in label instead of this menu.</p>
+        <p className="mt-1 text-sm text-ink-soft">These items appear when a signed-in visitor hovers the account icon. Choose Log out to sign them out. Lower numbers appear first. Signed-out visitors see the Log in label instead of this menu.</p>
         <div className="mt-4 space-y-3">
           {content.accountMenu.map((link, index) => (
             <div key={`account-row-${index}`} className="grid gap-2 md:grid-cols-[5rem_1fr_1fr_16rem_auto]">
@@ -229,13 +246,16 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
                   return { ...current, accountMenu: current.accountMenu.map((row, i) => i === index ? { ...row, label: value } : row) }
                 })
               }} className={field} aria-label={`Account menu label ${index + 1}`} autoComplete="off" />
-              <input value={link.to} onChange={(e) => {
-                const value = e.target.value
-                setContent((current) => {
-                  if (!current) return current
-                  return { ...current, accountMenu: current.accountMenu.map((row, i) => i === index ? { ...row, to: value } : row) }
-                })
-              }} className={field} aria-label={`Account menu path ${index + 1}`} autoComplete="off" />
+              <MenuPathField
+                value={link.to}
+                ariaLabel={`Account menu path ${index + 1}`}
+                onChange={(value) => {
+                  setContent((current) => {
+                    if (!current) return current
+                    return { ...current, accountMenu: current.accountMenu.map((row, i) => i === index ? { ...row, to: value } : row) }
+                  })
+                }}
+              />
               <select value={link.audience} onChange={(e) => {
                 const accountMenu = content.accountMenu.map((row, i) => i === index ? { ...row, audience: e.target.value as SiteMenuAudience } : row)
                 set({ ...content, accountMenu })
@@ -317,14 +337,17 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
                   return { ...current, footer: { ...current.footer, links } }
                 })
               }} className={field} />
-              <input value={link.to} aria-label={`Footer path ${index + 1}`} autoComplete="off" onChange={(e) => {
-                const value = e.target.value
-                setContent((current) => {
-                  if (!current) return current
-                  const links = current.footer.links.map((row, i) => i === index ? { ...row, to: value } : row)
-                  return { ...current, footer: { ...current.footer, links } }
-                })
-              }} className={field} />
+              <MenuPathField
+                value={link.to}
+                ariaLabel={`Footer path ${index + 1}`}
+                onChange={(value) => {
+                  setContent((current) => {
+                    if (!current) return current
+                    const links = current.footer.links.map((row, i) => i === index ? { ...row, to: value } : row)
+                    return { ...current, footer: { ...current.footer, links } }
+                  })
+                }}
+              />
               <button type="button" onClick={() => set({ ...content, footer: { ...content.footer, links: content.footer.links.filter((_, i) => i !== index) } })} className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em]">Remove</button>
             </div>
           ))}
