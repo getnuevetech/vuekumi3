@@ -65,8 +65,8 @@
   .bg-noir { background-color: #0b0a09; }
   .text-noir { color: #0b0a09; }
   .bg-noir-soft { background-color: #161413; }
-  .text-noir-faint { color: #6f6862; }
-  .text-noir-soft { color: #a89f97; }
+  .text-noir-faint { color: #8a8078; }
+  .text-noir-soft { color: #c4b8ae; }
   .border-noir { border-color: #2a2624; }
   .text-outline {
     color: transparent;
@@ -159,8 +159,8 @@
   .text-ink-faint { color: rgba(60, 56, 53, 0.4); }
   .text-terra { color: #bc773f; }
   .text-paper { color: #faf6f3; }
-  .text-paper-soft { color: rgba(250, 246, 243, 0.65); }
-  .text-paper-faint { color: rgba(250, 246, 243, 0.4); }
+  .text-paper-soft { color: rgba(250, 246, 243, 0.82); }
+  .text-paper-faint { color: rgba(250, 246, 243, 0.68); }
   .border-sand { border-color: #dec9b8; }
   .border-sand-soft { border-color: rgba(222, 201, 184, 0.5); }
   .hairline { background-color: rgba(60, 56, 53, 0.12); }
@@ -284,6 +284,8 @@ html:not([data-theme='light']) .bg-cream { background-color: #1c1916; }
 html:not([data-theme='light']) .text-ink { color: #f3ece3; }
 html:not([data-theme='light']) .text-ink-soft { color: #d4c4b0; }
 html:not([data-theme='light']) .text-ink-faint { color: #b3a394; }
+html:not([data-theme='light']) .text-noir-soft { color: #d4c4b0; }
+html:not([data-theme='light']) .text-noir-faint { color: #b3a394; }
 html:not([data-theme='light']) .border-sand,
 html:not([data-theme='light']) .border-sand-soft { border-color: #3a322b; }
 html:not([data-theme='light']) input,

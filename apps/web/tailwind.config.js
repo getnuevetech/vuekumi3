@@ -4,6 +4,9 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Space Grotesk', '-apple-system', 'Segoe UI', 'sans-serif'],
+      },
       colors: {
         paper: "#faf6f3",
         cream: "#f5ece5",
