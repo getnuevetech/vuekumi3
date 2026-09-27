@@ -29,7 +29,7 @@ function CategoryCard({ photo, modelCredits }: { photo: PhotoDto; modelCredits: 
       <img src={photo.src} alt={photo.title} loading="lazy" className="min-h-48 w-full object-cover" />
       <CountryMark country={photo.country} />
       <PhotoHoverActions photo={photo} />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/85 to-transparent p-3 pt-16">
+      <div data-on-photo className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/85 to-transparent p-3 pt-16">
         {credit && (
           credit.avatar ? (
             <img src={credit.avatar} alt="" className="mb-2 h-10 w-10 rounded-full object-cover ring-1 ring-white/80" />

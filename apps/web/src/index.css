@@ -46,7 +46,10 @@
 
 @layer utilities {
   .font-serif-display {
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Oswald', 'Arial Narrow', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
   .font-mono-tech {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -240,194 +243,250 @@
   }
 }
 
-/* Public pages follow the homepage: noir ground, paper type, condensed titles. */
-body:not(.portal-theme) {
-  background-color: #0b0a09;
-  color: #f3ece3;
-}
-
-html:not([data-theme='light']) body:not(.portal-theme) .bg-paper { background-color: #141210; }
-html:not([data-theme='light']) body:not(.portal-theme) .bg-white { background-color: #1c1916; color: #f3ece3; }
-html:not([data-theme='light']) body:not(.portal-theme) .bg-cream { background-color: #1c1916; }
-html:not([data-theme='light']) body:not(.portal-theme) .text-ink { color: #f3ece3; }
-html:not([data-theme='light']) body:not(.portal-theme) .text-ink-soft { color: #cbbba8; }
-html:not([data-theme='light']) body:not(.portal-theme) .text-ink-faint { color: #9c8d80; }
-html:not([data-theme='light']) body:not(.portal-theme) .border-sand,
-html:not([data-theme='light']) body:not(.portal-theme) .border-sand-soft { border-color: #3a322b; }
-html:not([data-theme='light']) body:not(.portal-theme) input,
-html:not([data-theme='light']) body:not(.portal-theme) textarea,
-html:not([data-theme='light']) body:not(.portal-theme) select {
-  background-color: #1c1916;
-  color: #f3ece3;
-  border-color: #3a322b;
-}
-html:not([data-theme='light']) body:not(.portal-theme) .font-serif-display {
+/* One type system with the homepage. Display titles stay Oswald even when a utility asks for a lighter serif. */
+.font-serif-display {
   font-family: 'Oswald', 'Arial Narrow', sans-serif;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-/* Signed-in portals and account pages. Unlayered so these beat the marketplace palette utilities. */
-body.portal-theme {
-  --background: 214 45% 98%;
-  --foreground: 215 55% 16%;
-  --card: 0 0% 100%;
-  --card-foreground: 215 55% 16%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 215 55% 16%;
-  --primary: 215 72% 16%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 214 42% 94%;
-  --secondary-foreground: 215 55% 16%;
-  --muted: 214 42% 94%;
-  --muted-foreground: 215 18% 36%;
-  --accent: 214 42% 94%;
-  --accent-foreground: 215 55% 16%;
-  --border: 214 32% 84%;
-  --input: 214 32% 84%;
-  --ring: 215 62% 28%;
-  background-color: #ffffff;
-  color: #12243f;
-  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+/* Default and dark: noir ground, paper type, on the homepage and every other page. */
+html:not([data-theme='light']) {
+  --background: 30 8% 6%;
+  --foreground: 30 33% 94%;
+  --card: 30 8% 10%;
+  --card-foreground: 30 33% 94%;
+  --popover: 30 8% 10%;
+  --popover-foreground: 30 33% 94%;
+  --primary: 26 49% 49%;
+  --primary-foreground: 30 33% 96%;
+  --secondary: 30 8% 14%;
+  --secondary-foreground: 30 33% 94%;
+  --muted: 30 8% 14%;
+  --muted-foreground: 30 16% 74%;
+  --accent: 26 49% 49%;
+  --accent-foreground: 30 33% 96%;
+  --border: 30 10% 22%;
+  --input: 30 10% 22%;
+  --ring: 26 49% 49%;
 }
 
-body.portal-theme ::selection {
-  background: #0b2545;
-  color: #ffffff;
-}
-
-body.portal-theme .font-serif-display,
-body.portal-theme .font-mono-tech,
-body.portal-theme .font-condensed {
-  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
-}
-
-body.portal-theme .font-serif-display {
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-body.portal-theme .font-light {
-  font-weight: 600;
-}
-
-body.portal-theme .font-mono-tech,
-body.portal-theme .text-\[9px\],
-body.portal-theme .text-\[10px\],
-body.portal-theme .text-\[11px\] {
-  font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-body.portal-theme .font-mono-tech {
-  font-weight: 600;
-}
-
-body.portal-theme .uppercase {
-  text-transform: none;
-}
-
-body.portal-theme .tracking-\[0\.25em\],
-body.portal-theme .tracking-\[0\.22em\],
-body.portal-theme .tracking-\[0\.2em\],
-body.portal-theme .tracking-\[0\.18em\],
-body.portal-theme .tracking-\[0\.15em\],
-body.portal-theme .tracking-\[0\.14em\],
-body.portal-theme .tracking-\[0\.12em\] {
-  letter-spacing: 0.01em;
-}
-
-body.portal-theme .bg-paper { background-color: #ffffff; }
-body.portal-theme .bg-cream { background-color: #e7eef8; }
-body.portal-theme .bg-ink { background-color: #0b2545; }
-body.portal-theme .bg-ink-deep { background-color: #081c36; }
-body.portal-theme .bg-terra { background-color: #1e5aa8; }
-body.portal-theme .text-ink { color: #12243f; }
-body.portal-theme .text-ink-soft { color: #2c4668; }
-body.portal-theme .text-ink-faint { color: #4d6482; }
-body.portal-theme .text-terra { color: #1a4f91; }
-body.portal-theme .text-paper { color: #ffffff; }
-body.portal-theme .text-paper-soft { color: rgba(255, 255, 255, 0.86); }
-body.portal-theme .text-paper-faint { color: rgba(255, 255, 255, 0.68); }
-body.portal-theme .border-sand,
-body.portal-theme .border-sand-soft { border-color: #d3e0ef; }
-body.portal-theme .border-terra { border-color: #1a4f91; }
-body.portal-theme .hover\:bg-terra:hover { background-color: #163e78; }
-body.portal-theme .hover\:bg-ink:hover { background-color: #081c36; }
-body.portal-theme .hover\:text-terra:hover { color: #d6e6ff; }
-body.portal-theme .hover\:text-ink:hover { color: #0b2545; }
-body.portal-theme .hover\:border-terra:hover,
-body.portal-theme .hover\:border-ink:hover,
-body.portal-theme .focus\:border-terra:focus { border-color: #1a4f91; }
-body.portal-theme .hover\:bg-paper\/5:hover { background-color: rgba(255, 255, 255, 0.08); }
-body.portal-theme .hover\:bg-cream\/50:hover { background-color: #f2f6fb; }
-body.portal-theme .border-paper\/10 { border-color: rgba(255, 255, 255, 0.16); }
-body.portal-theme .border-paper\/15 { border-color: rgba(255, 255, 255, 0.22); }
-body.portal-theme .bg-\[\#f5ece5\] { background-color: #e7eef8; }
-body.portal-theme .text-\[\#bc773f\] { color: #1a4f91; }
-body.portal-theme .bg-\[\#f3e9f5\] { background-color: #e4ecf7; }
-body.portal-theme .text-\[\#7a4a8f\] { color: #243e6b; }
-body.portal-theme .accent-\[\#bc773f\] { accent-color: #1e5aa8; }
-body.portal-theme .border-terra\/40 { border-color: rgb(30 90 168 / 0.4); }
-body.portal-theme .bg-terra\/5,
-body.portal-theme .has-checked\:bg-terra\/5:has(:checked) { background-color: rgb(30 90 168 / 0.08); }
-body.portal-theme .has-checked\:border-terra:has(:checked) { border-color: #1a4f91; }
-body.portal-theme svg [stroke="#bc773f"] { stroke: #1e5aa8; }
-body.portal-theme svg [fill="#bc773f"] { fill: #1e5aa8; }
-
-/* Light look: the public noir homepage becomes sand. Portals stay navy and white. */
-html[data-theme='light'] body:not(.portal-theme) .bg-noir { background-color: #f6f1ea; }
-html[data-theme='light'] body:not(.portal-theme) .bg-noir-soft { background-color: #efe6da; }
-html[data-theme='light'] body:not(.portal-theme) .bg-noir\/85 { background-color: rgb(246 241 234 / 0.92); }
-html[data-theme='light'] body:not(.portal-theme) .bg-noir\/95 { background-color: rgb(246 241 234 / 0.97); }
-html[data-theme='light'] body:not(.portal-theme) .text-paper { color: #1c140f; }
-html[data-theme='light'] body:not(.portal-theme) .text-paper-soft { color: #4a3d32; }
-html[data-theme='light'] body:not(.portal-theme) .text-paper-faint { color: #6d5c4e; }
-html[data-theme='light'] body:not(.portal-theme) .border-noir { border-color: #e4d8c8; }
-html[data-theme='light'] body:not(.portal-theme) .border-paper\/70 { border-color: rgb(28 20 15 / 0.45); }
-html[data-theme='light'] body:not(.portal-theme) .text-noir-soft { color: #6a5848; }
-html[data-theme='light'] body:not(.portal-theme) .bg-paper.text-noir,
-html[data-theme='light'] body:not(.portal-theme) .text-noir { color: #1c140f; }
-
-/* Dark look: portals and sand pages darken. The homepage is already noir. */
-html[data-theme='dark'] body.portal-theme {
-  background-color: #071426;
-  color: #e7eef8;
-}
-html[data-theme='dark'] body.portal-theme .bg-paper { background-color: #071426; }
-html[data-theme='dark'] body.portal-theme .bg-white { background-color: #10243f; color: #e7eef8; }
-html[data-theme='dark'] body.portal-theme .bg-cream { background-color: #0d1c33; }
-html[data-theme='dark'] body.portal-theme .text-ink { color: #e7eef8; }
-html[data-theme='dark'] body.portal-theme .text-ink-soft { color: #c5d4ea; }
-html[data-theme='dark'] body.portal-theme .text-ink-faint { color: #93a8c7; }
-html[data-theme='dark'] body.portal-theme .border-sand,
-html[data-theme='dark'] body.portal-theme .border-sand-soft { border-color: #27466f; }
-html[data-theme='dark'] body.portal-theme input,
-html[data-theme='dark'] body.portal-theme textarea,
-html[data-theme='dark'] body.portal-theme select {
-  background-color: #0d1c33;
-  color: #e7eef8;
-  border-color: #27466f;
-}
-html[data-theme='dark'] body:not(.portal-theme) {
+html:not([data-theme='light']) body {
   background-color: #0b0a09;
   color: #f3ece3;
+  font-family: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
 }
-html[data-theme='dark'] body:not(.portal-theme) .bg-paper { background-color: #141210; }
-html[data-theme='dark'] body:not(.portal-theme) .bg-white { background-color: #1c1916; color: #f3ece3; }
-html[data-theme='dark'] body:not(.portal-theme) .bg-cream { background-color: #1c1916; }
-html[data-theme='dark'] body:not(.portal-theme) .text-ink { color: #f3ece3; }
-html[data-theme='dark'] body:not(.portal-theme) .text-ink-soft { color: #cbbba8; }
-html[data-theme='dark'] body:not(.portal-theme) .text-ink-faint { color: #9c8d80; }
-html[data-theme='dark'] body:not(.portal-theme) .border-sand,
-html[data-theme='dark'] body:not(.portal-theme) .border-sand-soft { border-color: #3a322b; }
-html[data-theme='dark'] body:not(.portal-theme) input,
-html[data-theme='dark'] body:not(.portal-theme) textarea,
-html[data-theme='dark'] body:not(.portal-theme) select {
+
+html:not([data-theme='light']) .bg-paper { background-color: #141210; }
+html:not([data-theme='light']) .bg-white { background-color: #1c1916; color: #f3ece3; }
+html:not([data-theme='light']) .bg-cream { background-color: #1c1916; }
+html:not([data-theme='light']) .text-ink { color: #f3ece3; }
+html:not([data-theme='light']) .text-ink-soft { color: #d4c4b0; }
+html:not([data-theme='light']) .text-ink-faint { color: #b3a394; }
+html:not([data-theme='light']) .border-sand,
+html:not([data-theme='light']) .border-sand-soft { border-color: #3a322b; }
+html:not([data-theme='light']) input,
+html:not([data-theme='light']) textarea,
+html:not([data-theme='light']) select {
   background-color: #1c1916;
   color: #f3ece3;
   border-color: #3a322b;
+}
+html:not([data-theme='light']) input::placeholder,
+html:not([data-theme='light']) textarea::placeholder {
+  color: #b3a394;
+}
+
+/* Light: sand ground and ink type, dark enough to read. Photographs keep paper type. */
+html[data-theme='light'] {
+  --background: 33 38% 94%;
+  --foreground: 28 42% 8%;
+  --card: 33 33% 97%;
+  --card-foreground: 28 42% 8%;
+  --popover: 33 33% 97%;
+  --popover-foreground: 28 42% 8%;
+  --muted: 33 28% 90%;
+  --muted-foreground: 28 24% 28%;
+  --secondary: 33 28% 90%;
+  --secondary-foreground: 28 42% 8%;
+  --border: 32 28% 78%;
+  --input: 32 28% 78%;
+}
+
+html[data-theme='light'] body {
+  background-color: #f6f1ea;
+  color: #1a120c;
+  font-family: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
+}
+
+html[data-theme='light'] .bg-noir { background-color: #f6f1ea; }
+html[data-theme='light'] .bg-noir-soft { background-color: #efe6da; }
+html[data-theme='light'] .bg-noir\/85 { background-color: rgb(246 241 234 / 0.96); }
+html[data-theme='light'] .bg-noir\/95 { background-color: rgb(246 241 234 / 0.98); }
+html[data-theme='light'] .text-paper { color: #1a120c; }
+html[data-theme='light'] .text-paper-soft { color: #3a2c22; }
+html[data-theme='light'] .text-paper-faint { color: #5a4638; }
+html[data-theme='light'] .text-ink { color: #1a120c; }
+html[data-theme='light'] .text-ink-soft { color: #3a2c22; }
+html[data-theme='light'] .text-ink-faint { color: #5a4638; }
+html[data-theme='light'] .text-noir,
+html[data-theme='light'] .bg-paper.text-noir { color: #1a120c; }
+html[data-theme='light'] .text-noir-soft { color: #3f3126; }
+html[data-theme='light'] .text-noir-faint { color: #5a4638; }
+html[data-theme='light'] .text-terra { color: #7a4318; }
+html[data-theme='light'] .border-noir { border-color: #d9cbb8; }
+html[data-theme='light'] .border-paper,
+html[data-theme='light'] .border-paper\/30,
+html[data-theme='light'] .border-paper\/50,
+html[data-theme='light'] .border-paper\/70 { border-color: rgb(26 18 12 / 0.45); }
+html[data-theme='light'] .text-outline-paper {
+  -webkit-text-stroke: 1.5px rgba(26, 18, 12, 0.45);
+}
+html[data-theme='light'] input,
+html[data-theme='light'] textarea,
+html[data-theme='light'] select {
+  color: #1a120c;
+  border-color: #c4b09a;
+}
+html[data-theme='light'] input::placeholder,
+html[data-theme='light'] textarea::placeholder {
+  color: #5a4638;
+}
+
+/* The bar sits on a photograph until it scrolls. Give it a solid sand field so the logo stays dark-on-light. */
+html[data-theme='light'] header.fixed {
+  background-color: rgb(246 241 234 / 0.97);
+  border-bottom: 1px solid #d9cbb8;
+  backdrop-filter: blur(12px);
+}
+html[data-theme='light'] header.fixed .bg-paper {
+  background-color: #1a120c;
+}
+
+/* Dark chrome keeps light type: sidebar, ink buttons, terra chips, and text laid on photographs. */
+html[data-theme='light'] .bg-ink,
+html[data-theme='light'] .bg-ink-deep,
+html[data-theme='light'] .bg-terra {
+  color: #faf6f3;
+}
+html[data-theme='light'] .bg-ink,
+html[data-theme='light'] .bg-ink.text-paper,
+html[data-theme='light'] .bg-ink .text-paper,
+html[data-theme='light'] .bg-ink-deep,
+html[data-theme='light'] .bg-ink-deep .text-paper,
+html[data-theme='light'] .bg-terra.text-paper,
+html[data-theme='light'] .bg-terra .text-paper {
+  color: #faf6f3;
+}
+html[data-theme='light'] .bg-ink .text-paper-soft,
+html[data-theme='light'] .bg-ink-deep .text-paper-soft {
+  color: rgba(250, 246, 243, 0.86);
+}
+html[data-theme='light'] .bg-ink .text-paper-faint,
+html[data-theme='light'] .bg-ink-deep .text-paper-faint {
+  color: rgba(250, 246, 243, 0.72);
+}
+html[data-theme='light'] .bg-ink .text-terra,
+html[data-theme='light'] .bg-ink-deep .text-terra,
+html[data-theme='light'] .bg-terra .text-terra {
+  color: #e0a36a;
+}
+html[data-theme='light'] .bg-ink .border-paper\/10,
+html[data-theme='light'] .bg-ink .border-paper\/15,
+html[data-theme='light'] .bg-ink .border-paper\/20 {
+  border-color: rgba(250, 246, 243, 0.22);
+}
+
+html[data-theme='light'] .bg-noir\/50,
+html[data-theme='light'] .bg-noir\/70,
+html[data-theme='light'] .bg-noir\/80 {
+  background-color: rgb(11 10 9 / 0.78);
+  color: #faf6f3;
+}
+html[data-theme='light'] .bg-noir\/50,
+html[data-theme='light'] .bg-noir\/50 .text-paper,
+html[data-theme='light'] .bg-noir\/50.text-paper,
+html[data-theme='light'] .bg-noir\/70,
+html[data-theme='light'] .bg-noir\/70 .text-paper,
+html[data-theme='light'] .bg-noir\/70.text-paper,
+html[data-theme='light'] .bg-noir\/80,
+html[data-theme='light'] .bg-noir\/80 .text-paper {
+  color: #faf6f3;
+}
+html[data-theme='light'] .bg-noir\/50 .text-paper-soft,
+html[data-theme='light'] .bg-noir\/70 .text-paper-soft,
+html[data-theme='light'] .bg-noir\/80 .text-paper-soft {
+  color: rgba(250, 246, 243, 0.9);
+}
+html[data-theme='light'] .bg-noir\/50 .text-terra,
+html[data-theme='light'] .bg-noir\/70 .text-terra,
+html[data-theme='light'] .bg-noir\/80 .text-terra {
+  color: #bc773f;
+}
+
+html[data-theme='light'] .strip-meta,
+html[data-theme='light'] [data-on-photo] {
+  color: #faf6f3;
+}
+html[data-theme='light'] .strip-meta .text-paper,
+html[data-theme='light'] .strip-meta.text-paper,
+html[data-theme='light'] [data-on-photo] .text-paper,
+html[data-theme='light'] [data-on-photo].text-paper {
+  color: #faf6f3;
+}
+html[data-theme='light'] .strip-meta .text-paper-soft,
+html[data-theme='light'] [data-on-photo] .text-paper-soft {
+  color: rgba(250, 246, 243, 0.92);
+}
+html[data-theme='light'] .strip-meta .text-paper-faint,
+html[data-theme='light'] [data-on-photo] .text-paper-faint {
+  color: rgba(250, 246, 243, 0.78);
+}
+html[data-theme='light'] .strip-meta .text-terra,
+html[data-theme='light'] [data-on-photo] .text-terra {
+  color: #e0a36a;
+}
+html[data-theme='light'] [data-on-photo].bg-noir,
+html[data-theme='light'] [data-on-photo] .bg-noir {
+  background-color: #0b0a09;
+}
+html[data-theme='light'] [data-on-photo] .bg-noir-soft {
+  background-color: #161413;
+}
+html[data-theme='light'] [data-on-photo] .border-paper,
+html[data-theme='light'] [data-on-photo] .border-paper\/20,
+html[data-theme='light'] [data-on-photo] .border-paper\/30,
+html[data-theme='light'] [data-on-photo] .border-paper\/50,
+html[data-theme='light'] [data-on-photo] .border-paper\/70 {
+  border-color: rgba(250, 246, 243, 0.5);
+}
+html[data-theme='light'] [data-on-photo] .bg-paper {
+  background-color: #faf6f3;
+}
+html[data-theme='light'] [data-on-photo] .bg-paper.text-noir,
+html[data-theme='light'] [data-on-photo] .text-noir {
+  color: #1a120c;
+}
+
+/* Hover colors stay available after the theme locks a resting color. */
+html:not([data-theme='light']) .hover\:text-terra:hover { color: #bc773f; }
+html:not([data-theme='light']) .hover\:text-paper:hover { color: #faf6f3; }
+html:not([data-theme='light']) .hover\:text-ink:hover { color: #f3ece3; }
+html[data-theme='light'] .hover\:text-terra:hover { color: #7a4318; }
+html[data-theme='light'] .hover\:text-paper:hover { color: #faf6f3; }
+html[data-theme='light'] .hover\:text-ink:hover { color: #1a120c; }
+html[data-theme='light'] [data-on-photo] .hover\:text-terra:hover,
+html[data-theme='light'] .strip-meta .hover\:text-terra:hover,
+html[data-theme='light'] .bg-ink .hover\:text-terra:hover,
+html[data-theme='light'] .bg-ink-deep .hover\:text-terra:hover,
+html[data-theme='light'] .bg-noir\/50 .hover\:text-terra:hover,
+html[data-theme='light'] .bg-noir\/70 .hover\:text-terra:hover,
+html[data-theme='light'] .bg-noir\/80 .hover\:text-terra:hover {
+  color: #e0a36a;
+}
+html[data-theme='light'] .bg-ink .hover\:text-paper:hover,
+html[data-theme='light'] [data-on-photo] .hover\:text-paper:hover,
+html[data-theme='light'] .strip-meta .hover\:text-paper:hover {
+  color: #faf6f3;
 }

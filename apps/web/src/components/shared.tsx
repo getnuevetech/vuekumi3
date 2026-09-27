@@ -133,29 +133,27 @@ function CurrencySelect({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
 
 /* ---------------- Logo ---------------- */
 
-export function LogoMark({ dark = false, accent = '#bc773f', condensed = false }: { dark?: boolean; accent?: string; condensed?: boolean }) {
+export function LogoMark({ dark = false, accent = '#bc773f' }: { dark?: boolean; accent?: string; condensed?: boolean }) {
   const { content, logoUrl } = useSiteContent()
   const name = content.brand.name
   const mark = content.brand.accent
   const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name
+  const tone = dark ? 'text-paper' : 'text-ink'
   return (
-    <Link to="/" className="flex items-center gap-2.5">
+    <Link to="/" className={`flex items-center gap-2.5 ${tone}`}>
       {logoUrl ? (
         <img src={logoUrl} alt="" className="h-7 w-7 object-contain" />
       ) : (
         <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-          <circle cx="13" cy="13" r="12" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
+          <circle cx="13" cy="13" r="12" stroke="currentColor" strokeWidth="1.4" />
           <circle cx="13" cy="13" r="6.5" stroke={accent} strokeWidth="1.4" />
           <circle cx="13" cy="13" r="2" fill={accent} />
-          <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke={dark ? '#faf6f3' : '#3c3835'} strokeWidth="1.4" />
+          <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke="currentColor" strokeWidth="1.4" />
         </svg>
       )}
-      <span className={condensed
-        ? 'font-condensed text-lg font-medium uppercase tracking-[0.24em] text-paper'
-        : `font-serif-display text-xl tracking-tight ${dark ? 'text-paper' : 'text-ink'}`}
-      >
+      <span className="font-condensed text-lg font-medium uppercase tracking-[0.24em]">
         {highlight}
-        {mark && name.endsWith(mark) ? <span className={condensed ? '' : 'text-terra'}>{mark}</span> : null}
+        {mark && name.endsWith(mark) ? <span>{mark}</span> : null}
       </span>
     </Link>
   )
@@ -221,9 +219,9 @@ export function AccountMenu({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
   const { user, logout } = useAuth()
   const { content } = useSiteContent()
   const [open, setOpen] = useState(false)
-  const text = tone === 'dark'
-    ? 'font-condensed text-[13px] font-light uppercase tracking-[0.22em] text-paper-soft transition-colors hover:text-terra'
-    : 'font-mono-tech text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:text-terra'
+  const text = `font-condensed text-[13px] font-light uppercase tracking-[0.22em] transition-colors hover:text-terra ${
+    tone === 'dark' ? 'text-paper-soft' : 'text-ink'
+  }`
   if (!user) {
     return (
       <Link to="/login" className={text}>
@@ -284,14 +282,10 @@ export function AccountMenu({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const { pathname } = useLocation()
-  const noir = !isPortalPath(pathname)
   const { user } = useAuth()
   const { content } = useSiteContent()
   const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user))
-  const menuClass = noir
-    ? `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`
-    : menuTypeClass(content.menuStyle.font)
+  const menuClass = `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`
   const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' }
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -303,54 +297,48 @@ export function SiteHeader() {
     <>
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          noir
-            ? scrolled ? 'border-b border-noir bg-noir/85 backdrop-blur-md' : 'bg-transparent'
-            : scrolled ? 'border-b border-sand-soft bg-paper/90 backdrop-blur-md' : 'border-b border-transparent'
+          scrolled ? 'border-b border-noir bg-noir/85 backdrop-blur-md' : 'bg-transparent'
         }`}
       >
-        <div className={`flex items-center justify-between gap-6 px-5 py-4 md:px-10 ${noir ? '' : 'mx-auto max-w-[1500px] py-3.5 md:px-8'}`}>
-          <LogoMark dark={noir} condensed={noir} />
-          <nav className={`hidden items-center gap-5 uppercase lg:flex ${noir ? '' : 'text-ink-soft'} ${menuClass}`}>
+        <div className="flex items-center justify-between gap-6 px-5 py-4 md:px-10">
+          <LogoMark dark condensed />
+          <nav className={`hidden items-center gap-5 uppercase lg:flex ${menuClass}`}>
             {links.map((link) => (
-              <Link key={`${link.to}-${link.label}`} to={link.to} style={menuStyle} className={noir ? '' : 'link-slide hover:text-terra'}>{link.label}</Link>
+              <Link key={`${link.to}-${link.label}`} to={link.to} style={menuStyle}>{link.label}</Link>
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <ThemeToggle tone={noir ? 'dark' : 'light'} />
+            <ThemeToggle tone="dark" />
             <div className="hidden md:block">
-              <CurrencySelect tone={noir ? 'dark' : 'light'} />
+              <CurrencySelect tone="dark" />
             </div>
-            <AccountMenu tone={noir ? 'dark' : 'light'} />
+            <AccountMenu tone="dark" />
             {!user && (
               <Link
                 to="/login?redirect=/contributor/upload&signup=photographer"
-                className={noir
-                  ? 'hidden border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra lg:inline-block'
-                  : 'hidden bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra lg:inline-block'}
+                className="hidden border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra lg:inline-block"
               >
                 {content.actions.sell}
               </Link>
             )}
             <button
               onClick={() => setOpen(!open)}
-              className={`flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden ${noir ? '' : 'border border-sand'}`}
+              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
               aria-label="Toggle menu"
             >
-              <span className={`block h-px w-5 transition-transform ${noir ? 'bg-paper' : 'bg-ink'} ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
-              <span className={`block h-px w-5 transition-transform ${noir ? 'bg-paper' : 'bg-ink'} ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
+              <span className={`block h-px w-5 bg-paper transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
+              <span className={`block h-px w-5 bg-paper transition-transform ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
             </button>
           </div>
         </div>
         <div className="px-5 pb-4 md:px-10">
-          <div className={noir ? '' : 'mx-auto max-w-[1500px]'}>
-            <SearchForm dark={noir} wide defaultQuery="" />
-          </div>
+          <SearchForm dark wide defaultQuery="" />
         </div>
       </header>
       <div
-        className={`fixed inset-0 z-40 backdrop-blur transition-opacity duration-300 lg:hidden ${
-          noir ? 'bg-noir/95' : 'bg-paper/98'
-        } ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        className={`fixed inset-0 z-40 bg-noir/95 backdrop-blur transition-opacity duration-300 lg:hidden ${
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
       >
         <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
           {links.map((item) => (
@@ -358,16 +346,9 @@ export function SiteHeader() {
               key={`${item.to}-${item.label}`}
               to={item.to}
               onClick={() => setOpen(false)}
-              className={noir
-                ? 'font-condensed text-2xl font-light uppercase tracking-[0.25em] text-paper'
-                : 'group flex w-full items-baseline gap-4 border-b border-sand-soft py-4'}
+              className="font-condensed text-2xl font-light uppercase tracking-[0.25em] text-paper"
             >
-              {noir ? item.label : (
-                <>
-                  <span className="font-mono-tech text-[10px] text-terra">{String(links.indexOf(item) + 1).padStart(2, '0')}</span>
-                  <span className="font-serif-display text-3xl tracking-tight text-ink transition-colors group-hover:text-terra">{item.label}</span>
-                </>
-              )}
+              {item.label}
             </Link>
           ))}
         </div>
@@ -690,7 +671,7 @@ export function PortalShell({
       {/* sidebar */}
       <aside className="border-b border-sand bg-ink text-paper lg:fixed lg:inset-y-0 lg:flex lg:w-[260px] lg:flex-col lg:border-b-0">
         <div className="flex items-center justify-between px-5 py-4 lg:block lg:px-6 lg:py-7">
-          <LogoMark dark accent="#d6e6ff" />
+          <LogoMark dark condensed accent="#bc773f" />
           <span className="hidden lg:mt-1.5 lg:block font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper-soft">
             {title}
           </span>

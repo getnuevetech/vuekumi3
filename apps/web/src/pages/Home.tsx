@@ -153,7 +153,7 @@ function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsD
   const slide = slides[active];
 
   return (
-    <section className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-noir">
+    <section data-on-photo className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-noir">
       {slides.map((s, i) => (
         <div key={s.title} className={`noir-slide absolute inset-0 ${i === active ? 'is-active' : ''}`}>
           {s.src ? <img src={s.src} alt={s.alt} className="h-full w-full object-cover" /> : <div className="h-full w-full bg-noir" />}
@@ -705,7 +705,7 @@ function StatsBand({
 }) {
   const { content } = useSiteContent();
   return (
-    <section className="relative overflow-hidden">
+    <section data-on-photo className="relative overflow-hidden">
       {background ? (
         <img src={background.src} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
       ) : (
