@@ -1,5 +1,5 @@
 import type { HomeCategoryBannerDto, HomePageDto, HomeSlotPins, PhotoDto } from '@vuekumi/shared'
-import { HOME_CATEGORY_BANNER_CAPACITY, HOME_FEATURED_CAPACITY, HOME_FEATURED_SLOT_KEYS, STOCK_PERMISSION_STATES, normalizeFeaturedFrame } from '@vuekumi/shared'
+import { HOME_CATEGORY_BANNER_CAPACITY, HOME_FEATURED_CAPACITY, HOME_FEATURED_SLOT_KEYS, HOME_UPLOAD_SLOT_KEYS, STOCK_PERMISSION_STATES, isHomeUploadSlot, normalizeFeaturedFrame, normalizeSlotUploads } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares } from './home.js'
 import {
   catalogPhotoInclude,
@@ -23,6 +23,19 @@ function mapSlot(ids: string[], lookup: Map<string, CatalogPhoto>) {
   return ids.map((id) => lookup.get(id)).filter((photo): photo is CatalogPhoto => Boolean(photo)).map((p) => serializeCatalogPhoto(p))
 }
 
+export async function loadHomeUploads() {
+  const rows = await prisma.homeFeaturedPin.findMany({
+    where: { slot: { in: [...HOME_UPLOAD_SLOT_KEYS] } },
+    orderBy: { position: 'asc' },
+  })
+  const uploads = normalizeSlotUploads(null)
+  for (const row of rows) {
+    if (!isHomeUploadSlot(row.slot) || !row.imageSrc) continue
+    uploads[row.slot][row.position] = row.imageSrc
+  }
+  return uploads
+}
+
 export async function loadHomePins(): Promise<HomeSlotPins> {
   const rows = await prisma.homeFeaturedPin.findMany({ orderBy: [{ slot: 'asc' }, { position: 'asc' }] })
   const pins: HomeSlotPins = {}
@@ -38,7 +51,7 @@ export async function loadHomePins(): Promise<HomeSlotPins> {
 }
 
 export async function loadHomePage(): Promise<HomePageDto> {
-  const [photosLive, contributorGroups, countryGroups, downloadAgg, categoryGroups, byDownloads, byNewest, byLikes, pins] =
+  const [photosLive, contributorGroups, countryGroups, downloadAgg, categoryGroups, byDownloads, byNewest, byLikes, pins, uploads] =
     await Promise.all([
       prisma.photo.count({ where: LIVE }),
       prisma.photo.groupBy({ by: ['contributorId'], where: LIVE, _count: { _all: true } }),
@@ -64,6 +77,7 @@ export async function loadHomePage(): Promise<HomePageDto> {
         take: 16,
       }),
       loadHomePins(),
+      loadHomeUploads(),
     ])
 
   const pinIds = HOME_FEATURED_SLOT_KEYS.flatMap((slot) => (pins[slot] ?? []).filter((id): id is string => Boolean(id)))
@@ -77,21 +91,26 @@ export async function loadHomePage(): Promise<HomePageDto> {
 
   const lookup = byId([...byDownloads, ...byNewest, ...byLikes, ...pinnedPhotos])
   const liveIds = new Set(lookup.keys())
-  const slots = assignHomeSlots({
-    byDownloads: byDownloads.map(ranked),
-    byNewest: byNewest.map(ranked),
-    byLikes: byLikes.map(ranked),
-    pins,
-    liveIds,
-  })
-  const statsPhoto = slots.statsBackground ? lookup.get(slots.statsBackground) : undefined
   const [editorialConfig, frameConfig] = await Promise.all([
     prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } }),
     prisma.homeSectionConfig.findUnique({ where: { slot: 'edge' } }),
   ])
   const editorialMode = editorialConfig?.mode === 'category' ? 'category' as const : 'pins' as const
   const editorialCategory = editorialConfig?.category ?? null
-  let editorial = mapSlot(slots.editorial, lookup)
+  const slots = assignHomeSlots({
+    byDownloads: byDownloads.map(ranked),
+    byNewest: byNewest.map(ranked),
+    byLikes: byLikes.map(ranked),
+    pins,
+    liveIds,
+    holds: {
+      hero: uploads.hero.map(Boolean),
+      pricing: uploads.pricing.map(Boolean),
+      stats_background: uploads.stats_background.map(Boolean),
+      ...(editorialMode === 'pins' ? { editorial: uploads.editorial.map(Boolean) } : {}),
+    },
+  })
+  let editorial = mixUploads(slots.editorial, uploads.editorial, lookup, 'editorial')
   if (editorialMode === 'category' && editorialCategory) {
     const rows = await prisma.photo.findMany({
       where: { ...LIVE, category: editorialCategory },
@@ -99,8 +118,9 @@ export async function loadHomePage(): Promise<HomePageDto> {
       orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
       take: HOME_FEATURED_CAPACITY.editorial,
     })
-    editorial = rows.map((photo) => serializeCatalogPhoto(photo))
+    editorial = overlayUploads(rows.map((photo) => serializeCatalogPhoto(photo)), uploads.editorial, 'editorial')
   }
+  const statsUpload = uploads.stats_background[0]
   const [categories, layout] = await Promise.all([loadCategoryBanners(), loadHomeLayout()])
 
   return {
@@ -115,11 +135,15 @@ export async function loadHomePage(): Promise<HomePageDto> {
       ),
     },
     featured: {
-      hero: mapSlot(slots.hero, lookup),
+      hero: mixUploads(slots.hero, uploads.hero, lookup, 'hero'),
       edge: mapSlot(slots.edge, lookup),
       editorial,
-      pricing: mapSlot(slots.pricing, lookup),
-      statsBackground: statsPhoto ? serializeCatalogPhoto(statsPhoto) : null,
+      pricing: mixUploads(slots.pricing, uploads.pricing, lookup, 'pricing'),
+      statsBackground: statsUpload
+        ? uploadedSlide(statsUpload, 'stats', 0)
+        : slots.statsBackground && lookup.get(slots.statsBackground)
+          ? serializeCatalogPhoto(lookup.get(slots.statsBackground)!)
+          : null,
       categories,
       editorialMode,
       editorialCategory,
@@ -128,6 +152,54 @@ export async function loadHomePage(): Promise<HomePageDto> {
     contributors: layout.people.contributors.people,
     layout,
   }
+}
+
+function uploadedSlide(src: string, slot: string, index: number): PhotoDto {
+  return {
+    id: `upload-${slot}-${index}`,
+    src,
+    title: '',
+    category: '',
+    country: '',
+    photographer: '',
+    license: 'free',
+    price: 0,
+    downloads: 0,
+    views: 0,
+    likes: 0,
+    tags: [],
+    status: 'active',
+  }
+}
+
+function mixUploads(ids: string[], uploads: (string | null)[], lookup: Map<string, CatalogPhoto>, slot: string): PhotoDto[] {
+  const cap = Math.max(ids.length, uploads.length)
+  const photos: PhotoDto[] = []
+  let cursor = 0
+  for (let i = 0; i < cap; i++) {
+    const src = uploads[i]
+    if (src) {
+      photos.push(uploadedSlide(src, slot, i))
+      continue
+    }
+    const id = ids[cursor]
+    cursor += 1
+    const photo = id ? lookup.get(id) : undefined
+    if (photo) photos.push(serializeCatalogPhoto(photo))
+  }
+  return photos
+}
+
+function overlayUploads(photos: PhotoDto[], uploads: (string | null)[], slot: string): PhotoDto[] {
+  if (!uploads.some(Boolean)) return photos
+  const cap = Math.max(photos.length, uploads.length)
+  const out: PhotoDto[] = []
+  for (let i = 0; i < cap; i++) {
+    const src = uploads[i]
+    if (src) out.push(uploadedSlide(src, slot, i))
+    else if (photos[i]) out.push(photos[i]!)
+  }
+  return out
 }
 
 function uploadedBannerPhoto(src: string, category: string): PhotoDto {

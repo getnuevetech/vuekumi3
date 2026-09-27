@@ -42,8 +42,20 @@ export function homeFeaturedCapacity(slot: HomeFeaturedSlotKey): number {
   return HOME_FEATURED_CAPACITY[slot]
 }
 
+/** Slots that can show an uploaded image instead of a catalog photograph. Featured images stay on the catalog. */
+export const HOME_UPLOAD_SLOT_KEYS = ['hero', 'editorial', 'pricing', 'stats_background'] as const
+export type HomeUploadSlotKey = (typeof HOME_UPLOAD_SLOT_KEYS)[number]
+
+export function isHomeUploadSlot(slot: string): slot is HomeUploadSlotKey {
+  return (HOME_UPLOAD_SLOT_KEYS as readonly string[]).includes(slot)
+}
+
 function pinArray(slot: HomeFeaturedSlotKey) {
   return z.array(z.string().min(1).nullable()).max(HOME_FEATURED_CAPACITY[slot])
+}
+
+function uploadArray(slot: HomeUploadSlotKey) {
+  return z.array(z.string().trim().max(500).nullable()).max(HOME_FEATURED_CAPACITY[slot])
 }
 
 export const categoryBannerPinSchema = z.object({
@@ -224,6 +236,12 @@ export const patchHomeFeaturedSchema = z.object({
     pricing: pinArray('pricing').optional(),
     stats_background: pinArray('stats_background').optional(),
   }),
+  uploads: z.object({
+    hero: uploadArray('hero').optional(),
+    editorial: uploadArray('editorial').optional(),
+    pricing: uploadArray('pricing').optional(),
+    stats_background: uploadArray('stats_background').optional(),
+  }).optional(),
   categoryBanners: z.array(categoryBannerPinSchema).max(HOME_CATEGORY_BANNER_CAPACITY).optional(),
   editorial: z.object({
     mode: z.enum(HOME_EDITORIAL_MODES),
@@ -258,6 +276,23 @@ export function normalizeCategoryBanners(input?: CategoryBannerPin[] | null): Ca
 
 export type HomeSlotPins = {
   [K in HomeFeaturedSlotKey]?: (string | null)[]
+}
+
+export type HomeSlotUploads = {
+  [K in HomeUploadSlotKey]?: (string | null)[]
+}
+
+export function normalizeSlotUploads(input?: HomeSlotUploads | null): Record<HomeUploadSlotKey, (string | null)[]> {
+  const out = {} as Record<HomeUploadSlotKey, (string | null)[]>
+  for (const slot of HOME_UPLOAD_SLOT_KEYS) {
+    const cap = HOME_FEATURED_CAPACITY[slot]
+    const raw = input?.[slot] ?? []
+    out[slot] = Array.from({ length: cap }, (_, i) => {
+      const value = raw[i]
+      return typeof value === 'string' && value.trim() ? value.trim() : null
+    })
+  }
+  return out
 }
 
 export function normalizeHomePins(input?: HomeSlotPins | null): Record<HomeFeaturedSlotKey, (string | null)[]> {
@@ -354,7 +389,8 @@ export interface HomeFeaturedPositionDto {
   position: number
   photoId: string | null
   photo: PhotoDto | null
-  source: 'pinned' | 'auto'
+  imageSrc: string | null
+  source: 'pinned' | 'auto' | 'upload'
   eligible: boolean
   ineligibleReason: string | null
 }

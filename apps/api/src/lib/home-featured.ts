@@ -3,11 +3,14 @@ import {
   HOME_FEATURED_CAPACITY,
   HOME_FEATURED_SLOT_KEYS,
   HOME_FEATURED_SLOT_LABEL,
+  HOME_UPLOAD_SLOT_KEYS,
   PHOTO_CATEGORIES,
   featuredPinIneligibleReason,
+  isHomeUploadSlot,
   normalizeCategoryBanners,
   normalizeFeaturedFrame,
   normalizeHomePins,
+  normalizeSlotUploads,
   type HomeEditorialMode,
   type HomeFeaturedAdminDto,
   type HomeFeaturedPositionDto,
@@ -18,7 +21,7 @@ import {
 import { assignHomeSlots } from './home.js'
 import { catalogPhotoInclude, serializeCatalogPhoto, type CatalogPhoto } from './catalog.js'
 import { loadHomeLayoutAdmin, planHomeLayout, writeHomeLayout } from './home-layout.js'
-import { loadHomePins } from './home-queries.js'
+import { loadHomePins, loadHomeUploads } from './home-queries.js'
 import { prisma } from './prisma.js'
 import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 
@@ -51,9 +54,19 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
   const frame = 'pins' in input ? input.frame : undefined
   const current = normalizeHomePins(await loadHomePins())
   const normalized = normalizeHomePins({ ...current, ...pins })
+  const storedUploads = await loadHomeUploads()
+  const uploads = normalizeSlotUploads('pins' in input && input.uploads ? { ...storedUploads, ...input.uploads } : storedUploads)
+  for (const slot of HOME_UPLOAD_SLOT_KEYS) {
+    for (const src of uploads[slot]) {
+      if (src && !src.startsWith('/api/media/site/banners/')) throw httpError('Upload the image from this page.')
+    }
+  }
   const wanted = HOME_FEATURED_SLOT_KEYS.flatMap((slot) =>
     normalized[slot]
-      .map((photoId, position) => (photoId ? { slot, position, photoId } : null))
+      .map((photoId, position) => {
+        if (isHomeUploadSlot(slot) && uploads[slot][position]) return null
+        return photoId ? { slot, position, photoId } : null
+      })
       .filter((row): row is { slot: HomeFeaturedSlotKey; position: number; photoId: string } => Boolean(row)),
   )
   const banners = categoryBanners ? normalizeCategoryBanners(categoryBanners) : null
@@ -90,11 +103,14 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
 
   await prisma.$transaction(async (tx) => {
     await tx.homeFeaturedPin.deleteMany({ where: { slot: { in: [...HOME_FEATURED_SLOT_KEYS] } } })
-    if (wanted.length) {
-      await tx.homeFeaturedPin.createMany({
-        data: wanted.map((row) => ({ slot: row.slot, position: row.position, photoId: row.photoId })),
-      })
-    }
+    const uploadRows = HOME_UPLOAD_SLOT_KEYS.flatMap((slot) =>
+      uploads[slot].flatMap((imageSrc, position) => (imageSrc ? [{ slot, position, photoId: null, imageSrc }] : [])),
+    )
+    const pinRows = [
+      ...wanted.map((row) => ({ slot: row.slot, position: row.position, photoId: row.photoId, imageSrc: null })),
+      ...uploadRows,
+    ]
+    if (pinRows.length) await tx.homeFeaturedPin.createMany({ data: pinRows })
     if (banners) {
       await tx.homeFeaturedPin.deleteMany({ where: { slot: CATEGORY_SLOT } })
       const rows = banners.flatMap((row, position) =>
@@ -132,7 +148,8 @@ export async function replaceHomePins(input: HomeSlotPins | PatchHomeFeaturedInp
 }
 
 export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
-  const pins = normalizeHomePins(await loadHomePins())
+  const [pinRows, uploads] = await Promise.all([loadHomePins(), loadHomeUploads()])
+  const pins = normalizeHomePins(pinRows)
   const pinIds = HOME_FEATURED_SLOT_KEYS.flatMap((slot) => pins[slot].filter((id): id is string => Boolean(id)))
 
   const [byDownloads, byNewest, byLikes, pinPhotos] = await Promise.all([
@@ -173,6 +190,12 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     byLikes: byLikes.map((p) => ({ id: p.id, category: p.category })),
     pins,
     liveIds,
+    holds: {
+      hero: uploads.hero.map(Boolean),
+      editorial: uploads.editorial.map(Boolean),
+      pricing: uploads.pricing.map(Boolean),
+      stats_background: uploads.stats_background.map(Boolean),
+    },
   })
   const resolved: Record<HomeFeaturedSlotKey, string[]> = {
     hero: assigned.hero,
@@ -186,9 +209,24 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
   for (const slot of HOME_FEATURED_SLOT_KEYS) {
     const cap = HOME_FEATURED_CAPACITY[slot]
     const positions: HomeFeaturedPositionDto[] = []
+    let cursor = 0
     for (let i = 0; i < cap; i++) {
+      const imageSrc = isHomeUploadSlot(slot) ? uploads[slot][i] : null
+      if (imageSrc) {
+        positions.push({
+          position: i,
+          photoId: null,
+          photo: null,
+          imageSrc,
+          source: 'upload',
+          eligible: true,
+          ineligibleReason: null,
+        })
+        continue
+      }
       const pinnedId = pins[slot][i]
-      const resolvedId = resolved[slot][i] ?? null
+      const resolvedId = resolved[slot][cursor] ?? null
+      cursor += 1
       const photoId = pinnedId ?? resolvedId
       const photo = photoId ? lookup.get(photoId) : undefined
       const ineligibleReason = pinnedId ? homeFeaturedBlocked(photo ?? null) : null
@@ -197,6 +235,7 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
         position: i,
         photoId: photoId ?? null,
         photo: photo ? serializeCatalogPhoto(photo) : null,
+        imageSrc: null,
         source,
         eligible: !ineligibleReason,
         ineligibleReason,

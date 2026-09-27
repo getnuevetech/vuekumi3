@@ -66,6 +66,24 @@ test('inactive pins are skipped so ranking still fills the homepage', () => {
   assert.equal(slots.hero.length, 3)
 })
 
+test('an uploaded position is left open so ranking does not spend a catalog photograph on it', () => {
+  const byDownloads = Array.from({ length: 12 }, (_, i) => ({ id: `d${i}`, category: i === 11 ? 'Landscape' : 'Urban' }))
+  const byNewest = Array.from({ length: 8 }, (_, i) => ({ id: `n${i}`, category: 'Culture' }))
+  const byLikes = Array.from({ length: 6 }, (_, i) => ({ id: `l${i}`, category: 'People' }))
+  const slots = assignHomeSlots({
+    byDownloads,
+    byNewest,
+    byLikes,
+    pins: { hero: [null, 'd0', null] },
+    liveIds: new Set([...byDownloads, ...byNewest, ...byLikes].map((p) => p.id)),
+    holds: { hero: [true, false, false], stats_background: [true] },
+  })
+  assert.equal(slots.hero.length, 2)
+  assert.equal(slots.hero[0], 'd0')
+  assert.equal(slots.statsBackground, null)
+  assert.equal(slots.hero.includes('d1'), true)
+})
+
 test('featured frame starts 20 percent wider and 60 percent taller', () => {
   const previousWidth = 28 * 0.7
   const previousHeight = previousWidth * (4 / 3)

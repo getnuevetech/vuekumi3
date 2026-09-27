@@ -56,10 +56,10 @@ function placePins(
   return out
 }
 
-function fillGaps(partial: (string | null)[], source: RankedPhoto[], used: Set<string>): string[] {
+function fillGaps(partial: (string | null)[], source: RankedPhoto[], used: Set<string>, holds?: boolean[]): string[] {
   const out = [...partial]
   for (let i = 0; i < out.length; i++) {
-    if (out[i]) continue
+    if (out[i] || holds?.[i]) continue
     const next = takeUnused(source, used, 1)[0]
     if (next) out[i] = next.id
   }
@@ -72,6 +72,7 @@ export function assignHomeSlots(input: {
   byLikes: RankedPhoto[]
   pins?: HomeSlotPins | null
   liveIds?: Set<string>
+  holds?: Partial<Record<HomeFeaturedSlotKey, boolean[]>>
 }): {
   hero: string[]
   edge: string[]
@@ -92,13 +93,14 @@ export function assignHomeSlots(input: {
     stats_background: placePins(input.pins?.stats_background, HOME_FEATURED_CAPACITY.stats_background, used, live),
   }
 
-  const hero = fillGaps(placed.hero, input.byDownloads, used)
-  const edge = fillGaps(placed.edge, input.byNewest, used)
-  const editorial = fillGaps(placed.editorial, input.byLikes, used)
-  const pricing = fillGaps(placed.pricing, input.byDownloads, used)
+  const holds = input.holds
+  const hero = fillGaps(placed.hero, input.byDownloads, used, holds?.hero)
+  const edge = fillGaps(placed.edge, input.byNewest, used, holds?.edge)
+  const editorial = fillGaps(placed.editorial, input.byLikes, used, holds?.editorial)
+  const pricing = fillGaps(placed.pricing, input.byDownloads, used, holds?.pricing)
 
   let stats = placed.stats_background[0]
-  if (!stats) {
+  if (!stats && !holds?.stats_background?.[0]) {
     const landscape = input.byDownloads.find((p) => p.category === 'Landscape' && !used.has(p.id))
       ?? input.byNewest.find((p) => p.category === 'Landscape' && !used.has(p.id))
     const fallback = landscape ?? takeUnused(input.byDownloads, used, 1)[0] ?? null

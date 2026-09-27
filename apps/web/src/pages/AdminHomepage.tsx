@@ -15,6 +15,8 @@ import {
   type HomeEditorialMode,
   type HomeFeaturedAdminDto,
   type HomeFeaturedSlotKey,
+  type HomeUploadSlotKey,
+  isHomeUploadSlot,
   type HomePeopleMode,
   type HomePeopleSlot,
   type HomeStaticBannerDto,
@@ -28,9 +30,20 @@ function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
 }
 
 const SLOT_NOTE: Partial<Record<HomeFeaturedSlotKey, string>> = {
+  hero: 'Upload an image for a slide, or pin a live photograph. An empty slide uses the live ranking.',
   edge: 'Featured images are edited only on Featured images, and from the switch on each photograph in Content.',
-  editorial: 'Pin several photographs and they change on a timer, or choose a category and the slides pull live images from that category.',
-  pricing: 'These photographs fill homepage pricing cards that do not have their own image. Plan names, prices, and the lines on the cards are edited under Buyer plans.',
+  editorial: 'Upload an image, pin photographs that change on a timer, or choose a category. An upload fills that slide. Empty slides use the live ranking or the chosen category.',
+  pricing: 'Upload an image or pin a photograph for a pricing card that does not have its own plan image. Plan names, prices, and the lines on the cards are edited under Buyer plans.',
+  stats_background: 'Upload a background image, or pin a live photograph. An empty background uses the live ranking.',
+}
+
+function emptyUploads(page: HomeFeaturedAdminDto): Record<HomeUploadSlotKey, (string | null)[]> {
+  return {
+    hero: page.slots.hero.map((row) => row.imageSrc),
+    editorial: page.slots.editorial.map((row) => row.imageSrc),
+    pricing: page.slots.pricing.map((row) => row.imageSrc),
+    stats_background: page.slots.stats_background.map((row) => row.imageSrc),
+  }
 }
 
 function fileToBase64(file: File) {
@@ -53,6 +66,7 @@ type PinTarget =
 export default function AdminHomepage() {
   const [page, setPage] = useState<HomeFeaturedAdminDto | null>(null)
   const [pins, setPins] = useState<HomeFeaturedAdminDto['pins'] | null>(null)
+  const [uploads, setUploads] = useState<Record<HomeUploadSlotKey, (string | null)[]> | null>(null)
   const [banners, setBanners] = useState<CategoryBannerPin[] | null>(null)
   const [editorialMode, setEditorialMode] = useState<HomeEditorialMode>('pins')
   const [editorialCategory, setEditorialCategory] = useState('')
@@ -68,6 +82,7 @@ export default function AdminHomepage() {
       .then((next) => {
         setPage(next)
         setPins(emptyPins(next))
+        setUploads(emptyUploads(next))
         setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category, imageSrc: row.imageSrc })))
         setEditorialMode(next.editorialMode)
         setEditorialCategory(next.editorialCategory ?? '')
@@ -111,6 +126,30 @@ export default function AdminHomepage() {
     })
   }
 
+  const setUpload = (slot: HomeUploadSlotKey, position: number, imageSrc: string | null) => {
+    setUploads((current) => {
+      if (!current) return current
+      const next = [...current[slot]]
+      next[position] = imageSrc
+      return { ...current, [slot]: next }
+    })
+    if (imageSrc) setPin(slot, position, null)
+  }
+
+  const uploadSlotImage = async (slot: HomeUploadSlotKey, position: number, file: File) => {
+    setBusy(true)
+    try {
+      const dataBase64 = await fileToBase64(file)
+      const saved = await api.uploadSiteImage({ kind: 'banners', contentType: file.type || 'image/jpeg', dataBase64 })
+      setUpload(slot, position, saved.src)
+      toast.success('Image ready. Save featured slots to keep it.')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not upload the image')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const uploadBanner = async (position: number, file: File) => {
     setBusy(true)
     try {
@@ -126,7 +165,7 @@ export default function AdminHomepage() {
   }
 
   const save = async () => {
-    if (!pins || !banners) return
+    if (!pins || !banners || !uploads) return
     const widthVw = Number(bannerWidth)
     const heightVw = Number(bannerHeight)
     if (!Number.isFinite(widthVw) || !Number.isFinite(heightVw)) {
@@ -145,9 +184,11 @@ export default function AdminHomepage() {
         categoryBanners: banners,
         editorial: { mode: editorialMode, category: editorialCategory || null },
         categoryBannerFrame: { widthVw, heightVw },
+        uploads,
       })
       setPage(next)
       setPins(emptyPins(next))
+      setUploads(emptyUploads(next))
       setBanners(next.categoryBanners.map((row) => ({ photoId: row.photoId, category: row.category, imageSrc: row.imageSrc })))
       setEditorialMode(next.editorialMode)
       setEditorialCategory(next.editorialCategory ?? '')
@@ -206,7 +247,10 @@ export default function AdminHomepage() {
                   return
                 }
                 if (target.kind === 'banner') setBanner(target.position, { photoId: photo.id, imageSrc: null })
-                else setPin(target.slot, target.position, photo.id)
+                else {
+                  setPin(target.slot, target.position, photo.id)
+                  if (isHomeUploadSlot(target.slot)) setUpload(target.slot, target.position, null)
+                }
               }}
               className="flex items-center gap-3 rounded-2xl border border-sand-soft bg-white p-2 text-left hover:border-terra"
             >
@@ -261,6 +305,7 @@ export default function AdminHomepage() {
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {(page?.slots[slot] ?? []).map((row) => {
                 const pinnedId = pins?.[slot]?.[row.position] ?? null
+                const uploaded = isHomeUploadSlot(slot) ? (uploads?.[slot]?.[row.position] ?? null) : null
                 const selected = target?.kind === 'slot' && target.slot === slot && target.position === row.position
                 return (
                   <article
@@ -268,31 +313,57 @@ export default function AdminHomepage() {
                     className={`rounded-2xl border bg-white p-3 ${selected ? 'border-terra' : 'border-sand-soft'}`}
                   >
                     <button type="button" className="w-full text-left" onClick={() => setTarget({ kind: 'slot', slot, position: row.position })}>
-                      {row.photo ? (
-                        <img src={row.photo.src} alt="" className="h-28 w-full rounded-xl object-cover" />
+                      {uploaded || row.photo ? (
+                        <img src={uploaded || row.photo?.src} alt="" className="h-28 w-full rounded-xl object-cover" />
                       ) : (
                         <div className="flex h-28 items-center justify-center rounded-xl bg-cream text-sm text-ink-faint">Empty — auto fill</div>
                       )}
-                      <p className="mt-2 text-sm font-medium">{row.photo?.title ?? 'No photograph yet'}</p>
+                      <p className="mt-2 text-sm font-medium">{uploaded ? 'Uploaded image' : (row.photo?.title ?? 'No photograph yet')}</p>
                       <p className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
-                        #{row.position + 1} · {row.source}{row.ineligibleReason ? ` · ${row.ineligibleReason}` : ''}
+                        #{row.position + 1} · {uploaded ? 'upload' : row.source}{row.ineligibleReason ? ` · ${row.ineligibleReason}` : ''}
                       </p>
                     </button>
-                    <div className="mt-3 flex gap-2">
-                      <input
-                        value={pinnedId ?? ''}
-                        onFocus={() => setTarget({ kind: 'slot', slot, position: row.position })}
-                        onChange={(e) => setPin(slot, row.position, e.target.value.trim() || null)}
-                        placeholder="Photo id or leave blank"
-                        className="min-w-0 flex-1 rounded-full border border-sand-soft px-3 py-1.5 font-mono-tech text-[11px] outline-none focus:border-terra"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setPin(slot, row.position, null)}
-                        className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft"
-                      >
-                        Auto
-                      </button>
+                    <div className="mt-3 flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <input
+                          value={uploaded ? '' : (pinnedId ?? '')}
+                          onFocus={() => setTarget({ kind: 'slot', slot, position: row.position })}
+                          onChange={(e) => {
+                            const photoId = e.target.value.trim() || null
+                            setPin(slot, row.position, photoId)
+                            if (isHomeUploadSlot(slot)) setUpload(slot, row.position, null)
+                          }}
+                          placeholder="Photo id or leave blank"
+                          className="min-w-0 flex-1 rounded-full border border-sand-soft px-3 py-1.5 font-mono-tech text-[11px] outline-none focus:border-terra"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPin(slot, row.position, null)
+                            if (isHomeUploadSlot(slot)) setUpload(slot, row.position, null)
+                          }}
+                          className="rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft"
+                        >
+                          Auto
+                        </button>
+                      </div>
+                      {isHomeUploadSlot(slot) && (
+                        <label className="block font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                          Upload image
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            aria-label={`Upload ${page?.labels[slot] ?? slot} ${row.position + 1}`}
+                            className="mt-1 block w-full text-sm"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              e.target.value = ''
+                              if (!file) return
+                              void uploadSlotImage(slot, row.position, file)
+                            }}
+                          />
+                        </label>
+                      )}
                     </div>
                   </article>
                 )

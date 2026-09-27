@@ -136,8 +136,8 @@ function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsD
     return {
       ...item,
       src: photo?.src,
-      alt: photo?.title ?? '',
-      tag: photo ? `${photo.title} — ${photo.country}` : 'Vuekumi library',
+      alt: photo?.title || photo?.country || '',
+      tag: photo?.country ? `${photo.title} — ${photo.country}` : '',
     };
   });
 
@@ -217,7 +217,7 @@ function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsD
       {/* bottom meta */}
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-6 md:px-10">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.2em] text-paper-soft">
-          {String(active + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')} — {slide.tag}
+          {String(active + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}{slide.tag ? ` — ${slide.tag}` : ''}
         </p>
         <div className="flex gap-1.5">
           {slides.map((_, i) => (
@@ -622,10 +622,10 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
         </span>
       </div>
       <div className="group relative flex-1">
-        {a ? <img src={a.src} alt={a.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px]" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+        {a ? <img src={a.src} alt={a.title || ''} loading="lazy" className="h-72 w-full object-cover md:h-[520px]" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
         {a && <CountryMark country={a.country} />}
-        {a && <PhotoHoverActions photo={a} />}
-        {a && (
+        {a && !a.id.startsWith('upload-') && <PhotoHoverActions photo={a} />}
+        {a?.country && (
           <p className="absolute bottom-4 left-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
             {a.title} — {a.country}
           </p>
@@ -659,10 +659,10 @@ function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: PublicSt
         </Link>
       </div>
       <div className="group relative flex-1">
-        {b ? <img src={b.src} alt={b.title} loading="lazy" className="h-72 w-full object-cover md:h-[520px] lg:h-full" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+        {b ? <img src={b.src} alt={b.title || ''} loading="lazy" className="h-72 w-full object-cover md:h-[520px] lg:h-full" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
         {b && <CountryMark country={b.country} />}
-        {b && <PhotoHoverActions photo={b} />}
-        {b && (
+        {b && !b.id.startsWith('upload-') && <PhotoHoverActions photo={b} />}
+        {b?.country && (
           <p className="absolute bottom-4 right-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
             {b.title} — {b.country}
           </p>
@@ -721,7 +721,7 @@ function StatsBand({
           </div>
         </Reveal>
         <p className="mt-12 text-center font-mono-tech text-[10px] uppercase tracking-[0.25em] text-paper-soft">
-          {content.home.statsCaption}{background ? ` — ${background.title}, ${background.country}` : ''}
+          {content.home.statsCaption}{background?.country ? ` — ${background.title}, ${background.country}` : ''}
         </p>
       </div>
     </section>
