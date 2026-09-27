@@ -18,7 +18,7 @@ import {
   type HomeSlotPins,
   type PatchHomeFeaturedInput,
 } from '@vuekumi/shared'
-import { assignHomeSlots } from './home.js'
+import { assignHomeSlots, shuffleWith } from './home.js'
 import { catalogPhotoInclude, serializeCatalogPhoto, type CatalogPhoto } from './catalog.js'
 import { loadHomeLayoutAdmin, planHomeLayout, writeHomeLayout } from './home-layout.js'
 import { loadHomePins, loadHomeUploads } from './home-queries.js'
@@ -152,24 +152,10 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
   const pins = normalizeHomePins(pinRows)
   const pinIds = HOME_FEATURED_SLOT_KEYS.flatMap((slot) => pins[slot].filter((id): id is string => Boolean(id)))
 
-  const [byDownloads, byNewest, byLikes, pinPhotos] = await Promise.all([
+  const [pool, pinPhotos] = await Promise.all([
     prisma.photo.findMany({
       where: LIVE,
-      include: catalogPhotoInclude,
-      orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
-      take: 24,
-    }),
-    prisma.photo.findMany({
-      where: LIVE,
-      include: catalogPhotoInclude,
-      orderBy: [{ createdAt: 'desc' }],
-      take: 40,
-    }),
-    prisma.photo.findMany({
-      where: LIVE,
-      include: catalogPhotoInclude,
-      orderBy: [{ likes: 'desc' }, { createdAt: 'desc' }],
-      take: 16,
+      select: { id: true, category: true },
     }),
     pinIds.length
       ? prisma.photo.findMany({
@@ -179,15 +165,11 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
       : Promise.resolve([] as CatalogPhoto[]),
   ])
 
-  const lookup = new Map<string, CatalogPhoto>()
-  for (const photo of [...byDownloads, ...byNewest, ...byLikes, ...pinPhotos]) lookup.set(photo.id, photo)
-  const liveIds = new Set(
-    [...lookup.values()].filter((photo) => !homeFeaturedBlocked(photo)).map((photo) => photo.id),
-  )
+  const liveIds = new Set(pool.map((photo) => photo.id))
   const assigned = assignHomeSlots({
-    byDownloads: byDownloads.map((p) => ({ id: p.id, category: p.category })),
-    byNewest: byNewest.map((p) => ({ id: p.id, category: p.category })),
-    byLikes: byLikes.map((p) => ({ id: p.id, category: p.category })),
+    byDownloads: pool,
+    byNewest: [],
+    byLikes: [],
     pins,
     liveIds,
     holds: {
@@ -204,6 +186,15 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     pricing: assigned.pricing,
     stats_background: assigned.statsBackground ? [assigned.statsBackground] : [],
   }
+  const autoIds = HOME_FEATURED_SLOT_KEYS.flatMap((slot) => resolved[slot]).filter((id) => !pinPhotos.some((photo) => photo.id === id))
+  const autoPhotos = autoIds.length
+    ? await prisma.photo.findMany({
+        where: { id: { in: autoIds } },
+        include: catalogPhotoInclude,
+      })
+    : []
+  const lookup = new Map<string, CatalogPhoto>()
+  for (const photo of [...pinPhotos, ...autoPhotos]) lookup.set(photo.id, photo)
 
   const slots = {} as HomeFeaturedAdminDto['slots']
   for (const slot of HOME_FEATURED_SLOT_KEYS) {
@@ -268,11 +259,17 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     let photo = pin.imageSrc ? undefined : pin.photoId ? lookup.get(pin.photoId) : undefined
     let source: 'pinned' | 'auto' | 'upload' = pin.imageSrc ? 'upload' : pin.photoId ? 'pinned' : 'auto'
     if (!photo && !pin.imageSrc && pin.category) {
-      photo = await prisma.photo.findFirst({
+      const choices = await prisma.photo.findMany({
         where: { ...LIVE, category: pin.category },
-        include: catalogPhotoInclude,
-        orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
-      }) ?? undefined
+        select: { id: true },
+      })
+      const pick = shuffleWith(choices)[0]
+      photo = pick
+        ? await prisma.photo.findFirst({
+            where: { id: pick.id },
+            include: catalogPhotoInclude,
+          }) ?? undefined
+        : undefined
       source = 'auto'
     }
     categoryBanners.push({
@@ -304,6 +301,7 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
       people: contributors.people,
     },
     layoutOrder: layoutAdmin.layoutOrder,
+    layoutHidden: layoutAdmin.layoutHidden,
     people: layoutAdmin.people,
     categoryBannerFrame: layoutAdmin.categoryBannerFrame,
     staticBanners: layoutAdmin.staticBanners,

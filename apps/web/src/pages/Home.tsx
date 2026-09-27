@@ -740,12 +740,14 @@ function PeopleRail({
   people,
   frame,
   joinTo,
+  browseTo,
   badge,
 }: {
   copy: { kicker: string; title: string; linkLabel: string; joinScript: string; joinLabel: string }
   people: PhotographerDto[]
   frame: SectionFrame
   joinTo: string
+  browseTo: string
   badge?: string
 }) {
   const shape = cardFrame(frame)
@@ -758,7 +760,7 @@ function PeopleRail({
             {copy.title}
           </h2>
         </div>
-        <Link to="/creators" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
+        <Link to={browseTo} className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-paper-soft transition-colors hover:text-terra md:block">
           {copy.linkLabel}
         </Link>
       </div>
@@ -1008,7 +1010,7 @@ export default function Home() {
   const stats = home?.stats ?? null;
   const featured = home?.featured;
   const layout = home?.layout;
-  const order = layout?.order?.length ? layout.order : DEFAULT_HOME_SECTION_ORDER;
+  const order = home?.layout ? home.layout.order : DEFAULT_HOME_SECTION_ORDER;
   const bannerFrame = layout?.categoryBannerFrame ?? DEFAULT_CATEGORY_BANNER_FRAME;
 
   const section = (key: string) => {
@@ -1038,6 +1040,7 @@ export default function Home() {
             people={layout?.people.photo_influencers.people ?? []}
             frame={layout?.people.photo_influencers.frame ?? DEFAULT_PEOPLE_FRAME}
             joinTo={INFLUENCER_JOIN}
+            browseTo="/creators?kind=photo_influencer"
             badge="Photo influencer"
           />
         );
@@ -1048,6 +1051,7 @@ export default function Home() {
             people={layout?.people.photographers.people ?? []}
             frame={layout?.people.photographers.frame ?? DEFAULT_PEOPLE_FRAME}
             joinTo="/creators"
+            browseTo="/creators?kind=photographer"
           />
         );
       case 'contributors':
@@ -1057,6 +1061,7 @@ export default function Home() {
             people={layout?.people.contributors.people ?? home?.contributors ?? []}
             frame={layout?.people.contributors.frame ?? DEFAULT_PEOPLE_FRAME}
             joinTo={SELL_HREF}
+            browseTo="/creators"
           />
         );
       case 'models':

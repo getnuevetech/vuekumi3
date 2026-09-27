@@ -11,7 +11,7 @@ export default function ForgotPassword() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper px-6 py-16">
       <div className="w-full max-w-md">
-        <LogoMark />
+        <LogoMark dark condensed />
         <h1 className="font-serif-display mt-10 text-4xl font-light tracking-tight">Reset password.</h1>
         <p className="mt-2 text-sm text-ink-soft">We&apos;ll email you a link to choose a new password.</p>
 

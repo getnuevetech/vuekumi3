@@ -1,11 +1,13 @@
 import { Link } from 'react-router'
-import { LogoMark } from '../components/shared'
+import { LogoMark, PublicFooter, SiteHeader } from '../components/shared'
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-6 py-16">
+    <div className="min-h-screen bg-noir font-sans text-paper">
+      <SiteHeader />
+      <div className="flex min-h-screen items-center justify-center px-6 py-16">
       <div className="w-full max-w-md text-center">
-        <LogoMark />
+        <LogoMark dark condensed />
         <p className="mt-10 font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Page not found.</h1>
         <p className="mt-3 text-sm text-ink-soft">That route is not part of the Vuekumi library or portals.</p>
@@ -16,6 +18,8 @@ export default function NotFound() {
           Back to the library
         </Link>
       </div>
+      </div>
+      <PublicFooter />
     </div>
   )
 }

@@ -137,7 +137,7 @@ export default function Login() {
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="flex items-center justify-center px-6 pt-28 pb-16 lg:pt-16">
         <div className="w-full max-w-md">
-          <LogoMark />
+          <LogoMark dark condensed />
 
           <h1 className="font-serif-display mt-10 text-4xl font-light tracking-tight">
             {mode === 'signin' ? 'Welcome back.' : 'Create your account.'}

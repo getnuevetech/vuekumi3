@@ -17,7 +17,7 @@ import {
 } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { api, ApiError } from '../api/client'
-import { SiteHeader, StatusPill } from '../components/shared'
+import { StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useSiteContent } from '../context/SiteContentContext'
 
@@ -72,7 +72,6 @@ export default function RightsHubPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
       <main className="mx-auto max-w-2xl px-4 pb-12 pt-40 sm:px-6">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>

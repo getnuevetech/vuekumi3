@@ -1,6 +1,6 @@
 import type { HomeCategoryBannerDto, HomePageDto, HomeSlotPins, PhotoDto } from '@vuekumi/shared'
 import { HOME_CATEGORY_BANNER_CAPACITY, HOME_FEATURED_CAPACITY, HOME_FEATURED_SLOT_KEYS, HOME_UPLOAD_SLOT_KEYS, STOCK_PERMISSION_STATES, isHomeUploadSlot, normalizeFeaturedFrame, normalizeSlotUploads } from '@vuekumi/shared'
-import { assignHomeSlots, categoryShares } from './home.js'
+import { assignHomeSlots, categoryShares, shuffleWith } from './home.js'
 import {
   catalogPhotoInclude,
   serializeCatalogPhoto,
@@ -11,7 +11,7 @@ import { prisma } from './prisma.js'
 
 const LIVE = { status: 'active' as const, permissionState: { in: [...STOCK_PERMISSION_STATES] } }
 
-function ranked(photo: CatalogPhoto) {
+function ranked(photo: { id: string; category: string }) {
   return { id: photo.id, category: photo.category }
 }
 
@@ -51,7 +51,7 @@ export async function loadHomePins(): Promise<HomeSlotPins> {
 }
 
 export async function loadHomePage(): Promise<HomePageDto> {
-  const [photosLive, contributorGroups, countryGroups, downloadAgg, categoryGroups, byDownloads, byNewest, byLikes, pins, uploads] =
+  const [photosLive, contributorGroups, countryGroups, downloadAgg, categoryGroups, pool, pins, uploads] =
     await Promise.all([
       prisma.photo.count({ where: LIVE }),
       prisma.photo.groupBy({ by: ['contributorId'], where: LIVE, _count: { _all: true } }),
@@ -60,37 +60,14 @@ export async function loadHomePage(): Promise<HomePageDto> {
       prisma.photo.groupBy({ by: ['category'], where: LIVE, _count: { _all: true } }),
       prisma.photo.findMany({
         where: LIVE,
-        include: catalogPhotoInclude,
-        orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
-        take: 24,
-      }),
-      prisma.photo.findMany({
-        where: LIVE,
-        include: catalogPhotoInclude,
-        orderBy: [{ createdAt: 'desc' }],
-        take: 40,
-      }),
-      prisma.photo.findMany({
-        where: LIVE,
-        include: catalogPhotoInclude,
-        orderBy: [{ likes: 'desc' }, { createdAt: 'desc' }],
-        take: 16,
+        select: { id: true, category: true },
       }),
       loadHomePins(),
       loadHomeUploads(),
     ])
 
   const pinIds = HOME_FEATURED_SLOT_KEYS.flatMap((slot) => (pins[slot] ?? []).filter((id): id is string => Boolean(id)))
-  const missingIds = pinIds.filter((id) => ![...byDownloads, ...byNewest, ...byLikes].some((photo) => photo.id === id))
-  const pinnedPhotos = missingIds.length
-    ? await prisma.photo.findMany({
-        where: { id: { in: missingIds }, ...LIVE },
-        include: catalogPhotoInclude,
-      })
-    : []
-
-  const lookup = byId([...byDownloads, ...byNewest, ...byLikes, ...pinnedPhotos])
-  const liveIds = new Set(lookup.keys())
+  const liveIds = new Set(pool.map((photo) => photo.id))
   const [editorialConfig, frameConfig] = await Promise.all([
     prisma.homeSectionConfig.findUnique({ where: { slot: 'editorial' } }),
     prisma.homeSectionConfig.findUnique({ where: { slot: 'edge' } }),
@@ -98,9 +75,9 @@ export async function loadHomePage(): Promise<HomePageDto> {
   const editorialMode = editorialConfig?.mode === 'category' ? 'category' as const : 'pins' as const
   const editorialCategory = editorialConfig?.category ?? null
   const slots = assignHomeSlots({
-    byDownloads: byDownloads.map(ranked),
-    byNewest: byNewest.map(ranked),
-    byLikes: byLikes.map(ranked),
+    byDownloads: pool.map(ranked),
+    byNewest: [],
+    byLikes: [],
     pins,
     liveIds,
     holds: {
@@ -110,15 +87,29 @@ export async function loadHomePage(): Promise<HomePageDto> {
       ...(editorialMode === 'pins' ? { editorial: uploads.editorial.map(Boolean) } : {}),
     },
   })
+  const chosenIds = [...new Set([
+    ...slots.hero,
+    ...slots.edge,
+    ...slots.editorial,
+    ...slots.pricing,
+    ...(slots.statsBackground ? [slots.statsBackground] : []),
+    ...pinIds.filter((id) => liveIds.has(id)),
+  ])]
+  const chosenPhotos = chosenIds.length
+    ? await prisma.photo.findMany({
+        where: { id: { in: chosenIds }, ...LIVE },
+        include: catalogPhotoInclude,
+      })
+    : []
+  const lookup = byId(chosenPhotos)
   let editorial = mixUploads(slots.editorial, uploads.editorial, lookup, 'editorial')
   if (editorialMode === 'category' && editorialCategory) {
     const rows = await prisma.photo.findMany({
       where: { ...LIVE, category: editorialCategory },
       include: catalogPhotoInclude,
-      orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
-      take: HOME_FEATURED_CAPACITY.editorial,
     })
-    editorial = overlayUploads(rows.map((photo) => serializeCatalogPhoto(photo)), uploads.editorial, 'editorial')
+    const picked = shuffleWith(rows).slice(0, HOME_FEATURED_CAPACITY.editorial)
+    editorial = overlayUploads(picked.map((photo) => serializeCatalogPhoto(photo)), uploads.editorial, 'editorial')
   }
   const statsUpload = uploads.stats_background[0]
   const [categories, layout] = await Promise.all([loadCategoryBanners(), loadHomeLayout()])
@@ -227,21 +218,29 @@ async function loadCategoryBanners(): Promise<HomeCategoryBannerDto[]> {
   })
   const configured = rows.filter((row) => row.category)
   if (configured.length === 0) {
-    const photos = await prisma.photo.findMany({
+    const rows = shuffleWith(await prisma.photo.findMany({
       where: LIVE,
-      include: catalogPhotoInclude,
-      orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
-      take: 80,
-    })
+      select: { id: true, category: true },
+    }))
     const seen = new Set<string>()
-    const banners: HomeCategoryBannerDto[] = []
-    for (const photo of photos) {
+    const picked: { id: string; category: string }[] = []
+    for (const photo of rows) {
       if (!photo.category || seen.has(photo.category)) continue
       seen.add(photo.category)
-      banners.push({ category: photo.category, photo: serializeCatalogPhoto(photo) })
-      if (banners.length >= HOME_CATEGORY_BANNER_CAPACITY) break
+      picked.push(photo)
+      if (picked.length >= HOME_CATEGORY_BANNER_CAPACITY) break
     }
-    return banners
+    const photos = picked.length
+      ? await prisma.photo.findMany({
+          where: { id: { in: picked.map((row) => row.id) } },
+          include: catalogPhotoInclude,
+        })
+      : []
+    const lookup = new Map(photos.map((photo) => [photo.id, photo]))
+    return picked.flatMap((row) => {
+      const photo = lookup.get(row.id)
+      return photo ? [{ category: row.category, photo: serializeCatalogPhoto(photo) }] : []
+    })
   }
 
   const pinnedIds = configured.map((row) => row.photoId).filter((id): id is string => Boolean(id))
@@ -260,11 +259,17 @@ async function loadCategoryBanners(): Promise<HomeCategoryBannerDto[]> {
     let photo = row.photoId ? pinnedById.get(row.photoId) : undefined
     if (photo && used.has(photo.id)) photo = undefined
     if (!photo) {
-      photo = await prisma.photo.findFirst({
+      const choices = await prisma.photo.findMany({
         where: { ...LIVE, category: row.category, id: { notIn: [...used] } },
-        include: catalogPhotoInclude,
-        orderBy: [{ downloads: 'desc' }, { createdAt: 'desc' }],
-      }) ?? undefined
+        select: { id: true },
+      })
+      const pick = shuffleWith(choices)[0]
+      photo = pick
+        ? await prisma.photo.findFirst({
+            where: { id: pick.id, ...LIVE },
+            include: catalogPhotoInclude,
+          }) ?? undefined
+        : undefined
     }
     if (!photo) continue
     used.add(photo.id)

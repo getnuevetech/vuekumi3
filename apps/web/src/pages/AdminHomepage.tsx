@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import {
   DEFAULT_CATEGORY_BANNER_FRAME,
   DEFAULT_PEOPLE_FRAME,
+  HOME_BUILTIN_SECTIONS,
   HOME_FEATURED_SLOT_KEYS,
   HOME_PEOPLE_ACCOUNT,
   HOME_PEOPLE_SLOTS,
@@ -30,11 +31,11 @@ function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
 }
 
 const SLOT_NOTE: Partial<Record<HomeFeaturedSlotKey, string>> = {
-  hero: 'Upload an image for a slide, or pin a live photograph. An empty slide uses the live ranking.',
-  edge: 'Featured images are edited only on Featured images, and from the switch on each photograph in Content.',
-  editorial: 'Upload an image, pin photographs that change on a timer, or choose a category. An upload fills that slide. Empty slides use the live ranking or the chosen category.',
-  pricing: 'Upload an image or pin a photograph for a pricing card that does not have its own plan image. Plan names, prices, and the lines on the cards are edited under Buyer plans.',
-  stats_background: 'Upload a background image, or pin a live photograph. An empty background uses the live ranking.',
+  hero: 'Upload an image for a slide, or pin a live photograph. An empty slide picks a random photograph from the whole library.',
+  edge: 'Featured images are edited only on Featured images, and from the switch on each photograph in Content. Empty frames pick a random photograph from the whole library.',
+  editorial: 'Upload an image, pin photographs that change on a timer, or choose a category. An upload fills that slide. Empty slides pick a random photograph from the whole library, or from the chosen category.',
+  pricing: 'Upload an image or pin a photograph for a pricing card that does not have its own plan image. Plan names, prices, and the lines on the cards are edited under Buyer plans. An empty card picks a random photograph from the whole library.',
+  stats_background: 'Upload a background image, or pin a live photograph. An empty background picks a random photograph from the whole library.',
 }
 
 function emptyUploads(page: HomeFeaturedAdminDto): Record<HomeUploadSlotKey, (string | null)[]> {
@@ -210,7 +211,7 @@ export default function AdminHomepage() {
         The public menu is edited under <Link to="/admin/menu" className="text-terra">Menu</Link>. Other words and the logo are under <Link to="/admin/site" className="text-terra">Site content</Link>. Featuring a photograph is curation, not a licence and not AI-training consent.
         Private, portfolio, and agency-protected inventory cannot appear on the public homepage.
         The homepage featured strip is edited only on <Link to="/admin/featured" className="text-terra">Featured images</Link>, including the switch on each photograph in Content.
-        Category banners sit below the three messages. Upload a banner image here, or choose a live photograph. Empty positions fall back to live ranking so the page never goes blank.
+        Category banners sit below the three messages. Upload a banner image here, or choose a live photograph. Empty positions pick a random photograph from the whole library so the page stays moving.
       </p>
 
       <SectionArrangement page={page} onSaved={load} />
@@ -480,45 +481,139 @@ function moveItem(list: string[], index: number, direction: -1 | 1) {
 
 function SectionArrangement({ page, onSaved }: { page: HomeFeaturedAdminDto | null; onSaved: () => void }) {
   const [order, setOrder] = useState<string[]>([])
+  const [hidden, setHidden] = useState<string[]>([])
+  const [addKey, setAddKey] = useState('')
   const [saving, setSaving] = useState(false)
+  const banners = page?.staticBanners ?? []
 
   useEffect(() => {
     setOrder(page?.layoutOrder ?? [])
+    setHidden(page?.layoutHidden ?? [])
+    setAddKey('')
   }, [page])
 
-  const save = async () => {
+  const available = HOME_BUILTIN_SECTIONS.filter((key) => !order.includes(key))
+
+  const saveOrder = async (nextOrder: string[], nextHidden: string[], extraBanners?: HomeStaticBannerDto[]) => {
     setSaving(true)
     try {
-      await api.saveHomepage({ pins: {}, layoutOrder: order })
-      toast.success('Homepage section order saved')
+      await api.saveHomepage({
+        pins: {},
+        layoutOrder: nextOrder,
+        layoutHidden: nextHidden.filter((key) => nextOrder.includes(key)),
+        ...(extraBanners ? {
+          staticBanners: extraBanners.map((banner) => ({
+            ...(banner.id.startsWith('new-') ? {} : { id: banner.id }),
+            title: banner.title,
+            columns: banner.columns,
+            rows: banner.rows,
+            frame: { widthVw: banner.widthVw, heightVw: banner.heightVw },
+            images: banner.images,
+          })),
+        } : {}),
+      })
+      toast.success('Homepage sections saved')
       onSaved()
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not save the section order')
+      toast.error(err instanceof ApiError ? err.message : 'Could not save the homepage sections')
     } finally {
       setSaving(false)
     }
+  }
+
+  const removeSection = (key: string) => {
+    const nextOrder = order.filter((item) => item !== key)
+    const nextHidden = hidden.filter((item) => item !== key)
+    if (key.startsWith('banner:')) {
+      const id = key.slice('banner:'.length)
+      void saveOrder(nextOrder, nextHidden, banners.filter((banner) => banner.id !== id))
+      return
+    }
+    setOrder(nextOrder)
+    setHidden(nextHidden)
   }
 
   return (
     <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
       <h2 className="font-serif-display text-2xl font-light">Section arrangement</h2>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
-        Move each homepage section up or down. Photo influencers start where the photographer row used to sit, and photographers start where the contributor row used to sit.
-        The header, footer, and back-to-top stay in place.
+        This list is the public homepage. Photographers and photo influencers are separate rows. Hide a row to keep it here and leave it off the page. Remove a row to take it out of the list. Add a row to put it back, or add an image section. The header, footer, and back-to-top stay in place.
       </p>
       <ol className="mt-4 space-y-2">
-        {order.map((key, index) => (
-          <li key={key} className="flex items-center justify-between gap-3 rounded-2xl border border-sand-soft px-3 py-2">
-            <p className="text-sm">{index + 1}. {homeSectionLabel(key, page?.staticBanners ?? [])}</p>
-            <div className="flex gap-2">
-              <button type="button" aria-label={`Move ${homeSectionLabel(key, page?.staticBanners ?? [])} up`} disabled={index === 0} onClick={() => setOrder((rows) => moveItem(rows, index, -1))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] disabled:opacity-40">Up</button>
-              <button type="button" aria-label={`Move ${homeSectionLabel(key, page?.staticBanners ?? [])} down`} disabled={index === order.length - 1} onClick={() => setOrder((rows) => moveItem(rows, index, 1))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] disabled:opacity-40">Down</button>
-            </div>
-          </li>
-        ))}
+        {order.map((key, index) => {
+          const label = homeSectionLabel(key, banners)
+          const off = hidden.includes(key)
+          return (
+            <li key={key} className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-3 py-2 ${off ? 'border-sand-soft bg-cream/60' : 'border-sand-soft'}`}>
+              <p className="text-sm">
+                {index + 1}. {label}
+                <span className="ml-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">{off ? 'Hidden' : 'On the homepage'}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" aria-label={`Move ${label} up`} disabled={index === 0} onClick={() => setOrder((rows) => moveItem(rows, index, -1))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] disabled:opacity-40">Up</button>
+                <button type="button" aria-label={`Move ${label} down`} disabled={index === order.length - 1} onClick={() => setOrder((rows) => moveItem(rows, index, 1))} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] disabled:opacity-40">Down</button>
+                <button
+                  type="button"
+                  aria-label={off ? `Show ${label}` : `Hide ${label}`}
+                  onClick={() => setHidden((rows) => off ? rows.filter((item) => item !== key) : [...rows, key])}
+                  className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em]"
+                >
+                  {off ? 'Show' : 'Hide'}
+                </button>
+                <button type="button" aria-label={`Remove ${label}`} onClick={() => removeSection(key)} className="rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em]">Remove</button>
+              </div>
+            </li>
+          )
+        })}
       </ol>
-      <button type="button" disabled={saving || order.length === 0} onClick={() => void save()} className="mt-4 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
-        Save section order
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        {available.length > 0 && (
+          <label className="block">
+            <span className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">Add a section</span>
+            <select aria-label="Add a homepage section" value={addKey} onChange={(e) => setAddKey(e.target.value)} className="mt-1 rounded-full border border-sand-soft bg-white px-4 py-2 text-sm outline-none focus:border-terra">
+              <option value="">Choose a section</option>
+              {available.map((key) => (
+                <option key={key} value={key}>{homeSectionLabel(key, banners)}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        {available.length > 0 && (
+          <button
+            type="button"
+            disabled={!addKey}
+            onClick={() => {
+              if (!addKey) return
+              setOrder((rows) => rows.includes(addKey) ? rows : [...rows, addKey])
+              setAddKey('')
+            }}
+            className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40"
+          >
+            Add section
+          </button>
+        )}
+        <button
+          type="button"
+          disabled={saving || banners.length >= 12}
+          onClick={() => void saveOrder(order, hidden, [
+            ...banners,
+            {
+              id: `new-${Date.now()}`,
+              title: 'New section',
+              columns: 2,
+              rows: 1,
+              widthVw: 28,
+              heightVw: 18,
+              images: [],
+            },
+          ])}
+          className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40"
+        >
+          Add image section
+        </button>
+      </div>
+      <button type="button" disabled={saving} onClick={() => void saveOrder(order, hidden)} className="mt-4 rounded-full bg-ink px-5 py-2 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-paper hover:bg-terra disabled:opacity-50">
+        Save sections
       </button>
     </section>
   )

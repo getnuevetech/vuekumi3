@@ -240,6 +240,34 @@
   }
 }
 
+/* Public pages follow the homepage: noir ground, paper type, condensed titles. */
+body:not(.portal-theme) {
+  background-color: #0b0a09;
+  color: #f3ece3;
+}
+
+html:not([data-theme='light']) body:not(.portal-theme) .bg-paper { background-color: #141210; }
+html:not([data-theme='light']) body:not(.portal-theme) .bg-white { background-color: #1c1916; color: #f3ece3; }
+html:not([data-theme='light']) body:not(.portal-theme) .bg-cream { background-color: #1c1916; }
+html:not([data-theme='light']) body:not(.portal-theme) .text-ink { color: #f3ece3; }
+html:not([data-theme='light']) body:not(.portal-theme) .text-ink-soft { color: #cbbba8; }
+html:not([data-theme='light']) body:not(.portal-theme) .text-ink-faint { color: #9c8d80; }
+html:not([data-theme='light']) body:not(.portal-theme) .border-sand,
+html:not([data-theme='light']) body:not(.portal-theme) .border-sand-soft { border-color: #3a322b; }
+html:not([data-theme='light']) body:not(.portal-theme) input,
+html:not([data-theme='light']) body:not(.portal-theme) textarea,
+html:not([data-theme='light']) body:not(.portal-theme) select {
+  background-color: #1c1916;
+  color: #f3ece3;
+  border-color: #3a322b;
+}
+html:not([data-theme='light']) body:not(.portal-theme) .font-serif-display {
+  font-family: 'Oswald', 'Arial Narrow', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Signed-in portals and account pages. Unlayered so these beat the marketplace palette utilities. */
 body.portal-theme {
   --background: 214 45% 98%;

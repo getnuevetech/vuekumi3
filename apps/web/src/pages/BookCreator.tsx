@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import type { BookingKind } from '@vuekumi/shared'
 import { toast } from 'sonner'
-import { SiteHeader } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
 
@@ -29,7 +28,6 @@ export default function BookCreator({ kind }: { kind: BookingKind }) {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
       <div className="mx-auto max-w-2xl px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Booking</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">

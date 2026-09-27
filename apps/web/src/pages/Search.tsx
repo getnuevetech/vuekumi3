@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { fillSiteTokens, type CatalogFacets, type PhotoDto, type PhotoSort } from '@vuekumi/shared'
-import { PhotoMasonry, SearchForm, SiteHeader } from '../components/shared'
+import { PhotoMasonry, SearchForm } from '../components/shared'
 import { api } from '../api/client'
 import { useSiteContent } from '../context/SiteContentContext'
 import { categories } from '../data/content'
@@ -132,7 +132,6 @@ export default function Search() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{library.kicker}</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight md:text-5xl">{heading}</h1>

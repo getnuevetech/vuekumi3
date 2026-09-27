@@ -66,10 +66,40 @@ function fillGaps(partial: (string | null)[], source: RankedPhoto[], used: Set<s
   return out.filter((id): id is string => Boolean(id))
 }
 
+export function shuffleWith<T>(items: T[], random: () => number = Math.random): T[] {
+  const next = [...items]
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1))
+    const current = next[i]!
+    next[i] = next[j]!
+    next[j] = current
+  }
+  return next
+}
+
+function randomCatalog(input: {
+  byDownloads: RankedPhoto[]
+  byNewest: RankedPhoto[]
+  byLikes: RankedPhoto[]
+  pool?: RankedPhoto[]
+  random?: () => number
+}): RankedPhoto[] {
+  const seen = new Set<string>()
+  const pool: RankedPhoto[] = []
+  for (const photo of input.pool ?? [...input.byDownloads, ...input.byNewest, ...input.byLikes]) {
+    if (seen.has(photo.id)) continue
+    seen.add(photo.id)
+    pool.push(photo)
+  }
+  return shuffleWith(pool, input.random ?? Math.random)
+}
+
 export function assignHomeSlots(input: {
   byDownloads: RankedPhoto[]
   byNewest: RankedPhoto[]
   byLikes: RankedPhoto[]
+  pool?: RankedPhoto[]
+  random?: () => number
   pins?: HomeSlotPins | null
   liveIds?: Set<string>
   holds?: Partial<Record<HomeFeaturedSlotKey, boolean[]>>
@@ -94,16 +124,15 @@ export function assignHomeSlots(input: {
   }
 
   const holds = input.holds
-  const hero = fillGaps(placed.hero, input.byDownloads, used, holds?.hero)
-  const edge = fillGaps(placed.edge, input.byNewest, used, holds?.edge)
-  const editorial = fillGaps(placed.editorial, input.byLikes, used, holds?.editorial)
-  const pricing = fillGaps(placed.pricing, input.byDownloads, used, holds?.pricing)
+  const catalog = randomCatalog(input)
+  const hero = fillGaps(placed.hero, catalog, used, holds?.hero)
+  const edge = fillGaps(placed.edge, catalog, used, holds?.edge)
+  const editorial = fillGaps(placed.editorial, catalog, used, holds?.editorial)
+  const pricing = fillGaps(placed.pricing, catalog, used, holds?.pricing)
 
   let stats = placed.stats_background[0]
   if (!stats && !holds?.stats_background?.[0]) {
-    const landscape = input.byDownloads.find((p) => p.category === 'Landscape' && !used.has(p.id))
-      ?? input.byNewest.find((p) => p.category === 'Landscape' && !used.has(p.id))
-    const fallback = landscape ?? takeUnused(input.byDownloads, used, 1)[0] ?? null
+    const fallback = takeUnused(catalog, used, 1)[0] ?? null
     stats = fallback?.id ?? null
     if (stats) used.add(stats)
   }

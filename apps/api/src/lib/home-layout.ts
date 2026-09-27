@@ -20,6 +20,7 @@ import {
   HOME_PEOPLE_SLOT_LABEL,
   HOME_PEOPLE_SLOTS,
   homeBannerSectionKey,
+  normalizeHiddenSections,
   normalizeHomeSectionOrder,
   normalizeSectionFrame,
 } from '@vuekumi/shared'
@@ -171,8 +172,10 @@ export async function loadHomeLayout(): Promise<HomeLayoutDto> {
     people[slot] = await loadPeopleRail(slot, bySlot.get(slot) ?? null, hireableTypes)
   }
   const bannerIds = banners.map((banner) => banner.id)
+  const arranged = arrangeSections(layout, bannerIds)
   return {
-    order: normalizeHomeSectionOrder(layout?.order?.length ? layout.order : DEFAULT_HOME_SECTION_ORDER, bannerIds),
+    order: arranged.order.filter((key) => !arranged.hidden.includes(key)),
+    hidden: arranged.hidden,
     people,
     categoryBannerFrame: normalizeSectionFrame(bySlot.get('category_banners'), DEFAULT_CATEGORY_BANNER_FRAME),
     staticBanners: banners.map(toBannerDto),
@@ -239,17 +242,28 @@ export async function loadHomeLayoutAdmin() {
   ])
   const people = Object.fromEntries(peopleList) as Record<HomePeopleSlot, HomePeopleAdminDto>
   const bannerIds = banners.map((banner) => banner.id)
+  const arranged = arrangeSections(layout, bannerIds)
   return {
-    layoutOrder: normalizeHomeSectionOrder(layout?.order?.length ? layout.order : DEFAULT_HOME_SECTION_ORDER, bannerIds),
+    layoutOrder: arranged.order,
+    layoutHidden: arranged.hidden,
     people,
     categoryBannerFrame: normalizeSectionFrame(bannerFrame, DEFAULT_CATEGORY_BANNER_FRAME),
     staticBanners: banners.map(toBannerDto),
   }
 }
 
+function arrangeSections(
+  layout: { order: string[]; hidden: string[] } | null,
+  bannerIds: string[],
+): { order: string[]; hidden: string[] } {
+  const order = normalizeHomeSectionOrder(layout ? layout.order : null, bannerIds, { fillMissing: !layout })
+  return { order, hidden: normalizeHiddenSections(layout?.hidden, order) }
+}
+
 type LayoutPlan = {
   people: Partial<Record<HomePeopleSlot, { mode: HomePeopleMode; ids: string[]; randomize: boolean; frame: SectionFrame }>>
   categoryBannerFrame?: SectionFrame
+  hidden: string[] | null
   banners?: {
     removeIds: string[]
     updates: { id: string; title: string; columns: number; rows: number; widthVw: number; heightVw: number; images: string[] }[]
@@ -277,7 +291,7 @@ export async function planHomeLayout(input: PatchHomeFeaturedInput): Promise<Lay
     : null
   const peopleInput = input.people ?? {}
   const touched = Boolean(
-    input.layoutOrder || input.categoryBannerFrame || input.staticBanners || legacy || peopleInput.photographers || peopleInput.photo_influencers || peopleInput.contributors,
+    input.layoutOrder || input.layoutHidden || input.categoryBannerFrame || input.staticBanners || legacy || peopleInput.photographers || peopleInput.photo_influencers || peopleInput.contributors,
   )
   if (!touched) return null
 
@@ -336,23 +350,26 @@ export async function planHomeLayout(input: PatchHomeFeaturedInput): Promise<Lay
     }
   }
 
-  if (input.layoutOrder) {
-    const bannerIds = banners
-      ? [...banners.updates.map((row) => row.id)]
-      : (await prisma.homeStaticBanner.findMany({ select: { id: true } })).map((row) => row.id)
-    const allowed = new Set<string>([...DEFAULT_HOME_SECTION_ORDER, ...bannerIds.map(homeBannerSectionKey)])
+  const knownBannerIds = banners
+    ? banners.updates.map((row) => row.id)
+    : (await prisma.homeStaticBanner.findMany({ select: { id: true } })).map((row) => row.id)
+  const allowed = new Set<string>([...DEFAULT_HOME_SECTION_ORDER, ...knownBannerIds.map(homeBannerSectionKey)])
+  const checkKeys = (keys: string[]) => {
     const seen = new Set<string>()
-    for (const key of input.layoutOrder) {
+    for (const key of keys) {
       if (!allowed.has(key)) throw httpError('Choose a homepage section from the list.')
       if (seen.has(key)) throw httpError('Each homepage section can appear once.')
       seen.add(key)
     }
   }
+  if (input.layoutOrder) checkKeys(input.layoutOrder)
+  if (input.layoutHidden) checkKeys(input.layoutHidden)
 
   return {
     people,
     categoryBannerFrame: input.categoryBannerFrame,
     banners,
+    hidden: input.layoutHidden ?? null,
     order: input.layoutOrder ?? null,
   }
 }
@@ -396,6 +413,7 @@ export async function writeHomeLayout(tx: Prisma.TransactionClient, plan: Layout
     })
   }
 
+  const createdIds: string[] = []
   if (plan.banners) {
     if (plan.banners.removeIds.length) {
       await tx.homeStaticBanner.deleteMany({ where: { id: { in: plan.banners.removeIds } } })
@@ -419,7 +437,7 @@ export async function writeHomeLayout(tx: Prisma.TransactionClient, plan: Layout
       }
     }
     for (const banner of plan.banners.creates) {
-      await tx.homeStaticBanner.create({
+      const created = await tx.homeStaticBanner.create({
         data: {
           title: banner.title,
           columns: banner.columns,
@@ -430,20 +448,27 @@ export async function writeHomeLayout(tx: Prisma.TransactionClient, plan: Layout
             create: banner.images.map((imageSrc, position) => ({ position, imageSrc })),
           },
         },
+        select: { id: true },
       })
+      createdIds.push(created.id)
     }
   }
 
-  if (plan.order || plan.banners) {
+  if (plan.order || plan.hidden || plan.banners) {
     const current = await tx.homeLayout.findUnique({ where: { id: 'public' } })
     const remaining = await tx.homeStaticBanner.findMany({ select: { id: true }, orderBy: { createdAt: 'asc' } })
     const bannerIds = remaining.map((row) => row.id)
-    const base = plan.order ?? current?.order ?? []
-    const order = normalizeHomeSectionOrder(base, bannerIds)
+    const base = plan.order ?? current?.order ?? null
+    const order = normalizeHomeSectionOrder(base, bannerIds, { fillMissing: !current && plan.order == null })
+    for (const id of createdIds) {
+      const key = homeBannerSectionKey(id)
+      if (!order.includes(key)) order.push(key)
+    }
+    const hidden = normalizeHiddenSections(plan.hidden ?? current?.hidden ?? [], order)
     await tx.homeLayout.upsert({
       where: { id: 'public' },
-      create: { id: 'public', order },
-      update: { order },
+      create: { id: 'public', order, hidden },
+      update: { order, hidden },
     })
   }
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import type { ModelPublicDto, PhotoDto } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS } from '@vuekumi/shared'
-import { PhotoMasonry, SiteHeader } from '../components/shared'
+import { PhotoMasonry } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
 import { fmt } from '../data/content'
@@ -51,7 +51,6 @@ export default function ModelProfile() {
   if (status === 'missing' || !handle) {
     return (
       <div className="min-h-screen bg-paper text-ink">
-        <SiteHeader />
         <div className="mx-auto max-w-md px-6 pb-24 pt-40 text-center">
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
           <h1 className="font-serif-display mt-2 text-4xl font-light">Model not found.</h1>
@@ -65,7 +64,6 @@ export default function ModelProfile() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         {profile && (
           <div className="flex flex-col gap-6 border border-sand bg-white p-6 md:flex-row md:items-center">

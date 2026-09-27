@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import type { PhotoDto } from '@vuekumi/shared'
 import { CountryMark, PhotoHoverActions } from '../components/PhotoActions'
-import { SiteHeader } from '../components/shared'
 import { api } from '../api/client'
 import { useSiteContent } from '../context/SiteContentContext'
 import { categoryFromSlug } from '../lib/categories'
@@ -146,7 +145,6 @@ export function CategoryBrowse({
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">
           {modelCredits ? modelsCopy.kicker : 'Category'}

@@ -90,7 +90,26 @@ export function CountrySelect({
   )
 }
 
-function CurrencySelect() {
+const PORTAL_PREFIXES = [
+  '/account',
+  '/admin',
+  '/agency',
+  '/bookings',
+  '/campaigns',
+  '/checkout',
+  '/collections',
+  '/contributor',
+  '/favorites',
+  '/following',
+  '/licenses',
+  '/model',
+]
+
+function isPortalPath(pathname: string) {
+  return PORTAL_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+}
+
+function CurrencySelect({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
   const { quote, setCountry } = useCurrency()
   const [countries, setCountries] = useState<GeoCountry[]>([])
   useEffect(() => {
@@ -101,7 +120,9 @@ function CurrencySelect() {
       aria-label="Display currency"
       value={quote.countryCode ?? 'US'}
       onChange={(e) => setCountry(e.target.value)}
-      className="max-w-[140px] border border-sand bg-transparent px-2 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft outline-none"
+      className={`max-w-[140px] border bg-transparent px-2 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none ${
+        tone === 'dark' ? 'border-paper/30 text-paper-soft' : 'border-sand text-ink-soft'
+      }`}
     >
       {countries.map((c) => (
         <option key={c.code} value={c.code}>{c.code} · {c.currency}</option>
@@ -263,10 +284,14 @@ export function AccountMenu({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const { pathname } = useLocation()
+  const noir = !isPortalPath(pathname)
   const { user } = useAuth()
   const { content } = useSiteContent()
   const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user))
-  const menuClass = menuTypeClass(content.menuStyle.font)
+  const menuClass = noir
+    ? `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`
+    : menuTypeClass(content.menuStyle.font)
   const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' }
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -278,68 +303,105 @@ export function SiteHeader() {
     <>
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          scrolled ? 'border-b border-sand-soft bg-paper/90 backdrop-blur-md' : 'border-b border-transparent'
+          noir
+            ? scrolled ? 'border-b border-noir bg-noir/85 backdrop-blur-md' : 'bg-transparent'
+            : scrolled ? 'border-b border-sand-soft bg-paper/90 backdrop-blur-md' : 'border-b border-transparent'
         }`}
       >
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
-          <LogoMark />
-          <nav className={`hidden items-center gap-5 uppercase text-ink-soft lg:flex ${menuClass}`}>
+        <div className={`flex items-center justify-between gap-6 px-5 py-4 md:px-10 ${noir ? '' : 'mx-auto max-w-[1500px] py-3.5 md:px-8'}`}>
+          <LogoMark dark={noir} condensed={noir} />
+          <nav className={`hidden items-center gap-5 uppercase lg:flex ${noir ? '' : 'text-ink-soft'} ${menuClass}`}>
             {links.map((link) => (
-              <Link key={`${link.to}-${link.label}`} to={link.to} style={menuStyle} className="link-slide hover:text-terra">{link.label}</Link>
+              <Link key={`${link.to}-${link.label}`} to={link.to} style={menuStyle} className={noir ? '' : 'link-slide hover:text-terra'}>{link.label}</Link>
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <ThemeToggle />
+            <ThemeToggle tone={noir ? 'dark' : 'light'} />
             <div className="hidden md:block">
-              <CurrencySelect />
+              <CurrencySelect tone={noir ? 'dark' : 'light'} />
             </div>
-            <AccountMenu />
+            <AccountMenu tone={noir ? 'dark' : 'light'} />
             {!user && (
               <Link
                 to="/login?redirect=/contributor/upload&signup=photographer"
-                className="hidden bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra lg:inline-block"
+                className={noir
+                  ? 'hidden border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra lg:inline-block'
+                  : 'hidden bg-ink px-5 py-2.5 font-mono-tech text-[11px] uppercase tracking-[0.16em] text-paper transition-colors hover:bg-terra lg:inline-block'}
               >
                 {content.actions.sell}
               </Link>
             )}
             <button
               onClick={() => setOpen(!open)}
-              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-sand lg:hidden"
+              className={`flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden ${noir ? '' : 'border border-sand'}`}
               aria-label="Toggle menu"
             >
-              <span className={`block h-px w-5 bg-ink transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
-              <span className={`block h-px w-5 bg-ink transition-transform ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
+              <span className={`block h-px w-5 transition-transform ${noir ? 'bg-paper' : 'bg-ink'} ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
+              <span className={`block h-px w-5 transition-transform ${noir ? 'bg-paper' : 'bg-ink'} ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
             </button>
           </div>
         </div>
-        <div className="px-5 pb-3 md:px-8">
-          <div className="mx-auto max-w-[1500px]">
-            <SearchForm wide defaultQuery="" />
+        <div className="px-5 pb-4 md:px-10">
+          <div className={noir ? '' : 'mx-auto max-w-[1500px]'}>
+            <SearchForm dark={noir} wide defaultQuery="" />
           </div>
         </div>
       </header>
       <div
-        className={`fixed inset-0 z-40 bg-paper/98 backdrop-blur transition-opacity duration-300 lg:hidden ${
-          open ? 'opacity-100' : 'pointer-events-none opacity-0'
-        }`}
+        className={`fixed inset-0 z-40 backdrop-blur transition-opacity duration-300 lg:hidden ${
+          noir ? 'bg-noir/95' : 'bg-paper/98'
+        } ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       >
-        <div className="flex h-full flex-col justify-center gap-1 px-8">
-          {links.map((item, i) => (
+        <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
+          {links.map((item) => (
             <Link
               key={`${item.to}-${item.label}`}
               to={item.to}
               onClick={() => setOpen(false)}
-              className="group flex items-baseline gap-4 border-b border-sand-soft py-4"
+              className={noir
+                ? 'font-condensed text-2xl font-light uppercase tracking-[0.25em] text-paper'
+                : 'group flex w-full items-baseline gap-4 border-b border-sand-soft py-4'}
             >
-              <span className="font-mono-tech text-[10px] text-terra">0{i + 1}</span>
-              <span className="font-serif-display text-3xl tracking-tight text-ink transition-colors group-hover:text-terra">
-                {item.label}
-              </span>
+              {noir ? item.label : (
+                <>
+                  <span className="font-mono-tech text-[10px] text-terra">{String(links.indexOf(item) + 1).padStart(2, '0')}</span>
+                  <span className="font-serif-display text-3xl tracking-tight text-ink transition-colors group-hover:text-terra">{item.label}</span>
+                </>
+              )}
             </Link>
           ))}
         </div>
       </div>
     </>
+  )
+}
+
+export function PublicFooter() {
+  const { pathname } = useLocation()
+  const { content } = useSiteContent()
+  if (isPortalPath(pathname)) return null
+  const name = content.brand.name
+  const mark = content.brand.accent
+  const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name
+  return (
+    <footer className="border-t border-noir bg-noir px-6 py-16 text-center">
+      <Link to="/" className="font-condensed text-3xl font-semibold uppercase tracking-[0.3em] text-paper">
+        {highlight}{mark && name.endsWith(mark) ? <span className="text-terra">{mark}</span> : null}
+      </Link>
+      <p className="mx-auto mt-4 max-w-md text-[13px] leading-relaxed text-noir-soft">
+        {content.footer.blurb}
+      </p>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+        {sortMenuLinks(content.footer.links).map((s) => (
+          <Link key={`${s.to}-${s.label}`} to={s.to} className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
+            {s.label}
+          </Link>
+        ))}
+      </div>
+      <p className="mt-10 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
+        {content.footer.copyright}
+      </p>
+    </footer>
   )
 }
 
@@ -721,7 +783,7 @@ export function SectionHead({
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.22em] text-terra">{kicker}</p>
-        <h2 className="mt-2 font-serif-display text-3xl tracking-tight text-ink md:text-4xl">{title}</h2>
+        <h2 className="font-condensed mt-2 text-3xl font-semibold uppercase tracking-[0.06em] text-ink md:text-4xl">{title}</h2>
       </div>
       {right}
     </div>

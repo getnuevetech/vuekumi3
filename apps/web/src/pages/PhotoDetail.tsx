@@ -5,7 +5,7 @@ import { permissionPublicCopy } from '@vuekumi/shared'
 import { fmt } from '../data/content'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
-import { BlurImage, PhotoMasonry, SectionHead, SiteHeader } from '../components/shared'
+import { BlurImage, PhotoMasonry, SectionHead } from '../components/shared'
 import { CollectionPicker } from '../components/CollectionPicker'
 import { FollowButton } from '../components/FollowButton'
 import { api, ApiError } from '../api/client'
@@ -141,7 +141,6 @@ export default function PhotoDetail() {
   if (status === 'missing') {
     return (
       <div className="min-h-screen bg-paper text-ink">
-        <SiteHeader />
         <div className="mx-auto max-w-md px-6 pb-24 pt-40 text-center">
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
           <h1 className="font-serif-display mt-2 text-4xl font-light">Photograph not found.</h1>
@@ -156,7 +155,6 @@ export default function PhotoDetail() {
   if (status === 'loading' || !photo) {
     return (
       <div className="min-h-screen bg-paper text-ink">
-        <SiteHeader />
         <p className="pt-40 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading photograph…</p>
       </div>
     )
@@ -230,8 +228,6 @@ export default function PhotoDetail() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
-
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">
           <Link to="/search" className="hover:text-terra">Library</Link>

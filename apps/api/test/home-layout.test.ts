@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { DEFAULT_HOME_SECTION_ORDER, normalizeHomeSectionOrder } from '@vuekumi/shared'
+import { DEFAULT_HOME_SECTION_ORDER, normalizeHiddenSections, normalizeHomeSectionOrder } from '@vuekumi/shared'
 import { buildApp } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
 
@@ -14,10 +14,13 @@ test('default homepage order puts photo influencers ahead of photographers', () 
   assert.deepEqual(order, DEFAULT_HOME_SECTION_ORDER)
   assert.ok(order.indexOf('photo_influencers') < order.indexOf('photographers'))
   assert.ok(order.indexOf('photographers') < order.indexOf('contributors'))
-  const withBanner = normalizeHomeSectionOrder(['pricing', 'hero'], ['banner-1'])
-  assert.equal(withBanner[0], 'pricing')
+  const saved = normalizeHomeSectionOrder(['pricing', 'hero'], ['banner-1'], { fillMissing: false })
+  assert.deepEqual(saved, ['pricing', 'hero'])
+  const withBanner = normalizeHomeSectionOrder(null, ['banner-1'])
   assert.equal(withBanner.at(-1), 'banner:banner-1')
   assert.equal(withBanner.filter((key) => key === 'hero').length, 1)
+  assert.deepEqual(normalizeHiddenSections(['photographers', 'missing', 'photographers'], saved), [])
+  assert.deepEqual(normalizeHiddenSections(['hero', 'pricing'], saved), ['hero', 'pricing'])
 })
 
 test('admin can arrange homepage sections, choose people, and add a static banner', async () => {
@@ -178,6 +181,23 @@ test('admin can arrange homepage sections, choose people, and add a static banne
     const first = (filled.json() as { layout: { people: { photographers: { mode: string; people: { handle: string }[] } } } }).layout.people.photographers
     assert.equal(first.mode, 'both')
     assert.equal(first.people[0]?.handle, photographer.contributorProfile.handle)
+
+    const withoutPhotographers = moved.filter((key) => key !== 'photographers')
+    const hiddenSave = await app.inject({
+      method: 'PUT',
+      url: '/api/admin/homepage',
+      headers: { cookie: admin },
+      payload: { pins: {}, layoutOrder: withoutPhotographers, layoutHidden: ['contributors'] },
+    })
+    assert.equal(hiddenSave.statusCode, 200, hiddenSave.body)
+    const hiddenAdmin = hiddenSave.json() as { layoutOrder: string[]; layoutHidden: string[] }
+    assert.equal(hiddenAdmin.layoutOrder.includes('photographers'), false)
+    assert.equal(hiddenAdmin.layoutHidden.includes('contributors'), true)
+    const hiddenHome = await app.inject({ method: 'GET', url: '/api/public/home' })
+    const visible = (hiddenHome.json() as { layout: { order: string[] } }).layout.order
+    assert.equal(visible.includes('photographers'), false)
+    assert.equal(visible.includes('contributors'), false)
+    assert.equal(visible.includes('photo_influencers'), true)
   } finally {
     await prisma.homeStaticBanner.deleteMany({ where: { title: 'Layout test banner' } })
     await prisma.homeSectionConfig.deleteMany({ where: { slot: { in: slots } } })
@@ -197,7 +217,10 @@ test('admin can arrange homepage sections, choose people, and add a static banne
       })
     }
     if (beforeLayout) {
-      await prisma.homeLayout.update({ where: { id: 'public' }, data: { order: beforeLayout.order } })
+      await prisma.homeLayout.update({
+        where: { id: 'public' },
+        data: { order: beforeLayout.order, hidden: beforeLayout.hidden },
+      })
     } else {
       await prisma.homeLayout.deleteMany({ where: { id: 'public' } })
     }

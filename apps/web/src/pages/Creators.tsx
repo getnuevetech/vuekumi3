@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import type { CreatorKind, PhotographerDto } from '@vuekumi/shared'
 import { creatorKindLabel, creatorKindSchema } from '@vuekumi/shared'
-import { SiteHeader } from '../components/shared'
 import { useSiteContent } from '../context/SiteContentContext'
 import { api } from '../api/client'
 import { fmt } from '../data/content'
@@ -47,7 +46,6 @@ export default function Creators() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
       <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{page.kicker}</p>
         <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">{page.title}</h1>

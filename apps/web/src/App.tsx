@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Route, Routes, useLocation } from 'react-router'
+import { Outlet, Route, Routes, useLocation } from 'react-router'
+import { PublicFooter, SiteHeader } from './components/shared'
 import Home from './pages/Home'
 import PhotoDetail from './pages/PhotoDetail'
 import Pricing from './pages/Pricing'
@@ -102,6 +103,16 @@ function PortalTheme() {
   return null
 }
 
+function MarketplaceLayout() {
+  return (
+    <div className="min-h-screen bg-noir font-sans text-paper antialiased">
+      <SiteHeader />
+      <Outlet />
+      <PublicFooter />
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <>
@@ -109,6 +120,7 @@ export default function App() {
       <PortalTheme />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route element={<MarketplaceLayout />}>
         <Route path="/search" element={<Search />} />
         <Route path="/p/:handle" element={<Photographer />} />
         <Route path="/m/:handle" element={<ModelProfile />} />
@@ -117,8 +129,6 @@ export default function App() {
         <Route path="/category/:slug" element={<Category />} />
         <Route path="/hire/:handle" element={<BookCreator kind="photographer" />} />
         <Route path="/book/:handle" element={<BookCreator kind="model" />} />
-        <Route path="/bookings" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin', 'model']}><Bookings /></ProtectedRoute>} />
-        <Route path="/campaigns" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Campaigns /></ProtectedRoute>} />
         <Route path="/photo/:id" element={<PhotoDetail />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/dmca" element={<DmcaPage />} />
@@ -127,6 +137,10 @@ export default function App() {
         <Route path="/rights" element={<RightsHubPage />} />
         <Route path="/rights/invite/:token" element={<RightsHubPage />} />
         <Route path="/legal" element={<LegalPage />} />
+        <Route path="/c/:id" element={<CollectionDetail />} />
+        </Route>
+        <Route path="/bookings" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin', 'model']}><Bookings /></ProtectedRoute>} />
+        <Route path="/campaigns" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Campaigns /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -138,7 +152,6 @@ export default function App() {
         <Route path="/favorites" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Favorites /></ProtectedRoute>} />
         <Route path="/following" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Following /></ProtectedRoute>} />
         <Route path="/collections" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Collections /></ProtectedRoute>} />
-        <Route path="/c/:id" element={<CollectionDetail />} />
         <Route path="/licenses" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Licenses /></ProtectedRoute>} />
         <Route path="/checkout/plus/:subscriptionId" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><PlusCheckout /></ProtectedRoute>} />
         <Route path="/checkout/:paymentId" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Checkout /></ProtectedRoute>} />

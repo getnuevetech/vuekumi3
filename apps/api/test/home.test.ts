@@ -3,6 +3,8 @@ import { test } from 'node:test'
 import { DEFAULT_FEATURED_FRAME, normalizeFeaturedFrame } from '@vuekumi/shared'
 import { assignHomeSlots, categoryShares, heroHeadline } from '../src/lib/home.js'
 
+const steady = () => 0.999999
+
 test('category shares are a percent of the live library, not fake rings', () => {
   const shares = categoryShares(
     [
@@ -20,14 +22,17 @@ test('home slots prefer unique photos across hero, edge, editorial, and pricing'
   const byDownloads = Array.from({ length: 12 }, (_, i) => ({ id: `d${i}`, category: i === 11 ? 'Landscape' : 'Urban' }))
   const byNewest = Array.from({ length: 16 }, (_, i) => ({ id: `n${i}`, category: 'Culture' }))
   const byLikes = Array.from({ length: 6 }, (_, i) => ({ id: `l${i}`, category: 'People' }))
-  const slots = assignHomeSlots({ byDownloads, byNewest, byLikes })
+  const slots = assignHomeSlots({ byDownloads, byNewest, byLikes, random: steady })
   const ids = [...slots.hero, ...slots.edge, ...slots.editorial, ...slots.pricing, slots.statsBackground]
   assert.equal(slots.hero.length, 3)
   assert.equal(slots.edge.length, 16)
   assert.equal(slots.editorial.length, 6)
   assert.equal(slots.pricing.length, 3)
-  assert.equal(slots.statsBackground, 'd11')
+  assert.equal(slots.hero[0], 'd0')
+  assert.equal(slots.statsBackground, 'l0')
   assert.equal(new Set(ids).size, ids.length)
+  const reshuffled = assignHomeSlots({ byDownloads, byNewest, byLikes, random: () => 0 })
+  assert.notEqual(reshuffled.hero[0], slots.hero[0])
 })
 
 test('pinned ids take their slot and leftover positions stay unique auto fills', () => {
@@ -38,6 +43,7 @@ test('pinned ids take their slot and leftover positions stay unique auto fills',
     byDownloads,
     byNewest,
     byLikes,
+    random: steady,
     pins: { hero: ['n0', null, null], stats_background: ['d11'] },
     liveIds: new Set([...byDownloads, ...byNewest, ...byLikes].map((p) => p.id)),
   })
@@ -57,6 +63,7 @@ test('inactive pins are skipped so ranking still fills the homepage', () => {
     byDownloads,
     byNewest,
     byLikes,
+    random: steady,
     pins: { hero: ['gone', 'd0', null] },
     liveIds: new Set(byDownloads.map((p) => p.id)),
   })
@@ -74,6 +81,7 @@ test('an uploaded position is left open so ranking does not spend a catalog phot
     byDownloads,
     byNewest,
     byLikes,
+    random: steady,
     pins: { hero: [null, 'd0', null] },
     liveIds: new Set([...byDownloads, ...byNewest, ...byLikes].map((p) => p.id)),
     holds: { hero: [true, false, false], stats_background: [true] },

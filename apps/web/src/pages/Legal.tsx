@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import type { LegalOverlayDto, LegalStandardDto } from '@vuekumi/shared'
-import { CountrySelect, SiteHeader } from '../components/shared'
+import { CountrySelect } from '../components/shared'
 import { useSiteContent } from '../context/SiteContentContext'
 import { api, type GeoCountry } from '../api/client'
 
@@ -31,7 +31,6 @@ export default function LegalPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
       <div className="mx-auto max-w-2xl px-6 pb-24 pt-40">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>

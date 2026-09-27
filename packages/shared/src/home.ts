@@ -191,8 +191,17 @@ export function homeSectionLabel(key: string, banners: { id: string; title: stri
   return banner?.title ? `Banner · ${banner.title}` : 'Banner'
 }
 
-export function normalizeHomeSectionOrder(order: string[] | null | undefined, bannerIds: string[]): string[] {
+/**
+ * Keep a saved arrangement as the admin left it.
+ * A missing order (no saved layout) still starts from every built-in section.
+ */
+export function normalizeHomeSectionOrder(
+  order: string[] | null | undefined,
+  bannerIds: string[],
+  options?: { fillMissing?: boolean },
+): string[] {
   const allowed = new Set<string>([...HOME_BUILTIN_SECTIONS, ...bannerIds.map(homeBannerSectionKey)])
+  const fillMissing = options?.fillMissing ?? order == null
   const seen = new Set<string>()
   const next: string[] = []
   for (const key of order ?? []) {
@@ -200,12 +209,26 @@ export function normalizeHomeSectionOrder(order: string[] | null | undefined, ba
     seen.add(key)
     next.push(key)
   }
+  if (!fillMissing) return next
   for (const key of HOME_BUILTIN_SECTIONS) {
     if (!seen.has(key)) next.push(key)
   }
   for (const id of bannerIds) {
     const key = homeBannerSectionKey(id)
     if (!seen.has(key)) next.push(key)
+  }
+  return next
+}
+
+/** Hidden keys stay in the arrangement and stay off the public homepage. */
+export function normalizeHiddenSections(hidden: string[] | null | undefined, order: string[]): string[] {
+  const allowed = new Set(order)
+  const seen = new Set<string>()
+  const next: string[] = []
+  for (const key of hidden ?? []) {
+    if (!allowed.has(key) || seen.has(key)) continue
+    seen.add(key)
+    next.push(key)
   }
   return next
 }
@@ -253,6 +276,7 @@ export const patchHomeFeaturedSchema = z.object({
     randomize: z.boolean(),
   }).optional(),
   layoutOrder: z.array(z.string().trim().min(1).max(120)).max(40).optional(),
+  layoutHidden: z.array(z.string().trim().min(1).max(120)).max(40).optional(),
   people: z.object({
     photographers: homePeoplePatchSchema.optional(),
     photo_influencers: homePeoplePatchSchema.optional(),
@@ -373,6 +397,7 @@ export interface HomeStaticBannerDto {
 
 export interface HomeLayoutDto {
   order: string[]
+  hidden: string[]
   people: Record<HomePeopleSlot, HomePeopleRailDto>
   categoryBannerFrame: SectionFrame
   staticBanners: HomeStaticBannerDto[]
@@ -437,6 +462,7 @@ export interface HomeFeaturedAdminDto {
     people: HomeContributorPick[]
   }
   layoutOrder: string[]
+  layoutHidden: string[]
   people: Record<HomePeopleSlot, HomePeopleAdminDto>
   categoryBannerFrame: SectionFrame
   staticBanners: HomeStaticBannerDto[]

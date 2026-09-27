@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { fillSiteTokens, paidLicenceSplit, isCreatorAccount, planAudienceForAccount, type BuyerPlanDto } from '@vuekumi/shared'
-import { Reveal, SectionHead, SiteHeader, StatusPill } from '../components/shared'
+import { Reveal, SectionHead, StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
 import { useSiteContent } from '../context/SiteContentContext'
@@ -92,7 +92,6 @@ export default function Pricing() {
 
   return (
     <div className="pt-40 pb-28">
-      <SiteHeader />
       <div className="mx-auto max-w-[1400px] px-6 md:px-12">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
