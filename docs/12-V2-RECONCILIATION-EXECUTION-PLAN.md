@@ -229,7 +229,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | **P2-HE** | Hire expansion foundation — **shipped** (availability/`hireable` list filters; `/hire` talent browse; Creators + PhotoDetail CTAs into Phase 30 booking; no commission/rails) |
 | **Guest checkout** | **Shipped** — paid licences via guest email (passwordless `user` session); free RF still requires account |
 | **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy — **foundation shipped** (Admin Settings Legal + DMCA groups; `/legal` contracting entity block; `/dmca` counsel-pending marker; no invented entity or Copyright Office claim). **Counsel-complete still blocked** (real entity name, filed agent, signed public copy). |
-| **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject |
+| **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject — **foundation shipped** (`compliance.screening_enabled` default false; `ComplianceScreeningEvidence` + `CountryScreeningProviderSlot`; null provider; no invented OFAC vendor). **Partner activation still counsel/ops-gated.** |
 
 ---
 
