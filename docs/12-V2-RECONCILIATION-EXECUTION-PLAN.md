@@ -1,7 +1,7 @@
 # VueKumi — Imagery Concept v2.0 reconciliation execution plan
 
-**Status: P0 reconciliation foundation shipped; P1-T5 compensation negotiation
-engine on main track.** Companion to
+**Status: P0 foundation + P1-T5 negotiation + P1-60 identity evidence (flag OFF)
+shipped.** Companion to
 [`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md)
 (Sep 28 repo review) and [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md)
 (product phases). Decision blanks updated in
@@ -202,7 +202,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | ID | Work | Done when |
 | --- | --- | --- |
 | **P1-T5** | Compensation negotiation (Proposal → Negotiation → Agreement → Activation) + Open interaction | Commercial off until agree/zero; Open blocked if revenue % requested; multi-model cap vs Contributor Distributable Share — **engine shipped** (API + gates; no Rights hub UI / no T6 payouts) |
-| **P1-60** | Phase 60 provider-neutral schema/API behind **OFF** feature flag | Evidence fields only; no prod activation; no biometric DB |
+| **P1-60** | Phase 60 provider-neutral schema/API behind **OFF** feature flag | Evidence fields only; no prod activation; no biometric DB — **schema + flag-gated API shipped** (`identity.verification_enabled` default false) |
 | **P1-T8** | Country ACTIVE / HOLD waitlist / SUSPENDED enforcement per Dec-AfricaElig | HOLD cannot fully activate contributors; waitlist exists |
 | **P1-H4** | React Query on public marketplace: Home, Search, Site Content, curation | Admin save invalidates public keys |
 | **P1-H5** | Expanded Playwright for rights/Open/contributor/admin invariants | Specs below green in CI |

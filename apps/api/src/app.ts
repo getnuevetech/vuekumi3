@@ -53,6 +53,7 @@ import { adminCampaignRoutes } from './routes/admin-campaigns.js'
 import { partnerRoutes } from './routes/partner.js'
 import { openDownloadRoutes } from './routes/open-downloads.js'
 import { compensationRoutes } from './routes/compensation.js'
+import { identityVerificationRoutes } from './routes/identity-verification.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -152,6 +153,7 @@ export async function buildApp() {
     await api.register(partnerRoutes)
     await api.register(openDownloadRoutes)
     await api.register(compensationRoutes)
+    await api.register(identityVerificationRoutes)
   }, { prefix: '/api' })
 
   app.setNotFoundHandler((_request, reply) => {

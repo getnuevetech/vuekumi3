@@ -270,6 +270,30 @@ enum CompensationProposalStatus {
   superseded
 }
 
+/// Phase 60 / Dec-Bio — evidence of identity verification (not biometrics).
+enum IdentityVerificationResult {
+  pending
+  passed
+  failed
+  inconclusive
+  unavailable
+}
+
+enum IdentityManualReviewStatus {
+  not_required
+  pending
+  approved
+  rejected
+}
+
+enum SubjectMatchResult {
+  not_run
+  matched
+  not_matched
+  inconclusive
+  unavailable
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -350,6 +374,8 @@ model User {
   shareFormula            ShareFormula?
   compensationProposals   CompensationProposal[]   @relation("CompensationProposer")
   compensationEvents      CompensationProposalEvent[] @relation("CompensationEventActor")
+  identityVerifications   IdentityVerificationEvidence[] @relation("IdentitySubject")
+  identityVerificationsRecorded IdentityVerificationEvidence[] @relation("IdentityRecorder")
 
   @@index([accountType])
   @@index([status])
@@ -774,6 +800,7 @@ model Photo {
   featuredPins     HomeFeaturedPin[]
   openDownloadEvents OpenDownloadEvent[]
   compensationProposals CompensationProposal[]
+  identityVerifications IdentityVerificationEvidence[]
 
   @@index([status])
   @@index([category])
@@ -1231,6 +1258,7 @@ model PhotoAppearance {
   likenessChecks LikenessCheck[]
   releases       ModelRelease[]
   compensationProposals CompensationProposal[]
+  identityVerifications IdentityVerificationEvidence[]
 
   @@index([photoId])
   @@index([modelUserId])
@@ -1288,6 +1316,45 @@ model CompensationProposalEvent {
 
   @@index([proposalId])
   @@index([actorId])
+}
+
+/// Phase 60 / Dec-Bio — provider-neutral evidence of identity verification.
+/// Stores no face templates, embeddings, selfies, or ID images.
+model IdentityVerificationEvidence {
+  id                   String                     @id @default(cuid())
+  /// Opaque vendor transaction / verification id (not a biometric).
+  verificationId       String
+  vendor               String
+  /// Opaque vendor person id after ID+liveness — not a face template.
+  verifiedPersonId     String?
+  subjectUserId        String?
+  recordedById         String?
+  photoId              String?
+  appearanceId         String?
+  result               IdentityVerificationResult @default(pending)
+  manualReviewStatus   IdentityManualReviewStatus @default(not_required)
+  consentVersion       String?
+  documentCountry      String?
+  documentType         String?
+  subjectMatchResult   SubjectMatchResult         @default(not_run)
+  /// Related catalog / invite image ids (metadata only).
+  relatedImageIds      String[]                   @default([])
+  notes                String?
+  verifiedAt           DateTime?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  subjectUser User?            @relation("IdentitySubject", fields: [subjectUserId], references: [id], onDelete: SetNull)
+  recordedBy  User?            @relation("IdentityRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  photo       Photo?           @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  appearance  PhotoAppearance? @relation(fields: [appearanceId], references: [id], onDelete: SetNull)
+
+  @@unique([vendor, verificationId])
+  @@index([subjectUserId])
+  @@index([photoId])
+  @@index([appearanceId])
+  @@index([result])
+  @@index([verifiedAt])
 }
 
 model LikenessCheck {

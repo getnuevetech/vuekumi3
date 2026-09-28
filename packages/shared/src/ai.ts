@@ -19,8 +19,8 @@ export const PHOTO_CATEGORIES = [
  * on. `image_analysis` and `likeness_matching` have callers.
  * `image_remediation` has a caller (Phase 62, quarantine and opt-in preview).
  * `analytics_reporting` is resolved by the read-only catalog summary (Phase 63).
- * `id_verification` (Phase 60, Dec-Bio) stays a registry value until that
- * decision is signed.
+ * `id_verification` (Phase 60 / Dec-Bio) has an evidence schema and flag-gated
+ * API; production activation stays OFF until vendor/DPA/counsel. Not avatar-based.
  */
 export const AI_PROVIDER_PURPOSES = [
   'image_analysis',
@@ -34,7 +34,7 @@ export type AiProviderPurpose = (typeof AI_PROVIDER_PURPOSES)[number]
 export const AI_PROVIDER_PURPOSE_LABELS: Record<AiProviderPurpose, string> = {
   image_analysis: 'Image analysis (tagging, description, subject flag)',
   image_remediation: 'Image remediation (quality/enhancement, quarantine)',
-  id_verification: 'ID verification (government ID ↔ avatar match)',
+  id_verification: 'ID verification (government ID → liveness → identity evidence)',
   likeness_matching: 'Likeness matching (selfie ↔ photo comparison)',
   analytics_reporting: 'Analytics reporting (read-only views, favorites, licences)',
 }
