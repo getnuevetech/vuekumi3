@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { fillSiteTokens, type CatalogFacets, type PhotoDto, type PhotoSort } from '@vuekumi/shared'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { fillSiteTokens, type PhotoSort } from '@vuekumi/shared'
 import { PhotoMasonry, SearchForm } from '../components/shared'
 import { api } from '../api/client'
 import { useSiteContent } from '../context/SiteContentContext'
 import { categories } from '../data/content'
+import { publicQueryKeys } from '../lib/query-keys'
 
 const sorts: { value: PhotoSort; label: string }[] = [
   { value: 'newest', label: 'Newest' },
@@ -21,17 +23,7 @@ export default function Search() {
   const { content } = useSiteContent()
   const library = content.pages.search
   const [params, setParams] = useSearchParams()
-  const [items, setItems] = useState<PhotoDto[]>([])
-  const [facets, setFacets] = useState<CatalogFacets | undefined>()
-  const [total, setTotal] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
   const sentinel = useRef<HTMLDivElement>(null)
-  const pageRef = useRef(0)
-  const hasMoreRef = useRef(false)
-  const loadingMoreRef = useRef(false)
-  const generation = useRef(0)
 
   const q = param(params, 'q')
   const category = param(params, 'category')
@@ -40,8 +32,8 @@ export default function Search() {
   const tag = param(params, 'tag')
   const photographer = param(params, 'photographer')
   const sort = (param(params, 'sort') || 'newest') as PhotoSort
-  const filterKey = useMemo(
-    () => [q, category, country, license, tag, photographer, sort].join('|'),
+  const filters = useMemo(
+    () => ({ q, category, country, license, tag, photographer, sort }),
     [q, category, country, license, tag, photographer, sort],
   )
 
@@ -54,53 +46,11 @@ export default function Search() {
     setParams(merged)
   }
 
-  useEffect(() => {
-    const gen = ++generation.current
-    pageRef.current = 0
-    hasMoreRef.current = false
-    setLoading(true)
-    api.photos({
-      page: 1,
-      limit: 24,
-      q: q || undefined,
-      category: category || undefined,
-      country: country || undefined,
-      license: license || undefined,
-      tag: tag || undefined,
-      photographer: photographer || undefined,
-      sort,
-    }).then((data) => {
-      if (generation.current !== gen) return
-      setItems(data.items)
-      setFacets(data.facets)
-      setTotal(data.total)
-      setHasMore(data.hasMore)
-      hasMoreRef.current = data.hasMore
-      pageRef.current = 1
-    }).catch(() => {
-      if (generation.current !== gen) return
-      setItems([])
-      setTotal(0)
-      setHasMore(false)
-      hasMoreRef.current = false
-      pageRef.current = 1
-    }).finally(() => {
-      if (generation.current === gen) setLoading(false)
-    })
-  }, [filterKey, q, category, country, license, tag, photographer, sort])
-
-  useEffect(() => {
-    const el = sentinel.current
-    if (!el) return
-    const io = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return
-      if (loadingMoreRef.current || !hasMoreRef.current || pageRef.current < 1) return
-      const gen = generation.current
-      const next = pageRef.current + 1
-      loadingMoreRef.current = true
-      setLoadingMore(true)
+  const query = useInfiniteQuery({
+    queryKey: publicQueryKeys.photoSearch(filters),
+    queryFn: ({ pageParam }) =>
       api.photos({
-        page: next,
+        page: pageParam,
         limit: 24,
         q: q || undefined,
         category: category || undefined,
@@ -109,24 +59,32 @@ export default function Search() {
         tag: tag || undefined,
         photographer: photographer || undefined,
         sort,
-      }).then((data) => {
-        if (generation.current !== gen) return
-        setItems((prev) => [...prev, ...data.items])
-        setHasMore(data.hasMore)
-        hasMoreRef.current = data.hasMore
-        pageRef.current = next
-      }).catch(() => {
-        if (generation.current !== gen) return
-        hasMoreRef.current = false
-        setHasMore(false)
-      }).finally(() => {
-        loadingMoreRef.current = false
-        if (generation.current === gen) setLoadingMore(false)
-      })
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) => (lastPage.hasMore ? pages.length + 1 : undefined),
+  })
+
+  const items = useMemo(
+    () => query.data?.pages.flatMap((page) => page.items) ?? [],
+    [query.data],
+  )
+  const facets = query.data?.pages[0]?.facets
+  const total = query.data?.pages[0]?.total ?? 0
+  const loading = query.isLoading
+  const loadingMore = query.isFetchingNextPage
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = query
+
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      if (!hasNextPage || isFetchingNextPage) return
+      void fetchNextPage()
     }, { rootMargin: '700px' })
     io.observe(el)
     return () => io.disconnect()
-  }, [filterKey, hasMore, loading, items.length, q, category, country, license, tag, photographer, sort])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, items.length])
 
   const heading = q ? `Results for “${q}”` : tag ? `Tagged ${tag}` : photographer ? `@${photographer}` : library.title
 

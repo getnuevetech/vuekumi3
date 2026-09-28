@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   PHOTO_CATEGORIES,
@@ -8,9 +9,11 @@ import {
   type PhotoDto,
 } from '@vuekumi/shared'
 import { api, ApiError, type AdminContentRow } from '../api/client'
+import { invalidatePublicHome } from '../lib/query-keys'
 import { AdminShell } from './Admin'
 
 export default function AdminFeatured() {
+  const queryClient = useQueryClient()
   const [page, setPage] = useState<HomeFeaturedAdminDto | null>(null)
   const [category, setCategory] = useState<string>(PHOTO_CATEGORIES[0])
   const [catalogPage, setCatalogPage] = useState(1)
@@ -53,6 +56,7 @@ export default function AdminFeatured() {
     try {
       const next = await api.saveHomepage({ pins: { edge } })
       setPage(next)
+      await invalidatePublicHome(queryClient)
       toast.success(message)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not update featured images')
@@ -72,6 +76,7 @@ export default function AdminFeatured() {
     try {
       const next = await api.saveHomepage({ pins: {}, frame: { widthVw: width, heightVw: height } })
       setPage(next)
+      await invalidatePublicHome(queryClient)
       toast.success('Featured image size saved')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not save the size')

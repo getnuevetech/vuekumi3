@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
 import { PHOTO_CATEGORIES, type FeaturedFrame, type HomeCategoryBannerDto, type HomeIconKey, type HomeStaticBannerDto, type ModelPublicDto, type PhotoDto, type PhotographerDto, type PublicStatsDto, type SectionFrame } from '@vuekumi/shared'
 import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass, sortMenuLinks } from '@vuekumi/shared'
 import { ThemeToggle } from '../../components/ThemeToggle'
@@ -11,6 +12,7 @@ import { useCurrency } from '../../context/CurrencyContext'
 import { useSiteContent } from '../../context/SiteContentContext'
 import { api } from '../../api/client'
 import { fmt } from '../../lib/format'
+import { publicQueryKeys } from '../../lib/query-keys'
 import { SELL_HREF, siteTokens, contributorPortalHref } from './utils'
 
 
@@ -522,23 +524,17 @@ function mixCategoryPhotos(groups: PhotoDto[][], cap = 36): PhotoDto[] {
 
 export function InfiniteFeed() {
   const { content } = useSiteContent();
-  const [items, setItems] = useState<PhotoDto[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    Promise.all(PHOTO_CATEGORIES.map((category) => (
-      api.photos({ category, page: 1, limit: 4, facets: '0' })
-        .then((data) => data.items)
-        .catch(() => [] as PhotoDto[])
-    ))).then((groups) => {
-      if (!cancelled) setItems(mixCategoryPhotos(groups));
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, []);
+  const { data: items = [], isLoading: loading } = useQuery({
+    queryKey: publicQueryKeys.homeFeed,
+    queryFn: async () => {
+      const groups = await Promise.all(PHOTO_CATEGORIES.map((category) => (
+        api.photos({ category, page: 1, limit: 4, facets: '0' })
+          .then((data) => data.items)
+          .catch(() => [] as PhotoDto[])
+      )))
+      return mixCategoryPhotos(groups)
+    },
+  })
 
   return (
     <section id="feed" className="bg-noir">
@@ -869,10 +865,10 @@ export function ModelsRail() {
 export function NoirPricing({ photos }: { photos: PhotoDto[] }) {
   const { format } = useCurrency();
   const { content } = useSiteContent();
-  const [pack, setPack] = useState<import('@vuekumi/shared').PublicPlansDto | null>(null);
-  useEffect(() => {
-    api.publicPlans().then(setPack).catch(() => setPack({ items: [], home: { kicker: 'studio rates', title: 'Pick a licence' } }));
-  }, []);
+  const { data: pack } = useQuery({
+    queryKey: publicQueryKeys.plans,
+    queryFn: () => api.publicPlans(),
+  });
   if (!pack) return null;
   const plans = pack.items.map((plan, index) => ({
     photo: plan.homePhotoSrc

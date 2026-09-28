@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   PLAN_AUDIENCES,
@@ -12,6 +13,7 @@ import {
   type SiteContent,
 } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
+import { invalidatePublicHome, invalidatePublicSite } from '../lib/query-keys'
 import { AdminShell } from './Admin'
 
 const emptyDraft = {
@@ -78,6 +80,7 @@ function readSort(value: string): number | null {
 }
 
 export default function AdminPlans() {
+  const queryClient = useQueryClient()
   const [items, setItems] = useState<BuyerPlanDto[]>([])
   const [home, setHome] = useState({ kicker: 'studio rates', title: 'Pick a licence' })
   const [policy, setPolicy] = useState<DowngradeMode>('neither')
@@ -144,6 +147,7 @@ export default function AdminPlans() {
         audience: draft.audience,
       })
       setDraft(emptyDraft)
+      await invalidatePublicHome(queryClient)
       toast.success('Buyer plan created')
       load()
     } catch (err) {
@@ -162,6 +166,7 @@ export default function AdminPlans() {
     try {
       const saved = await api.saveHomePricing({ kicker: home.kicker.trim(), title: home.title.trim() })
       setHome(saved.home)
+      await invalidatePublicHome(queryClient)
       toast.success('Homepage pricing heading saved')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not save the heading')
@@ -194,6 +199,7 @@ export default function AdminPlans() {
         audience: patch.audience,
       })
       setEditing(null)
+      await invalidatePublicHome(queryClient)
       toast.success(`${patch.name.trim()} saved`)
       load()
     } catch (err) {
@@ -207,6 +213,7 @@ export default function AdminPlans() {
     setBusy(true)
     try {
       await api.deleteBuyerPlan(row.id)
+      await invalidatePublicHome(queryClient)
       toast.success(`${row.name} removed`)
       load()
     } catch (err) {
@@ -363,9 +370,10 @@ export default function AdminPlans() {
             setBusy(true)
             const content = { ...site, pages: { ...site.pages, pricing: { ...site.pages.pricing, licences } } }
             api.saveSite(content)
-              .then((page) => {
+              .then(async (page) => {
                 setSite(page.content)
                 setLicences(page.content.pages.pricing.licences)
+                await invalidatePublicSite(queryClient)
                 toast.success('Licence notes saved')
               })
               .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not save licence notes'))

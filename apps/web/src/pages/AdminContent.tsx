@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { CommercialLockReasonCode, PermissionState, RightsLedgerDto } from '@vuekumi/shared'
 import {
@@ -12,6 +13,7 @@ import { StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { api, ApiError, type AdminContentDetail, type AdminContentRow } from '../api/client'
+import { invalidatePublicHome } from '../lib/query-keys'
 import { AiSuggestPanel } from '../components/AiSuggestPanel'
 import { AdminShell } from './Admin'
 
@@ -24,6 +26,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export function AdminContent() {
+  const queryClient = useQueryClient()
   const [params] = useSearchParams()
   const category = params.get('category') ?? ''
   const [q, setQ] = useState('')
@@ -50,6 +53,7 @@ export function AdminContent() {
     try {
       await api.setContentFeatured(photo.id, featured)
       setItems((rows) => rows.map((row) => row.id === photo.id ? { ...row, featured } : row))
+      await invalidatePublicHome(queryClient)
       toast.success(featured ? 'Added to featured images' : 'Removed from featured images')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not update featured images')
