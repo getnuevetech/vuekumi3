@@ -12,6 +12,7 @@ import {
 } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { getSetting } from './settings.js'
+import { getIdentityVerificationStatus } from './identity-verification.js'
 
 export class ComplianceScreeningError extends Error {
   statusCode: number
@@ -172,5 +173,27 @@ export async function getComplianceScreeningStatus() {
     message: enabled
       ? 'Compliance screening flag is ON. Vendor calls still require registered KYC partners per country-matrix function.'
       : 'Compliance screening is OFF (T9 default). Evidence API refuses writes until counsel activation. Country matrix may still record provider coverage slots.',
+  }
+}
+
+/** Combined T9 + Bio readiness for admin — flags stay OFF without providers. */
+export async function getComplianceReadiness() {
+  const [screening, identity, slotCount, namedSlots] = await Promise.all([
+    getComplianceScreeningStatus(),
+    getIdentityVerificationStatus(),
+    prisma.countryScreeningProviderSlot.count(),
+    prisma.countryScreeningProviderSlot.count({ where: { providerSlug: { not: null } } }),
+  ])
+  return {
+    screening,
+    identity,
+    matrix: {
+      slotCount,
+      namedProviderSlots: namedSlots,
+      unnamedSlots: slotCount - namedSlots,
+    },
+    activationAllowed: false as const,
+    message:
+      'T9 and Bio stay OFF until counsel-approved KYC/identity providers are registered. Do not invent vendors or enable flags from this checklist.',
   }
 }

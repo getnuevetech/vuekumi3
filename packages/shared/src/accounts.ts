@@ -42,6 +42,11 @@ export function isCreatorWorkspaceAccount(accountType: string | null | undefined
   return accountType === 'photographer' || accountType === 'photo_influencer' || accountType === 'contributor'
 }
 
+/** Payees who may view the earnings ledger. Models are included for likeness_compensation lines. */
+export function isEarningsPayeeAccount(accountType: string | null | undefined): boolean {
+  return isCreatorWorkspaceAccount(accountType) || accountType === 'model'
+}
+
 export function isCreatorAccount(accountType: string | null | undefined): boolean {
   return isCreatorWorkspaceAccount(accountType) || accountType === 'admin'
 }

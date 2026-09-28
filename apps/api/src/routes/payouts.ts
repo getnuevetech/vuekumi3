@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify'
 import {
   adminPayoutActionSchema,
   canImpersonateCreator,
+  isEarningsPayeeAccount,
+  modelWithdrawalBlocker,
   payoutMethodSchema,
   releaseEarningsHoldSchema,
   requestPayoutSchema,
@@ -14,6 +16,7 @@ import {
   PayoutError,
   canRequestPayout,
   earningsMonthSeries,
+  isModelWithdrawalEnabled,
   markPayoutPaid,
   rejectPayout,
   requestPayout,
@@ -43,7 +46,7 @@ export async function payoutRoutes(app: FastifyInstance) {
   app.get('/contributor/earnings', {
     preHandler: (request, reply) => authenticate(app, request, reply),
   }, async (request, reply) => {
-    if (!canImpersonateCreator(request.authUser)) {
+    if (!canImpersonateCreator(request.authUser) && !isEarningsPayeeAccount(request.authUser?.accountType)) {
       return reply.code(403).send({ error: 'Forbidden' })
     }
     const contributorId = await resolveCreatorWorkspaceId(request, reply)
@@ -51,6 +54,14 @@ export async function payoutRoutes(app: FastifyInstance) {
     const monthStart = new Date()
     monthStart.setUTCDate(1)
     monthStart.setUTCHours(0, 0, 0, 0)
+
+    const payee = await prisma.user.findUnique({
+      where: { id: contributorId },
+      select: { accountType: true },
+    })
+    const isModel = payee?.accountType === 'model'
+    const modelWithdrawalEnabled = isModel ? await isModelWithdrawalEnabled() : true
+    const modelBlock = isModel ? modelWithdrawalBlocker(modelWithdrawalEnabled) : null
 
     const [available, reserved, held, paid, month, items, methods, payouts, seriesRows] = await Promise.all([
       prisma.earningsLedger.aggregate({
@@ -100,6 +111,15 @@ export async function payoutRoutes(app: FastifyInstance) {
     const pendingCount = payouts.filter((p) => p.status === 'requested').length
     const staffActing = isImpersonatingStaff(request.authUser)
     const payout = await payoutQuoteForContributor(contributorId)
+    const baseBlocker = staffActing
+      ? 'Staff cannot request payouts while acting as a creator'
+      : canRequestPayout({
+          availableUsd,
+          minUsd: MIN_PAYOUT_USD,
+          pendingCount,
+          hasMethod: methods.length > 0,
+        })
+    const requestBlocker = modelBlock ?? baseBlocker
 
     return {
       availableUsd,
@@ -109,22 +129,10 @@ export async function payoutRoutes(app: FastifyInstance) {
       thisMonthUsd: month._sum.amountUsd ?? 0,
       allTimeUsd: (available._sum.amountUsd ?? 0) + (reserved._sum.amountUsd ?? 0) + heldUsd + (paid._sum.amountUsd ?? 0),
       minPayoutUsd: MIN_PAYOUT_USD,
-      canRequest: staffActing
-        ? false
-        : !canRequestPayout({
-            availableUsd,
-            minUsd: MIN_PAYOUT_USD,
-            pendingCount,
-            hasMethod: methods.length > 0,
-          }),
-      requestBlocker: staffActing
-        ? 'Staff cannot request payouts while acting as a creator'
-        : canRequestPayout({
-            availableUsd,
-            minUsd: MIN_PAYOUT_USD,
-            pendingCount,
-            hasMethod: methods.length > 0,
-          }),
+      canRequest: !requestBlocker,
+      requestBlocker,
+      modelWithdrawalEnabled: isModel ? modelWithdrawalEnabled : true,
+      payoutProvider: 'manual' as const,
       payout,
       items: items.map((row) => ({
         id: row.id,
@@ -229,6 +237,7 @@ export async function payoutRoutes(app: FastifyInstance) {
       const payout = await requestPayout({
         contributorId: request.userId!,
         methodId: body.methodId,
+        accountType: request.authUser?.accountType,
       })
       await writeAuditLog({
         actorId: request.userId,

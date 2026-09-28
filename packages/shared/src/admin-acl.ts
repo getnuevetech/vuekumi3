@@ -295,7 +295,14 @@ export function canImpersonateCreator(
   user: Pick<AuthUser, 'accountType' | 'adminRole' | 'adminCapabilities' | 'adminCapabilitiesCustomized'> | null | undefined,
 ): boolean {
   if (!user) return false
-  if (user.accountType === 'photographer' || user.accountType === 'photo_influencer' || user.accountType === 'contributor') return true
+  if (
+    user.accountType === 'photographer'
+    || user.accountType === 'photo_influencer'
+    || user.accountType === 'contributor'
+    || user.accountType === 'model'
+  ) {
+    return true
+  }
   return adminHas(user, 'content.impersonate_creator')
 }
 
@@ -418,6 +425,7 @@ export const ADMIN_NAV_CAPABILITY: Record<string, AdminCapability> = {
   '/admin/countries/activation': 'geo.activation.research',
   '/admin/countries/waitlist': 'geo.activation.research',
   '/admin/legal': 'geo.countries.list',
+  '/admin/compliance': 'geo.countries.list',
   '/admin/rates': 'geo.fx.list',
   '/admin/payout-rates': 'geo.fx.list',
   '/admin/gateways': 'integrations.gateways.read',

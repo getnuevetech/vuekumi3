@@ -1,17 +1,16 @@
 # VueKumi — Imagery Concept v2.0 reconciliation execution plan
 
-**Status: Imagery Concept v2.0 reconciliation foundations shipped.** P0–P2
-ungated product slices (including T5 UI, T3/T9 foundations, T6 ledger) are on
-`main`. Remaining work is externally gated: T6 payout **withdrawal**, T3
-counsel-complete (real entity / filed agent), T9 KYC partner activation, and
-Phase 60 / Bio production ON. Companion to
+**Status: Imagery Concept v2.0 reconciliation foundations shipped; T3/T6/T9–Bio
+readiness surfaces shipped (flags stay OFF / no invented vendors or entity names).**
+Remaining activation gates: counsel paste for T3 complete, finance ON for model
+withdrawal, counsel-approved KYC/identity providers for T9/Bio. Companion to
 [`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md)
 (Sep 28 repo review) and [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md)
 (product phases). Decision blanks updated in
 [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
 
-**Do not invent** finance payout rails, a KYC/OFAC vendor, or signed legal
-entity copy. Counsel and finance own those gates.
+**Do not invent** finance processors, a KYC/OFAC vendor, or signed legal
+entity copy. Counsel and finance own those activation gates.
 
 ---
 
@@ -219,15 +218,15 @@ Example allocation is illustrative only — rates stay policy-versioned.
 
 | ID | Work |
 | --- | --- |
-| **P2-T6** | Real model payouts after finance readiness — **ledger shipped** (activated likeness agreements → `likeness_compensation` EarningsLedger lines from Contributor Distributable Share; photographer residual; certificates omit model economics). **Payout withdrawal rails still finance-gated.** |
+| **P2-T6** | Real model payouts after finance readiness — **ledger shipped**; **model withdrawal rails shipped behind `payouts.model_withdrawal_enabled` (default false, provider stays `manual`)**. Flip flag after finance readiness — no invented processor. |
 | **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
 | **Partner API depth** | **Shipped** — partner photo DTO exposes `libraryTier` + `licenseType`; list filters reuse catalog `buildPhotoWhere` (`libraryTier`, `license`, `tag`, `photographer`, `sort`) |
 | **P2-OE** | Content Opportunity Engine foundation — **shipped** (`SearchOpportunityEvent` from catalog search; contributor + admin rollups of unmet demand; seed gaps; no auto-briefs/ML) |
 | **P2-BS** | Brand Studio foundation — **shipped** (`BrandProject` workspace for buyers/agencies; link campaign + lightboxes; `/brand` hub; no production fees / no licence-on-attach) |
 | **P2-HE** | Hire expansion foundation — **shipped** (availability/`hireable` list filters; `/hire` talent browse; Creators + PhotoDetail CTAs into Phase 30 booking; no commission/rails) |
 | **Guest checkout** | **Shipped** — paid licences via guest email (passwordless `user` session); free RF still requires account |
-| **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy — **foundation shipped** (Admin Settings Legal + DMCA groups; `/legal` contracting entity block; `/dmca` counsel-pending marker; no invented entity or Copyright Office claim). **Counsel-complete still blocked** (real entity name, filed agent, signed public copy). |
-| **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject — **foundation shipped** (`compliance.screening_enabled` default false; `ComplianceScreeningEvidence` + `CountryScreeningProviderSlot`; null provider; no invented OFAC vendor). **Partner activation still counsel/ops-gated.** |
+| **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy — **foundation + admin counsel-status checklist shipped**. **Counsel-complete** still requires counsel-pasted values (no invented entity; Copyright Office filing stays ops/counsel). |
+| **T9** | Person/entity/beneficial-owner/FI screening via KYC partners — **foundation + admin compliance readiness shipped** (flags OFF; no invented vendor). **Partner activation** still counsel/ops-gated. |
 
 ---
 
