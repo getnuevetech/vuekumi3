@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { CommercialLockReasonCode, PermissionState, RightsLedgerDto } from '@vuekumi/shared'
+import type { CommercialLockReasonCode, LibraryTier, PermissionState, RightsLedgerDto } from '@vuekumi/shared'
 import {
   COMMERCIAL_LOCK_REASON_CODES,
   COMMERCIAL_LOCK_REASON_LABEL,
+  LIBRARY_TIER_LABEL,
+  LIBRARY_TIERS,
   MODEL_APPEARANCE_LABEL,
   LIKENESS_CHECK_LABEL,
 } from '@vuekumi/shared'
@@ -13,7 +15,7 @@ import { StatusPill } from '../components/shared'
 import { PermissionStateField } from '../components/PermissionStateField'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
 import { api, ApiError, type AdminContentDetail, type AdminContentRow } from '../api/client'
-import { invalidatePublicHome } from '../lib/query-keys'
+import { invalidatePublicHome, invalidatePublicMarketplace } from '../lib/query-keys'
 import { AiSuggestPanel } from '../components/AiSuggestPanel'
 import { AdminShell } from './Admin'
 
@@ -245,6 +247,35 @@ export function AdminContent() {
                     Save restriction notes
                   </button>
                 )}
+              </div>
+
+              <div className="mt-4">
+                <label className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+                  Library tier
+                </label>
+                <p className="mt-1 text-xs text-ink-soft">
+                  Marketplace placement. Verified+ is staff-curated and separate from Rights Verified.
+                </p>
+                <select
+                  aria-label="Library tier"
+                  value={detail.photo.libraryTier ?? 'OPEN'}
+                  onChange={(e) => {
+                    const libraryTier = e.target.value as LibraryTier
+                    api.patchRights(detail.photo.id, { libraryTier })
+                      .then(async () => {
+                        await invalidatePublicMarketplace(queryClient)
+                        toast.success(`Library tier set to ${LIBRARY_TIER_LABEL[libraryTier]}`)
+                        open(detail.photo.id)
+                        load()
+                      })
+                      .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not update library tier'))
+                  }}
+                  className="mt-2 w-full border border-sand bg-white px-3 py-2 text-sm"
+                >
+                  {LIBRARY_TIERS.map((tier) => (
+                    <option key={tier} value={tier}>{LIBRARY_TIER_LABEL[tier]}</option>
+                  ))}
+                </select>
               </div>
 
               {!detail.photo.commercialLocked && (

@@ -1076,6 +1076,10 @@ async function main() {
   await prisma.$executeRaw`
     UPDATE "Photo" SET "libraryTier" = 'OPEN'
     WHERE "licenseType" = 'free' AND "permissionState" NOT IN ('editorial', 'private', 'portfolio')`
+  // P2-VP — staff-curated Verified+ demo (rights-cleared landscape, commercial).
+  await prisma.$executeRaw`
+    UPDATE "Photo" SET "libraryTier" = 'VERIFIED_PLUS'
+    WHERE "id" = 'afr-020'`
   await prisma.$executeRaw`
     UPDATE "Photo" SET "commercialStatus" = 'BLOCKED' WHERE "commercialLocked" = true`
   await prisma.$executeRaw`

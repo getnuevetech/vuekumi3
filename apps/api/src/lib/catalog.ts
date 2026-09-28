@@ -74,6 +74,7 @@ export function buildPhotoWhere(query: PhotoListQuery): Prisma.PhotoWhereInput {
   }
   if (query.country) where.country = query.country
   if (query.license) where.licenseType = query.license
+  if (query.libraryTier) where.libraryTier = query.libraryTier
   if (tag) {
     where.tags = { some: { tag: { equals: tag, mode: 'insensitive' } } }
   }
@@ -138,12 +139,13 @@ export function modelPortfolioPhotoWhere(modelUserId: string, category?: string)
 
 export function facetWhere(
   where: Prisma.PhotoWhereInput,
-  omit: 'category' | 'country' | 'licenseType' | 'tags',
+  omit: 'category' | 'country' | 'licenseType' | 'libraryTier' | 'tags',
 ): Prisma.PhotoWhereInput {
   const next: Prisma.PhotoWhereInput = { ...where }
   if (omit === 'category') delete next.category
   if (omit === 'country') delete next.country
   if (omit === 'licenseType') delete next.licenseType
+  if (omit === 'libraryTier') delete next.libraryTier
   if (omit === 'tags') delete next.tags
   return next
 }
@@ -173,7 +175,7 @@ function toFacets(
 }
 
 export async function loadCatalogFacets(where: Prisma.PhotoWhereInput): Promise<CatalogFacets> {
-  const [categories, countries, licenses, tags] = await Promise.all([
+  const [categories, countries, licenses, libraryTiers, tags] = await Promise.all([
     prisma.photo.groupBy({
       by: ['category'],
       where: facetWhere(where, 'category'),
@@ -189,6 +191,11 @@ export async function loadCatalogFacets(where: Prisma.PhotoWhereInput): Promise<
       where: facetWhere(where, 'licenseType'),
       _count: { _all: true },
     }),
+    prisma.photo.groupBy({
+      by: ['libraryTier'],
+      where: facetWhere(where, 'libraryTier'),
+      _count: { _all: true },
+    }),
     prisma.photoTag.groupBy({
       by: ['tag'],
       where: { photo: facetWhere(where, 'tags') },
@@ -202,6 +209,7 @@ export async function loadCatalogFacets(where: Prisma.PhotoWhereInput): Promise<
     categories: toFacets(categories.map((row) => ({ value: row.category, count: row._count._all }))),
     countries: toFacets(countries.map((row) => ({ value: row.country, count: row._count._all }))),
     licenses: toFacets(licenses.map((row) => ({ value: row.licenseType, count: row._count._all }))),
+    libraryTiers: toFacets(libraryTiers.map((row) => ({ value: row.libraryTier, count: row._count._all }))),
     tags: toFacets(tags.map((row) => ({ value: row.tag, count: row._count._all }))),
   }
 }

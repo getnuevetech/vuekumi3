@@ -5,6 +5,7 @@ import {
   defaultLibraryTier,
   deriveRightsStatus,
   openLibraryEligibility,
+  verifiedPlusEligibility,
   OPEN_LICENSE_VERSION,
 } from '@vuekumi/shared'
 
@@ -88,4 +89,52 @@ test('Open download requires OPEN tier, ENABLED commercial, and verified rights'
     'rights_incomplete',
   )
   assert.ok(OPEN_LICENSE_VERSION.length > 0)
+})
+
+test('Verified+ requires Rights Verified + commercial enabled; not private inventory', () => {
+  assert.equal(
+    verifiedPlusEligibility({
+      commercialStatus: 'ENABLED',
+      rightsStatus: 'VERIFIED',
+    }).allowed,
+    true,
+  )
+  assert.equal(
+    verifiedPlusEligibility({
+      commercialStatus: 'ENABLED',
+      rightsStatus: 'PENDING',
+    }).reason,
+    'rights_not_verified',
+  )
+  assert.equal(
+    verifiedPlusEligibility({
+      commercialStatus: 'BLOCKED',
+      rightsStatus: 'VERIFIED',
+    }).reason,
+    'commercial_blocked',
+  )
+  assert.equal(
+    verifiedPlusEligibility({
+      commercialStatus: 'ENABLED',
+      rightsStatus: 'VERIFIED',
+      commercialLocked: true,
+    }).reason,
+    'commercial_blocked',
+  )
+  assert.equal(
+    verifiedPlusEligibility({
+      commercialStatus: 'ENABLED',
+      rightsStatus: 'VERIFIED',
+      permissionState: 'private',
+    }).reason,
+    'private_inventory',
+  )
+  assert.equal(
+    verifiedPlusEligibility({
+      commercialStatus: 'ENABLED',
+      rightsStatus: 'VERIFIED',
+      permissionState: 'portfolio',
+    }).reason,
+    'private_inventory',
+  )
 })

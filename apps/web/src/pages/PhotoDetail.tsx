@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import type { LicenseProductDto, PaymentMethodsDto, PhotoDto } from '@vuekumi/shared'
-import { permissionPublicCopy } from '@vuekumi/shared'
+import { LIBRARY_TIER_LABEL, permissionPublicCopy } from '@vuekumi/shared'
 import { fmt } from '../data/content'
 import { useCurrency } from '../context/CurrencyContext'
 import { useAuth } from '../context/AuthContext'
@@ -251,6 +251,11 @@ export default function PhotoDetail() {
             <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
               Usage permission — not ownership
             </p>
+            {view.libraryTier === 'VERIFIED_PLUS' && (
+              <p className="mt-3 inline-block border border-ink bg-ink px-2.5 py-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-paper">
+                {LIBRARY_TIER_LABEL.VERIFIED_PLUS}
+              </p>
+            )}
 
             <div className="mt-6 flex items-center gap-4 border border-sand bg-white p-4">
               <Link to={`/p/${photographer.handle}`} className="flex flex-1 items-center gap-4">
@@ -330,6 +335,15 @@ export default function PhotoDetail() {
               <p className="mt-4 border border-sand bg-cream px-4 py-3 text-sm text-ink-soft">
                 New licensing is paused while staff review a rights report. The photograph stays in the library.
                 Existing certificates are unchanged.
+              </p>
+            )}
+
+            {view.libraryTier === 'VERIFIED_PLUS' && (
+              <p className="mt-4 border border-sand bg-white px-4 py-3 text-sm">
+                <span className="font-medium">{LIBRARY_TIER_LABEL.VERIFIED_PLUS}</span>
+                <span className="mt-1 block font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+                  Staff-curated marketplace placement. Separate from Rights Verified clearance.
+                </span>
               </p>
             )}
 

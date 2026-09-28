@@ -2,6 +2,14 @@
 export const LIBRARY_TIERS = ['OPEN', 'LICENSED', 'VERIFIED_PLUS', 'EDITORIAL', 'PRIVATE'] as const
 export type LibraryTier = (typeof LIBRARY_TIERS)[number]
 
+export const LIBRARY_TIER_LABEL: Record<LibraryTier, string> = {
+  OPEN: 'Open',
+  LICENSED: 'Licensed',
+  VERIFIED_PLUS: 'Verified+',
+  EDITORIAL: 'Editorial',
+  PRIVATE: 'Private',
+}
+
 export const COMMERCIAL_STATUSES = ['ENABLED', 'BLOCKED', 'SUSPENDED'] as const
 export type CommercialStatus = (typeof COMMERCIAL_STATUSES)[number]
 
@@ -71,6 +79,29 @@ export function openLibraryEligibility(input: {
   }
   if (input.rightsStatus === 'INCOMPLETE' || input.rightsStatus === 'PENDING') {
     return { allowed: false, reason: 'rights_incomplete' }
+  }
+  return { allowed: true }
+}
+
+/**
+ * Verified+ is staff-set marketplace placement above Licensed.
+ * Distinct from Rights Verified (rightsStatus) and Phase 60 identity evidence.
+ */
+export function verifiedPlusEligibility(input: {
+  commercialStatus: CommercialStatus
+  rightsStatus: RightsStatus
+  permissionState?: string | null
+  commercialLocked?: boolean
+}): { allowed: boolean; reason?: string } {
+  const state = input.permissionState ?? 'commercial'
+  if (state === 'private' || state === 'portfolio') {
+    return { allowed: false, reason: 'private_inventory' }
+  }
+  if (input.commercialLocked || input.commercialStatus !== 'ENABLED') {
+    return { allowed: false, reason: 'commercial_blocked' }
+  }
+  if (input.rightsStatus !== 'VERIFIED') {
+    return { allowed: false, reason: 'rights_not_verified' }
   }
   return { allowed: true }
 }

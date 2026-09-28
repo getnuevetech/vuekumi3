@@ -264,6 +264,7 @@ export interface CatalogFacets {
   categories: CatalogFacet[]
   countries: CatalogFacet[]
   licenses: CatalogFacet[]
+  libraryTiers?: CatalogFacet[]
   tags: CatalogFacet[]
 }
 

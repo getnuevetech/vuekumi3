@@ -3,6 +3,7 @@ import {
   defaultLibraryTier,
   deriveRightsStatus,
   openLibraryEligibility,
+  verifiedPlusEligibility,
   type CommercialStatus,
   type CreationClaim,
   type LibraryTier,
@@ -24,6 +25,26 @@ export function resolveLibraryTierForWrite(input: {
 
 export function syncCommercialStatus(locked: boolean): CommercialStatus {
   return commercialStatusFromLock(locked)
+}
+
+export function assertVerifiedPlusAllowed(input: {
+  commercialStatus: CommercialStatus
+  rightsStatus: RightsStatus
+  permissionState?: string | null
+  commercialLocked?: boolean
+}) {
+  const gate = verifiedPlusEligibility(input)
+  if (gate.allowed) return
+  const err = new Error(
+    gate.reason === 'private_inventory'
+      ? 'Verified+ cannot be applied to private or portfolio inventory'
+      : gate.reason === 'commercial_blocked'
+        ? 'Verified+ requires commercial licensing to be enabled'
+        : 'Verified+ requires Rights Verified clearance first',
+  ) as Error & { statusCode?: number; reason?: string }
+  err.statusCode = 400
+  err.reason = gate.reason
+  throw err
 }
 
 export function photoRightsStatus(input: {

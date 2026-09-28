@@ -12,6 +12,7 @@ export const publicQueryKeys = {
     category?: string
     country?: string
     license?: string
+    libraryTier?: string
     tag?: string
     photographer?: string
     sort?: PhotoSort | string
@@ -24,6 +25,7 @@ export const publicQueryKeys = {
       filters.category ?? '',
       filters.country ?? '',
       filters.license ?? '',
+      filters.libraryTier ?? '',
       filters.tag ?? '',
       filters.photographer ?? '',
       filters.sort ?? 'newest',

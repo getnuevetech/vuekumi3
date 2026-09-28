@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { PHOTO_CATEGORIES, type PermissionState } from '@vuekumi/shared'
+import { PHOTO_CATEGORIES, type LibraryTier, type PermissionState } from '@vuekumi/shared'
 import { canMarkAgencyProtected, CONSENT_VERSION, authorizeGuardianSchema, twoPartyCommercialCleared } from '@vuekumi/shared'
 import { decideModerationSchema, patchRightsSchema, reviewModelReleaseSchema } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
@@ -17,6 +17,7 @@ import {
   resolvePermissionState,
 } from '../lib/permissions.js'
 import { setPhotoFeatured } from '../lib/home-featured.js'
+import { assertVerifiedPlusAllowed, photoRightsStatus, syncCommercialStatus } from '../lib/library-tiers.js'
 
 export async function adminContentRoutes(app: FastifyInstance) {
   const list = { preHandler: requireAdminCapability(app, 'content.list') }
@@ -268,6 +269,32 @@ export async function adminContentRoutes(app: FastifyInstance) {
 
     const permission = permissionWriteData(permissionState, photo.exclusiveSold, body.restrictionNotes)
 
+    if (body.libraryTier === 'VERIFIED_PLUS') {
+      const nextCopyright =
+        body.copyrightStatus
+        ?? (body.copyrightVerified === true ? 'verified' : photo.rightsRecord?.copyrightStatus)
+      const rightsStatus = photoRightsStatus({
+        copyrightStatus: nextCopyright,
+        modelConsentStatus: photo.rightsRecord?.modelConsentStatus,
+        commercialLocked: photo.commercialLocked,
+        creationClaim: body.creationClaim ?? photo.creationClaim,
+        appearances: photo.appearances,
+      })
+      try {
+        assertVerifiedPlusAllowed({
+          commercialStatus: syncCommercialStatus(photo.commercialLocked),
+          rightsStatus,
+          permissionState,
+          commercialLocked: photo.commercialLocked,
+        })
+      } catch (err) {
+        const status = err && typeof err === 'object' && 'statusCode' in err
+          ? Number((err as { statusCode: number }).statusCode)
+          : 400
+        return reply.code(status).send({ error: err instanceof Error ? err.message : 'Verified+ not allowed' })
+      }
+    }
+
     await prisma.$transaction([
       prisma.photo.update({
         where: { id },
@@ -278,6 +305,7 @@ export async function adminContentRoutes(app: FastifyInstance) {
           ...(body.restrictionNotes !== undefined ? { restrictionNotes: permission.restrictionNotes } : {}),
           ...(body.modelReleaseRequired != null ? { hasRecognizablePeople: body.modelReleaseRequired } : {}),
           ...(body.creationClaim != null ? { creationClaim: body.creationClaim } : {}),
+          ...(body.libraryTier != null ? { libraryTier: body.libraryTier as LibraryTier } : {}),
         },
       }),
       prisma.rightsRecord.upsert({

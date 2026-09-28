@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { menuTypeClass, sortMenuLinks } from '@vuekumi/shared'
+import { LIBRARY_TIER_LABEL, menuTypeClass, sortMenuLinks } from '@vuekumi/shared'
 import { menuLinkVisible, type PhotoDto } from '@vuekumi/shared'
 import { fmt, type Photo } from '../data/content'
 import { api, type GeoCountry } from '../api/client'
@@ -416,6 +416,7 @@ type CardPhoto = Pick<Photo, 'id' | 'src' | 'title' | 'country' | 'license' | 'p
   favorited?: boolean
   photographer?: string
   photographerName?: string
+  libraryTier?: PhotoDto['libraryTier']
 }
 
 export function PhotoCard({
@@ -426,6 +427,7 @@ export function PhotoCard({
   photographer?: { name: string }
 }) {
   const name = photographer?.name ?? ('photographerName' in photo ? photo.photographerName : undefined) ?? photo.photographer
+  const verifiedPlus = 'libraryTier' in photo && photo.libraryTier === 'VERIFIED_PLUS'
 
   return (
     <Link to={`/photo/${photo.id}`} className="group relative block overflow-hidden bg-cream">
@@ -453,6 +455,14 @@ export function PhotoCard({
         </div>
       </div>
       <CountryMark country={photo.country} />
+      {verifiedPlus && (
+        <span
+          className="pointer-events-none absolute right-2 top-2 z-10 bg-ink/80 px-1.5 py-0.5 font-mono-tech text-[8px] uppercase tracking-[0.14em] text-paper"
+          aria-label={LIBRARY_TIER_LABEL.VERIFIED_PLUS}
+        >
+          {LIBRARY_TIER_LABEL.VERIFIED_PLUS}
+        </span>
+      )}
     </Link>
   )
 }

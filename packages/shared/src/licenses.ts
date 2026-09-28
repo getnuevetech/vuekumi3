@@ -56,6 +56,7 @@ export const patchRightsSchema = z.object({
   exclusiveAvailable: z.boolean().optional(),
   permissionState: permissionStateSchema.optional(),
   restrictionNotes: z.string().trim().max(2000).optional().nullable(),
+  libraryTier: z.enum(['OPEN', 'LICENSED', 'VERIFIED_PLUS', 'EDITORIAL', 'PRIVATE']).optional(),
 })
 
 export const submitPhotoSchema = z.object({

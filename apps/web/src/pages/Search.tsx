@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { fillSiteTokens, type PhotoSort } from '@vuekumi/shared'
+import { fillSiteTokens, LIBRARY_TIER_LABEL, type LibraryTier, type PhotoSort } from '@vuekumi/shared'
 import { PhotoMasonry, SearchForm } from '../components/shared'
 import { api } from '../api/client'
 import { useSiteContent } from '../context/SiteContentContext'
@@ -29,12 +29,13 @@ export default function Search() {
   const category = param(params, 'category')
   const country = param(params, 'country')
   const license = param(params, 'license')
+  const libraryTier = param(params, 'libraryTier')
   const tag = param(params, 'tag')
   const photographer = param(params, 'photographer')
   const sort = (param(params, 'sort') || 'newest') as PhotoSort
   const filters = useMemo(
-    () => ({ q, category, country, license, tag, photographer, sort }),
-    [q, category, country, license, tag, photographer, sort],
+    () => ({ q, category, country, license, libraryTier, tag, photographer, sort }),
+    [q, category, country, license, libraryTier, tag, photographer, sort],
   )
 
   function setFilter(next: Record<string, string>) {
@@ -56,6 +57,7 @@ export default function Search() {
         category: category || undefined,
         country: country || undefined,
         license: license || undefined,
+        libraryTier: libraryTier || undefined,
         tag: tag || undefined,
         photographer: photographer || undefined,
         sort,
@@ -135,6 +137,29 @@ export default function Search() {
             <option value="premium">Premium</option>
           </select>
           <select
+            aria-label="Library tier"
+            value={libraryTier}
+            onChange={(e) => setFilter({ libraryTier: e.target.value })}
+            className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none focus:border-terra"
+          >
+            <option value="">All library tiers</option>
+            {(facets?.libraryTiers?.length
+              ? facets.libraryTiers
+              : (['OPEN', 'LICENSED', 'VERIFIED_PLUS', 'EDITORIAL'] as LibraryTier[]).map((tier) => ({
+                  value: tier,
+                  count: 0,
+                }))
+            ).map((row) => {
+              const tier = row.value as LibraryTier
+              const label = LIBRARY_TIER_LABEL[tier] ?? row.value
+              return (
+                <option key={row.value} value={row.value}>
+                  {facets?.libraryTiers?.length ? `${label} (${row.count})` : label}
+                </option>
+              )
+            })}
+          </select>
+          <select
             aria-label="Sort"
             value={sort}
             onChange={(e) => setFilter({ sort: e.target.value })}
@@ -144,7 +169,7 @@ export default function Search() {
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
-          {(q || category || country || license || tag || photographer) && (
+          {(q || category || country || license || libraryTier || tag || photographer) && (
             <Link to="/search" className="px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra">
               Clear filters
             </Link>

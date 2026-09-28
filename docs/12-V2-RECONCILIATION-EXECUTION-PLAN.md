@@ -222,7 +222,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | ID | Work |
 | --- | --- |
 | **P2-T6** | Real model payouts after finance readiness (uses RevenuePolicy + agreements) |
-| **P2-VP** | Verified+ product surface |
+| **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
 | **Later** | Content Opportunity Engine, Brand Studio, Hire expansion, Partner API depth |
 | **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy |
 | **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject |

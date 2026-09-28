@@ -9,6 +9,7 @@ export const photoListQuerySchema = z.object({
   category: z.string().optional(),
   country: z.string().optional(),
   license: z.enum(['free', 'premium']).optional(),
+  libraryTier: z.enum(['OPEN', 'LICENSED', 'VERIFIED_PLUS', 'EDITORIAL', 'PRIVATE']).optional(),
   q: z.string().optional(),
   tag: z.string().optional(),
   photographer: z.string().optional(),
