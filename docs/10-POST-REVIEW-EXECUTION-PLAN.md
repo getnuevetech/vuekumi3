@@ -1,10 +1,10 @@
 # VueKumi — execution plan after review (23 September 2026)
 
-**Status: plan only. Do not start a numbered phase until it is explicitly
-approved.** This document is the **product-phase** backlog. For **current**
-sequencing after Imagery Concept v2.0, see
+**Status: product-phase companion.** Ungated Imagery Concept v2.0 reconciliation
+is shipped on `main` — see
 [`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)
-(reconciliation release). Sep 28 ops/hygiene context remains in
+for current status. This document remains the older product-phase backlog and
+ops notes. Sep 28 ops/hygiene context remains in
 [`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md).
 It reconciles the Trust & Markets memo, the Admin Portal engineering spec, and
 the AI-pipeline request with `main` through Phase 65.
@@ -32,9 +32,9 @@ list would rebuild shipped work.
 
 | Note | Ask | On `main` now |
 | --- | --- | --- |
-| Trust & Markets (T0–T9) | Public report hub, rights hub, country matrix admin, then compensation | T0, T1, T2, T4, T7 shipped (Phases 49–53). T3, T5, T6, T8, T9 still open. |
-| Admin portal spec v1.2 | Three independent layers, eight modules, PDS ALLOW/DENY/REVIEW, 16 gates, four-eyes activation | P0 shipped (Phase 49). `license.issue` and `contributor.upload` recheck shipped (Phases 54, 56). Quarantine reason codes shipped (Phase 57). Negotiation, tax/payee, and buyer overlays remain. |
-| AI pipeline request | Several providers, one per function; detect a person; contact them if the uploader gave details; otherwise force an authorization prompt | Registry and contributor prompt shipped (Phases 58–59). Detection fails closed when vision is missing (Phase 64). Image remediation shipped as quarantine plus opt-in preview (Phase 62). ID match still has no caller (Phase 60 / Dec-Bio). |
+| Trust & Markets (T0–T9) | Public report hub, rights hub, country matrix admin, then compensation | T0–T2, T4, T7 shipped (Phases 49–53). **T5 engine + UI**, **T8 waitlist**, **T3/T9 foundations**, and **T6 ledger** shipped via `12`. Still gated: T3 counsel-complete, T6 withdrawal, T9 KYC partners, first ACTIVE country evidence. |
+| Admin portal spec v1.2 | Three independent layers, eight modules, PDS ALLOW/DENY/REVIEW, 16 gates, four-eyes activation | P0 shipped (Phase 49). `license.issue` and `contributor.upload` recheck shipped (Phases 54, 56). Quarantine reason codes shipped (Phase 57). Tax/payee and buyer-overlay counsel status remain. |
+| AI pipeline request | Several providers, one per function; detect a person; contact them if the uploader gave details; otherwise force an authorization prompt | Registry and contributor prompt shipped (Phases 58–59). Detection fails closed when vision is missing (Phase 64). Image remediation shipped as quarantine plus opt-in preview (Phase 62). Phase 60 evidence API shipped **flag OFF**; prod ID match waits Dec-Bio vendor/DPA. |
 
 The three control layers stay the architecture:
 
@@ -42,7 +42,7 @@ The three control layers stay the architecture:
 | --- | --- | --- |
 | L1 Country eligibility | May this person register as an Africa-based contributor? | PDS `contributor.create`. Default onboarding is `africa_list_and_country_active` (P1-T8 / Dec-AfricaElig): HOLD → waitlist; ACTIVE required for full activation; SUSPENDED → deny. |
 | L2 Identity and image rights | Who are they, and are copyright and likeness cleared for this asset? | Rights record, appearances, invite, two-approval lock. Government-ID and identity-bound face match wait on Dec-Bio (Phase 60). |
-| L3 Commercial licence and payout | May this image be licensed, and may each payee be paid? | Checkout rechecks rights and, when a market is ACTIVE or SUSPENDED, `license.issue`. Payouts stay photographer 50% / platform 50%. Model negotiation waits on Dec-PayBase (T5/T6). |
+| L3 Commercial licence and payout | May this image be licensed, and may each payee be paid? | Checkout rechecks rights and, when a market is ACTIVE or SUSPENDED, `license.issue`. Photographer residual + likeness_compensation ledger lines ship from Dec-PayBase (T5/T6 ledger). **Payout withdrawal** stays finance-gated. |
 
 A Nigerian photographer, a Canadian model, and a Japanese buyer remain a legal
 shape: L1 applies to the contributor, not to the model or the buyer.
@@ -60,7 +60,7 @@ chat-completions. A Replicate row in seed data is not called.
 | --- | --- | --- | --- |
 | Image analysis (tags, description, person present) | `image_analysis` | `suggestFromContext` (opt-in Apply) and `screenImageForRights` at upload | Keep. Fix fail-open (§3) before trusting it. Optional later: pre-fill the upload form as an editable draft (already sketched in `09` §8). |
 | Image remediation (quality, enhancement, quarantine action) | `image_remediation` | Option A shipped. Quarantine and advisory notes. Preview brighten/crop is opt-in. Pixels are not sent out for an automatic edit. | Phase 62, **shipped**. |
-| ID document matched to avatar / profile image | `id_verification` | No route, no schema, no vendor. | Phase 60. Blocked on Dec-Bio. |
+| ID document matched to avatar / profile image | `id_verification` | Phase 60 evidence schema/API behind `identity.verification_enabled` (default OFF). No live vendor. | Prod activation waits Dec-Bio vendor/DPA. |
 | Named model / person likeness for a copyright or release check | `likeness_matching` | Phase 28 opt-in compare. Selfie bytes are discarded. A similarity result does not grant a release and does not search a face database. | Stay. Binding a face to a named identity is Phase 60, same Dec-Bio gate. |
 | Person detected → contact, or prompt that authorization is required | `image_analysis` plus the existing invite | Contributor upload: if the server sets `hasRecognizablePeople`, the UI opens `/contributor/photos/:id` and `PeopleIdentifier` collects name, email, and mobile, which sends the existing invite. If the checkbox was off, a warning states that commercial licensing stays on hold. Empty contact cannot clear the two-approval lock. | Shipped for contributors (Phase 59) and model uploads (Phase 65). Detection fails closed (Phase 64). |
 
@@ -166,13 +166,11 @@ or a licence.
 
 | Item | Wait for | What it is |
 | --- | --- | --- |
-| Phase 60 ID ↔ avatar, and identity-bound likeness | **Dec-Bio** signed (vendor, DPA, retention or an explicit discard-forever reaffirmation) | Tier B. Similarity and an ID match are evidence, never consent. No face database, no stored embeddings, unless the signed retention window says otherwise. |
-| T5 compensation negotiation | **Dec-PayBase** signed | Commercial clearance can then require both parties to accept the same terms (percent of that base, fixed, combo, or explicit zero). New terms do not rewrite old certificates. |
-| T6 model ledger lines | T5 plus finance | Payouts from the signed base. Today the ledger stays photographer 50%. |
-| T3 public DMCA policy hardening | Counsel copy | `/dmca` text matches the operator, agent, counter-notice clock, and repeat-infringer rule. Engine already exists (Phase 39). |
-| T8 first ACTIVE country | Counsel evidence on G01–G16 plus four-eyes | All 54 countries stay HOLD. ACTIVE never bypasses the Global Rights Standard. |
-| T9 buyer-market overlays and sanctions checklist | Counsel | US/EU/UK overlay status; OFAC as an SOP, not an invented screening vendor. |
-| Flip onboarding from `africa_list` to `africa_list_and_country_active` | **Dec-AfricaElig** plus at least one honest ACTIVE country | Residence versus business-base evidence is still unsigned. |
+| Phase 60 **production ON** (ID ↔ avatar, identity-bound likeness) | Approved identity provider, DPA, retention schedule | Evidence API already ships flag OFF. Similarity and an ID match are evidence, never consent. No face database. |
+| T6 **payout withdrawal** rails | Finance readiness | Model `likeness_compensation` ledger lines already ship on activation. Withdrawal / payee rails stay finance-gated. |
+| T3 counsel-complete | Counsel: real entity, filed DMCA agent, signed public copy | Foundation shipped (Admin Settings Legal + DMCA; `/legal` + `/dmca` counsel-pending markers). |
+| T8 first ACTIVE country | Counsel evidence on G01–G16 plus four-eyes | Waitlist + `africa_list_and_country_active` default shipped (P1-T8). ACTIVE never bypasses the Global Rights Standard. |
+| T9 KYC partner activation | Counsel/ops: named screening partners per matrix function | Foundation shipped (`compliance.screening_enabled` OFF; provider slots; no invented OFAC vendor). Not country-only reject. |
 | P2 tax, payee verification, withholding | Finance and counsel | Entitlement is not erased when a payee is held. |
 
 ---
@@ -204,6 +202,7 @@ host until Phase 64 is deployed.
 
 ## 7. Immediate decision
 
-Phases 62, 63, 64, and 65 are shipped. The remaining rows in §4 stay
-blocked. Leave Phase 60 and T5/T6 untouched until Dec-Bio and Dec-PayBase
-are signed in `06`.
+Ungated v2 reconciliation foundations are shipped (see `12`). Remaining §4
+rows stay externally gated. Do **not** invent payout withdrawal rails, a KYC
+vendor, or signed legal-entity copy. Next human gates: **T3 counsel-complete**,
+finance readiness for **T6 withdrawal**, or Bio/T9 vendor contracts.
