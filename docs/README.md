@@ -3,9 +3,9 @@
 Read in this order:
 
 0. **[13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)** —
-   **Imagery Concept v2.1** recommendations + Free Contributor (FC) / V21-P2
-   execution. Prefer over older “Photo Influencer” concept naming. Does not restart
-   shipped Open/rights work in **`12`**.
+   **Imagery Concept v2.1** recommendations + Photo Influencer / Free Library (FC) /
+   V21-P2 execution. Photo Influencer stays free (no subscription); Free Library
+   upload-only + moderation + AI low-res. Does not restart shipped Open/rights in **`12`**.
 1. **[12-V2-RECONCILIATION-EXECUTION-PLAN.md](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)** —
    **Technical reconciliation status.** Imagery Concept v2.0/v2.1 rights stack:
    Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig locked; P0–P2 foundations
