@@ -41,7 +41,7 @@ export async function upgradeFromPhotoInfluencer(input: {
   let status = user.status
 
   if (input.targetAccountType === 'photographer' || input.targetAccountType === 'contributor') {
-    const signup = await resolveContributorSignup(user.country)
+    const signup = await resolveContributorSignup(user.country ?? undefined)
     if (signup.outcome === 'deny') {
       const err = new Error(signup.message) as Error & { statusCode?: number; reasonCodes?: string[] }
       err.statusCode = 400
