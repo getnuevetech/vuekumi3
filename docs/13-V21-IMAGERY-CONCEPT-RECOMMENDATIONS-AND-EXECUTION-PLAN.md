@@ -92,7 +92,7 @@ v2.1 wants upgrade into Photographer / paid Contributor / Model without a new ac
 - Photographer / Model / Buyer / paid Contributor: defer hard gates until pricing + grace + counsel; first ship Buyer plan honesty + upgrade CTAs.
 
 ### R6 — Depth over invention for Phase 2 surfaces
-Opportunity Engine, Brand Studio, Hire foundations exist. Next ungated work after FC1: **briefs from demand**, **upgrade CTAs**, **Hire/Brand UX** — not payment rails (Dec-Fee still open).
+Opportunity Engine, Brand Studio, Hire foundations exist. Ungated depth (**briefs**, **upgrade CTAs**, **Hire/Brand UX**) shipped in V21-P2 / FC2 — not payment rails (Dec-Fee still open).
 
 ### R7 — Keep external gates intact
 T3 counsel-complete, T6 withdrawal flag, T9/Bio vendor activation, Verified+ indemnity SKU, Hire/Brand fees, Dec-VQ, Dec-AI dataset sell — do not invent.
