@@ -146,21 +146,23 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 
 ## 5. Execution plan
 
-### FC0 — Product lock & mapping (docs / criteria)
+### FC0 — Product lock & mapping (docs / criteria) — **SHIPPED**
+
+See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 
 | ID | Work | Done when |
 | --- | --- | --- |
-| **FC0-1** | Photo Influencer + Free Library one-pager (benefits, Free-Library-only upload, no subscription, upgrade matrix) | Product sign-off |
+| **FC0-1** | Photo Influencer + Free Library one-pager | **Done** — `14` |
 | **FC0-2** | Record Dec-FC + **Dec-FreeLib A** in `06` | **Done** (R1–R8) |
-| **FC0-3** | Publish Free Library **acceptance criteria** (resolution floor, sharpness, Africa/content rules, rejects) | Criteria doc approved |
-| **FC0-4** | Upgrade state machine draft (eligibility, agreements, reclassification of Free Library assets) | Dec-Upgrade recorded |
-| **FC0-5** | RolePay: confirm PI free; draft soft vs hard for other roles | Dec-RolePay deferred or policy recorded |
+| **FC0-3** | Free Library acceptance criteria | **Done** — `14` §4 |
+| **FC0-4** | Upgrade state machine draft | **Done** — `14` §5; Dec-Upgrade locked |
+| **FC0-5** | RolePay: PI free; others deferred | **Done** — `14` §6 |
 
-**Do not add a new `LibraryTier` enum value until Dec-FreeLib is A or B.**
+**Dec-FreeLib A locked** — Free Library = public label for `OPEN` (no new enum).
 
 ---
 
-### FC1 — Free Library + Photo Influencer enforcement (after Dec-FreeLib)
+### FC1 — Free Library + Photo Influencer enforcement
 
 | ID | Work |
 | --- | --- |
@@ -263,4 +265,4 @@ Do not commission all eight Spec §24 docs before FC0 criteria + Dec-FreeLib loc
 | **`01` / `10`** | Historical phase log — update Free Library when FC1 ships |
 | **`06`** | Record Dec-FC (locked), Dec-FreeLib, Dec-Upgrade, Dec-RolePay |
 
-**Immediate ask:** Confirm **Dec-FreeLib A** (Free Library = `OPEN` public name) and Free Library acceptance criteria (min resolution + content rules) so FC1 can start. **Dec-TierMap is locked** (PI free / Photographer+Contributor paid).
+**Immediate ask:** FC0 criteria one-pager + FC1 moderation/AI/nav. Tier map foundations shipped with R1–R8.
