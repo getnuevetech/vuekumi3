@@ -277,8 +277,8 @@ function LikenessPanel({
         </div>
       )}
       <p className="pt-4 text-sm text-ink-soft">
-        Optional: create or claim a VueKumi model profile to manage future photographs. Likeness compensation, if agreed,
-        comes from the contributor pool; payout withdrawal stays finance-gated.
+        Optional: create or claim a VueKumi model profile to manage future photographs. Models do not earn
+        from licences unless an activated likeness compensation agreement says otherwise; payout withdrawal stays finance-gated.
         {isCreatorWorkspaceAccount(user?.accountType) && signedInMatch
           ? ' You keep this photographer account and add a model profile on the same email.'
           : ''}

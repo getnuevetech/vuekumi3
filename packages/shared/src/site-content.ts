@@ -448,7 +448,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     rights: {
       kicker: 'Rights',
       title: 'Your rights.',
-      intro: 'Review likeness or copyright invites, approve or reject usage, without inventing fees. Compensation negotiation is not on this hub yet.',
+      intro: 'Review likeness or copyright invites, approve or reject usage. After consent, likeness compensation can be negotiated on model appearances — payout withdrawal stays finance-gated.',
     },
     dmca: {
       kicker: 'Copyright',
