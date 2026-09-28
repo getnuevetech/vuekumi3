@@ -56,6 +56,7 @@ import ModelProfile from './pages/ModelProfile'
 import BookCreator from './pages/BookCreator'
 import Bookings from './pages/Bookings'
 import Campaigns from './pages/Campaigns'
+import BrandStudio from './pages/BrandStudio'
 import Creators from './pages/Creators'
 import Models from './pages/Models'
 import Category from './pages/Category'
@@ -72,6 +73,7 @@ const PORTAL_THEME_PREFIXES = [
   '/admin',
   '/agency',
   '/bookings',
+  '/brand',
   '/campaigns',
   '/checkout',
   '/collections',
@@ -140,6 +142,7 @@ export default function App() {
         <Route path="/c/:id" element={<CollectionDetail />} />
         </Route>
         <Route path="/bookings" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin', 'model']}><Bookings /></ProtectedRoute>} />
+        <Route path="/brand" element={<ProtectedRoute allowed={['user', 'agency']}><BrandStudio /></ProtectedRoute>} />
         <Route path="/campaigns" element={<ProtectedRoute allowed={['user', 'agency', 'photographer', 'photo_influencer', 'contributor', 'admin']}><Campaigns /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

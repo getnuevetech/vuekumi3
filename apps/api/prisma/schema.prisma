@@ -254,6 +254,11 @@ enum PartnerKeyStatus {
   revoked
 }
 
+enum BrandProjectStatus {
+  open
+  closed
+}
+
 enum CompensationTermMode {
   percentage
   fixed
@@ -363,6 +368,7 @@ model User {
   representationInquiries RepresentationInquiry[]
   campaigns             Campaign[]
   campaignPitches       CampaignPitch[]
+  brandProjects         BrandProject[]
   partnerKeysCreated    PartnerApiKey[]
   photosUploaded        Photo[]              @relation("PhotoUploader")
   rightsLedgerEvents    RightsLedgerEvent[]  @relation("LedgerActor")
@@ -509,6 +515,7 @@ model Campaign {
 
   owner   User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   pitches CampaignPitch[]
+  brandProjects BrandProject[]
 
   @@index([status, createdAt])
   @@index([ownerId])
@@ -530,6 +537,43 @@ model CampaignPitch {
 
   @@unique([campaignId, contributorId])
   @@index([contributorId])
+}
+
+/// Brand Studio — buyer creative workspace linking briefs, lightboxes, and optional campaigns.
+/// Does not process production payments or grant licences.
+model BrandProject {
+  id          String             @id @default(cuid())
+  ownerId     String
+  agencyId    String?
+  title       String
+  notes       String?
+  campaignId  String?
+  status      BrandProjectStatus @default(open)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  owner       User                       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  agency      Agency?                    @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  campaign    Campaign?                  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  collections BrandProjectCollection[]
+
+  @@index([ownerId, createdAt])
+  @@index([agencyId])
+  @@index([campaignId])
+  @@index([status])
+}
+
+model BrandProjectCollection {
+  id           String   @id @default(cuid())
+  projectId    String
+  collectionId String
+  createdAt    DateTime @default(now())
+
+  project    BrandProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  collection Collection   @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, collectionId])
+  @@index([collectionId])
 }
 
 model Representation {
@@ -714,6 +758,7 @@ model Agency {
   licenseGrants LicenseGrant[]
   licenseQuotes LicenseQuote[]
   collections   Collection[]
+  brandProjects BrandProject[]
 }
 
 model AgencyInvite {
@@ -1109,6 +1154,7 @@ model Collection {
   owner  User              @relation("CollectionOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   agency Agency?           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   photos CollectionPhoto[]
+  brandProjects BrandProjectCollection[]
 
   @@index([ownerId])
   @@index([agencyId])

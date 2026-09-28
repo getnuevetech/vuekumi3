@@ -75,6 +75,9 @@ import type {
   CampaignPitchDto,
   CreateCampaignInput,
   CreatePitchInput,
+  BrandProjectDto,
+  CreateBrandProjectInput,
+  UpdateBrandProjectInput,
   PartnerKeyDto,
   CreatePartnerKeyInput,
 } from '@vuekumi/shared'
@@ -331,6 +334,29 @@ export const api = {
 
   pitchAction: (id: string, action: 'accept' | 'decline' | 'withdraw') =>
     request<{ pitch: CampaignPitchDto }>(`/api/campaigns/pitches/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }),
+
+  brandProjects: () => request<{ items: BrandProjectDto[] }>('/api/brand/projects'),
+
+  createBrandProject: (body: CreateBrandProjectInput) =>
+    request<{ project: BrandProjectDto }>('/api/brand/projects', { method: 'POST', body: JSON.stringify(body) }),
+
+  brandProject: (id: string) =>
+    request<{ project: BrandProjectDto }>(`/api/brand/projects/${id}`),
+
+  updateBrandProject: (id: string, body: UpdateBrandProjectInput) =>
+    request<{ project: BrandProjectDto }>(`/api/brand/projects/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  closeBrandProject: (id: string) =>
+    request<{ project: BrandProjectDto }>(`/api/brand/projects/${id}/close`, { method: 'POST', body: JSON.stringify({}) }),
+
+  attachBrandCollection: (id: string, collectionId: string) =>
+    request<{ project: BrandProjectDto }>(`/api/brand/projects/${id}/collections`, {
+      method: 'POST',
+      body: JSON.stringify({ collectionId }),
+    }),
+
+  detachBrandCollection: (id: string, collectionId: string) =>
+    request<{ project: BrandProjectDto }>(`/api/brand/projects/${id}/collections/${collectionId}`, { method: 'DELETE' }),
 
   adminPartnerKeys: () => request<{ items: PartnerKeyDto[] }>('/api/admin/partner-keys'),
 

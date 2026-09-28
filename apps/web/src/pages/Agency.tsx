@@ -50,6 +50,7 @@ const links: PortalLink[] = [
   { to: '/agency/team', label: 'Team', icon: icons.team },
   { to: '/agency/licenses', label: 'Licences', icon: icons.licenses },
   { to: '/agency/quotes', label: 'Quotes', icon: icons.quotes },
+  { to: '/brand', label: 'Brand Studio', icon: icons.box },
   { to: '/collections', label: 'Collections', icon: icons.box },
 ]
 

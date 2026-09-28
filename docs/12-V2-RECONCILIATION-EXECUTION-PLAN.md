@@ -225,7 +225,8 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
 | **Partner API depth** | **Shipped** — partner photo DTO exposes `libraryTier` + `licenseType`; list filters reuse catalog `buildPhotoWhere` (`libraryTier`, `license`, `tag`, `photographer`, `sort`) |
 | **P2-OE** | Content Opportunity Engine foundation — **shipped** (`SearchOpportunityEvent` from catalog search; contributor + admin rollups of unmet demand; seed gaps; no auto-briefs/ML) |
-| **Later** | Brand Studio, Hire expansion |
+| **P2-BS** | Brand Studio foundation — **shipped** (`BrandProject` workspace for buyers/agencies; link campaign + lightboxes; `/brand` hub; no production fees / no licence-on-attach) |
+| **Later** | Hire expansion |
 | **Guest checkout** | **Shipped** — paid licences via guest email (passwordless `user` session); free RF still requires account |
 | **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy |
 | **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject |

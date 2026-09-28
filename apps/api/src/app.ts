@@ -49,6 +49,7 @@ import { bookingRoutes } from './routes/bookings.js'
 import { adminBookingRoutes } from './routes/admin-bookings.js'
 import { representationRoutes } from './routes/representation.js'
 import { campaignRoutes } from './routes/campaigns.js'
+import { brandStudioRoutes } from './routes/brand-studio.js'
 import { adminCampaignRoutes } from './routes/admin-campaigns.js'
 import { partnerRoutes } from './routes/partner.js'
 import { openDownloadRoutes } from './routes/open-downloads.js'
@@ -149,6 +150,7 @@ export async function buildApp() {
     await api.register(adminBookingRoutes)
     await api.register(representationRoutes)
     await api.register(campaignRoutes)
+    await api.register(brandStudioRoutes)
     await api.register(adminCampaignRoutes)
     await api.register(partnerRoutes)
     await api.register(openDownloadRoutes)

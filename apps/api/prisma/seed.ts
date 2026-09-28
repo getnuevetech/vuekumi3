@@ -958,6 +958,18 @@ async function main() {
         status: 'pending',
       },
     })
+
+    // Brand Studio — workspace linking the seed campaign (lightboxes optional).
+    await prisma.brandProject.create({
+      data: {
+        ownerId: agencyOwner.id,
+        agencyId: agency.id,
+        title: 'Q4 social reference board',
+        notes: 'Warm West African street and people stills for cutdown direction.',
+        campaignId: seedCampaign.id,
+        status: 'open',
+      },
+    })
   }
 
   // Phase 31/33 demo fixtures — representation queue + partner key (no commissions).
