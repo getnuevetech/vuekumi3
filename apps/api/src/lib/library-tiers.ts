@@ -31,7 +31,7 @@ export function photoRightsStatus(input: {
   modelConsentStatus?: string | null
   commercialLocked?: boolean
   creationClaim?: string | null
-  appearances?: { status: string; selfShot: boolean; ageBand?: string | null }[]
+  appearances?: { status: string; selfShot: boolean; ageBand?: string | null; consentStatus?: string | null; consentQuality?: string | null; verificationLevel?: string | null; usage?: string | null; confirmedLikeness?: boolean }[]
   copyrightCommercialScope?: boolean
 }): RightsStatus {
   const creationClaim = (input.creationClaim as CreationClaim | null | undefined) ?? 'self_created'
@@ -53,6 +53,11 @@ export function photoRightsStatus(input: {
       status: row.status,
       selfShot: row.selfShot,
       ageBand: row.ageBand ?? null,
+      consentStatus: row.consentStatus as never,
+      consentQuality: row.consentQuality as never,
+      verificationLevel: row.verificationLevel as never,
+      usage: row.usage ?? undefined,
+      confirmedLikeness: row.confirmedLikeness,
     })),
     copyrightCommercialScope: input.copyrightCommercialScope,
   })
@@ -70,11 +75,17 @@ export function assertOpenDownloadAllowed(input: {
   modelConsentStatus?: string | null
   commercialLocked?: boolean
   compensationRequested?: boolean
+  creationClaim?: string | null
+  appearances?: Parameters<typeof photoRightsStatus>[0]['appearances']
+  copyrightCommercialScope?: boolean
 }) {
   const rightsStatus = photoRightsStatus({
     copyrightStatus: input.copyrightStatus,
     modelConsentStatus: input.modelConsentStatus,
     commercialLocked: input.commercialLocked,
+    creationClaim: input.creationClaim,
+    appearances: input.appearances,
+    copyrightCommercialScope: input.copyrightCommercialScope,
   })
   const gate = openLibraryEligibility({
     libraryTier: input.libraryTier,

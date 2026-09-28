@@ -7,6 +7,8 @@ import { decideGrantEarningsStatus } from './holds.js'
 import { assertNewLicenseAllowed } from './policy-decision.js'
 import { isCommerciallyEligible, thirdPartyCopyright, buyerGrantMustExcludeAiTraining } from '@vuekumi/shared'
 import { allocateUnderCurrentPolicy } from './revenue-policy.js'
+import { assertNegotiationForCommercial, CompensationError } from './compensation.js'
+import { RightsError } from './rights.js'
 
 type Tx = Prisma.TransactionClient
 export type GrantWithRelations = LicenseGrant & { photo: Photo; product: LicenseProduct }
@@ -52,6 +54,19 @@ export async function issueGrant(
     photo.rightsRecord,
     photo.appearances,
   )
+
+  if (product.commercialAllowed && input.amountUsd > 0) {
+    try {
+      await assertNegotiationForCommercial({
+        photoId: photo.id,
+        hasRecognizablePeople: photo.hasRecognizablePeople,
+        appearances: photo.appearances,
+      }, client)
+    } catch (err) {
+      if (err instanceof CompensationError) throw new RightsError(err.message)
+      throw err
+    }
+  }
 
   const latestEvent = await client.rightsLedgerEvent.findFirst({
     where: { photoId: input.photoId },

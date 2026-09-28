@@ -254,6 +254,22 @@ enum PartnerKeyStatus {
   revoked
 }
 
+enum CompensationTermMode {
+  percentage
+  fixed
+  both
+  zero
+}
+
+enum CompensationProposalStatus {
+  proposed
+  countered
+  accepted
+  declined
+  activated
+  superseded
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -332,6 +348,8 @@ model User {
   rightsStrikes           RightsStrike[]           @relation("StrikeSubject")
   rightsStrikesRecorded   RightsStrike[]           @relation("StrikeActor")
   shareFormula            ShareFormula?
+  compensationProposals   CompensationProposal[]   @relation("CompensationProposer")
+  compensationEvents      CompensationProposalEvent[] @relation("CompensationEventActor")
 
   @@index([accountType])
   @@index([status])
@@ -754,6 +772,8 @@ model Photo {
   dmcaNotices      DmcaNotice[]
   rightsStrikes    RightsStrike[]
   featuredPins     HomeFeaturedPin[]
+  openDownloadEvents OpenDownloadEvent[]
+  compensationProposals CompensationProposal[]
 
   @@index([status])
   @@index([category])
@@ -766,7 +786,6 @@ model Photo {
   @@index([commercialStatus])
   @@index([shootId])
   @@index([contentHash])
-  openDownloadEvents OpenDownloadEvent[]
 }
 
 model HomeFeaturedPin {
@@ -1211,12 +1230,64 @@ model PhotoAppearance {
   invitedBy      User            @relation("AppearanceInviter", fields: [invitedById], references: [id])
   likenessChecks LikenessCheck[]
   releases       ModelRelease[]
+  compensationProposals CompensationProposal[]
 
   @@index([photoId])
   @@index([modelUserId])
   @@index([inviteEmail])
   @@index([status])
   @@index([consentStatus])
+}
+
+/// Per-appearance compensation negotiation (T5). No payout until T6.
+model CompensationProposal {
+  id           String                     @id @default(cuid())
+  photoId      String
+  appearanceId String
+  proposedById String
+  /// photographer | model
+  proposedAs   String
+  status       CompensationProposalStatus @default(proposed)
+  mode         CompensationTermMode
+  /// Share of Contributor Distributable Share (creator pool), 0–100.
+  percent      Float                      @default(0)
+  fixedUsd     Float                      @default(0)
+  /// Locked Dec-PayBase label stamped on the proposal.
+  paymentBase  String                     @default("contributor_distributable_share")
+  notes        String?
+  parentId     String?
+  acceptedAt   DateTime?
+  declinedAt   DateTime?
+  activatedAt  DateTime?
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  photo      Photo                        @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  appearance PhotoAppearance              @relation(fields: [appearanceId], references: [id], onDelete: Cascade)
+  proposedBy User                         @relation("CompensationProposer", fields: [proposedById], references: [id], onDelete: Cascade)
+  parent     CompensationProposal?        @relation("CompensationCounterChain", fields: [parentId], references: [id], onDelete: SetNull)
+  children   CompensationProposal[]       @relation("CompensationCounterChain")
+  events     CompensationProposalEvent[]
+
+  @@index([photoId])
+  @@index([appearanceId])
+  @@index([status])
+  @@index([proposedById])
+}
+
+model CompensationProposalEvent {
+  id         String   @id @default(cuid())
+  proposalId String
+  actorId    String
+  kind       String
+  snapshot   Json
+  createdAt  DateTime @default(now())
+
+  proposal CompensationProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  actor    User                 @relation("CompensationEventActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+  @@index([actorId])
 }
 
 model LikenessCheck {
