@@ -13,6 +13,7 @@ import {
 } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
+import { CompensationNegotiationPanel } from './CompensationNegotiationPanel'
 import { StatusPill } from './shared'
 
 export function PeopleIdentifier({
@@ -272,7 +273,8 @@ function SelfShotForm({
     <div className="mt-4 space-y-3 rounded-xl bg-cream p-4">
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">Self-shot</p>
       <p className="text-sm text-ink-soft">
-        Confirm this is your likeness, then choose usage. A checkbox is not consent. You keep this photographer account — models do not earn.
+        Confirm this is your likeness, then choose usage. A checkbox is not consent. You keep this photographer account —
+        likeness compensation, if agreed and activated, comes from the contributor pool (payout rails finance-gated).
       </p>
       <input
         required
@@ -356,56 +358,61 @@ function AppearanceRow({
 }) {
   const unclaimed = row.status === 'identified' || row.status === 'invited'
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-cream px-3 py-2 text-sm">
-      <div>
-        <p className="font-medium">{row.displayName}</p>
-        <p className="font-mono-tech text-[10px] text-ink-faint">
-          {row.inviteEmail ?? 'contact private'}
-          {row.inviteMobile ? ' · mobile on file' : ''}
-          {row.modelHandle ? ` · @${row.modelHandle}` : ''}
-        </p>
+    <li className="rounded-lg bg-cream px-3 py-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-medium">{row.displayName}</p>
+          <p className="font-mono-tech text-[10px] text-ink-faint">
+            {row.inviteEmail ?? 'contact private'}
+            {row.inviteMobile ? ' · mobile on file' : ''}
+            {row.modelHandle ? ` · @${row.modelHandle}` : ''}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {row.selfShot && <StatusPill status="Self-shot" />}
+          {row.isMinor && <StatusPill status="Minor — guardian required" />}
+          <StatusPill status={MODEL_CONSENT_STATUS_LABEL[(row.consentStatus ?? 'required') as ModelConsentStatus]} />
+          <StatusPill status={MODEL_APPEARANCE_LABEL[row.status]} />
+          {row.status === 'approved' && <StatusPill status={MODEL_USAGE_LABEL[row.usage]} />}
+          {unclaimed && (
+            <>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api.resendAppearanceInvite(photoId, row.id)
+                    toast.success('Invite resent')
+                    onChanged()
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Could not resend')
+                  }
+                }}
+                className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra"
+              >
+                Resend
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api.removeAppearance(photoId, row.id)
+                    toast.success('Removed')
+                    onChanged()
+                  } catch (err) {
+                    toast.error(err instanceof ApiError ? err.message : 'Could not remove')
+                  }
+                }}
+                className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-[#b3382e]"
+              >
+                Remove
+              </button>
+            </>
+          )}
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {row.selfShot && <StatusPill status="Self-shot" />}
-        {row.isMinor && <StatusPill status="Minor — guardian required" />}
-        <StatusPill status={MODEL_CONSENT_STATUS_LABEL[(row.consentStatus ?? 'required') as ModelConsentStatus]} />
-        <StatusPill status={MODEL_APPEARANCE_LABEL[row.status]} />
-        {row.status === 'approved' && <StatusPill status={MODEL_USAGE_LABEL[row.usage]} />}
-        {unclaimed && (
-          <>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await api.resendAppearanceInvite(photoId, row.id)
-                  toast.success('Invite resent')
-                  onChanged()
-                } catch (err) {
-                  toast.error(err instanceof ApiError ? err.message : 'Could not resend')
-                }
-              }}
-              className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra"
-            >
-              Resend
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await api.removeAppearance(photoId, row.id)
-                  toast.success('Removed')
-                  onChanged()
-                } catch (err) {
-                  toast.error(err instanceof ApiError ? err.message : 'Could not remove')
-                }
-              }}
-              className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-[#b3382e]"
-            >
-              Remove
-            </button>
-          </>
-        )}
-      </div>
+      {(row.status === 'approved' || row.status === 'claimed' || row.selfShot) && (
+        <CompensationNegotiationPanel photoId={photoId} appearanceId={row.id} onChanged={onChanged} />
+      )}
     </li>
   )
 }

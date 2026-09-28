@@ -17,6 +17,7 @@ import {
 } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import { api, ApiError } from '../api/client'
+import { CompensationNegotiationPanel } from '../components/CompensationNegotiationPanel'
 import { StatusPill } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { useSiteContent } from '../context/SiteContentContext'
@@ -276,7 +277,8 @@ function LikenessPanel({
         </div>
       )}
       <p className="pt-4 text-sm text-ink-soft">
-        Optional: create or claim a VueKumi model profile to manage future photographs. Models do not earn.
+        Optional: create or claim a VueKumi model profile to manage future photographs. Models do not earn
+        from licences unless an activated likeness compensation agreement says otherwise; payout withdrawal stays finance-gated.
         {isCreatorWorkspaceAccount(user?.accountType) && signedInMatch
           ? ' You keep this photographer account and add a model profile on the same email.'
           : ''}
@@ -486,6 +488,9 @@ function ModelAppearanceRow({ row, onChanged }: { row: PhotoAppearanceDto; onCha
               )}
             </div>
           </div>
+        )}
+        {row.photoId && (row.status === 'approved' || row.status === 'claimed') && (
+          <CompensationNegotiationPanel photoId={row.photoId} appearanceId={row.id} onChanged={onChanged} />
         )}
       </div>
     </article>
