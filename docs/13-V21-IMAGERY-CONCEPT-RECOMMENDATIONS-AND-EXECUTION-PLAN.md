@@ -92,7 +92,7 @@ v2.1 wants upgrade into Photographer / paid Contributor / Model without a new ac
 - Photographer / Model / Buyer / paid Contributor: defer hard gates until pricing + grace + counsel; first ship Buyer plan honesty + upgrade CTAs.
 
 ### R6 — Depth over invention for Phase 2 surfaces
-Opportunity Engine, Brand Studio, Hire foundations exist. Next ungated work after FC1: **briefs from demand**, **upgrade CTAs**, **Hire/Brand UX** — not payment rails (Dec-Fee still open).
+Opportunity Engine, Brand Studio, Hire foundations exist. Ungated depth (**briefs**, **upgrade CTAs**, **Hire/Brand UX**) shipped in V21-P2 / FC2 — not payment rails (Dec-Fee still open).
 
 ### R7 — Keep external gates intact
 T3 counsel-complete, T6 withdrawal flag, T9/Bio vendor activation, Verified+ indemnity SKU, Hire/Brand fees, Dec-VQ, Dec-AI dataset sell — do not invent.
@@ -172,7 +172,7 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 | **FC1-4** | Hard Dec-TierMap enforce | **Shipped** (R1–R8 + upload coerce) |
 | **FC1-5** | Free Library admin review filter | **Shipped** (`/admin/content?libraryTier=OPEN`) |
 | **FC1-6** | AI/local low-res enhance on Free Library upload | **Shipped** (`enhanceLowResolution`) |
-| **FC1-7** | Playwright | Deferred / covered by API Dec-TierMap tests |
+| **FC1-7** | Playwright Free Library / Dec-TierMap invariants | **Shipped** (`e2e/fc1-free-library.spec.ts`) |
 
 ---
 
