@@ -122,6 +122,13 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     placeholder: 'true',
   },
   {
+    key: 'identity.verification_enabled',
+    label: 'Phase 60 identity verification (true/false). Keep false until vendor, DPA, and counsel approve production activation.',
+    group: 'Identity / Dec-Bio',
+    secret: false,
+    placeholder: 'false',
+  },
+  {
     key: 'moderation.disposable_email_domains',
     label: 'Blocked email domains for new accounts (comma-separated; sends to manual review, never blocks)',
     group: 'Moderation',
