@@ -102,6 +102,6 @@ Phase 29 hard block is superseded by Dec-Upgrade (implement FC2).
 | **FC1** | **Shipped** — Free Library nav, PI CTAs, Dec-TierMap, admin filter, AI low-res, Playwright, [moderation SOP](./runbooks/free-library-moderation.md) |
 | **FC2** | **Shipped** — upgrade API + tests |
 | **V21-P2** | **Shipped** — Opportunity briefs, Brand/Hire UX, Buyer honesty, Verified+ polish |
-| **V21-Gated** | Wait for owners — Dec-Fee, T3 counsel, finance withdrawal, Bio vendor, Dec-AI |
+| **V21-P3** | **Shipped foundation** — partner attribution DTO + view/preview/ack events + admin rollup; enterprise SKUs held |
 
 Do not invent Hire/Brand fees, Bio vendors, or indemnity SKUs.
