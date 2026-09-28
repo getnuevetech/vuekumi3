@@ -218,6 +218,13 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  contributorBriefs: () => request<{ items: import('@vuekumi/shared').CreatorBriefDto[] }>('/api/contributor/briefs'),
+  adminCreateCreatorBrief: (body: import('@vuekumi/shared').CreateCreatorBriefInput) =>
+    request<{ brief: import('@vuekumi/shared').CreatorBriefDto }>('/api/admin/creator-briefs', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   adminAccountTypes: () => request<{ items: import('@vuekumi/shared').AccountTypeConfigDto[] }>('/api/admin/account-types'),
 
   saveAccountTypes: (body: import('@vuekumi/shared').PatchAccountTypesInput) =>

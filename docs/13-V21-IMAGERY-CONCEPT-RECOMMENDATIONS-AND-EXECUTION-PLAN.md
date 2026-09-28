@@ -187,15 +187,15 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 
 ---
 
-### V21-P2 — Demand & creator economy depth (ungated UX; no fee invention)
+### V21-P2 — Demand & creator economy depth — **SHIPPED** (ungated UX)
 
-| ID | Work |
-| --- | --- |
-| **V21-P2-1** | Opportunity Engine → **staff/manual creator briefs** (no ML) |
-| **V21-P2-2** | Brand Studio UX depth (briefs, collections) — still no production fee |
-| **V21-P2-3** | Hire messaging / discovery polish — still off-platform settlement |
-| **V21-P2-4** | Buyer plan honesty: collections, purchase history, credit/allowance display |
-| **V21-P2-5** | Verified+ merchandising polish — no indemnity SKU |
+| ID | Work | Status |
+| --- | --- | --- |
+| **V21-P2-1** | Opportunity → staff/manual creator briefs | **Shipped** (`CreatorBrief` + Admin “Create brief”) |
+| **V21-P2-2** | Brand Studio UX depth | **Shipped** (copy/guidance; still no production fee) |
+| **V21-P2-3** | Hire messaging / discovery polish | **Shipped** (copy; off-platform settlement) |
+| **V21-P2-4** | Buyer plan honesty | **Shipped** (Account plan blurb + links) |
+| **V21-P2-5** | Verified+ merchandising polish | **Shipped** (Search filter helper copy) |
 
 ---
 

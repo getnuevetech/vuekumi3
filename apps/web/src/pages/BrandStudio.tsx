@@ -7,7 +7,8 @@ import { api, ApiError } from '../api/client'
 
 const STUDIO_NOTE =
   'Brand Studio groups a creative brief, optional campaign, and reference lightboxes. '
-  + 'It does not settle production payments or grant licences — campaigns and checkout stay as they are.'
+  + 'Production fees and licence grants are not settled here — attach collections, write the brief, '
+  + 'then continue to campaigns or checkout as usual (Dec-Fee still open).'
 
 export default function BrandStudio() {
   const [items, setItems] = useState<BrandProjectDto[]>([])

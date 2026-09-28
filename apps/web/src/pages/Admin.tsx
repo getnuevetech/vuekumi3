@@ -285,9 +285,29 @@ export function AdminDashboard() {
                     {row.hasZeroResults ? ' · unmet' : ''}
                   </p>
                 </div>
-                <span className={`font-mono-tech text-[10px] uppercase tracking-[0.14em] ${row.hasZeroResults ? 'text-terra' : 'text-ink-faint'}`}>
-                  min {row.minResults}
-                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-terra hover:text-ink"
+                    onClick={() => {
+                      api.adminCreateCreatorBrief({
+                        title: `Brief: ${row.label}`,
+                        body: `Buyers searched for “${row.label}” (${row.searches} searches, avg ${row.avgResults} results${row.hasZeroResults ? ', including zero-result' : ''}). Upload matching work.`,
+                        category: row.category,
+                        country: row.country,
+                        libraryTier: (row.libraryTier as import('@vuekumi/shared').LibraryTier | null) ?? undefined,
+                        sourceLabel: row.label,
+                      })
+                        .then(() => toast.success('Creator brief published to contributor dashboards'))
+                        .catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not create brief'))
+                    }}
+                  >
+                    Create brief
+                  </button>
+                  <span className={`font-mono-tech text-[10px] uppercase tracking-[0.14em] ${row.hasZeroResults ? 'text-terra' : 'text-ink-faint'}`}>
+                    min {row.minResults}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
