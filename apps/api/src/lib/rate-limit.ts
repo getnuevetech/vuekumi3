@@ -43,6 +43,11 @@ export async function connectRateLimitRedis(): Promise<Redis | undefined> {
 }
 
 export async function registerRateLimit(app: FastifyInstance) {
+  // Playwright / CI e2e suites issue many sequential API calls from one IP.
+  if (process.env.E2E === '1' || process.env.DISABLE_RATE_LIMIT === '1') {
+    return
+  }
+
   const redis = await connectRateLimitRedis()
   if (redis) {
     app.addHook('onClose', async () => {

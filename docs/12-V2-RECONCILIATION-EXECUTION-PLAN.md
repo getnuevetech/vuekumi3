@@ -205,7 +205,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | **P1-60** | Phase 60 provider-neutral schema/API behind **OFF** feature flag | Evidence fields only; no prod activation; no biometric DB — **schema + flag-gated API shipped** (`identity.verification_enabled` default false) |
 | **P1-T8** | Country ACTIVE / HOLD waitlist / SUSPENDED enforcement per Dec-AfricaElig | HOLD cannot fully activate contributors; waitlist exists — **shipped** (`ContributorWaitlist`; default `africa_list_and_country_active`; admin list/promote) |
 | **P1-H4** | React Query on public marketplace: Home, Search, Site Content, curation | Admin save invalidates public keys — **shipped** (`publicQueryKeys`; Home/Search/Site/feed/plans; admin homepage/featured/content/site/plans invalidate) |
-| **P1-H5** | Expanded Playwright for rights/Open/contributor/admin invariants | Specs below green in CI |
+| **P1-H5** | Expanded Playwright for rights/Open/contributor/admin invariants | Specs below green in CI — **shipped** (`e2e/h5-invariants.spec.ts`; Open/compensation/dispute/DMCA + upload people + homepage reorder) |
 
 **P1-H5 minimum invariants:**
 

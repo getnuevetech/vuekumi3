@@ -1,15 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto('/login')
-  await expect(page.getByRole('heading', { name: 'Welcome back.' })).toBeVisible()
-  await page.getByPlaceholder('Email address').fill(email)
-  await page.getByPlaceholder('Password').fill(password)
-  await Promise.all([
-    page.waitForURL((url) => !url.pathname.startsWith('/login')),
-    page.locator('form').getByRole('button', { name: 'Sign in' }).click(),
-  ])
-}
+import { expect, test } from '@playwright/test'
+import { browserApiLogin, signIn } from './helpers/auth'
 
 test.describe('Phase 45 + 55 web smoke', () => {
   test('home shows Vuekumi brand and library CTA', async ({ page }) => {
@@ -49,7 +39,7 @@ test.describe('Phase 45 + 55 web smoke', () => {
     await expect(page.getByRole('heading', { name: 'Report content.' })).toBeVisible()
     await expect(page.getByText('Photograph link')).toBeVisible()
     await expect(page.getByRole('link', { name: 'DMCA notice' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Your rights' })).toBeVisible()
+    await expect(page.getByRole('main').getByRole('link', { name: 'Your rights' })).toBeVisible()
 
     await page.goto('/report-content?photoUrl=/photo/afr-002')
     await expect(page.getByPlaceholder(/photo\/afr-001/i)).toHaveValue(/afr-002/)
@@ -86,7 +76,7 @@ test.describe('Phase 45 + 55 web smoke', () => {
   })
 
   test('member can open bookings after sign-in', async ({ page }) => {
-    await signIn(page, 'member@vuekumi.demo', 'User12345!')
+    await browserApiLogin(page, 'member@vuekumi.demo', 'User12345!')
     await page.goto('/bookings')
     await expect(page.getByRole('heading', { name: /Briefs/i })).toBeVisible()
   })
