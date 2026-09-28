@@ -24,6 +24,19 @@ export async function loadAccountTypeConfigs(): Promise<AccountTypeConfigDto[]> 
         features: defaultAccountFeatures(accountType),
       })),
     })
+  } else {
+    // Dec-TierMap: legacy COMMUNITY contributor rows lacked commercial_stock.
+    const contributor = await prisma.accountTypeConfig.findUnique({ where: { accountType: 'contributor' } })
+    if (contributor) {
+      const features = storedFeatures(contributor.features)
+      if (!features.includes('commercial_stock')) {
+        const next = [...new Set([...features, 'commercial_stock', 'ai_training_opt_in' as AccountFeatureKey])]
+        await prisma.accountTypeConfig.update({
+          where: { accountType: 'contributor' },
+          data: { features: next },
+        })
+      }
+    }
   }
   const rows = await prisma.accountTypeConfig.findMany()
   const byType = new Map(rows.map((row) => [row.accountType, row]))

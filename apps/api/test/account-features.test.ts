@@ -15,7 +15,7 @@ async function login(app: Awaited<ReturnType<typeof buildApp>>, email: string, p
   return cookies(res)
 }
 
-test('photographers keep bookings and contributors match photo influencers', async () => {
+test('photographers keep bookings; contributors get paid-tier commercial_stock; influencers stay Free Library', async () => {
   const app = await buildApp()
   const admin = await login(app, 'admin@vuekumi.com', 'Admin123!')
   const slug = `feature-plan-${Date.now().toString(36)}`
@@ -32,7 +32,9 @@ test('photographers keep bookings and contributors match photo influencers', asy
     assert.equal(contributor?.features.includes('receive_bookings'), false)
     assert.equal(contributor?.features.includes('upload_photos'), true)
     assert.equal(contributor?.features.includes('copyright_earnings'), true)
-    assert.deepEqual([...(contributor?.features ?? [])].sort(), [...(influencer?.features ?? [])].sort())
+    assert.equal(contributor?.features.includes('commercial_stock'), true)
+    assert.equal(influencer?.features.includes('commercial_stock'), false)
+    assert.equal(influencer?.features.includes('upload_photos'), true)
 
     const closed = await app.inject({
       method: 'PUT',

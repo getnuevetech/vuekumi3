@@ -12,7 +12,7 @@ import {
   identifyAppearanceSchema,
   isAiTrainingEligible,
   isCommerciallyEligible,
-  isCommunityContributor,
+  isPhotoInfluencerAccount,
   isCreatorWorkspaceAccount,
   isNonCommercialCreator,
   MODEL_RELEASE_ATTESTATION,
@@ -97,11 +97,6 @@ export async function registerContributorAppearanceRoutes(app: FastifyInstance, 
     const selfBlocked = ownEmailInviteBlocked(email, photo.contributor.email)
     if (selfBlocked) {
       return reply.code(400).send({ error: selfBlocked })
-    }
-    if (isCommunityContributor(request.authUser?.accountType)) {
-      return reply.code(400).send({
-        error: 'Community contributors cannot start commercial model-release clearance. Register as a professional photographer.',
-      })
     }
     const dup = await prisma.photoAppearance.findFirst({
       where: {

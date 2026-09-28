@@ -49,7 +49,7 @@ test('photo influencers register as their own account type and stay off the phot
       },
     })
     assert.equal(commercial.statusCode, 400)
-    assert.match((commercial.json() as { error: string }).error, /Photo influencers cannot enter commercial inventory/)
+    assert.match((commercial.json() as { error: string }).error, /Free Library|Photo influencers/)
 
     const adminLogin = await app.inject({
       method: 'POST',

@@ -38,36 +38,35 @@ export const CONTRIBUTOR_PERMISSION_STATES: PermissionState[] = [
   'exclusive',
 ]
 
-/** Community contributors cannot enter commercial stock inventory. */
-export const COMMUNITY_CONTRIBUTOR_PERMISSION_STATES: PermissionState[] = [
+/** Photo Influencer Free Library permission states (no commercial stock). */
+export const FREE_LIBRARY_PERMISSION_STATES: PermissionState[] = [
   'private',
   'portfolio',
   'editorial',
 ]
 
+/** @deprecated Use FREE_LIBRARY_PERMISSION_STATES — Contributors are paid-tier uploaders. */
+export const COMMUNITY_CONTRIBUTOR_PERMISSION_STATES = FREE_LIBRARY_PERMISSION_STATES
+
 export function communityContributorBlocksState(state: PermissionState): string | undefined {
-  return nonCommercialCreatorBlocksState('contributor', state)
+  // Legacy name: Contributors may use paid/commercial states (Dec-TierMap).
+  void state
+  return undefined
 }
 
-/** Community contributors and photo influencers cannot enter commercial stock. */
+/** Photo influencers cannot enter commercial stock; Photographers/Contributors may. */
 export function nonCommercialCreatorBlocksState(
   accountType: string | null | undefined,
   state: PermissionState,
 ): string | undefined {
-  if (accountType !== 'contributor' && accountType !== 'photo_influencer') return undefined
-  if (COMMUNITY_CONTRIBUTOR_PERMISSION_STATES.includes(state)) return undefined
-  if (accountType === 'photo_influencer') {
-    return 'Photo influencers cannot enter commercial inventory. Photographers and photo influencers are separate account types.'
-  }
-  return 'Community contributors cannot enter commercial inventory. Register as a professional photographer.'
+  if (accountType !== 'photo_influencer') return undefined
+  if (FREE_LIBRARY_PERMISSION_STATES.includes(state)) return undefined
+  return 'Photo influencers may upload only to the Free Library. Upgrade to Photographer or Contributor for paid tiers.'
 }
 
 export function commercialInventoryBlocked(accountType: string | null | undefined): string | undefined {
   if (accountType === 'photo_influencer') {
-    return 'Photo influencers cannot enter commercial inventory. Photographers and photo influencers are separate account types.'
-  }
-  if (accountType === 'contributor') {
-    return 'Community contributors cannot enter commercial inventory. Register as a professional photographer.'
+    return 'Photo influencers may upload only to the Free Library. Upgrade to Photographer or Contributor for paid tiers.'
   }
   return undefined
 }

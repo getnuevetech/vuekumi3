@@ -29,9 +29,22 @@ export function isCommunityContributor(accountType: string | null | undefined): 
   return accountType === 'contributor'
 }
 
-/** Community contributors and photo influencers cannot enter commercial stock. */
+/** Free Library creator (Dec-TierMap): Photo Influencer only — no paid tiers, no subscription. */
+export function isFreeLibraryCreator(accountType: string | null | undefined): boolean {
+  return accountType === 'photo_influencer'
+}
+
+/** Paid-tier uploaders: Photographers and Contributors (not Free Library). */
+export function isPaidLibraryCreator(accountType: string | null | undefined): boolean {
+  return accountType === 'photographer' || accountType === 'contributor'
+}
+
+/**
+ * Creators blocked from commercial inventory permission states.
+ * Dec-TierMap: Photo Influencer only (Contributors use paid tiers).
+ */
 export function isNonCommercialCreator(accountType: string | null | undefined): boolean {
-  return accountType === 'contributor' || accountType === 'photo_influencer'
+  return accountType === 'photo_influencer'
 }
 
 export function isAfricaRestrictedCreator(accountType: string | null | undefined): boolean {
@@ -52,15 +65,16 @@ export function isCreatorAccount(accountType: string | null | undefined): boolea
 }
 
 /**
- * Professional photographers (and staff acting as them) may enter commercial inventory.
+ * Professional photographers, paid Contributors, and staff may enter commercial inventory.
  * A model who has accepted the photographer agreement on the same email (dual-role)
  * may also enter commercial inventory. `accountType` stays `model`.
+ * Photo Influencers stay Free Library only (Dec-TierMap).
  */
 export function canEnterCommercialInventory(
   accountType: string | null | undefined,
   opts?: { hasPhotographerAgreement?: boolean | null },
 ): boolean {
-  if (accountType === 'photographer' || accountType === 'admin') return true
+  if (accountType === 'photographer' || accountType === 'contributor' || accountType === 'admin') return true
   if (accountType === 'model' && opts?.hasPhotographerAgreement) return true
   return false
 }

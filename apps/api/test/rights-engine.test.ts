@@ -22,7 +22,7 @@ import {
   twoPartyBlocksLicense,
 } from '@vuekumi/shared'
 
-test('photographers, photo influencers, and community contributors are different account types', () => {
+test('photographers, photo influencers, and contributors are different account types', () => {
   assert.equal(isPhotographerAccount('photographer'), true)
   assert.equal(isPhotographerAccount('photo_influencer'), false)
   assert.equal(isPhotographerAccount('contributor'), false)
@@ -31,9 +31,9 @@ test('photographers, photo influencers, and community contributors are different
   assert.equal(isCommunityContributor('contributor'), true)
   assert.equal(canEnterCommercialInventory('photographer'), true)
   assert.equal(canEnterCommercialInventory('photo_influencer'), false)
-  assert.equal(canEnterCommercialInventory('contributor'), false)
+  assert.equal(canEnterCommercialInventory('contributor'), true)
   assert.equal(canEnterCommercialInventory('admin'), true)
-  assert.match(communityContributorBlocksState('commercial') ?? '', /professional photographer/)
+  assert.equal(communityContributorBlocksState('commercial'), undefined)
   assert.equal(communityContributorBlocksState('portfolio'), undefined)
   assert.equal(registerSchema.safeParse({
     email: 'p@example.com',

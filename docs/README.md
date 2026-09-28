@@ -34,8 +34,8 @@ Read in this order:
    to start work without approval.
 7. **[06-OPS-INVENTORY-AND-DECISION-BRIEF.md](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md)** —
    O0 live probe and Dec-* workshop. **Locked:** Dec-Bio, Dec-PayBase, Dec-Split,
-   Dec-AfricaElig (see `12`). **Locked in `13`:** Dec-FC (keep Photo Influencer, free).
-   Still pending: Dec-VQ, Dec-Fee, Dec-AI, Dec-FreeLib, Dec-Upgrade, Dec-RolePay (paid roles).
+   Dec-AfricaElig (see `12`). **Locked in `13`:** Dec-FC, Dec-TierMap, Dec-FreeLib A,
+   Dec-Upgrade; Dec-RolePay partial (PI free). Still pending: Dec-VQ, Dec-Fee, Dec-AI.
 8. **[07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)** —
    Trust & Markets plan: `/report-content`, `/rights`, DMCA/repeat ops, likeness
    compensation negotiation, Country Activation Matrix admin. T0–T2 + T4 + T7 foundations

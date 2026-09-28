@@ -238,6 +238,7 @@ export async function registerContributorPhotoRoutes(app: FastifyInstance, gate:
     const libraryTier = resolveLibraryTierForWrite({
       licenseType,
       permissionState: permission.permissionState,
+      accountType: targetAccountType,
     })
 
     let shootId: string | undefined
@@ -598,6 +599,7 @@ export async function registerContributorPhotoRoutes(app: FastifyInstance, gate:
         ? resolveLibraryTierForWrite({
             licenseType,
             permissionState: permission.permissionState,
+            accountType: request.authUser?.accountType,
           })
         : undefined
 

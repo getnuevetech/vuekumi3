@@ -375,7 +375,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     payload: { permissionState: 'commercial' },
   })
   assert.equal(unlockNine.statusCode, 400)
-  assert.match((unlockNine.json() as { error: string }).error, /Photo influencers cannot enter commercial inventory/)
+  assert.match((unlockNine.json() as { error: string }).error, /Free Library|Photo influencers/)
   const nineOpen = await app.inject({ method: 'GET', url: '/api/photos/afr-009/licenses' })
   assert.equal(
     (nineOpen.json() as { items: { type: string; offered: boolean }[] }).items.find((i) => i.type === 'commercial')?.offered,
@@ -525,7 +525,7 @@ test('invite, claim, likeness gate, approve, and public photos hide invite email
     payload: { permissionState: 'commercial' },
   })
   assert.equal(stillBlocked.statusCode, 400)
-  assert.match((stillBlocked.json() as { error: string }).error, /Photo influencers cannot enter commercial inventory/)
+  assert.match((stillBlocked.json() as { error: string }).error, /Free Library|Photo influencers/)
 
   const nomsaClaim = await app.inject({
     method: 'POST',
