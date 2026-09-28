@@ -3,10 +3,10 @@ import { BUYER_LICENCE_AGREEMENT } from '../data/licenses.js'
 import { prisma } from './prisma.js'
 import { assertCanGrant, certificateCode } from './rights.js'
 import { contributorEarning } from './share-formulas.js'
-import { appendRightsLedgerEvent } from './ledger.js'
 import { decideGrantEarningsStatus } from './holds.js'
 import { assertNewLicenseAllowed } from './policy-decision.js'
 import { isCommerciallyEligible, thirdPartyCopyright, buyerGrantMustExcludeAiTraining } from '@vuekumi/shared'
+import { allocateUnderCurrentPolicy } from './revenue-policy.js'
 
 type Tx = Prisma.TransactionClient
 export type GrantWithRelations = LicenseGrant & { photo: Photo; product: LicenseProduct }
@@ -74,6 +74,12 @@ export async function issueGrant(
     ledgerHeadId: latestEvent?.id ?? null,
   }
 
+  // Platform vs creator pool from versioned RevenuePolicy (Dec-PayBase / Dec-Split).
+  // ShareFormula then allocates within the creator pool — not from raw sale.
+  const allocation = input.amountUsd > 0
+    ? await allocateUnderCurrentPolicy(input.amountUsd, client)
+    : null
+
   const created = await client.licenseGrant.create({
     data: {
       buyerId: input.buyerId,
@@ -91,6 +97,14 @@ export async function issueGrant(
       certificateCode: certificateCode(input.photoId, input.licenseType),
       agreementKind: 'buyer_licence',
       agreementVersion: BUYER_LICENCE_AGREEMENT.version,
+      ...(allocation
+        ? {
+            revenuePolicyId: allocation.policyId,
+            revenuePolicyVersion: allocation.version,
+            platformShareUsd: allocation.platformShareUsd,
+            creatorPoolUsd: allocation.creatorPoolUsd,
+          }
+        : {}),
     },
     include: { photo: true, product: true },
   })
@@ -119,11 +133,11 @@ export async function issueGrant(
     })
   }
 
-  if (input.amountUsd > 0 && photo.contributor.accountType !== 'model') {
+  if (allocation && allocation.creatorPoolUsd > 0 && photo.contributor.accountType !== 'model') {
     const amount = await contributorEarning({
       userId: photo.contributorId,
       accountType: photo.contributor.accountType,
-      saleUsd: input.amountUsd,
+      saleUsd: allocation.creatorPoolUsd,
     }, client)
     if (amount <= 0) return created
     const hold = await decideGrantEarningsStatus({
@@ -144,6 +158,8 @@ export async function issueGrant(
         status: hold.status,
         holdReason: hold.holdReason,
         heldAt: hold.status === 'held' ? new Date() : undefined,
+        revenuePolicyId: allocation.policyId,
+        revenuePolicyVersion: allocation.version,
       },
     })
     await client.contributorProfile.updateMany({

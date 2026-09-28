@@ -1,20 +1,26 @@
 # VueKumi — execution plan after review (23 September 2026)
 
 **Status: plan only. Do not start a numbered phase until it is explicitly
-approved.** This document is the current backlog. It reconciles the Trust &
-Markets memo, the Admin Portal engineering spec, and the AI-pipeline request
-with `main` through Phase 61.
+approved.** This document is the **product-phase** backlog. For **current**
+sequencing after Imagery Concept v2.0, see
+[`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)
+(reconciliation release). Sep 28 ops/hygiene context remains in
+[`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md).
+It reconciles the Trust & Markets memo, the Admin Portal engineering spec, and
+the AI-pipeline request with `main` through Phase 65.
 
 Companions:
 
-- [`09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md`](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md) — AI phases 58–63 (58, 59, 61 shipped).
+- [`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md) — **current default** (v2.0 foundation + locked Dec-*).
+- [`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md) — Sep 28 ops / hygiene context.
+- [`09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md`](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md) — AI phases 58–65 (58–59, 61–65 shipped; 60 architecture unblocked under Dec-Bio, prod OFF).
 - [`07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md) — Arc T (T0–T9).
 - [`08-ADMIN-PORTAL-ENGINEERING-SPEC.md`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md) — three layers, eight modules, PDS, P0–P2.
-- [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md) — Dec-* blanks and live ops.
+- [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md) — Dec-* (Bio / PayBase / Split / AfricaElig locked; VQ / Fee / AI pending).
 
-**Do not invent** photographer/model percentages, a payment base (Dec-PayBase),
-a biometric vendor or retention window (Dec-Bio), an Africa-eligibility evidence
-rule (Dec-AfricaElig), launch countries, or a VueQuatro entity form.
+**Do not invent** a permanent platform commission rate, Dec-Fee / Dec-VQ / Dec-AI
+answers, launch countries, or a VueQuatro entity form. Payment base, Bio posture,
+split rule, and Africa eligibility are locked in `12` / `06`.
 
 ---
 

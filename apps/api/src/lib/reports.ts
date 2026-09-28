@@ -205,12 +205,14 @@ export async function applyCommercialLock(input: {
           commercialLockedAt: new Date(),
           commercialLockedById: input.actorId || null,
           commercialLockReason: input.lockReason ?? 'staff_quarantine',
+          commercialStatus: 'BLOCKED',
         }
       : {
           commercialLocked: false,
           commercialLockedAt: null,
           commercialLockedById: null,
           commercialLockReason: null,
+          commercialStatus: 'ENABLED',
         },
   })
   if (input.locked) {

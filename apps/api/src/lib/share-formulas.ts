@@ -9,17 +9,28 @@ import {
   type ShareGroup,
 } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
-import { getContributorShare } from './payments-config.js'
+import { getCurrentRevenuePolicy } from './revenue-policy.js'
 
 type Db = Prisma.TransactionClient | PrismaClient
 
 export async function ensureShareGroups(client: Db = prisma) {
   for (const groupKey of SHARE_GROUPS) {
-    await client.shareFormula.upsert({
+    const existing = await client.shareFormula.findUnique({
       where: { scope_groupKey: { scope: 'group', groupKey } },
-      update: {},
-      create: { scope: 'group', groupKey, ...DEFAULT_SHARE_FORMULA },
     })
+    if (!existing) {
+      await client.shareFormula.create({
+        data: { scope: 'group', groupKey, ...DEFAULT_SHARE_FORMULA },
+      })
+      continue
+    }
+    // Legacy group rows were "50% of sale"; creator-pool formulas default to 100% of pool.
+    if (existing.mode === 'percentage' && existing.percent === 50 && existing.fixedUsd === 0) {
+      await client.shareFormula.update({
+        where: { id: existing.id },
+        data: { percent: 100 },
+      })
+    }
   }
 }
 
@@ -44,7 +55,7 @@ export async function resolveShareFormula(
     })
     if (group) return asFormula(group)
   }
-  return fallbackShareFormula(await getContributorShare())
+  return fallbackShareFormula()
 }
 
 export async function contributorEarning(
@@ -52,17 +63,20 @@ export async function contributorEarning(
   client: Db = prisma,
 ): Promise<number> {
   const formula = await resolveShareFormula(input, client)
+  // saleUsd here is the creator-pool base after RevenuePolicy allocation.
   return applyShareFormula(input.saleUsd, formula)
 }
 
+/** Advertised photographer share of net collected revenue (policy × pool formula). */
 export async function advertisedPhotographerShare(): Promise<number> {
+  const policy = await getCurrentRevenuePolicy()
   const group = await prisma.shareFormula.findUnique({
     where: { scope_groupKey: { scope: 'group', groupKey: 'photographer' } },
   })
-  if (group && group.mode === 'percentage') {
-    return Math.min(1, Math.max(0, group.percent / 100))
-  }
-  return getContributorShare()
+  const poolShare = group && group.mode === 'percentage'
+    ? Math.min(1, Math.max(0, group.percent / 100))
+    : 1
+  return Math.min(1, Math.max(0, policy.creatorPoolRule * poolShare))
 }
 
 export async function listShareAdmin() {

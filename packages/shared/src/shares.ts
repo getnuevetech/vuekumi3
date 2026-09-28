@@ -20,10 +20,14 @@ export const shareFormulaSchema = z.object({
 })
 export type ShareFormulaInput = z.infer<typeof shareFormulaSchema>
 
-/** Matches the live 50/50 ledger until an admin saves another formula. */
+/**
+ * Share of the Contributor Distributable Share (creator pool after RevenuePolicy).
+ * Default 100% = photographer receives the full creator pool; platform cut is
+ * stamped separately on RevenuePolicy, not here.
+ */
 export const DEFAULT_SHARE_FORMULA: ShareFormulaInput = {
   mode: 'percentage',
-  percent: 50,
+  percent: 100,
   fixedUsd: 0,
 }
 
@@ -57,24 +61,23 @@ export function isShareGroup(value: string | null | undefined): value is ShareGr
   return (SHARE_GROUPS as readonly string[]).includes(value ?? '')
 }
 
-export function fallbackShareFormula(contributorShare: number): ShareFormulaInput {
-  const ratio = Number.isFinite(contributorShare) ? contributorShare : 0.5
-  const percent = Math.round(Math.min(1, Math.max(0, ratio)) * 100)
-  return { mode: 'percentage', percent, fixedUsd: 0 }
+/** Fallback when no group/personal formula exists — full creator pool. */
+export function fallbackShareFormula(_contributorShare?: number): ShareFormulaInput {
+  return { ...DEFAULT_SHARE_FORMULA }
 }
 
 /**
- * Percentage takes that share of the sale.
- * Fixed pays the dollar amount, never more than the sale.
- * Both adds the percentage and the fixed amount, then caps the payout at the sale.
+ * Percentage takes that share of the creator-pool base (not raw sale).
+ * Fixed pays the dollar amount, never more than the base.
+ * Both adds the percentage and the fixed amount, then caps at the base.
  */
-export function applyShareFormula(saleUsd: number, formula: ShareFormulaInput): number {
-  const sale = Math.round(Math.max(0, saleUsd) * 100) / 100
-  if (sale === 0) return 0
+export function applyShareFormula(baseUsd: number, formula: ShareFormulaInput): number {
+  const base = Math.round(Math.max(0, baseUsd) * 100) / 100
+  if (base === 0) return 0
   const percent = Math.min(100, Math.max(0, formula.percent))
   const fixed = Math.max(0, formula.fixedUsd)
   let raw = 0
-  if (formula.mode === 'percentage' || formula.mode === 'both') raw += sale * (percent / 100)
+  if (formula.mode === 'percentage' || formula.mode === 'both') raw += base * (percent / 100)
   if (formula.mode === 'fixed' || formula.mode === 'both') raw += fixed
-  return Math.round(Math.min(sale, raw) * 100) / 100
+  return Math.round(Math.min(base, raw) * 100) / 100
 }

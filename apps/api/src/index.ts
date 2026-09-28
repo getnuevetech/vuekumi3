@@ -8,6 +8,8 @@ import { seedLicenseCatalog } from './lib/licenses-seed.js'
 import { startMediaWorker } from './lib/media-worker.js'
 import { initSentry } from './lib/sentry.js'
 import { seedHoldPoliciesForAllCountries } from './lib/policy-decision.js'
+import { ensureDefaultRevenuePolicy } from './lib/revenue-policy.js'
+import { ensureShareGroups } from './lib/share-formulas.js'
 
 const app = await buildApp()
 assertProductionSecrets()
@@ -19,6 +21,12 @@ try {
     app.log.warn({ err }, 'country policy HOLD seed failed'),
   )
   await seedLicenseCatalog()
+  await ensureDefaultRevenuePolicy().catch((err) =>
+    app.log.warn({ err }, 'RevenuePolicy seed failed'),
+  )
+  await ensureShareGroups().catch((err) =>
+    app.log.warn({ err }, 'ShareFormula group seed failed'),
+  )
   if ((await prisma.exchangeRate.count()) === 0) {
     await syncExchangeRates().catch((err) => app.log.warn({ err }, 'initial FX sync failed'))
   }

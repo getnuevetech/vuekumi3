@@ -71,10 +71,12 @@ export type PhotoLicenseFields = Pick<
 
 export function isLicenseOffered(
   product: LicenseProduct,
-  photo: PhotoLicenseFields,
+  photo: PhotoLicenseFields & { libraryTier?: string; commercialStatus?: string },
 ): { offered: boolean; reason?: string } {
   if (!product.active) return { offered: false, reason: 'Licence type is inactive' }
-  if (photo.commercialLocked) return { offered: false, reason: COMMERCIAL_LOCK_REASON }
+  if (photo.commercialLocked || photo.commercialStatus === 'BLOCKED' || photo.commercialStatus === 'SUSPENDED') {
+    return { offered: false, reason: COMMERCIAL_LOCK_REASON }
+  }
   const permissionBlock = permissionBlocksLicense(photo.permissionState as PermissionState, product.type)
   if (permissionBlock) return { offered: false, reason: permissionBlock }
   if (photo.exclusiveSold) return { offered: false, reason: 'An exclusive licence has already been sold' }
@@ -88,6 +90,8 @@ export function isLicenseOffered(
   if (product.type === 'commercial' && photo.licenseType !== 'premium') {
     return { offered: false, reason: 'Commercial licence applies to the premium collection' }
   }
+  // PRIVATE / portfolio placement is enforced via permissionState; Open downloads
+  // are gated separately by openLibraryEligibility (tier + rights + commercial).
   return { offered: true }
 }
 

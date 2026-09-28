@@ -8,8 +8,8 @@ function cookies(res: { headers: Record<string, unknown> }) {
   return (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
 }
 
-test('share formulas pay a percentage, a fixed amount, or both, and never more than the sale', () => {
-  assert.equal(applyShareFormula(10, DEFAULT_SHARE_FORMULA), 5)
+test('share formulas pay a percentage, a fixed amount, or both, and never more than the creator-pool base', () => {
+  assert.equal(applyShareFormula(10, DEFAULT_SHARE_FORMULA), 10)
   assert.equal(applyShareFormula(10, { mode: 'percentage', percent: 0, fixedUsd: 4 }), 0)
   assert.equal(applyShareFormula(10, { mode: 'fixed', percent: 80, fixedUsd: 4 }), 4)
   assert.equal(applyShareFormula(10, { mode: 'fixed', percent: 0, fixedUsd: 25 }), 10)
@@ -31,7 +31,7 @@ test('admin can set a group formula and a different formula on one account', asy
   const listed = await app.inject({ method: 'GET', url: '/api/admin/shares', headers: { cookie: admin } })
   assert.equal(listed.statusCode, 200, listed.body)
   const before = listed.json() as ShareAdminDto
-  assert.equal(before.groups.find((group) => group.groupKey === 'photographer')?.percent, 50)
+  assert.equal(before.groups.find((group) => group.groupKey === 'photographer')?.percent, 100)
 
   const saved = await app.inject({
     method: 'PUT',

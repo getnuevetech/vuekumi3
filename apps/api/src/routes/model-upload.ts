@@ -41,6 +41,7 @@ import { processPhotoAssets } from '../lib/process-photo.js'
 import { contributorHasAgreement } from '../lib/rights.js'
 import { loadOriginalBytes, screenImageForRights, screeningWriteData } from '../lib/screening.js'
 import { authUserInclude, serializePhoto, serializeUser } from '../lib/serialize.js'
+import { resolveLibraryTierForWrite, syncCommercialStatus } from '../lib/library-tiers.js'
 import {
   ALLOWED_IMAGE_TYPES,
   assertOwnedOriginalKey,
@@ -225,6 +226,10 @@ export async function modelUploadRoutes(app: FastifyInstance) {
     const permission = permissionWriteData('portfolio', false)
     const id = `mdl-${Date.now().toString(36)}`
     const processingStatus = body.originalKey ? 'pending' : 'ready'
+    const libraryTier = resolveLibraryTierForWrite({
+      licenseType: 'free',
+      permissionState: permission.permissionState,
+    })
 
     let photo = await prisma.$transaction(async (tx) => {
       const created = await tx.photo.create({
@@ -238,6 +243,8 @@ export async function modelUploadRoutes(app: FastifyInstance) {
           category: body.category,
           country: body.country,
           licenseType: 'free',
+          libraryTier,
+          commercialStatus: syncCommercialStatus(false),
           price: 0,
           status: 'pending',
           src: body.src || PLACEHOLDER_SRC,
@@ -564,6 +571,12 @@ export async function modelUploadRoutes(app: FastifyInstance) {
     }
 
     const permission = permissionWriteData(permissionState, existing.exclusiveSold, body.restrictionNotes)
+    const nextLicenseType =
+      commercialUploader && requested === 'commercial' ? 'premium' : existing.licenseType
+    const libraryTier = resolveLibraryTierForWrite({
+      licenseType: nextLicenseType as 'free' | 'premium',
+      permissionState: permission.permissionState,
+    })
     await prisma.photo.update({
       where: { id },
       data: {
@@ -571,7 +584,8 @@ export async function modelUploadRoutes(app: FastifyInstance) {
         ...(body.description !== undefined ? { description: body.description } : {}),
         ...(body.category ? { category: body.category } : {}),
         ...(body.country ? { country: body.country } : {}),
-        licenseType: commercialUploader && requested === 'commercial' ? 'premium' : existing.licenseType,
+        libraryTier,
+        licenseType: nextLicenseType,
         ...permission,
       },
     })

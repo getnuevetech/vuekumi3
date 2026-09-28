@@ -1,5 +1,6 @@
-/** Paid-licence split. Free-collection RF grants are $0 and are not part of this split.
- *  Phase 24: models do not earn. Photographer/model/platform split is still undecided. */
+/** Paid-licence split derived from RevenuePolicy creator-pool rule (not a permanent rate lock).
+ *  Free-collection RF grants are $0 and are not part of this split.
+ *  Model % (T5) is of the Contributor Distributable Share after this split. */
 export function paidLicenceSplit(contributorShare: number): {
   photographerPct: number
   platformPct: number
