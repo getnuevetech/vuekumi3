@@ -135,12 +135,16 @@ async function main() {
         accountType: ph.creatorKind === 'photo_influencer' ? 'photo_influencer' : 'photographer',
         country: ({ Nigeria: 'NG', 'South Africa': 'ZA', Ghana: 'GH', Ethiopia: 'ET', Kenya: 'KE' } as Record<string, string>)[ph.location.split(', ').pop() ?? ''] ?? 'NG',
         avatarUrl: ph.avatar,
+        phoneCountryCode: '+234',
+        phone: `801${String(Math.abs(ph.handle.length * 97_531) % 10_000_000).padStart(7, '0')}`,
+        bio: `${ph.name} — VueKumi creator.`,
         emailVerifiedAt: new Date(),
         contributorProfile: {
           create: {
             handle: ph.handle,
             creatorKind: ph.creatorKind ?? 'photographer',
             location: ph.location,
+            bio: `${ph.name} — VueKumi creator.`,
             photosCount: ph.photos,
             downloads: ph.downloads,
             earnings: ph.earnings,
@@ -1060,6 +1064,22 @@ async function main() {
       data: { firstName: parts.firstName, lastName: parts.lastName },
     })
   }
+
+  // Align library tier with license / permission (seed creates use schema defaults).
+  await prisma.$executeRaw`
+    UPDATE "Photo" SET "libraryTier" = 'LICENSED' WHERE "licenseType" = 'premium'`
+  await prisma.$executeRaw`
+    UPDATE "Photo" SET "libraryTier" = 'EDITORIAL' WHERE "permissionState" = 'editorial'`
+  await prisma.$executeRaw`
+    UPDATE "Photo" SET "libraryTier" = 'PRIVATE'
+    WHERE "permissionState" IN ('private', 'portfolio')`
+  await prisma.$executeRaw`
+    UPDATE "Photo" SET "libraryTier" = 'OPEN'
+    WHERE "licenseType" = 'free' AND "permissionState" NOT IN ('editorial', 'private', 'portfolio')`
+  await prisma.$executeRaw`
+    UPDATE "Photo" SET "commercialStatus" = 'BLOCKED' WHERE "commercialLocked" = true`
+  await prisma.$executeRaw`
+    UPDATE "Photo" SET "commercialStatus" = 'ENABLED' WHERE "commercialLocked" = false`
 
   console.log('Seed complete.')
   console.log('Admin: admin@vuekumi.com / Admin123!')

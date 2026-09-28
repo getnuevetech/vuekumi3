@@ -67,6 +67,22 @@ enum LicenseType {
   premium
 }
 
+/// Marketplace placement (orthogonal to rights clearance and commercial lock).
+enum LibraryTier {
+  OPEN
+  LICENSED
+  VERIFIED_PLUS
+  EDITORIAL
+  PRIVATE
+}
+
+/// Commercial licensing gate (orthogonal to library tier).
+enum CommercialStatus {
+  ENABLED
+  BLOCKED
+  SUSPENDED
+}
+
 enum GrantLicenseType {
   royalty_free
   commercial
@@ -336,6 +352,53 @@ model ShareFormula {
 
   @@unique([scope, groupKey])
   @@index([scope])
+}
+
+/// Versioned platform / creator-pool allocation rules. Transactions stamp which policy applied.
+model RevenuePolicy {
+  id                 String   @id @default(cuid())
+  policyId           String
+  version            Int
+  effectiveFrom      DateTime @default(now())
+  effectiveTo        DateTime?
+  /// Fraction of net collected license revenue kept by the platform (0–1).
+  platformShareRule  Float    @default(0.5)
+  /// Fraction of net collected license revenue forming the creator/contributor pool (0–1).
+  creatorPoolRule    Float    @default(0.5)
+  refundRule         String   @default("net_after_refunds")
+  taxRule            String   @default("exclude_vat_from_base")
+  processingFeeRule  String   @default("before_recipient_fees")
+  licenseType        String   @default("all")
+  current            Boolean  @default(false)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([policyId, version])
+  @@index([current])
+  @@index([effectiveFrom])
+}
+
+/// Anonymous VueKumi Open download audit trail (no login required; license version stamped).
+model OpenDownloadEvent {
+  id                  String   @id @default(cuid())
+  imageId             String
+  imageVersion        String?
+  openLicenseVersion  String
+  downloadedAt        DateTime @default(now())
+  fileVariant         String   @default("preview")
+  source              String?
+  referrer            String?
+  countryRegion       String?
+  anonymousSessionId  String?
+  ipHash              String?
+
+  photo Photo @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@index([imageId])
+  @@index([downloadedAt])
+  @@index([openLicenseVersion])
+  @@index([anonymousSessionId])
 }
 
 model PartnerApiKey {
@@ -620,6 +683,10 @@ model Photo {
   category              String
   country               String
   licenseType           LicenseType @default(free)
+  /// Imagery Concept v2 — marketplace placement (Open / Licensed / …).
+  libraryTier           LibraryTier @default(OPEN)
+  /// Imagery Concept v2 — commercial licensing gate (separate from library tier).
+  commercialStatus      CommercialStatus @default(ENABLED)
   price                 Float       @default(0)
   status                PhotoStatus @default(active)
   src                   String
@@ -695,8 +762,11 @@ model Photo {
   @@index([uploadedById])
   @@index([commercialLocked])
   @@index([permissionState])
+  @@index([libraryTier])
+  @@index([commercialStatus])
   @@index([shootId])
   @@index([contentHash])
+  openDownloadEvents OpenDownloadEvent[]
 }
 
 model HomeFeaturedPin {
@@ -1240,6 +1310,10 @@ model LicenseGrant {
   certificateCode   String           @unique
   agreementKind     String?
   agreementVersion  String?
+  revenuePolicyId      String?
+  revenuePolicyVersion Int?
+  platformShareUsd     Float?
+  creatorPoolUsd       Float?
   createdAt         DateTime         @default(now())
 
   buyer   User           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
@@ -1339,6 +1413,8 @@ model EarningsLedger {
   status        String   @default("available")
   holdReason    String?
   heldAt        DateTime?
+  revenuePolicyId      String?
+  revenuePolicyVersion Int?
   createdAt     DateTime @default(now())
 
   contributor User     @relation("ContributorEarnings", fields: [contributorId], references: [id], onDelete: Cascade)

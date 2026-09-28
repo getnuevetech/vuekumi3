@@ -111,6 +111,9 @@ export interface PhotoDto {
   photographerAvatar?: string | null
   photographerLocation?: string | null
   license: LicenseType
+  libraryTier?: import('./library-tiers.js').LibraryTier
+  commercialStatus?: import('./library-tiers.js').CommercialStatus
+  rightsStatus?: import('./library-tiers.js').RightsStatus
   price: number
   downloads: number
   views: number
@@ -169,6 +172,10 @@ export interface LicenseGrantDto {
   buyerEmail?: string
   agreementKind?: string
   agreementVersion?: string
+  revenuePolicyId?: string
+  revenuePolicyVersion?: number
+  platformShareUsd?: number
+  creatorPoolUsd?: number
 }
 
 export interface LicenseQuoteDto {

@@ -45,6 +45,7 @@ import {
   type CreationClaim,
 } from '@vuekumi/shared'
 import { CURRENT_AGREEMENT_VERSION } from '../data/licenses.js'
+import { photoRightsStatus } from './library-tiers.js'
 import { isLicenseOffered, priceForProduct, rightsReadyForLive, twoPartyLicenseBlock } from './rights.js'
 import { displayPlan, displayQuota } from './subscriptions.js'
 
@@ -317,6 +318,20 @@ export function serializePhoto(
     photographerAvatar: contributor?.avatarUrl ?? null,
     photographerLocation: contributor?.contributorProfile?.location ?? null,
     license: photo.licenseType,
+    libraryTier: photo.libraryTier,
+    commercialStatus: photo.commercialStatus,
+    rightsStatus: photoRightsStatus({
+      copyrightStatus: photo.rightsRecord?.copyrightStatus,
+      modelConsentStatus: photo.rightsRecord?.modelConsentStatus,
+      commercialLocked: photo.commercialLocked,
+      creationClaim: photo.creationClaim,
+      appearances: (photo.appearances ?? extras?.appearances ?? []).map((row) => ({
+        status: row.status,
+        selfShot: Boolean((row as { selfShot?: boolean }).selfShot),
+        ageBand: (row as { ageBand?: string | null }).ageBand ?? null,
+      })),
+      copyrightCommercialScope,
+    }),
     price: photo.price,
     downloads: photo.downloads,
     views: photo.views,
@@ -427,6 +442,10 @@ export function serializeGrant(
     buyerEmail: grant.buyer?.email,
     agreementKind: (grant as { agreementKind?: string | null }).agreementKind ?? undefined,
     agreementVersion: (grant as { agreementVersion?: string | null }).agreementVersion ?? undefined,
+    revenuePolicyId: (grant as { revenuePolicyId?: string | null }).revenuePolicyId ?? undefined,
+    revenuePolicyVersion: (grant as { revenuePolicyVersion?: number | null }).revenuePolicyVersion ?? undefined,
+    platformShareUsd: (grant as { platformShareUsd?: number | null }).platformShareUsd ?? undefined,
+    creatorPoolUsd: (grant as { creatorPoolUsd?: number | null }).creatorPoolUsd ?? undefined,
   }
 }
 

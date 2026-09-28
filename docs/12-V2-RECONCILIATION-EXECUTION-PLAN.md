@@ -1,7 +1,7 @@
 # VueKumi — Imagery Concept v2.0 reconciliation execution plan
 
-**Status: approved product direction for planning. Implement as numbered
-slices only after explicit build approval for each P0/P1 item.** Companion to
+**Status: P0 reconciliation foundation implemented (schema + allocation path + Open
+downloads + library tiers). Remaining P1+ items stay deferred.** Companion to
 [`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md)
 (Sep 28 repo review) and [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md)
 (product phases). Decision blanks updated in
