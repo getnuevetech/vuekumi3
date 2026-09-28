@@ -130,8 +130,8 @@ Dec-PayBase → Dec-Split → Dec-Fee → Dec-Bio → Dec-AI.
 | **Shipped today** | AU 54-state list on signup; birthplace/ethnicity/appearance not used. No ACTIVE-country gate yet. |
 | **Options (pick one)** | (A) Keep AU list only until first pilot ACTIVE. (B) Verified residence in ACTIVE country. (C) Principal creator-business base in ACTIVE country. (D) Other — **write evidence + review cadence**. |
 | **Unblocks** | PDS `contributor.create`; P0 signup enforcement ([`08`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md)) |
-| **Chosen** | _pending_ |
-| **Signed by / date** | |
+| **Chosen** | **LOCKED (v2.0 reconciliation):** A contributor must have a verified primary residence **or** qualifying creator/business base in an **ACTIVE** African country. Ancestry/nationality alone is insufficient. HOLD countries → contributor **waitlist** (activation blocked); SUSPENDED → no new onboarding; non-African → buyer + rights-holder verification allowed, not Africa-qualified contributor. See [`12`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md). |
+| **Signed by / date** | Product direction Sep 2026 (Imagery Concept v2.0 reconciliation) |
 
 ### Dec-PayBase — likeness %-share payment base
 
@@ -141,8 +141,8 @@ Dec-PayBase → Dec-Split → Dec-Fee → Dec-Bio → Dec-AI.
 | **Shipped today** | No model earnings; photographer 50% of paid licence revenue to ledger. |
 | **Options (pick one)** | (A) Customer paid licence price (pre-platform cut). (B) Photographer distributable share only (after platform cut). (C) Net after refunds/chargebacks on a defined window. (D) Other — **write one sentence**. |
 | **Unblocks** | Compensation negotiation ledger math (plan T5/T6 in [`07`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)) |
-| **Chosen** | _pending_ |
-| **Signed by / date** | |
+| **Chosen** | **LOCKED (D / Contributor Distributable Share):** Model % is calculated from the **Contributor Distributable Share** after applicable VueKumi platform share (per stamped `RevenuePolicy` version) and transaction reversals/refunds, **before** recipient tax withholding, withdrawal fees, or FX/payout charges. Net Collected License Revenue = Customer License Price − VAT (where applicable) − refunds/chargebacks. See [`12`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md). |
+| **Signed by / date** | Product direction Sep 2026 (Imagery Concept v2.0 reconciliation) |
 
 ### Dec-Split — model party-to-sale revenue (reframed)
 
@@ -152,8 +152,8 @@ Dec-PayBase → Dec-Split → Dec-Fee → Dec-Bio → Dec-AI.
 | **Shipped today** | Models **do not earn**. Photographer **50%** of paid licences; platform 50%. Ledger unchanged. |
 | **Options (pick one)** | (A) Adopt negotiation rule from [`07`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md) §3–5; no default %. (B) Negotiation + optional preset chips (list them). (C) Confirm models never earn (reject memo compensation path). |
 | **Unblocks** | T5/T6 build approval, marketing honesty |
-| **Chosen** | _pending_ |
-| **Signed by / date** | |
+| **Chosen** | **LOCKED (A + platform-share separation):** Ordinary model allocations come from the **creator/contributor pool**; platform share stays separately stated. Negotiation (%, fixed, combo, or zero) with commercial locked until both agree. Sponsored/brand-paid/enterprise model fees must be specifically funded exceptions. Buyer certificates show clearance only — **not** creator economics. Replace hardcoded 50/50 with versioned `RevenuePolicy` before T6. See [`12`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md). |
+| **Signed by / date** | Product direction Sep 2026 (Imagery Concept v2.0 reconciliation) |
 
 ### Dec-Fee — booking / production / representation commission
 
@@ -174,8 +174,8 @@ Dec-PayBase → Dec-Split → Dec-Fee → Dec-Bio → Dec-AI.
 | **Shipped today** | Phase 28: voluntary check, **result only**, selfie discarded immediately; OpenAI vision when configured. Similarity ≠ release. No public face DB. |
 | **Options (pick one)** | (A) Confirm discard-forever + current vision path. (B) Named vendor + retention days (both required). (C) Disable Stage 3 until counsel signs a vendor. |
 | **Unblocks** | Phase 28 hardening / vendor swap / embedding store |
-| **Chosen** | _pending_ |
-| **Signed by / date** | |
+| **Chosen** | **LOCKED (provider-agnostic Stage 3, prod OFF):** Build Stage 3 provider-agnostically; keep verification **disabled in production** until approved identity provider, DPA, biometric consent flow, and vendor-retention schedule are signed. VueKumi will **not** maintain persistent face templates or biometric search databases. Raw verification imagery is not retained beyond the verification transaction except where law requires. Retain evidence fields only (`verification_id`, vendor, `verified_person_id`, timestamp, result, review status, consent version, document country/type, subject match, related image IDs). Chain: ID → liveness → identity; then subject match; then consent — face match ≠ commercial consent. Not avatar-based. See [`12`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md). |
+| **Signed by / date** | Product direction Sep 2026 (Imagery Concept v2.0 reconciliation) |
 
 ### Dec-AI — dataset pricing / sell training access
 
@@ -193,10 +193,14 @@ Dec-PayBase → Dec-Split → Dec-Fee → Dec-Bio → Dec-AI.
 After the meeting, paste Chosen + signer into this file (or link a counsel memo)
 and only then promote related Track E / Trust & Markets work into
 [`01-IMPLEMENTATION-PLAN.md`](./01-IMPLEMENTATION-PLAN.md) as a numbered phase.
-Until then, keep 50/50 photographer ledger, zero booking/campaign/representation
-fees, discard-selfie Stage 3, and VueQuatro as staff mode in product UI and
-marketing — unless Dec-Split option (A) from [`07`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)
-is signed, in which case negotiation may be scheduled without inventing a %.
+
+**Locked Sep 2026 (Imagery Concept v2.0 reconciliation):** Dec-Bio, Dec-PayBase,
+Dec-Split, Dec-AfricaElig — see [`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md).
+Still pending: Dec-VQ, Dec-Fee, Dec-AI. Engineering may proceed on T5 architecture,
+provider-neutral Phase 60 schema (flag OFF), T8 ACTIVE/waitlist, and
+`RevenuePolicy` refactor per that plan. Do **not** invent a permanent platform
+commission rate; do **not** activate biometrics in production without vendor/DPA/counsel;
+keep zero booking/campaign/representation fees and VueQuatro staff mode until Dec-Fee / Dec-VQ.
 
 ---
 

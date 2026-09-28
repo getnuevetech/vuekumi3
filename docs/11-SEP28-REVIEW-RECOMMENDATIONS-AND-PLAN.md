@@ -1,17 +1,21 @@
 # VueKumi — Sep 28 review recommendations and execution plan
 
-**Status: recommendations + sequenced plan only. Do not start a numbered
-product phase from this document until explicitly approved.** Companion to
-[`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md) (product
-phases blocked on Dec-*) and [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md)
-(ops + decision blanks).
+**Status: historical Sep 28 recommendations.** For **current** sequencing after
+Imagery Concept v2.0 product direction, use
+[`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)
+(reconciliation release: H1 → H3 → RevenuePolicy → Photo Influencer / tiers /
+Open / Rights, then P1 T5 / Phase 60 flag-off / T8 / H4 / H5).
+
+Companion to [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md)
+and [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md)
+(Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig now locked in `06` + `12`).
 
 Reviewed against `main` at `aad1a01` (homepage typography / secondary text).
 Phases 0–65 are on `main`. This note does **not** reopen T1, P0, or Phases
 62–65.
 
-**Do not invent** Dec-Bio, Dec-PayBase, Dec-AfricaElig, Dec-Split, Dec-Fee,
-Dec-VQ, Dec-AI, launch countries, or counsel DMCA copy.
+**Still do not invent** Dec-Fee, Dec-VQ, Dec-AI, permanent commission rates,
+launch countries, or counsel DMCA copy.
 
 ---
 
