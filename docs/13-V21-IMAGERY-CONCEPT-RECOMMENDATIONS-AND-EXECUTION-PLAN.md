@@ -1,6 +1,6 @@
 # VueKumi Imagery Concept v2.1 — recommendations & execution plan
 
-**Status: R1–R8 ADOPTED (28 Sep 2026). Dec-FreeLib A + Dec-TierMap + Dec-Upgrade locked. FC0–FC2 / V21-P2 execute next.**  
+**Status: R1–R8 + FC0–FC2 + V21-P2 SHIPPED (28 Sep 2026).** Dec-FreeLib A + Dec-TierMap + Dec-Upgrade locked. Remaining work is **V21-Gated** (finance / counsel / vendor / Dec-Fee / Dec-AI) — do not invent.  
 Source: *VueKumi Imagery Platform — Full Product, Content, Rights & Commercial Concept* v2.1 (September 2026), plus product direction 28 Sep 2026.  
 Does **not** restart shipped rights/Open/Licensed/Verified+ engineering from [`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md).
 
@@ -31,7 +31,7 @@ Recorded from product:
 
 **Dec-RolePay (partial):** Photo Influencer stays free forever. Paid-role hard gates for Photographer/Model/Buyer deferred; soft honesty first.
 
-**R1–R8:** **ADOPTED** — see §2. Engineering foundations for Dec-TierMap / Free Library label ship with R1–R8 execution; FC0–FC2 / V21-P2 continue the build.
+**R1–R8:** **SHIPPED** — see §2. Dec-TierMap / Free Library label foundations on `main`. **FC0–FC2 / V21-P2** also shipped; next is gated activation only.
 
 ---
 
@@ -45,17 +45,17 @@ The **real delta** is Free Library program clarity for Photo Influencers + upgra
 
 | v2.1 / product concept | Current product (`main`) |
 | --- | --- |
-| Free identity for free library uploads | **`photo_influencer` shipped** — keep name; confirm no plan gate |
-| **Free Library** (influencer-only upload target) | `OPEN` tier + Open download shipped; **public “Free Library” label + hard upload lock missing** |
-| Paid Contributor / Photographer / Model / Buyer | Plans exist; roles **not** hard-gated on paid subscription |
-| Upgrade free → paid role same verified identity | Phase 29: photo influencer **cannot** convert on same email |
-| Monitor Free Library quality | Partial (approval/quarantine); **criteria + influencer-only queue UX missing** |
-| AI enhance low-resolution Free Library uploads | Phase 62 remediation **shipped**; **not wired as Free Library upload gate** |
+| Free identity for free library uploads | **`photo_influencer` shipped** — free; no plan gate |
+| **Free Library** (influencer-only upload target) | **Shipped** — `OPEN` + Free Library label + Dec-TierMap upload lock |
+| Paid Contributor / Photographer / Model / Buyer | Plans exist; paid-role hard subscription gates **deferred** (Dec-RolePay) |
+| Upgrade free → paid role same verified identity | **Shipped** — `POST /api/account/upgrade` (FC2) |
+| Monitor Free Library quality | **Shipped** — admin Free Library filter + criteria in `14` |
+| AI enhance low-resolution Free Library uploads | **Shipped** — `enhanceLowResolution` on Free Library upload |
 | Image-level Open / Licensed / Verified+ / Editorial | **Shipped** |
 | No-login Open download; guest paid checkout | **Shipped** |
 | Model compensation from Contributor Distributable Share | Engine + UI + ledger **shipped**; withdrawal flag OFF |
 
-**Recommendation:** Keep Photo Influencer; ship Free Library (label + upload lock + moderation + AI low-res enhance) as **FC1**. Treat `12` as rights/economics technical authority. Do not invent fees, Bio vendors, or entity names.
+**Recommendation:** Ungated Free Library / upgrade / V21-P2 depth is on `main`. Treat `12` as rights/economics technical authority. Do not invent fees, Bio vendors, or entity names.
 
 ---
 
@@ -107,9 +107,9 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 | Concept | Status |
 | --- | --- |
 | Public search / browse | **Shipped** |
-| VueKumi Open + anonymous download + events | **Shipped** (`OPEN`) |
-| Photographer/Contributor **paid-tiers-only** upload lock | **Shipped** (R1–R8 foundations; coerce + reject Free Library) |
-| **Free Library** public label (`OPEN`) + PI-only free tier | **Shipped** label + upload coerce; nav/moderation/AI remain FC1 |
+| VueKumi Open + anonymous download + events | **Shipped** (`OPEN` / Free Library) |
+| Photographer/Contributor **paid-tiers-only** upload lock | **Shipped** |
+| **Free Library** public label (`OPEN`) + PI-only free tier | **Shipped** (R1–R8 + FC1) |
 | Paid Licensed + guest checkout | **Shipped** |
 | Africa contributor eligibility + HOLD waitlist | **Shipped** (P1-T8) |
 | AI person detection + rights workflow | **Shipped** |
@@ -117,14 +117,14 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 | Compensation negotiation + Open interaction | **Shipped** (P1-T5) |
 | USD ledger + model likeness lines | **Shipped**; withdrawal **flag OFF** |
 | Public report / DMCA / disputes | **Shipped**; T3 counsel paste pending |
-| Free Library **criteria moderation** queue | **Partial** — need influencer Free Library review SOP/UI |
-| **AI enhance low-res** on Free Library upload | **Partial** — Phase 62 exists; wire as upload gate |
-| Photo Influencer no-subscription | **Intent locked**; audit plans UI so influencers are never upsold as required |
-| Free → paid same-email upgrade | **Dec-Upgrade locked** — implement FC2 |
+| Free Library **criteria moderation** queue | **Shipped** — admin filter + `14` criteria; deeper SOP optional |
+| **AI enhance low-res** on Free Library upload | **Shipped** (FC1) |
+| Photo Influencer no-subscription | **Shipped** / locked |
+| Free → paid same-email upgrade | **Shipped** (FC2) |
 | Paid-role subscription gating | **Deferred** (Dec-RolePay); PI excluded |
-| Verified+ merchandising | **Foundation shipped** (no indemnity SKU) |
-| Opportunity / Brand / Hire / Partner API | **Foundations**; depth = V21-P2 |
-| Tips/donations / enterprise SKUs | **Later** |
+| Verified+ merchandising | **Shipped** polish (no indemnity SKU) |
+| Opportunity / Brand / Hire / Partner API | **Shipped** foundations + V21-P2 depth |
+| Tips/donations / enterprise SKUs | **Later** (Phase 3 / Dec-Fee) |
 
 ---
 
@@ -135,7 +135,7 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 | **Dec-FC** | Photo Influencer vs “Free Contributor” naming | **Locked:** keep Photo Influencer; free; no subscription |
 | **Dec-TierMap** | Who uploads free vs paid tiers | **Locked:** PI → Free Library only; Photographer + Contributor → paid tiers only |
 | **Dec-FreeLib** | Free Library = `OPEN` label vs new enum | **Locked (A):** Free Library = public name for `OPEN` |
-| **Dec-Upgrade** | Same-email upgrade PI → Photographer/Contributor/Model | **Locked:** allow with audit + agreements; implement FC2 |
+| **Dec-Upgrade** | Same-email upgrade PI → Photographer/Contributor/Model | **Locked + shipped** (FC2) |
 | **Dec-RolePay** | Paid roles behind plan? | PI excluded (**locked**); others deferred |
 | **Dec-Fee** | Hire / Brand / representation fees | Undecided — no rails |
 | **Dec-VQ** | VueQuatro entity vs staff mode | Pending |
@@ -215,12 +215,12 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 
 ## 6. Suggested immediate build order
 
-1. Lock **Dec-FreeLib** (A recommended: Free Library = `OPEN` label).  
-2. Approve **FC0-3** Free Library criteria (resolution floor + content rules).  
-3. Ship **FC1-1..7** (copy, Free Library nav, upload lock, moderation, AI low-res).  
-4. **Approve Dec-Upgrade** → **FC2**.  
-5. **V21-P2-1** Opportunity → briefs; **V21-P2-4** Buyer plan honesty.  
-6. Hold RolePay hard gates (except PI already free), fees, indemnity, Bio vendor activation.
+1. ~~Lock **Dec-FreeLib** (A: Free Library = `OPEN` label).~~ **Done**  
+2. ~~Approve **FC0-3** Free Library criteria.~~ **Done** (`14`)  
+3. ~~Ship **FC1-1..7**.~~ **Done**  
+4. ~~**Approve Dec-Upgrade** → **FC2**.~~ **Done**  
+5. ~~**V21-P2** briefs / Brand / Hire / Buyer honesty / Verified+ polish.~~ **Done**  
+6. **Hold** RolePay hard gates (except PI already free), fees, indemnity, Bio vendor activation — wait for owners in §5 V21-Gated.
 
 ---
 
@@ -229,7 +229,7 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 | Spec v2.1 phase | Engineering reality |
 | --- | --- |
 | Phase 1 — Core marketplace | **Largely shipped**; Free Library program = FC1 delta |
-| Phase 2 — Demand & creator economy | **Foundations shipped**; depth = FC1 remainder + V21-P2 |
+| Phase 2 — Demand & creator economy | **Shipped** foundations + FC1 + V21-P2 depth |
 | Phase 3 — Distribution & enterprise | Partner API foundation only; enterprise/API SKUs later |
 
 ---
@@ -265,4 +265,4 @@ Do not commission all eight Spec §24 docs before FC0 criteria + Dec-FreeLib loc
 | **`01` / `10`** | Historical phase log — update Free Library when FC1 ships |
 | **`06`** | Record Dec-FC (locked), Dec-FreeLib, Dec-Upgrade, Dec-RolePay |
 
-**Immediate ask:** FC0 criteria one-pager + FC1 moderation/AI/nav. Tier map foundations shipped with R1–R8.
+**Immediate ask:** none for ungated FC / V21-P2. Next product moves need owners from §5 V21-Gated (Dec-Fee, counsel T3, finance withdrawal, Bio vendor, Dec-AI).
