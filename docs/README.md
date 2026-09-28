@@ -2,15 +2,13 @@
 
 Read in this order:
 
-0. **[12-V2-RECONCILIATION-EXECUTION-PLAN.md](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)** —
-   **current next-build track.** Imagery Concept v2.0 reconciliation: locked
-   Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig; P0 foundation (H1, H3,
-   RevenuePolicy, Photo Influencer + library tiers, Open download events, Rights
-   alignment); then P1 (T5, Phase 60 schema flag-off, T8 waitlist **shipped**, H4 React Query
-   **shipped**, H5 Playwright invariants **shipped**); P2-VP Verified+ surface **shipped**;
-   P2-T6 model ledger lines **shipped** (payout withdrawal still finance-gated);
-   guest paid checkout **shipped**. Do
-   **not** implement full v2 UI before this foundation.
+0. **[13-JOBPILOT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md](./13-JOBPILOT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)** —
+   **JobPilot (AI Job Application Manager)** recommendations + JP0–JP3 execution
+   plan from Spec v1.2. Separate product from VueKumi; plan-only until Dec-JP-* approved.
+1. **[12-V2-RECONCILIATION-EXECUTION-PLAN.md](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)** —
+   **VueKumi current next-build track.** Imagery Concept v2.0 reconciliation: locked
+   Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig; P0–P2 foundations largely shipped;
+   remaining activation is finance/counsel/vendor-gated.
 1. **[11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md)** —
    Sep 28 repo/app review (ops, hygiene, gated product). Sequencing for product
    foundation is superseded by **[12](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)**.
