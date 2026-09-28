@@ -58,6 +58,11 @@ export default function DmcaPage() {
         {page && (
           <div className="mt-8 space-y-3 rounded-2xl border border-sand-soft bg-white p-5 text-sm">
             <p className="font-mono-tech text-[10px] uppercase tracking-[0.16em] text-ink-faint">Designated agent</p>
+            {page.counselPending && (
+              <p className="font-mono-tech text-[10px] text-terra">
+                Counsel-pending — Admin Settings → DMCA. This is not a Copyright Office registration.
+              </p>
+            )}
             <p className="font-medium">{page.agent.name}</p>
             <p className="text-ink-soft">{page.agent.address}</p>
             <p className="text-ink-soft">{page.agent.email}{page.agent.phone ? ` · ${page.agent.phone}` : ''}</p>

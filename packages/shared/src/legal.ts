@@ -109,6 +109,35 @@ export interface LegalOverlayDto {
   lawLabel: string | null
 }
 
+/** Counsel-fillable operator / entity fields. Placeholders until counsel pastes real values. */
+export const DEFAULT_LEGAL_OPERATOR = {
+  operatorDisplayName: 'Counsel sets the contracting display name',
+  entityLegalName: 'Counsel sets the legal entity name',
+  entityJurisdiction: 'Counsel sets jurisdiction (e.g. state of incorporation)',
+  principalAddress: 'Counsel sets the principal business address',
+  publicContactEmail: 'legal@vuekumi.com',
+} as const
+
+export interface LegalOperatorDto {
+  operatorDisplayName: string
+  entityLegalName: string
+  entityJurisdiction: string
+  principalAddress: string
+  publicContactEmail: string
+  /** True while any field still reads as a counsel-pending placeholder. */
+  counselPending: boolean
+}
+
+export function legalOperatorIsCounselPending(op: Omit<LegalOperatorDto, 'counselPending'>): boolean {
+  const values = [
+    op.operatorDisplayName,
+    op.entityLegalName,
+    op.entityJurisdiction,
+    op.principalAddress,
+  ]
+  return values.some((v) => v.trim().toLowerCase().includes('counsel sets'))
+}
+
 export interface LegalStandardDto {
   name: string
   contractingNote: string
@@ -119,6 +148,8 @@ export interface LegalStandardDto {
   rightsClearanceContactCopy: string
   withdrawal: ReturnType<typeof consentWithdrawalEffect>
   aiTraining: ReturnType<typeof aiTrainingProductRules>
+  /** Public contracting / entity block from Admin Settings (Legal group). */
+  operator: LegalOperatorDto
 }
 
 export const patchLegalOverlaySchema = z.object({

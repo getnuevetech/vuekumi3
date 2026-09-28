@@ -277,10 +277,18 @@ test('public DMCA page is copyright-only and lists the designated agent', async 
   const app = await buildApp()
   const res = await app.inject({ method: 'GET', url: '/api/dmca' })
   assert.equal(res.statusCode, 200, res.body)
-  const body = res.json() as { scope: string; agent: { email: string }; policy: string; copyrightOfficeNote: string }
+  const body = res.json() as {
+    scope: string
+    agent: { email: string; name: string }
+    policy: string
+    copyrightOfficeNote: string
+    counselPending: boolean
+  }
   assert.equal(body.scope, 'copyright')
   assert.ok(body.agent.email)
   assert.match(body.policy, /fake model release/)
   assert.match(body.copyrightOfficeNote, /Copyright Office/)
+  assert.match(body.copyrightOfficeNote, /does not file that registration/)
+  assert.equal(body.counselPending, true)
   await app.close()
 })

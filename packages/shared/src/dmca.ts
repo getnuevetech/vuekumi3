@@ -43,10 +43,27 @@ export const EARNINGS_LEDGER_STATUSES = ['available', 'reserved', 'paid', 'held'
 export type EarningsLedgerStatus = (typeof EARNINGS_LEDGER_STATUSES)[number]
 
 export const DEFAULT_DMCA_AGENT = {
-  name: 'VueKumi DMCA Agent',
-  address: 'Designated agent address is set in Admin Settings. Copyright Office filing is ops/counsel.',
+  name: 'Counsel sets the designated agent name',
+  address: 'Counsel sets the designated agent street address. Copyright Office filing is ops/counsel.',
   email: 'dmca@vuekumi.com',
   phone: '',
+}
+
+/** True when agent fields still read as counsel-pending placeholders (not a filed agent). */
+export function dmcaAgentIsCounselPending(agent: {
+  name: string
+  address: string
+}): boolean {
+  const name = agent.name.trim().toLowerCase()
+  const address = agent.address.trim().toLowerCase()
+  return (
+    name.includes('counsel sets') ||
+    name === 'vuekumi dmca agent' || // legacy seed placeholder — not a filed agent
+    name === DEFAULT_DMCA_AGENT.name.toLowerCase() ||
+    address.includes('counsel sets') ||
+    address.includes('ops/counsel') ||
+    address.includes('set in admin settings')
+  )
 }
 
 export const DEFAULT_REPEAT_INFRINGER_THRESHOLD = 3
@@ -128,6 +145,8 @@ export interface DmcaPublicPageDto {
   counterWaitDays: number
   repeatInfringerThreshold: number
   copyrightOfficeNote: string
+  /** True while agent fields still read as counsel-pending placeholders. */
+  counselPending: boolean
 }
 
 export interface DmcaCounterNoticeDto {

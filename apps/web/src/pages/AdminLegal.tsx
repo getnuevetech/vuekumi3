@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import type { LegalOverlayDto } from '@vuekumi/shared'
 import { StatusPill } from '../components/shared'
@@ -26,6 +27,11 @@ export function AdminLegal() {
       <p className="mt-1 text-sm text-ink-soft">
         Priority countries get a named law label. The rest of Africa uses the standard overlay plus an extra notice.
         Buyer markets stay non-creator. Stage 3 biometric identification is forbidden. Counsel still owns the signed sentences.
+      </p>
+      <p className="mt-3 text-sm text-ink-soft">
+        Contracting entity and DMCA designated agent live in{' '}
+        <Link to="/admin/settings" className="text-terra">Admin Settings</Link>
+        {' '}(Legal + DMCA groups). Public pages reflect those values; Copyright Office filing stays ops/counsel.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">

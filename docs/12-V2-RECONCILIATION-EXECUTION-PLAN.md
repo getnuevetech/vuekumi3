@@ -92,7 +92,7 @@ and nonmember rights holders remain allowed.
 | **Phase 60** | Correctly blocked from *activation* | Build provider-agnostic schema/API; feature flag OFF until vendor/DPA/counsel |
 | **T5** | Can proceed with Dec-PayBase locked | Build negotiation; add Open eligibility rule (zero-price rights required) |
 | **T6** | Ledger now; defer payout rails | Write model `EarningsLedger` lines from Dec-PayBase on grant; certificates must **not** show model economics; withdrawal rails stay finance-gated |
-| **T3** | Correct | Finalize public legal copy + registered agent; engine stays |
+| **T3** | Correct | Finalize public legal copy + registered agent; engine stays — **foundation shipped** (settings + public surfaces); counsel-complete still blocked |
 | **T8** | Structure OK; signup wrong for v2 | HOLD → waitlist (not full contributor); ACTIVE required to activate |
 | **T9** | Correct | Keep country overlays separate from person/entity sanctions screening |
 | **H3** | No longer low priority | Split before adding v2 features |
@@ -228,7 +228,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | **P2-BS** | Brand Studio foundation — **shipped** (`BrandProject` workspace for buyers/agencies; link campaign + lightboxes; `/brand` hub; no production fees / no licence-on-attach) |
 | **P2-HE** | Hire expansion foundation — **shipped** (availability/`hireable` list filters; `/hire` talent browse; Creators + PhotoDetail CTAs into Phase 30 booking; no commission/rails) |
 | **Guest checkout** | **Shipped** — paid licences via guest email (passwordless `user` session); free RF still requires account |
-| **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy |
+| **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy — **foundation shipped** (Admin Settings Legal + DMCA groups; `/legal` contracting entity block; `/dmca` counsel-pending marker; no invented entity or Copyright Office claim). **Counsel-complete still blocked** (real entity name, filed agent, signed public copy). |
 | **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject |
 
 ---

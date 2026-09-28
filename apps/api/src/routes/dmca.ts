@@ -4,6 +4,7 @@ import {
   createDmcaNoticeSchema,
   createRightsStrikeSchema,
   decideDmcaNoticeSchema,
+  dmcaAgentIsCounselPending,
   REPEAT_INFRINGER_POLICY,
 } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
@@ -41,6 +42,7 @@ export async function dmcaRoutes(app: FastifyInstance) {
       policy: REPEAT_INFRINGER_POLICY,
       counterWaitDays: settings.counterWaitDays,
       repeatInfringerThreshold: settings.repeatInfringerThreshold,
+      counselPending: dmcaAgentIsCounselPending(settings.agent),
       copyrightOfficeNote:
         'The designated agent identity below is shown for notices. Registering that agent with the U.S. Copyright Office is an operations and counsel task. This page does not file that registration.',
     }
