@@ -25,8 +25,8 @@ Read in this order:
 5. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
    shipped Phases 0–65 (Arcs A–D complete; through Phase 65 / model-upload prompt parity).
    Default next work: **[13](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)**
-   Free Contributor track after Dec-FC; technical gates stay in **[12](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)**.
-   Do not restart shipped T1/P0 work from older memos.
+   Free Library / Photo Influencer track after Dec-FreeLib; technical gates stay in
+   **[12](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)**. Do not restart shipped T1/P0 work.
 6. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail
    redeploy). Prefer **[13](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)** /
@@ -34,8 +34,8 @@ Read in this order:
    to start work without approval.
 7. **[06-OPS-INVENTORY-AND-DECISION-BRIEF.md](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md)** —
    O0 live probe and Dec-* workshop. **Locked:** Dec-Bio, Dec-PayBase, Dec-Split,
-   Dec-AfricaElig (see `12`). Still pending: Dec-VQ, Dec-Fee, Dec-AI; plus Dec-FC /
-   Dec-Upgrade / Dec-RolePay from **[13](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)**.
+   Dec-AfricaElig (see `12`). **Locked in `13`:** Dec-FC (keep Photo Influencer, free).
+   Still pending: Dec-VQ, Dec-Fee, Dec-AI, Dec-FreeLib, Dec-Upgrade, Dec-RolePay (paid roles).
 8. **[07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md)** —
    Trust & Markets plan: `/report-content`, `/rights`, DMCA/repeat ops, likeness
    compensation negotiation, Country Activation Matrix admin. T0–T2 + T4 + T7 foundations
@@ -67,6 +67,6 @@ Read in this order:
    Original NestJS/Lightsail sketch; superseded by the deploy README.
 
 **Do not start a new implementation phase until it is explicitly approved.**
-**Do not invent undecided Dec-Fee / Dec-VQ / Dec-AI / Dec-FC / Dec-Upgrade / Dec-RolePay
+**Do not invent undecided Dec-Fee / Dec-VQ / Dec-AI / Dec-FreeLib / Dec-Upgrade / Dec-RolePay
 answers, a permanent platform commission rate, or activate biometrics in production
-without vendor/DPA/counsel.**
+without vendor/DPA/counsel. Photo Influencer stays free (no subscription).**
