@@ -3,12 +3,12 @@
 Read in this order:
 
 0. **[13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)** —
-   **Imagery Concept v2.1** recommendations + Photo Influencer / Free Library (FC) /
-   V21-P2 execution. Photo Influencer stays free (no subscription); Free Library
-   upload-only + moderation + AI low-res. Does not restart shipped Open/rights in **`12`**.
+   **Imagery Concept v2.1** — R1–R8 + FC0–FC2 + V21-P2 **shipped**. Photo Influencer
+   stays free; Free Library upload-only + moderation + AI low-res. Remaining work is
+   **V21-Gated** (finance/counsel/vendor/Dec-Fee/Dec-AI). Does not restart Open/rights in **`12`**.
 0b. **[14-FREE-LIBRARY-PROGRAM.md](./14-FREE-LIBRARY-PROGRAM.md)** —
-   **FC0** Photo Influencer + Free Library program one-pager, acceptance criteria,
-   upgrade matrix (Dec-Upgrade).
+   Photo Influencer + Free Library program one-pager, acceptance criteria,
+   upgrade matrix (Dec-Upgrade) — FC0–FC2 shipped.
 1. **[12-V2-RECONCILIATION-EXECUTION-PLAN.md](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)** —
    **Technical reconciliation status.** Imagery Concept v2.0/v2.1 rights stack:
    Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig locked; P0–P2 foundations
@@ -27,8 +27,8 @@ Read in this order:
    rule, invite-the-model, permission states, and what production actually implements today.
 5. **[01-IMPLEMENTATION-PLAN.md](./01-IMPLEMENTATION-PLAN.md)** — living execution plan:
    shipped Phases 0–65 (Arcs A–D complete; through Phase 65 / model-upload prompt parity).
-   Default next work: **[13](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)**
-   Free Library / Photo Influencer track after Dec-FreeLib; technical gates stay in
+   Ungated FC / V21-P2 track in **[13](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)**
+   is shipped; next moves need V21-Gated owners. Technical gates stay in
    **[12](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)**. Do not restart shipped T1/P0 work.
 6. **[05-POST-ARC-D-RECOMMENDATIONS.md](./05-POST-ARC-D-RECOMMENDATIONS.md)** — post–Arc D
    review, recommendations, and ops/decision execution tracks (including Lightsail

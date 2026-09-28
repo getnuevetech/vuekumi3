@@ -1,6 +1,6 @@
 # Photo Influencer + Free Library Program
 
-**Status: FC0 product lock (28 Sep 2026).**  
+**Status: FC0–FC2 shipped (28 Sep 2026).** Program criteria + Dec-TierMap enforcement + same-email upgrade on `main`.  
 Authority: [`13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md`](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md).  
 Implements Spec §24.5 intent without renaming Photo Influencer.
 
@@ -96,10 +96,11 @@ Phase 29 hard block is superseded by Dec-Upgrade (implement FC2).
 
 ## 7. Engineering follow-ons
 
-| Track | Work |
+| Track | Status |
 | --- | --- |
-| **FC1** | Free Library nav, PI dashboard CTAs, hard upload lock polish, Free Library review queue UX, AI low-res gate |
-| **FC2** | Upgrade API + Playwright |
-| **V21-P2** | Opportunity briefs, Brand/Hire UX, Buyer honesty, Verified+ polish |
+| **FC1** | **Shipped** — Free Library nav, PI CTAs, Dec-TierMap, admin filter, AI low-res |
+| **FC2** | **Shipped** — upgrade API + tests |
+| **V21-P2** | **Shipped** — Opportunity briefs, Brand/Hire UX, Buyer honesty, Verified+ polish |
+| **V21-Gated** | Wait for owners — Dec-Fee, T3 counsel, finance withdrawal, Bio vendor, Dec-AI |
 
 Do not invent Hire/Brand fees, Bio vendors, or indemnity SKUs.
