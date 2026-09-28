@@ -315,6 +315,35 @@ export function ContributorDashboard() {
         </ul>
       )}
 
+      {(stats?.opportunities?.items.length ?? 0) > 0 && (
+        <div className="mt-10">
+          <SectionHead kicker="Opportunities" title="What buyers are searching for" />
+          <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+            Demand from the last {stats?.opportunities?.windowDays ?? 30} days. Zero-result
+            searches mean inventory is missing — upload work that matches these looks.
+          </p>
+          <ul className="mt-4 divide-y divide-sand-soft rounded-2xl border border-sand-soft bg-white">
+            {stats?.opportunities?.items.map((row) => (
+              <li key={`${row.label}-${row.lastSearchedAt}`} className="flex flex-wrap items-baseline justify-between gap-2 px-5 py-3">
+                <div>
+                  <p className="text-sm font-medium">{row.label}</p>
+                  <p className="font-mono-tech text-[10px] text-ink-faint">
+                    {row.searches} searches · avg {row.avgResults} results
+                    {row.hasZeroResults ? ' · no matches yet' : ''}
+                  </p>
+                </div>
+                <Link
+                  to={`/contributor/upload`}
+                  className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-terra hover:text-ink"
+                >
+                  Upload →
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-10">
         <SectionHead kicker="Performance" title="Earnings, last 6 months" />
         <div className="rounded-2xl border border-sand-soft bg-white p-5">

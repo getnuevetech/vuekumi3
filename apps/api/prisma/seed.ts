@@ -1085,6 +1085,40 @@ async function main() {
   await prisma.$executeRaw`
     UPDATE "Photo" SET "commercialStatus" = 'ENABLED' WHERE "commercialLocked" = false`
 
+  // P2 Content Opportunity Engine — demo demand signals (hit + zero-result gaps).
+  await prisma.searchOpportunityEvent.deleteMany({})
+  const opportunitySeed: {
+    q: string
+    qNorm: string
+    resultCount: number
+    category?: string | null
+    tag?: string | null
+  }[] = [
+    { q: 'Lagos night market', qNorm: 'lagos night market', resultCount: 0 },
+    { q: 'Lagos night market', qNorm: 'lagos night market', resultCount: 0 },
+    { q: 'Lagos night market', qNorm: 'lagos night market', resultCount: 0 },
+    { q: 'drone lagos aerial', qNorm: 'drone lagos aerial', resultCount: 0, category: 'Aerial' },
+    { q: 'drone lagos aerial', qNorm: 'drone lagos aerial', resultCount: 0, category: 'Aerial' },
+    { q: 'nigerian wedding editorial', qNorm: 'nigerian wedding editorial', resultCount: 0, category: 'People' },
+    { q: 'baobab', qNorm: 'baobab', resultCount: 4, category: 'Landscape' },
+    { q: 'baobab', qNorm: 'baobab', resultCount: 4, category: 'Landscape' },
+    { q: 'Accra street fashion', qNorm: 'accra street fashion', resultCount: 2, category: 'Fashion' },
+    { q: '', qNorm: '', resultCount: 0, category: 'Wildlife', tag: 'sahel' },
+  ]
+  for (const row of opportunitySeed) {
+    await prisma.searchOpportunityEvent.create({
+      data: {
+        q: row.q,
+        qNorm: row.qNorm,
+        category: row.category ?? null,
+        tag: row.tag ?? null,
+        resultCount: row.resultCount,
+        page: 1,
+        source: 'seed',
+      },
+    })
+  }
+
   console.log('Seed complete.')
   console.log('Admin: admin@vuekumi.com / Admin123!')
   console.log('Support: support@vuekumi.demo / User12345!')

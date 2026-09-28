@@ -79,6 +79,7 @@ import {
   verifyLocalToken,
   writeLocalUpload,
 } from './shared.js'
+import { loadSearchOpportunitySummary } from '../../lib/search-opportunity.js'
 
 export async function registerContributorStatsRoutes(app: FastifyInstance, gate: ContributorGate) {
   app.get('/contributor/stats', gate, async (request, reply) => {
@@ -88,7 +89,7 @@ export async function registerContributorStatsRoutes(app: FastifyInstance, gate:
     monthStart.setUTCDate(1)
     monthStart.setUTCHours(0, 0, 0, 0)
 
-    const [user, live, views, followers, rejected, available, month, seriesRows, top, favorites, licences, categoryRows, provider] = await Promise.all([
+    const [user, live, views, followers, rejected, available, month, seriesRows, top, favorites, licences, categoryRows, provider, opportunities] = await Promise.all([
       prisma.user.findUnique({
         where: { id: contributorId },
         include: { contributorProfile: true },
@@ -130,6 +131,7 @@ export async function registerContributorStatsRoutes(app: FastifyInstance, gate:
         _sum: { views: true },
       }),
       reportingProviderKind(),
+      loadSearchOpportunitySummary({ limit: 6 }),
     ])
 
     const handle = user?.contributorProfile?.handle ?? ''
@@ -166,6 +168,7 @@ export async function registerContributorStatsRoutes(app: FastifyInstance, gate:
       payout: await payoutQuoteForContributor(contributorId),
       series: earningsMonthSeries(seriesRows),
       topPhotos: top.map((p) => serializePhoto(p, handle, true)),
+      opportunities,
       actingAsUserId: isImpersonatingStaff(request.authUser) ? contributorId : null,
       actingAsAccountType: isImpersonatingStaff(request.authUser) ? user?.accountType ?? null : null,
     }

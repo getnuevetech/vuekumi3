@@ -335,6 +335,8 @@ export interface ContributorStatsDto {
   payout: EarningsPayoutQuote
   series: { month: string; earnings: number }[]
   topPhotos: PhotoDto[]
+  /** Buyer search demand gaps (Content Opportunity Engine). */
+  opportunities?: import('./search-opportunity.js').SearchOpportunitySummaryDto
   /** Set when staff with content.impersonate_creator is acting as this creator. */
   actingAsUserId?: string | null
   actingAsAccountType?: string | null

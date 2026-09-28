@@ -12,6 +12,7 @@ import {
   wantsFacets,
 } from '../lib/catalog.js'
 import { prisma } from '../lib/prisma.js'
+import { recordSearchOpportunitySafe } from '../lib/search-opportunity.js'
 
 export async function photoRoutes(app: FastifyInstance) {
   app.get('/photos', {
@@ -33,6 +34,15 @@ export async function photoRoutes(app: FastifyInstance) {
     ])
 
     const favorited = await favoriteIdSet(request.userId, photos.map((p) => p.id))
+
+    // Content Opportunity Engine — capture intentional search demand (page 1 only).
+    recordSearchOpportunitySafe({
+      query,
+      resultCount: total,
+      userId: request.userId,
+      referrer: typeof request.headers.referer === 'string' ? request.headers.referer : null,
+      source: 'catalog',
+    })
 
     return {
       items: photos.map((p) => serializeCatalogPhoto(p, request.userId ? favorited.has(p.id) : undefined)),
