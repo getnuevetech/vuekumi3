@@ -172,7 +172,7 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 | **FC1-4** | Hard Dec-TierMap enforce | **Shipped** (R1–R8 + upload coerce) |
 | **FC1-5** | Free Library admin review filter | **Shipped** (`/admin/content?libraryTier=OPEN`) |
 | **FC1-6** | AI/local low-res enhance on Free Library upload | **Shipped** (`enhanceLowResolution`) |
-| **FC1-7** | Playwright | Deferred / covered by API Dec-TierMap tests |
+| **FC1-7** | Playwright Free Library / Dec-TierMap invariants | **Shipped** (`e2e/fc1-free-library.spec.ts`) |
 
 ---
 

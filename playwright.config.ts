@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Phase 45 smoke + P1-H5 rights/Open/contributor/admin invariants.
+ * Phase 45 smoke + P1-H5 rights/Open invariants + FC1 Free Library / Dec-TierMap.
  * API contract coverage stays in apps/api tests; these check critical UI paths
- * and Open/rights gates against the seeded DB (CI re-seeds before e2e).
+ * and Open/rights/Free Library gates against the seeded DB (CI re-seeds before e2e).
  */
 export default defineConfig({
   testDir: './e2e',
