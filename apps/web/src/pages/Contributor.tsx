@@ -848,7 +848,11 @@ export function ContributorEarnings() {
         {ledger?.payout ? `${payoutQuoteLine(ledger.payout)} ` : ''}
         Sales are booked in USD. Request a payout when the available balance is at least {formatPayoutMoney(ledger?.minPayoutUsd ?? 10, ledger?.payout)}
         {ledger?.payout?.rateToUsd && ledger.payout.currency !== 'USD' ? ` (${money(ledger.minPayoutUsd)})` : ''}.
-        Vuekumi sends it over mobile money or bank transfer.
+        Vuekumi sends it over mobile money or bank transfer
+        {ledger?.payoutProvider === 'manual' ? ' (manual ops rails)' : ''}.
+        {ledger && ledger.modelWithdrawalEnabled === false
+          ? ' Model likeness withdrawal stays finance-gated until enabled in Admin Settings.'
+          : ''}
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">

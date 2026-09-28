@@ -1,5 +1,12 @@
-import type { PayoutKind, PayoutMethodDto, PayoutStatus } from '@vuekumi/shared'
+import {
+  MODEL_WITHDRAWAL_SETTING_KEY,
+  modelWithdrawalBlocker,
+  type PayoutKind,
+  type PayoutMethodDto,
+  type PayoutStatus,
+} from '@vuekumi/shared'
 import { prisma } from './prisma.js'
+import { getSetting } from './settings.js'
 
 export const MIN_PAYOUT_USD = 10
 
@@ -10,6 +17,19 @@ export class PayoutError extends Error {
     this.name = 'PayoutError'
     this.statusCode = statusCode
   }
+}
+
+/** Default OFF — T6 model withdrawal waits on finance readiness. */
+export async function isModelWithdrawalEnabled(): Promise<boolean> {
+  const raw = (await getSetting(MODEL_WITHDRAWAL_SETTING_KEY)) ?? 'false'
+  return raw.trim().toLowerCase() === 'true' || raw.trim() === '1'
+}
+
+export async function assertModelMayRequestPayout(accountType: string | null | undefined) {
+  if (accountType !== 'model') return
+  const enabled = await isModelWithdrawalEnabled()
+  const blocked = modelWithdrawalBlocker(enabled)
+  if (blocked) throw new PayoutError(blocked, 403)
 }
 
 export function roundUsd(n: number): number {
@@ -118,7 +138,9 @@ const payoutInclude = {
 export async function requestPayout(input: {
   contributorId: string
   methodId?: string
+  accountType?: string | null
 }) {
+  await assertModelMayRequestPayout(input.accountType)
   const [available, pendingCount, methods] = await Promise.all([
     prisma.earningsLedger.aggregate({
       where: { contributorId: input.contributorId, status: 'available' },

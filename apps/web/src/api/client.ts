@@ -557,6 +557,35 @@ export const api = {
     request<{ standard: LegalStandardDto; items: LegalOverlayDto[] }>(
       `/api/admin/legal/overlays${kind && kind !== 'all' ? `?kind=${encodeURIComponent(kind)}` : ''}`,
     ),
+  adminCounselStatus: () =>
+    request<{
+      operatorCounselPending: boolean
+      dmcaCounselPending: boolean
+      complete: boolean
+      copyrightOfficeFiling: string
+      fields: Record<string, boolean>
+      message: string
+    }>('/api/admin/legal/counsel-status'),
+  adminComplianceReadiness: () =>
+    request<{
+      screening: {
+        enabled: boolean
+        providerConfigured: boolean
+        countryOnlyReject: boolean
+        inventsVendor: boolean
+        message: string
+      }
+      identity: {
+        enabled: boolean
+        providerConfigured: boolean
+        biometricDatabase: boolean
+        faceMatchEqualsConsent: boolean
+        message: string
+      }
+      matrix: { slotCount: number; namedProviderSlots: number; unnamedSlots: number }
+      activationAllowed: boolean
+      message: string
+    }>('/api/admin/compliance/readiness'),
   patchLegalOverlay: (code: string, body: PatchLegalOverlayInput) =>
     request<{ overlay: LegalOverlayDto }>(`/api/admin/legal/overlays/${code}`, {
       method: 'PATCH',

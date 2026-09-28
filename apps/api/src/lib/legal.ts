@@ -3,6 +3,7 @@ import {
   AGREEMENT_STACK,
   BUYER_LICENCE_AGREEMENT_VERSION,
   DEFAULT_LEGAL_OPERATOR,
+  dmcaAgentIsCounselPending,
   GLOBAL_RIGHTS_STANDARD,
   legalOperatorIsCounselPending,
   overlayKindForCountry,
@@ -24,6 +25,7 @@ import {
 import { prisma } from './prisma.js'
 import { ALL_COUNTRIES } from '../data/countries.js'
 import { getSettingSafe } from './settings.js'
+import { loadHoldSettings } from './holds.js'
 
 export { BUYER_LICENCE_AGREEMENT_VERSION }
 
@@ -165,6 +167,37 @@ export async function loadLegalOperator(): Promise<LegalOperatorDto> {
   return {
     ...operator,
     counselPending: legalOperatorIsCounselPending(operator),
+  }
+}
+
+/** Admin checklist — completeness from filled settings, never invented entity names. */
+export async function loadCounselStatus() {
+  const [operator, hold] = await Promise.all([
+    loadLegalOperator(),
+    loadHoldSettings(),
+  ])
+  const dmcaPending = dmcaAgentIsCounselPending(hold.agent)
+  const fields = {
+    operatorDisplayName: !operator.operatorDisplayName.toLowerCase().includes('counsel sets'),
+    entityLegalName: !operator.entityLegalName.toLowerCase().includes('counsel sets'),
+    entityJurisdiction: !operator.entityJurisdiction.toLowerCase().includes('counsel sets'),
+    principalAddress: !operator.principalAddress.toLowerCase().includes('counsel sets'),
+    publicContactEmail: Boolean(operator.publicContactEmail.trim()),
+    dmcaAgentName: !hold.agent.name.toLowerCase().includes('counsel sets')
+      && hold.agent.name.toLowerCase() !== 'vuekumi dmca agent',
+    dmcaAgentAddress: !hold.agent.address.toLowerCase().includes('counsel sets')
+      && !hold.agent.address.toLowerCase().includes('ops/counsel'),
+    dmcaAgentEmail: Boolean(hold.agent.email.trim()),
+  }
+  return {
+    operatorCounselPending: operator.counselPending,
+    dmcaCounselPending: dmcaPending,
+    complete: !operator.counselPending && !dmcaPending,
+    copyrightOfficeFiling: 'ops_counsel' as const,
+    fields,
+    message: !operator.counselPending && !dmcaPending
+      ? 'Counsel fields are filled. Copyright Office filing remains an ops/counsel task outside the product.'
+      : 'Paste counsel-provided entity and designated-agent values in Admin Settings (Legal + DMCA). Do not invent entity names here.',
   }
 }
 

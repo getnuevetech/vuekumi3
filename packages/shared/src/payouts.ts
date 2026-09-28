@@ -3,6 +3,9 @@ import { z } from 'zod'
 export const payoutKindSchema = z.enum(['bank', 'mobile_money'])
 export const payoutStatusSchema = z.enum(['requested', 'paid', 'rejected'])
 
+/** T6 — model likeness_compensation withdrawal. Default OFF until finance readiness. */
+export const MODEL_WITHDRAWAL_SETTING_KEY = 'payouts.model_withdrawal_enabled'
+
 export const payoutMethodSchema = z.object({
   kind: payoutKindSchema,
   label: z.string().min(2).max(80),
@@ -75,6 +78,10 @@ export interface EarningsSummaryDto {
   minPayoutUsd: number
   canRequest: boolean
   requestBlocker: string | null
+  /** True when the payee is a model and model withdrawal flag is ON. */
+  modelWithdrawalEnabled: boolean
+  /** Provider stays manual — no invented processor. */
+  payoutProvider: 'manual'
   payout: EarningsPayoutQuote
   items: {
     id: string
@@ -88,4 +95,9 @@ export interface EarningsSummaryDto {
   series: { month: string; earnings: number }[]
   methods: PayoutMethodDto[]
   payouts: PayoutDto[]
+}
+
+export function modelWithdrawalBlocker(enabled: boolean): string | null {
+  if (enabled) return null
+  return 'Model likeness payout withdrawal is finance-gated. Ledger lines remain; request payout when finance enables model withdrawal.'
 }

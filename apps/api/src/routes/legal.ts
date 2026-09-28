@@ -4,6 +4,7 @@ import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
 import {
   globalRightsStandardDto,
+  loadCounselStatus,
   loadOverlay,
   overlaySeedForCountry,
   seedLegalOverlays,
@@ -32,6 +33,8 @@ export async function legalRoutes(app: FastifyInstance) {
 
   const listOverlays = { preHandler: requireAdminCapability(app, 'geo.countries.list') }
   const writeOverlays = { preHandler: requireAdminCapability(app, 'geo.countries.write') }
+
+  app.get('/admin/legal/counsel-status', listOverlays, async () => loadCounselStatus())
 
   app.get('/admin/legal/overlays', listOverlays, async (request) => {
     const query = request.query as { kind?: string }

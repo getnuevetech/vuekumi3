@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { authenticate, requireAccountTypes, requireAdminCapability } from '../lib/auth-middleware.js'
 import {
   ComplianceScreeningError,
+  getComplianceReadiness,
   getComplianceScreeningStatus,
   listComplianceScreening,
   listCountryScreeningProviders,
@@ -38,6 +39,8 @@ export async function complianceScreeningRoutes(app: FastifyInstance) {
   const countriesList = { preHandler: requireAdminCapability(app, 'geo.countries.list') }
 
   app.get('/compliance/screening/status', async () => getComplianceScreeningStatus())
+
+  app.get('/admin/compliance/readiness', countriesList, async () => getComplianceReadiness())
 
   app.post('/compliance/screening/start', auth, async (request, reply) => {
     try {

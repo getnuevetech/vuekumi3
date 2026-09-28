@@ -32,6 +32,7 @@ import ReportContentPage from './pages/ReportContent'
 import RightsHubPage from './pages/RightsHub'
 import LegalPage from './pages/Legal'
 import { AdminLegal } from './pages/AdminLegal'
+import { AdminCompliance } from './pages/AdminCompliance'
 import { AdminSettings } from './pages/AdminSettings'
 import { AdminAdmins, AdminAgencies, AdminContributors, AdminInfluencers, AdminModels, AdminPhotographers, AdminUsers } from './pages/AdminAccounts'
 import { AdminCountries, AdminCountryActivation, AdminRates } from './pages/AdminGeo'
@@ -165,7 +166,7 @@ export default function App() {
         <Route path="/contributor/upload" element={<ProtectedRoute allowed={['photographer', 'photo_influencer', 'contributor']}><ContributorUpload /></ProtectedRoute>} />
         <Route path="/contributor/portfolio" element={<ProtectedRoute allowed={['photographer', 'photo_influencer', 'contributor']}><ContributorPortfolio /></ProtectedRoute>} />
         <Route path="/contributor/photos/:id" element={<ProtectedRoute allowed={['photographer', 'photo_influencer', 'contributor']}><ContributorPhotoEdit /></ProtectedRoute>} />
-        <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['photographer', 'photo_influencer', 'contributor']}><ContributorEarnings /></ProtectedRoute>} />
+        <Route path="/contributor/earnings" element={<ProtectedRoute allowed={['photographer', 'photo_influencer', 'contributor', 'model']}><ContributorEarnings /></ProtectedRoute>} />
 
         <Route path="/agency" element={<ProtectedRoute allowed={['agency']}><AgencyDashboard /></ProtectedRoute>} />
         <Route path="/agency/team" element={<ProtectedRoute allowed={['agency']}><AgencyTeam /></ProtectedRoute>} />
@@ -206,6 +207,7 @@ export default function App() {
         <Route path="/admin/countries" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminCountries /></ProtectedRoute>} />
         <Route path="/admin/countries/activation" element={<ProtectedRoute allowed={['admin']} capability="geo.activation.research"><AdminCountryActivation /></ProtectedRoute>} />
         <Route path="/admin/legal" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminLegal /></ProtectedRoute>} />
+        <Route path="/admin/compliance" element={<ProtectedRoute allowed={['admin']} capability="geo.countries.list"><AdminCompliance /></ProtectedRoute>} />
         <Route path="/admin/rates" element={<ProtectedRoute allowed={['admin']} capability="geo.fx.list"><AdminRates /></ProtectedRoute>} />
         <Route path="/admin/payout-rates" element={<ProtectedRoute allowed={['admin']} capability="geo.fx.list"><AdminPayoutRates /></ProtectedRoute>} />
         <Route path="/admin/gateways" element={<ProtectedRoute allowed={['admin']} capability="integrations.gateways.read"><AdminGateways /></ProtectedRoute>} />

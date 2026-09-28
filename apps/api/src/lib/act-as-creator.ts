@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { canImpersonateCreator, isCreatorWorkspaceAccount } from '@vuekumi/shared'
+import { canImpersonateCreator, isCreatorWorkspaceAccount, isEarningsPayeeAccount } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 
 export function isImpersonatingStaff(user: FastifyRequest['authUser']): boolean {
@@ -8,9 +8,9 @@ export function isImpersonatingStaff(user: FastifyRequest['authUser']): boolean 
 
 /**
  * Phase 43 — resolve which creator workspace the request operates on.
- * Creators always act as themselves. Staff with content.impersonate_creator must
- * pass ?userId= of an active photographer / photo_influencer / contributor.
- * Staff JWT stays; there is no cookie swap and no payout write-through.
+ * Creators and models (earnings payees) always act as themselves. Staff with
+ * content.impersonate_creator must pass ?userId= of an active photographer /
+ * photo_influencer / contributor. Staff JWT stays; no cookie swap / payout write-through.
  */
 export async function resolveCreatorWorkspaceId(
   request: FastifyRequest,
@@ -22,7 +22,7 @@ export async function resolveCreatorWorkspaceId(
     return null
   }
 
-  if (isCreatorWorkspaceAccount(user.accountType)) {
+  if (isEarningsPayeeAccount(user.accountType)) {
     return request.userId
   }
 

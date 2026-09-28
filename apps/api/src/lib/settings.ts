@@ -94,6 +94,13 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   { key: 'dmca.counter_wait_days', label: 'Counter-notice wait (business days)', group: 'DMCA', secret: false, placeholder: '14' },
   { key: 'payouts.new_seller_hold_days', label: 'New-seller payout hold (days)', group: 'Payouts', secret: false, placeholder: '14' },
   { key: 'payouts.high_value_hold_usd', label: 'High-value grant hold threshold (USD)', group: 'Payouts', secret: false, placeholder: '500' },
+  {
+    key: 'payouts.model_withdrawal_enabled',
+    label: 'T6 model likeness withdrawal (true/false). Keep false until finance readiness. Reuses manual payout rails — no invented processor.',
+    group: 'Payouts',
+    secret: false,
+    placeholder: 'false',
+  },
   { key: 'ai.openai_api_key', label: 'OpenAI API key', group: 'AI', secret: true, envFallback: 'OPENAI_API_KEY' },
   { key: 'ai.openai_model', label: 'OpenAI vision model', group: 'AI', secret: false, placeholder: 'gpt-4o-mini' },
   { key: 'ai.replicate_api_token', label: 'Replicate API token', group: 'AI', secret: true, envFallback: 'REPLICATE_API_TOKEN' },

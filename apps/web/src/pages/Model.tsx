@@ -28,6 +28,15 @@ const icons = {
 const modelLinks: PortalLink[] = [
   { to: '/model', label: 'Appearances', icon: icons.dash },
   {
+    to: '/contributor/earnings',
+    label: 'Earnings',
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 3v18M7 8h7a3 3 0 010 6H9a3 3 0 000 6h8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     to: '/model/upload',
     label: 'Upload',
     icon: (
