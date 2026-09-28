@@ -110,6 +110,8 @@ export default function PhotoDetail() {
   const [methods, setMethods] = useState<PaymentMethodsDto | null>(null)
   const [provider, setProvider] = useState<'stripe' | 'flutterwave' | undefined>(undefined)
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
+  const [guestEmail, setGuestEmail] = useState('')
+  const [guestName, setGuestName] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -128,15 +130,17 @@ export default function PhotoDetail() {
       if (first) setLicense(first.type)
     }).catch(() => setOptions([]))
     api.relatedPhotos(id).then((d) => setRelated(d.items)).catch(() => setRelated([]))
-    if (user) {
-      api.paymentMethods().then((m) => {
-        setMethods(m)
-        if (m.defaultProvider === 'stripe' || m.defaultProvider === 'flutterwave') {
-          setProvider(m.defaultProvider)
-        }
-      }).catch(() => undefined)
-    }
-  }, [id, user])
+    api.paymentMethods().then((m) => {
+      setMethods(m)
+      if (m.defaultProvider === 'stripe' || m.defaultProvider === 'flutterwave') {
+        setProvider(m.defaultProvider)
+      } else if (m.stripe) {
+        setProvider('stripe')
+      } else if (m.flutterwave) {
+        setProvider('flutterwave')
+      }
+    }).catch(() => undefined)
+  }, [id])
 
   if (status === 'missing') {
     return (
@@ -191,7 +195,18 @@ export default function PhotoDetail() {
 
   async function buy() {
     if (!id || !selected) return
-    if (!user) {
+    const paid = (selected.priceUsd ?? 0) > 0 && !selected.quoteOnly
+    if (!user && !paid) {
+      navigate(`/login?redirect=/photo/${id}`)
+      return
+    }
+    if (!user && paid) {
+      if (!guestEmail.trim()) {
+        toast.error('Enter your email to check out as a guest')
+        return
+      }
+    }
+    if (!user && selected.quoteOnly) {
       navigate(`/login?redirect=/photo/${id}`)
       return
     }
@@ -206,7 +221,17 @@ export default function PhotoDetail() {
         toast.success('Quote requested. An admin will price the scope.')
         return
       }
-      const result = await api.purchaseLicense(id, selected.type, provider)
+      const result = await api.purchaseLicense(
+        id,
+        selected.type,
+        provider,
+        !user && paid
+          ? { email: guestEmail.trim(), name: guestName.trim() || undefined }
+          : undefined,
+      )
+      if (result.guestCheckout) {
+        await refresh()
+      }
       if (result.checkout) {
         window.location.assign(result.checkout.url)
         return
@@ -450,7 +475,38 @@ export default function PhotoDetail() {
               </div>
             )}
 
-            {user && methods && (methods.stripe || methods.flutterwave) && (activePrice ?? 0) > 0 && !selected?.quoteOnly && (
+            {!user && (activePrice ?? 0) > 0 && !selected?.quoteOnly && (
+              <div className="mt-4 space-y-2 border border-sand bg-white p-4">
+                <p className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                  Guest checkout
+                </p>
+                <p className="text-xs text-ink-soft">
+                  Pay without creating a password first. We open a buyer session for this email so your certificate is waiting after payment.
+                  {' '}
+                  <Link to={`/login?redirect=/photo/${view.id}`} className="text-terra">Log in</Link>
+                  {' '}if you already have an account.
+                </p>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Name (optional)"
+                  autoComplete="name"
+                  className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+                />
+                <input
+                  required
+                  type="email"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  placeholder="Email for receipt and certificate"
+                  autoComplete="email"
+                  className="w-full border border-sand px-3 py-2 text-sm outline-none focus:border-terra"
+                />
+              </div>
+            )}
+
+            {methods && (methods.stripe || methods.flutterwave) && (activePrice ?? 0) > 0 && !selected?.quoteOnly && (
               <div className="mt-4 grid gap-2">
                 {methods.stripe && (
                   <label className="flex cursor-pointer items-center gap-2 border border-sand bg-white px-3 py-2 text-sm has-checked:border-terra">

@@ -8,7 +8,7 @@ import {
 } from '@vuekumi/shared'
 import type { AuthUser } from '@vuekumi/shared'
 import { writeAuditLog } from '../lib/audit.js'
-import { authenticate, requireAdminCapability } from '../lib/auth-middleware.js'
+import { authenticate, optionalAuthenticate, requireAdminCapability } from '../lib/auth-middleware.js'
 import { AgencyError, assertAgencyActive, canPurchase, canQuote } from '../lib/agency.js'
 import { buildCertificatePdf } from '../lib/certificate.js'
 import { convertFromUsd, pricingForCountry } from '../lib/fx.js'
@@ -18,20 +18,27 @@ import { prisma } from '../lib/prisma.js'
 import { parseQuoteStatus, sortQuotesForQueue } from '../lib/quotes.js'
 import { getSettingSafe } from '../lib/settings.js'
 import { issueGrant } from '../lib/grants.js'
+import { GuestBuyerError, ensureGuestBuyer, guestCheckoutAuditToken } from '../lib/guest-buyers.js'
 import { PaymentError, startLicenseCheckout } from '../lib/payments.js'
 import { browserOrigin } from '../lib/public-origin.js'
-import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote } from '../lib/serialize.js'
+import { serializeCheckout, serializeGrant, serializeLicenseProduct, serializeQuote, serializeUser, authUserInclude } from '../lib/serialize.js'
 import { assertCanGrant, COMMERCIAL_LOCK_REASON, priceForProduct, RightsError, twoPartyLicenseBlock } from '../lib/rights.js'
 import { assertNewLicenseAllowed } from '../lib/policy-decision.js'
 import { consumeRfQuota, QuotaError } from '../lib/subscriptions.js'
 import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { streamObject } from '../lib/storage.js'
+import { issueTokens } from '../lib/session.js'
 
 function rightsError(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, err: unknown) {
   if (err instanceof QuotaError) {
     return reply.code(err.statusCode).send({ error: err.message, quota: err.quota })
   }
-  if (err instanceof RightsError || err instanceof PaymentError || err instanceof AgencyError) {
+  if (
+    err instanceof RightsError
+    || err instanceof PaymentError
+    || err instanceof AgencyError
+    || err instanceof GuestBuyerError
+  ) {
     return reply.code(err.statusCode).send({ error: err.message })
   }
   if (err && typeof err === 'object' && 'statusCode' in err && typeof (err as { statusCode: unknown }).statusCode === 'number') {
@@ -172,7 +179,7 @@ export async function licenseRoutes(app: FastifyInstance) {
   })
 
   app.post('/photos/:id/licenses', {
-    preHandler: (request, reply) => authenticate(app, request, reply),
+    preHandler: (request, reply) => optionalAuthenticate(app, request, reply),
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = purchaseLicenseSchema.parse(request.body)
@@ -183,6 +190,27 @@ export async function licenseRoutes(app: FastifyInstance) {
     if (!product) return reply.code(404).send({ error: 'Licence type not found' })
     if (product.quoteOnly) {
       return reply.code(400).send({ error: 'Rights-managed licences require a quote request' })
+    }
+
+    let guestCheckout = false
+    if (!request.userId) {
+      const amountProbe = priceForProduct(product, photo) ?? 0
+      if (amountProbe <= 0) {
+        return reply.code(401).send({ error: 'Sign in to download free licences (daily quota applies)' })
+      }
+      if (!body.guestEmail) {
+        return reply.code(401).send({ error: 'Sign in or provide guestEmail for paid checkout' })
+      }
+      try {
+        const guest = await ensureGuestBuyer({ email: body.guestEmail, name: body.guestName })
+        await issueTokens(app, guest.id, reply, request)
+        const full = await prisma.user.findUnique({ where: { id: guest.id }, include: authUserInclude })
+        request.userId = guest.id
+        request.authUser = serializeUser(full!)
+        guestCheckout = true
+      } catch (err) {
+        return rightsError(reply, err)
+      }
     }
 
     try {
@@ -214,6 +242,7 @@ export async function licenseRoutes(app: FastifyInstance) {
       grant: 'usage_permission',
       ownership: false,
       layers: ['copyright', 'model', 'platform', 'buyer'],
+      ...(guestCheckout ? { guestCheckout: true, guestToken: guestCheckoutAuditToken() } : {}),
     }
 
     if (amountUsd <= 0) {
@@ -266,13 +295,16 @@ export async function licenseRoutes(app: FastifyInstance) {
       })
       await writeAuditLog({
         actorId: request.userId,
-        action: 'license.checkout',
+        action: guestCheckout ? 'license.guest_checkout' : 'license.checkout',
         entityType: 'payment',
         entityId: payment.id,
-        metadata: { licenseType: product.type, amountUsd, provider: payment.provider },
+        metadata: { licenseType: product.type, amountUsd, provider: payment.provider, guestCheckout },
         ipAddress: request.ip,
       })
-      return { checkout: serializeCheckout(payment) }
+      return {
+        checkout: serializeCheckout(payment),
+        ...(guestCheckout ? { guestCheckout: true, user: request.authUser } : {}),
+      }
     } catch (err) {
       return rightsError(reply, err)
     }

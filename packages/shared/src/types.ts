@@ -226,6 +226,8 @@ export interface PurchaseLicenseResult {
   grant?: LicenseGrantDto
   existing?: boolean
   checkout?: CheckoutDto
+  guestCheckout?: boolean
+  user?: AuthUser
 }
 
 export interface AgreementDto {

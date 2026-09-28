@@ -549,10 +549,19 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  purchaseLicense: (photoId: string, type: string, provider?: 'stripe' | 'flutterwave') =>
+  purchaseLicense: (
+    photoId: string,
+    type: string,
+    provider?: 'stripe' | 'flutterwave',
+    guest?: { email: string; name?: string },
+  ) =>
     request<PurchaseLicenseResult>(`/api/photos/${photoId}/licenses`, {
       method: 'POST',
-      body: JSON.stringify({ type, provider }),
+      body: JSON.stringify({
+        type,
+        provider,
+        ...(guest ? { guestEmail: guest.email, guestName: guest.name } : {}),
+      }),
     }),
 
   requestQuote: (photoId: string, body: { territory: string; duration: string; channels: string; notes?: string }) =>

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { adminHas } from '@vuekumi/shared'
-import { authenticate } from '../lib/auth-middleware.js'
+import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
 import { listCheckoutMethods } from '../lib/payments-config.js'
 import {
   completeDevPayment,
@@ -21,7 +21,7 @@ function payError(reply: { code: (n: number) => { send: (b: unknown) => unknown 
 
 export async function paymentRoutes(app: FastifyInstance) {
   app.get('/payments/methods', {
-    preHandler: (request, reply) => authenticate(app, request, reply),
+    preHandler: (request, reply) => optionalAuthenticate(app, request, reply),
   }, async (request) => {
     return listCheckoutMethods(request.authUser?.country)
   })

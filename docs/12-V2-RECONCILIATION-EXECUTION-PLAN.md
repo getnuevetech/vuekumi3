@@ -112,7 +112,7 @@ These were not in the Sep 28 backlog and must enter the reconciliation:
 | **Anonymous Open downloads** | No login required; still tracked (`OpenDownloadEvent` + license version) |
 | **Four library tiers** | OPEN / LICENSED / VERIFIED_PLUS / EDITORIAL (+ PRIVATE portfolio) |
 | **Mixed-tier search** | Search across tiers with clear eligibility |
-| **Guest checkout** | Paid buyer path without full account upfront (later P1+) |
+| **Guest checkout** | Paid buyer path without full account upfront — **shipped** (passwordless buyer session + email on PhotoDetail; free RF still requires sign-in for quota) |
 | **Free-image rights clearance** | Open requires all necessary rights for a zero-price license |
 | **License-version snapshots** | Downloads/grants stamp which Open/license policy version applied |
 | **Search Opportunity data** | Content Opportunity Engine — **later**, not P0 |
@@ -224,6 +224,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | **P2-T6** | Real model payouts after finance readiness — **ledger shipped** (activated likeness agreements → `likeness_compensation` EarningsLedger lines from Contributor Distributable Share; photographer residual; certificates omit model economics). **Payout withdrawal rails still finance-gated.** |
 | **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
 | **Later** | Content Opportunity Engine, Brand Studio, Hire expansion, Partner API depth |
+| **Guest checkout** | **Shipped** — paid licences via guest email (passwordless `user` session); free RF still requires account |
 | **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy |
 | **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject |
 

@@ -16,6 +16,9 @@ export const purchaseLicenseSchema = z.object({
   type: grantLicenseTypeSchema,
   currency: z.string().min(3).max(3).optional(),
   provider: checkoutProviderSchema.optional(),
+  /** Guest checkout — paid licences only. Ignored when authenticated. */
+  guestEmail: z.string().email().optional(),
+  guestName: z.string().trim().min(1).max(120).optional(),
 })
 
 export const acceptQuoteSchema = z.object({
