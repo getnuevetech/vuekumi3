@@ -8,7 +8,9 @@ import { fmt } from '../data/content'
 type Tab = 'photographers' | 'models'
 
 const HIRE_NOTE =
-  'Browse talent open for briefs. Vuekumi records the request and quote — payment is settled directly, with no booking fee in this phase.'
+  'Browse photographers and models open for hire. VueKumi records the request and quote — '
+  + 'settlement stays off-platform in this phase (no booking commission until Dec-Fee). '
+  + 'Messaging here is discovery only.'
 
 export default function HireBrowse() {
   const [params, setParams] = useSearchParams()

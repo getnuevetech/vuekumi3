@@ -506,6 +506,23 @@ model SearchOpportunityEvent {
   @@index([qNorm, resultCount])
 }
 
+/// Staff/manual creator brief published from Opportunity Engine demand (V21-P2-1). No ML.
+model CreatorBrief {
+  id          String   @id @default(cuid())
+  title       String
+  body        String   @default("")
+  category    String?
+  country     String?
+  libraryTier String?
+  sourceLabel String?
+  status      String   @default("open")
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
 model PartnerApiKey {
   id           String           @id @default(cuid())
   name         String

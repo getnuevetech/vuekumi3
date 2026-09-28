@@ -159,6 +159,16 @@ export default function Search() {
               )
             })}
           </select>
+          {libraryTier === 'VERIFIED_PLUS' && (
+            <p className="w-full text-[11px] text-ink-soft">
+              Verified+ is marketplace placement above Licensed — distinct from Rights Verified clearance. No indemnity SKU yet.
+            </p>
+          )}
+          {libraryTier === 'OPEN' && (
+            <p className="w-full text-[11px] text-ink-soft">
+              Free Library (Open) — zero-price downloads when rights allow. Photo Influencers upload here only.
+            </p>
+          )}
           <select
             aria-label="Sort"
             value={sort}

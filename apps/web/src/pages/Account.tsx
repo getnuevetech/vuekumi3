@@ -160,6 +160,15 @@ export default function Account() {
                     ? `${plan?.quota.used ?? user.downloadQuotaUsed ?? 0} of ${plan?.quota.limit ?? 50} royalty-free downloads used today (UTC).`
                     : 'This membership is for your account type. Royalty-free buyer downloads stay on a buyer plan.'}
               </p>
+              {audience === 'buyer' && (
+                <p className="mt-2 text-sm text-ink-soft">
+                  Buyer plans cover royalty-free download allowances. Collections, purchase history, and licences stay on your account —
+                  <Link to="/collections" className="text-terra hover:underline"> collections</Link>,
+                  <Link to="/licenses" className="text-terra hover:underline"> licences</Link>,
+                  <Link to="/favorites" className="text-terra hover:underline"> favorites</Link>.
+                  Paid roles are not hard-gated yet (Dec-RolePay deferred).
+                </p>
+              )}
               {plan?.status === 'cancelled' && plan.plusUntil && (
                 <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra">
                   Cancels at period end · {plan.plusUntil.slice(0, 10)}

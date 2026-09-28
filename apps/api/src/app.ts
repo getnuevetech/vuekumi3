@@ -56,6 +56,7 @@ import { openDownloadRoutes } from './routes/open-downloads.js'
 import { compensationRoutes } from './routes/compensation.js'
 import { identityVerificationRoutes } from './routes/identity-verification.js'
 import { complianceScreeningRoutes } from './routes/compliance-screening.js'
+import { creatorBriefRoutes } from './routes/creator-briefs.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -158,6 +159,7 @@ export async function buildApp() {
     await api.register(compensationRoutes)
     await api.register(identityVerificationRoutes)
     await api.register(complianceScreeningRoutes)
+    await api.register(creatorBriefRoutes)
   }, { prefix: '/api' })
 
   app.setNotFoundHandler((_request, reply) => {

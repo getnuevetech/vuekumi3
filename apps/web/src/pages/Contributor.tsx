@@ -209,6 +209,40 @@ function RepresentationCard() {
   )
 }
 
+function CreatorBriefsPanel() {
+  const [items, setItems] = useState<import('@vuekumi/shared').CreatorBriefDto[]>([])
+  useEffect(() => {
+    api.contributorBriefs()
+      .then((d) => setItems(d.items))
+      .catch(() => setItems([]))
+  }, [])
+  if (items.length === 0) return null
+  return (
+    <div className="mt-10">
+      <SectionHead kicker="Staff briefs" title="Creator briefs from demand" />
+      <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+        Manual briefs published by staff from Opportunity Engine demand. No platform production fee.
+      </p>
+      <ul className="mt-4 divide-y divide-sand-soft rounded-2xl border border-sand-soft bg-white">
+        {items.map((brief) => (
+          <li key={brief.id} className="px-5 py-4">
+            <p className="text-sm font-medium">{brief.title}</p>
+            {brief.body && <p className="mt-1 text-sm text-ink-soft">{brief.body}</p>}
+            <div className="mt-2 flex flex-wrap gap-3">
+              <Link
+                to="/contributor/upload"
+                className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-terra hover:text-ink"
+              >
+                Upload for this brief →
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /* ---------------- dashboard ---------------- */
 
 export function ContributorDashboard() {
@@ -383,6 +417,7 @@ export function ContributorDashboard() {
           <p className="mt-1 max-w-2xl text-sm text-ink-soft">
             Demand from the last {stats?.opportunities?.windowDays ?? 30} days. Zero-result
             searches mean inventory is missing — upload work that matches these looks.
+            Staff can also publish explicit creator briefs from Admin.
           </p>
           <ul className="mt-4 divide-y divide-sand-soft rounded-2xl border border-sand-soft bg-white">
             {stats?.opportunities?.items.map((row) => (
@@ -405,6 +440,8 @@ export function ContributorDashboard() {
           </ul>
         </div>
       )}
+
+      <CreatorBriefsPanel />
 
       <div className="mt-10">
         <SectionHead kicker="Performance" title="Earnings, last 6 months" />
