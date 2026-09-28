@@ -901,6 +901,34 @@ async function main() {
     })
   }
 
+  // P2-HE — indicative day rates for hire browse demos (off-platform; not a platform fee).
+  if (thandiweUserId) {
+    await prisma.contributorProfile.update({
+      where: { userId: thandiweUserId },
+      data: { availability: 'open', dayRateUsd: 450 },
+    })
+  }
+  if (kofiUserId) {
+    await prisma.contributorProfile.update({
+      where: { userId: kofiUserId },
+      data: { availability: 'open', dayRateUsd: 350 },
+    })
+  }
+  if (amaraUserId) {
+    // Photo influencer: not hireable via receive_bookings — leave unavailable for hire filter demos.
+    await prisma.contributorProfile.update({
+      where: { userId: amaraUserId },
+      data: { availability: 'unavailable', dayRateUsd: null },
+    })
+  }
+  const adaModelProfile = await prisma.modelProfile.findFirst({ where: { handle: 'ada-molefe' } })
+  if (adaModelProfile) {
+    await prisma.modelProfile.update({
+      where: { id: adaModelProfile.id },
+      data: { availability: 'open', dayRateUsd: 280 },
+    })
+  }
+
   // Phase 30/32 demo fixtures for admin queues (no money moves; no commission).
   if (kofiUserId) {
     await prisma.bookingRequest.create({

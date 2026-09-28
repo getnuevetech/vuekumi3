@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
-import { photographerListQuerySchema, photoListQuerySchema } from '@vuekumi/shared'
+import { hireAvailabilityWhere, photographerListQuerySchema, photoListQuerySchema } from '@vuekumi/shared'
 import type { PhotographerDto } from '@vuekumi/shared'
 import { authenticate, optionalAuthenticate } from '../lib/auth-middleware.js'
 import {
@@ -69,11 +69,19 @@ export async function photographerRoutes(app: FastifyInstance) {
     const q = normalizeQuery(query.q)
     const communityTypes = query.listing === 'community' ? await accountTypesWithFeature('contributor_listing') : null
     const bookableTypes = new Set<string>(await accountTypesWithFeature('receive_bookings'))
+    const availabilityFilter = hireAvailabilityWhere(query.availability)
 
     const where: Prisma.UserWhereInput = {
       status: 'active',
       photos: { some: PROFILE_PHOTO_FILTER },
-      ...(communityTypes ? { accountType: { in: communityTypes } } : creatorKindWhere(query.kind)),
+      ...(communityTypes
+        ? { accountType: { in: communityTypes } }
+        : query.availability === 'hireable'
+          ? { accountType: { in: [...bookableTypes] as ('photographer' | 'photo_influencer' | 'contributor')[] } }
+          : creatorKindWhere(query.kind)),
+      ...(availabilityFilter
+        ? { contributorProfile: { is: { availability: availabilityFilter } } }
+        : {}),
       ...(q
         ? {
             OR: [
@@ -113,21 +121,26 @@ export async function photographerRoutes(app: FastifyInstance) {
         const downloads = user.photos.reduce((sum, p) => sum + p.downloads, 0)
         return toPhotographer(user, photosCount, downloads, user._count.followers, {
           following: followed ? followed.has(user.id) : undefined,
-          hireable: bookableTypes.has(user.accountType as 'photographer'),
+          hireable: bookableTypes.has(user.accountType),
         })
       })
       .filter((row): row is PhotographerDto => Boolean(row))
       .sort((a, b) => b.downloads - a.downloads || a.name.localeCompare(b.name))
 
+    // When browsing for hire, drop non-hireable DTOs (community/influencer without bookings).
+    const hireScoped = query.availability === 'hireable'
+      ? items.filter((row) => row.availability === 'open' || row.availability === 'limited')
+      : items
+
     const start = (query.page - 1) * query.limit
-    const pageItems = items.slice(start, start + query.limit)
+    const pageItems = hireScoped.slice(start, start + query.limit)
 
     return {
       items: pageItems,
       page: query.page,
       limit: query.limit,
-      total: items.length,
-      hasMore: start + query.limit < items.length,
+      total: hireScoped.length,
+      hasMore: start + query.limit < hireScoped.length,
     }
   })
 

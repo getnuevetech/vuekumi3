@@ -54,6 +54,7 @@ import Search from './pages/Search'
 import Photographer from './pages/Photographer'
 import ModelProfile from './pages/ModelProfile'
 import BookCreator from './pages/BookCreator'
+import HireBrowse from './pages/HireBrowse'
 import Bookings from './pages/Bookings'
 import Campaigns from './pages/Campaigns'
 import BrandStudio from './pages/BrandStudio'
@@ -129,6 +130,7 @@ export default function App() {
         <Route path="/creators" element={<Creators />} />
         <Route path="/models" element={<Models />} />
         <Route path="/category/:slug" element={<Category />} />
+        <Route path="/hire" element={<HireBrowse />} />
         <Route path="/hire/:handle" element={<BookCreator kind="photographer" />} />
         <Route path="/book/:handle" element={<BookCreator kind="model" />} />
         <Route path="/photo/:id" element={<PhotoDetail />} />
