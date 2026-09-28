@@ -166,11 +166,11 @@ or a licence.
 
 | Item | Wait for | What it is |
 | --- | --- | --- |
-| Phase 60 **production ON** (ID ↔ avatar, identity-bound likeness) | Approved identity provider, DPA, retention schedule | Evidence API already ships flag OFF. Similarity and an ID match are evidence, never consent. No face database. |
-| T6 **payout withdrawal** rails | Finance readiness | Model `likeness_compensation` ledger lines already ship on activation. Withdrawal / payee rails stay finance-gated. |
-| T3 counsel-complete | Counsel: real entity, filed DMCA agent, signed public copy | Foundation shipped (Admin Settings Legal + DMCA; `/legal` + `/dmca` counsel-pending markers). |
+| T6 **payout withdrawal** rails | Finance readiness to flip `payouts.model_withdrawal_enabled` | Model ledger + manual withdrawal path shipped (flag default OFF). No invented processor. |
+| T3 counsel-complete | Counsel paste of real entity + filed agent into Admin Settings | Foundation + `/admin/legal` counsel-status checklist shipped. Copyright Office filing stays ops/counsel. |
 | T8 first ACTIVE country | Counsel evidence on G01–G16 plus four-eyes | Waitlist + `africa_list_and_country_active` default shipped (P1-T8). ACTIVE never bypasses the Global Rights Standard. |
-| T9 KYC partner activation | Counsel/ops: named screening partners per matrix function | Foundation shipped (`compliance.screening_enabled` OFF; provider slots; no invented OFAC vendor). Not country-only reject. |
+| T9 KYC partner activation | Counsel/ops: named screening partners per matrix function | Foundation + `/admin/compliance` readiness shipped (flags OFF; no invented OFAC vendor). |
+| Phase 60 **production ON** | Approved identity provider, DPA, retention schedule | Evidence API + readiness checklist ship flag OFF. |
 | P2 tax, payee verification, withholding | Finance and counsel | Entitlement is not erased when a payee is held. |
 
 ---
