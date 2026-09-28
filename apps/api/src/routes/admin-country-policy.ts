@@ -20,6 +20,7 @@ import {
   submitPolicyForReview,
   suspendPolicy,
 } from '../lib/policy-decision.js'
+import { listContributorWaitlist, promoteWaitlistEntry, WaitlistError } from '../lib/waitlist.js'
 
 const gatePatchSchema = z.object({
   status: gateStatusSchema.optional(),
@@ -212,6 +213,37 @@ export async function adminCountryPolicyRoutes(app: FastifyInstance) {
       })
       return { policyId: updated.id, status: updated.status }
     } catch (err) {
+      const status = err && typeof err === 'object' && 'statusCode' in err ? Number(err.statusCode) : 500
+      return reply.code(status).send({ error: err instanceof Error ? err.message : 'Failed' })
+    }
+  })
+
+  /** Dec-AfricaElig / P1-T8 — HOLD-market contributor waitlist. */
+  app.get('/admin/countries/waitlist', research, async (request) => {
+    const query = request.query as { countryCode?: string; status?: string }
+    const entries = await listContributorWaitlist({
+      countryCode: query.countryCode,
+      status: query.status,
+    })
+    return { entries }
+  })
+
+  app.post('/admin/countries/waitlist/:id/promote', authorize, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    try {
+      const entry = await promoteWaitlistEntry({ waitlistId: id, actorId: request.userId! })
+      await writeAuditLog({
+        actorId: request.userId,
+        action: 'admin.country_waitlist.promote',
+        entityType: 'contributor_waitlist',
+        entityId: id,
+        metadata: { countryCode: entry.countryCode, email: entry.email },
+      })
+      return { entry }
+    } catch (err) {
+      if (err instanceof WaitlistError) {
+        return reply.code(err.statusCode).send({ error: err.message, reasonCodes: err.reasonCodes })
+      }
       const status = err && typeof err === 'object' && 'statusCode' in err ? Number(err.statusCode) : 500
       return reply.code(status).send({ error: err instanceof Error ? err.message : 'Failed' })
     }

@@ -36,6 +36,8 @@ import { AUTH_RATE_LIMIT } from '../lib/rate-limit.js'
 import { serializeUser, authUserInclude } from '../lib/serialize.js'
 import { authenticate, requireAdminCapability } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
+import { resolveContributorSignup } from '../lib/policy-decision.js'
+import { enrollContributorWaitlist } from '../lib/waitlist.js'
 import { evaluateAccountApproval } from '../lib/moderation.js'
 import { clearAuthCookies, issueTokens } from '../lib/session.js'
 
@@ -83,11 +85,29 @@ export async function authRoutes(app: FastifyInstance) {
               : 'Community contributors must accept the VueKumi community contributor terms',
         })
       }
-      try {
-        await assertContributorCountry(body.country)
-      } catch (err) {
-        const e = err as Error & { statusCode?: number }
-        return reply.code(e.statusCode ?? 400).send({ error: e.message })
+    }
+
+    const passwordHash = await hashPassword(body.password)
+    const person = personNameFrom(body)
+    let status: 'active' | 'pending' = 'active'
+    let approvalReasons: string[] = ['not_applicable']
+    let waitlisted = false
+    let waitlistMessage: string | undefined
+    let waitlistReasonCodes: string[] = []
+    let waitlistPolicyVersion: string | null = null
+
+    if (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor') {
+      const signup = await resolveContributorSignup(body.country)
+      if (signup.outcome === 'deny') {
+        return reply.code(400).send({ error: signup.message, reasonCodes: signup.reasonCodes })
+      }
+      if (signup.outcome === 'waitlist') {
+        waitlisted = true
+        waitlistMessage = signup.message
+        waitlistReasonCodes = signup.reasonCodes
+        waitlistPolicyVersion = signup.policyVersion
+        status = 'pending'
+        approvalReasons = ['country_waitlist_hold']
       }
     }
 
@@ -95,17 +115,15 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'Models must accept the VueKumi model uploader agreement' })
     }
 
-    const passwordHash = await hashPassword(body.password)
-    const person = personNameFrom(body)
-    let status: 'active' | 'pending' = 'active'
-    let approvalReasons: string[] = ['not_applicable']
-    if (body.accountType === 'agency') {
-      status = 'pending'
-      approvalReasons = ['agency_requires_manual_approval']
-    } else if ((CREATOR_ACCOUNT_TYPES as readonly string[]).includes(body.accountType)) {
-      const approval = await evaluateAccountApproval({ email: body.email })
-      status = approval.decision
-      approvalReasons = approval.reasons
+    if (!waitlisted) {
+      if (body.accountType === 'agency') {
+        status = 'pending'
+        approvalReasons = ['agency_requires_manual_approval']
+      } else if ((CREATOR_ACCOUNT_TYPES as readonly string[]).includes(body.accountType)) {
+        const approval = await evaluateAccountApproval({ email: body.email })
+        status = approval.decision
+        approvalReasons = approval.reasons
+      }
     }
 
     const user = await prisma.$transaction(async (tx) => {
@@ -122,7 +140,10 @@ export async function authRoutes(app: FastifyInstance) {
         },
       })
 
-      if (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor') {
+      if (
+        (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor')
+        && !waitlisted
+      ) {
         const handle = person.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         await tx.contributorProfile.create({
           data: {
@@ -132,6 +153,22 @@ export async function authRoutes(app: FastifyInstance) {
             creatorKind: registrationCreatorKind(body.accountType) ?? 'photographer',
           },
         })
+        await tx.platformAgreement.create({
+          data: { userId: created.id, version: agreementVersionForAccountType(body.accountType) },
+        })
+      }
+
+      if (waitlisted && (body.accountType === 'photographer' || body.accountType === 'photo_influencer' || body.accountType === 'contributor')) {
+        await enrollContributorWaitlist({
+          email: created.email,
+          userId: created.id,
+          countryCode: body.country!.toUpperCase(),
+          accountType: body.accountType,
+          name: person.name,
+          reasonCodes: waitlistReasonCodes,
+          policyVersion: waitlistPolicyVersion,
+        }, tx)
+        // Terms already accepted at signup; persist so promote does not leave a profile without agreement.
         await tx.platformAgreement.create({
           data: { userId: created.id, version: agreementVersionForAccountType(body.accountType) },
         })
@@ -180,10 +217,12 @@ export async function authRoutes(app: FastifyInstance) {
     if (status === 'pending' || approvalReasons[0] !== 'not_applicable') {
       await writeAuditLog({
         actorId: user.id,
-        action: status === 'active' ? 'moderation.account_auto_approved' : 'moderation.account_pending_review',
+        action: waitlisted
+          ? 'onboarding.contributor_waitlisted'
+          : status === 'active' ? 'moderation.account_auto_approved' : 'moderation.account_pending_review',
         entityType: 'user',
         entityId: user.id,
-        metadata: { accountType: body.accountType, reasons: approvalReasons },
+        metadata: { accountType: body.accountType, reasons: approvalReasons, waitlisted },
         ipAddress: request.ip,
       })
     }
@@ -198,6 +237,13 @@ export async function authRoutes(app: FastifyInstance) {
 
     return {
       user: serializeUser(full!),
+      ...(waitlisted
+        ? {
+            waitlisted: true,
+            message: waitlistMessage,
+            reasonCodes: waitlistReasonCodes,
+          }
+        : {}),
       ...(config.isDev ? { devVerifyToken: verifyToken } : {}),
     }
   })

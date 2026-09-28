@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { buildApp } from '../src/app.js'
+import { withAfricaListOnboarding } from './helpers/onboarding.js'
 
 function cookies(res: { headers: Record<string, unknown> }) {
   const raw = res.headers['set-cookie']
@@ -61,6 +62,7 @@ test('third-party claimed copyright stays commercially locked and the ledger is 
 })
 
 test('staff can write guardianAuthorizedAt on a minor appearance', async () => {
+  await withAfricaListOnboarding(async () => {
   const app = await buildApp()
   const photographer = await app.inject({
     method: 'POST',
@@ -127,4 +129,5 @@ test('staff can write guardianAuthorizedAt on a minor appearance', async () => {
   const events = (ownLedger.json() as { ledger: { events: { action: string }[] } }).ledger.events
   assert.ok(events.some((event) => event.action === 'likeness.guardian_authorized'))
   await app.close()
+  })
 })

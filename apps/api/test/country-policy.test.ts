@@ -14,10 +14,12 @@ import {
   authorizeActivation,
   evaluatePolicy,
   patchGate,
+  resolveContributorSignup,
   submitPolicyForReview,
   suspendPolicy,
 } from '../src/lib/policy-decision.js'
 import { assertContributorCountry } from '../src/lib/geo.js'
+import { withStrictOnboardingPolicy } from './helpers/onboarding.js'
 
 function cookies(res: { headers: Record<string, unknown> }) {
   const raw = res.headers['set-cookie']
@@ -69,7 +71,7 @@ async function freshHoldPolicy(countryCode: string, preparedById: string) {
 
 test('shared: all 16 gates required for activation', () => {
   assert.equal(COUNTRY_GATE_CODES.length, 16)
-  assert.equal(DEFAULT_CONTRIBUTOR_ONBOARDING_POLICY, 'africa_list')
+  assert.equal(DEFAULT_CONTRIBUTOR_ONBOARDING_POLICY, 'africa_list_and_country_active')
   const incomplete = allGatesReadyForActivation(
     COUNTRY_GATE_CODES.map((code) => ({ code, status: 'NOT_STARTED' as const })),
   )
@@ -90,10 +92,15 @@ test('PDS: missing country fails closed, not open, for uploads and new licences'
   await assert.rejects(() => assertNewLicenseAllowed(undefined), /country_unknown_or_disabled|licensing/i)
 })
 
-test('PDS: Africa list ALLOW under default onboarding; Canada DENY; rights.invite ALLOW', async () => {
+test('P1-T8 / Dec-AfricaElig: HOLD → REVIEW waitlist; Canada DENY; rights.invite ALLOW', async () => {
+  await withStrictOnboardingPolicy(async () => {
   const ng = await evaluatePolicy({ action: 'contributor.create', countryCode: 'NG' })
-  assert.equal(ng.decision, 'ALLOW')
-  assert.ok(ng.reasonCodes.includes('africa_list_ok'))
+  assert.equal(ng.decision, 'REVIEW')
+  assert.ok(ng.reasonCodes.includes('waitlist_hold'))
+  assert.ok(ng.reasonCodes.includes('dec_africa_elig_hold') || ng.reasonCodes.some((c) => c.includes('policy_status')))
+
+  const signup = await resolveContributorSignup('NG')
+  assert.equal(signup.outcome, 'waitlist')
 
   const ca = await evaluatePolicy({ action: 'contributor.create', countryCode: 'CA' })
   assert.equal(ca.decision, 'DENY')
@@ -103,10 +110,12 @@ test('PDS: Africa list ALLOW under default onboarding; Canada DENY; rights.invit
   assert.equal(invite.decision, 'ALLOW')
 
   await assert.rejects(() => assertContributorCountry('CA'), /African/)
-  await assertContributorCountry('NG')
+  await assert.rejects(() => assertContributorCountry('NG'), /waitlist|HOLD/i)
+  })
 })
 
 test('PDS: activation fails incomplete gates; four-eyes; invalid DB flip', async () => {
+  await withStrictOnboardingPolicy(async () => {
   const policy = await freshHoldPolicy('BW', 'preparer-staff-1')
   assert.equal(policy.status, 'HOLD')
   assert.equal(policy.gates.length, 16)
@@ -156,18 +165,6 @@ test('PDS: activation fails incomplete gates; four-eyes; invalid DB flip', async
     },
   })
 
-  await prisma.platformSetting.upsert({
-    where: { key: 'geo.contributor_onboarding_policy' },
-    create: {
-      key: 'geo.contributor_onboarding_policy',
-      value: 'africa_list_and_country_active',
-      secret: false,
-      label: 'Contributor onboarding policy',
-      group: 'Geo / Country policy',
-    },
-    update: { value: 'africa_list_and_country_active' },
-  })
-
   try {
     const invalid = await evaluatePolicy({ action: 'contributor.create', countryCode: 'ZM' })
     assert.equal(invalid.decision, 'DENY')
@@ -176,19 +173,9 @@ test('PDS: activation fails incomplete gates; four-eyes; invalid DB flip', async
         || invalid.reasonCodes.some((c) => c.includes('feature_scope')),
     )
   } finally {
-    await prisma.platformSetting.upsert({
-      where: { key: 'geo.contributor_onboarding_policy' },
-      create: {
-        key: 'geo.contributor_onboarding_policy',
-        value: 'africa_list',
-        secret: false,
-        label: 'Contributor onboarding policy',
-        group: 'Geo / Country policy',
-      },
-      update: { value: 'africa_list' },
-    })
     await prisma.countryPolicyVersion.delete({ where: { id: bogus.id } }).catch(() => {})
   }
+  })
 })
 
 test('admin activation register + evaluate route', async () => {
@@ -398,4 +385,166 @@ test('Phase 56: contributor.upload legacy ALLOW; ACTIVE ON; suspend DENY; route 
   await prisma.user.update({ where: { id: photographer.id }, data: { country: 'NG' } }).catch(() => undefined)
   await prisma.countryPolicyVersion.delete({ where: { id: policy.id } }).catch(() => undefined)
   await app.close()
+})
+
+test('P1-T8: HOLD waitlist enroll; ACTIVE allow + promote; SUSPENDED deny', async () => {
+  await withStrictOnboardingPolicy(async () => {
+  const app = await buildApp()
+  const jar = await login(app, 'admin@vuekumi.com', 'Admin123!')
+  const stamp = Date.now()
+  const waitEmail = `waitlist-${stamp}@vuekumi.test`
+  const activeEmail = `active-mkt-${stamp}@vuekumi.test`
+
+  // HOLD African → waitlisted account, no ContributorProfile
+  const waitReg = await app.inject({
+    method: 'POST',
+    url: '/api/auth/register',
+    payload: {
+      email: waitEmail,
+      password: 'Waitlist123!',
+      firstName: 'Wait',
+      lastName: 'Listed',
+      accountType: 'photographer',
+      country: 'TZ',
+      acceptAgreement: true,
+    },
+  })
+  assert.equal(waitReg.statusCode, 200, waitReg.body)
+  const waitBody = waitReg.json() as {
+    waitlisted?: boolean
+    reasonCodes?: string[]
+    user: { id: string; status: string; contributorHandle?: string | null }
+  }
+  assert.equal(waitBody.waitlisted, true)
+  assert.ok(waitBody.reasonCodes?.includes('waitlist_hold'))
+  assert.equal(waitBody.user.status, 'pending')
+  assert.equal(waitBody.user.contributorHandle ?? null, null)
+
+  const waitRow = await prisma.contributorWaitlist.findFirst({ where: { email: waitEmail } })
+  assert.ok(waitRow)
+  assert.equal(waitRow.status, 'waiting')
+  assert.equal(waitRow.countryCode, 'TZ')
+  assert.ok(waitRow.userId)
+
+  const listed = await app.inject({
+    method: 'GET',
+    url: '/api/admin/countries/waitlist?countryCode=TZ',
+    headers: { cookie: jar },
+  })
+  assert.equal(listed.statusCode, 200, listed.body)
+  const entries = (listed.json() as { entries: Array<{ id: string; email: string }> }).entries
+  assert.ok(entries.some((e) => e.email === waitEmail))
+
+  // Promote while still HOLD must fail
+  const premature = await app.inject({
+    method: 'POST',
+    url: `/api/admin/countries/waitlist/${waitRow.id}/promote`,
+    headers: { cookie: jar },
+  })
+  assert.equal(premature.statusCode, 400, premature.body)
+
+  // Activate TZ, then promote
+  const admin = await prisma.user.findFirst({ where: { email: 'admin@vuekumi.com' } })
+  assert.ok(admin)
+  const policy = await freshHoldPolicy('TZ', admin.id)
+  for (const gate of policy.gates) {
+    await patchGate({
+      gateId: gate.id,
+      actorId: admin.id,
+      status: 'APPROVED',
+      evidence: { label: 'P1-T8 gate' },
+    })
+  }
+  await submitPolicyForReview(policy.id, admin.id)
+  const other = await prisma.user.findFirst({
+    where: { email: 'support@vuekumi.demo', accountType: 'admin' },
+  })
+  const authorizerId = other?.id && other.id !== admin.id ? other.id : 'authorizer-p1-t8'
+  await authorizeActivation({
+    policyVersionId: policy.id,
+    authorizerId,
+    notes: 'P1-T8 activate TZ',
+  })
+
+  const allowSignup = await resolveContributorSignup('TZ')
+  assert.equal(allowSignup.outcome, 'allow')
+
+  const promoted = await app.inject({
+    method: 'POST',
+    url: `/api/admin/countries/waitlist/${waitRow.id}/promote`,
+    headers: { cookie: jar },
+  })
+  assert.equal(promoted.statusCode, 200, promoted.body)
+  assert.equal((promoted.json() as { entry: { status: string } }).entry.status, 'promoted')
+
+  const userAfter = await prisma.user.findUnique({
+    where: { id: waitRow.userId! },
+    include: { contributorProfile: true },
+  })
+  assert.equal(userAfter?.status, 'active')
+  assert.ok(userAfter?.contributorProfile)
+
+  // Fresh register on ACTIVE market creates full contributor
+  const activeReg = await app.inject({
+    method: 'POST',
+    url: '/api/auth/register',
+    payload: {
+      email: activeEmail,
+      password: 'ActiveMkt123!',
+      firstName: 'Active',
+      lastName: 'Market',
+      accountType: 'photographer',
+      country: 'TZ',
+      acceptAgreement: true,
+    },
+  })
+  assert.equal(activeReg.statusCode, 200, activeReg.body)
+  const activeBody = activeReg.json() as { waitlisted?: boolean; user: { contributorHandle?: string | null } }
+  assert.equal(activeBody.waitlisted ?? false, false)
+  assert.ok(activeBody.user.contributorHandle)
+
+  // SUSPENDED → deny new onboarding
+  await suspendPolicy({ policyVersionId: policy.id, actorId: admin.id, notes: 'P1-T8 suspend' })
+  const suspended = await resolveContributorSignup('TZ')
+  assert.equal(suspended.outcome, 'deny')
+  assert.ok(suspended.reasonCodes.includes('market_suspended'))
+
+  const denyReg = await app.inject({
+    method: 'POST',
+    url: '/api/auth/register',
+    payload: {
+      email: `suspended-${stamp}@vuekumi.test`,
+      password: 'Suspended123!',
+      firstName: 'Sus',
+      lastName: 'Pended',
+      accountType: 'photographer',
+      country: 'TZ',
+      acceptAgreement: true,
+    },
+  })
+  assert.equal(denyReg.statusCode, 400, denyReg.body)
+
+  // Non-African still DENY for contributor
+  const caReg = await app.inject({
+    method: 'POST',
+    url: '/api/auth/register',
+    payload: {
+      email: `canada-${stamp}@vuekumi.test`,
+      password: 'Canada123!',
+      firstName: 'Can',
+      lastName: 'Ada',
+      accountType: 'photographer',
+      country: 'CA',
+      acceptAgreement: true,
+    },
+  })
+  assert.equal(caReg.statusCode, 400, caReg.body)
+
+  await prisma.contributorWaitlist.deleteMany({ where: { email: { in: [waitEmail, activeEmail] } } }).catch(() => undefined)
+  await prisma.user.deleteMany({
+    where: { email: { in: [waitEmail, activeEmail, `suspended-${stamp}@vuekumi.test`, `canada-${stamp}@vuekumi.test`] } },
+  }).catch(() => undefined)
+  await prisma.countryPolicyVersion.delete({ where: { id: policy.id } }).catch(() => undefined)
+  await app.close()
+  })
 })

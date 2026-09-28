@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { adminCreateAccountBlocked } from '@vuekumi/shared'
 import { buildApp } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
+import { withAfricaListOnboarding } from './helpers/onboarding.js'
 
 function cookies(res: { headers: Record<string, unknown> }) {
   const raw = res.headers['set-cookie']
@@ -23,6 +24,7 @@ test('admin create guard: staff cannot mint admin accounts from this endpoint', 
 })
 
 test('admin account management: photographers list, create types, reject admin, agency activate', async () => {
+  await withAfricaListOnboarding(async () => {
   const app = await buildApp()
   const admin = await login(app, 'admin@vuekumi.com', 'Admin123!')
   const member = await login(app, 'member@vuekumi.demo', 'User12345!')
@@ -31,11 +33,19 @@ test('admin account management: photographers list, create types, reject admin, 
   const forbidden = await app.inject({ method: 'GET', url: '/api/admin/photographers', headers: { cookie: member } })
   assert.equal(forbidden.statusCode, 403)
 
-  const photographers = await app.inject({ method: 'GET', url: '/api/admin/photographers', headers: { cookie: admin } })
+  const photographers = await app.inject({ method: 'GET', url: '/api/admin/photographers?limit=100', headers: { cookie: admin } })
   assert.equal(photographers.statusCode, 200, photographers.body)
   const photoList = photographers.json() as { items: { email: string; accountType: string }[]; total: number }
   assert.equal(photoList.items.every((u) => u.accountType === 'photographer'), true)
-  assert.equal(photoList.items.some((u) => u.email === 'kofi-mensah@vuekumi.demo'), true)
+  const kofiLookup = await app.inject({
+    method: 'GET',
+    url: '/api/admin/photographers?q=kofi-mensah',
+    headers: { cookie: admin },
+  })
+  assert.equal(
+    (kofiLookup.json() as { items: { email: string }[] }).items.some((u) => u.email === 'kofi-mensah@vuekumi.demo'),
+    true,
+  )
   assert.equal(photoList.items.some((u) => u.email === 'amara-okafor@vuekumi.demo'), false)
   assert.equal(photoList.items.some((u) => u.email === 'community@vuekumi.demo'), false)
 
@@ -254,4 +264,5 @@ test('admin account management: photographers list, create types, reject admin, 
   })
 
   await app.close()
+  })
 })
