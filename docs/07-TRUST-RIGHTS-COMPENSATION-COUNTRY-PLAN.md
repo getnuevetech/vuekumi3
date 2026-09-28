@@ -238,7 +238,7 @@ Suggested order minimizes counsel blockers and avoids inventing money.
 | **T6** | Model likeness payouts in ledger | T5 + finance | Ledger lines from Dec-PayBase; certificates stamp agreed terms; Africa nonmember fee OK |
 | **T7** | Country Activation Matrix admin | T0 | **Shipped Phase 53** (ops polish on Phase 49 P0): evidence URLs, feature scopes, transitions, CSV |
 | **T8** | Pilot country activation (ops) | T7 + counsel | First ACTIVE country(ies) with evidence; optional flip `contributorOnboardingPolicy` |
-| **T9** | Buyer market overlays + sanctions checklist | Counsel | US/EU/UK overlay status in admin; OFAC screening SOP linked |
+| **T9** | Buyer market overlays + sanctions checklist | Counsel | **Foundation shipped** — flag-OFF screening evidence + country-matrix provider slots (`compliance.screening_enabled`); not country-only reject; no invented OFAC vendor. **Partner activation** + US/EU/UK overlay counsel status still blocked. |
 
 **Parallelisation that is safe:** T7 / **P0 policy core** (`08`) can run beside
 T1–T4. **T5/T6 must wait** on Dec-PayBase. **T3/T8** wait on counsel artifacts.

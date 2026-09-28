@@ -134,6 +134,13 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     placeholder: 'false',
   },
   {
+    key: 'compliance.screening_enabled',
+    label: 'T9 compliance screening (true/false). Keep false until KYC partners and counsel approve production activation. Not a country-blanket reject.',
+    group: 'Compliance / T9',
+    secret: false,
+    placeholder: 'false',
+  },
+  {
     key: 'moderation.disposable_email_domains',
     label: 'Blocked email domains for new accounts (comma-separated; sends to manual review, never blocks)',
     group: 'Moderation',

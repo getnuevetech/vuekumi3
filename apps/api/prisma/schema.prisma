@@ -299,6 +299,30 @@ enum SubjectMatchResult {
   unavailable
 }
 
+/// T9 — person/entity/BO/FI screening evidence (not a watchlist dump).
+enum ComplianceScreeningResult {
+  pending
+  clear
+  match
+  inconclusive
+  unavailable
+}
+
+enum ComplianceSubjectType {
+  person
+  entity
+  beneficial_owner
+  financial_institution
+}
+
+enum ComplianceScreeningFunction {
+  person
+  entity
+  beneficial_owner
+  fi
+  ofac_sop
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -382,6 +406,8 @@ model User {
   compensationEvents      CompensationProposalEvent[] @relation("CompensationEventActor")
   identityVerifications   IdentityVerificationEvidence[] @relation("IdentitySubject")
   identityVerificationsRecorded IdentityVerificationEvidence[] @relation("IdentityRecorder")
+  complianceScreenings    ComplianceScreeningEvidence[] @relation("ComplianceSubject")
+  complianceScreeningsRecorded ComplianceScreeningEvidence[] @relation("ComplianceRecorder")
   contributorWaitlist     ContributorWaitlist?
 
   @@index([accountType])
@@ -1432,6 +1458,52 @@ model IdentityVerificationEvidence {
   @@index([verifiedAt])
 }
 
+/// T9 — provider-neutral compliance screening evidence (flag OFF).
+/// Stores no watchlist dumps, OFAC list payloads, or raw vendor payloads.
+model ComplianceScreeningEvidence {
+  id            String                     @id @default(cuid())
+  /// Opaque vendor screening transaction id.
+  screeningId   String
+  vendor        String
+  subjectType   ComplianceSubjectType
+  subjectUserId String?
+  recordedById  String?
+  countryCode   String?
+  result        ComplianceScreeningResult  @default(pending)
+  notes         String?
+  screenedAt    DateTime?
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+
+  subjectUser User? @relation("ComplianceSubject", fields: [subjectUserId], references: [id], onDelete: SetNull)
+  recordedBy  User? @relation("ComplianceRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  country     Country? @relation(fields: [countryCode], references: [code], onDelete: SetNull)
+
+  @@unique([vendor, screeningId])
+  @@index([subjectUserId])
+  @@index([countryCode])
+  @@index([result])
+  @@index([screenedAt])
+}
+
+/// T9 country-matrix provider coverage slots — which partner covers which function.
+/// Nullable providerSlug until counsel names a partner. Not a country-blanket DENY.
+model CountryScreeningProviderSlot {
+  id                 String                       @id @default(cuid())
+  countryCode        String
+  screeningFunction  ComplianceScreeningFunction
+  providerSlug       String?
+  evidenceUrl        String?
+  notes              String?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  country Country @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  @@unique([countryCode, screeningFunction])
+  @@index([screeningFunction])
+}
+
 model LikenessCheck {
   id                 String              @id @default(cuid())
   appearanceId       String
@@ -1911,6 +1983,8 @@ model Country {
   payoutConfig   CountryPayoutConfig?
   payoutRate     PayoutFxRate?
   waitlistEntries ContributorWaitlist[]
+  complianceScreenings ComplianceScreeningEvidence[]
+  screeningProviderSlots CountryScreeningProviderSlot[]
 
   @@index([region])
   @@index([contributorEligible])

@@ -157,6 +157,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Brand Studio | Foundation shipped — buyer/agency `BrandProject` workspace links creative notes, optional campaign, and collection lightboxes at `/brand`. No production fee; attaching assets grants no licence. |
 | Hire expansion | Foundation shipped — `/hire` talent browse + `availability=hireable` filters on photographer/model lists; Creators and PhotoDetail CTAs into existing Phase 30 booking. No booking commission or payment rails. |
 | Legal / DMCA public copy (T3) | Foundation shipped — Admin Settings Legal + DMCA groups; `/legal` contracting entity block; `/dmca` counsel-pending marker. No invented entity or Copyright Office claim. Counsel-complete (real entity, filed agent, signed copy) still blocked. |
+| Compliance screening (T9) | Foundation shipped — `compliance.screening_enabled` default false; `ComplianceScreeningEvidence` + country-matrix `CountryScreeningProviderSlot`; null provider. Not country-only reject; no invented OFAC/KYC vendor. Partner activation still counsel/ops-gated. |
 | Separate AI-training consent | **Yes** (Phase 34) — explicit per-photograph opt-in on copyright and likeness, separate from RF/commercial grants. Dataset pricing is **undecided**; VueKumi does not sell training access. Buyer certificates stamp `ai_training: false`. Partner API still does not grant training rights. |
 | Photographer/model revenue split | **Undecided — do not invent** |
 
