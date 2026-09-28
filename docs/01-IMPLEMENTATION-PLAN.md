@@ -152,7 +152,7 @@ Full doctrine: [`03-PRODUCT-AND-RIGHTS.md`](./03-PRODUCT-AND-RIGHTS.md) §8.
 | Photo influencer role | Shipped — first-class `accountType: photo_influencer`. Separate registration, admin list, and terms from photographers. Not commercial stock. One type per email. |
 | Talent booking | Shipped (Phase 30) — briefs, quotes, accept/decline/withdraw with availability on profiles. Off-platform settlement; no commission (rate undecided). |
 | VueQuatro representation / agency-protected inventory | Shipped (Phase 31) — opt-in, revocable, no commission (rate undecided), copyright unchanged. Agency-protected inventory routes to staff inquiries instead of checkout. Staff mode only, no second public brand. |
-| Partner API | Shipped (Phase 33) — read-only distribution of cleared inventory with honest licence flags, per-key rate limits, and explicit no-AI-training terms. Licences are still granted on VueKumi. |
+| Partner API | Shipped (Phase 33) — read-only distribution of cleared inventory with honest licence flags, per-key rate limits, and explicit no-AI-training terms. **Depth:** DTO exposes `libraryTier`/`licenseType`; list filters align with public catalog. Licences are still granted on VueKumi. |
 | Separate AI-training consent | **Yes** (Phase 34) — explicit per-photograph opt-in on copyright and likeness, separate from RF/commercial grants. Dataset pricing is **undecided**; VueKumi does not sell training access. Buyer certificates stamp `ai_training: false`. Partner API still does not grant training rights. |
 | Photographer/model revenue split | **Undecided — do not invent** |
 

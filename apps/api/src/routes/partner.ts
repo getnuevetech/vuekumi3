@@ -1,14 +1,18 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import type { LicenseProduct } from '@prisma/client'
-import { createPartnerKeySchema, PARTNER_API_TERMS } from '@vuekumi/shared'
+import {
+  createPartnerKeySchema,
+  partnerListQuerySchema,
+  PARTNER_API_TERMS,
+} from '@vuekumi/shared'
 import type { PartnerKeyDto, PartnerPhotoDto } from '@vuekumi/shared'
-import { z } from 'zod'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
 import {
+  buildPhotoWhere,
   catalogPhotoInclude,
-  normalizeQuery,
+  photoOrderBy,
   STOCK_PHOTO_FILTER,
   type CatalogPhoto,
 } from '../lib/catalog.js'
@@ -18,14 +22,6 @@ import { mediaSrc, serializeLicenseProduct } from '../lib/serialize.js'
 
 /** Per-key limit — well below the anonymous global limit's abuse ceiling. */
 export const PARTNER_RATE_LIMIT = { max: 120, timeWindow: '1 minute' as const }
-
-const partnerListQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(24),
-  q: z.string().max(120).optional(),
-  category: z.string().max(60).optional(),
-  country: z.string().max(60).optional(),
-})
 
 function serializePartnerKey(row: {
   id: string
@@ -62,6 +58,8 @@ function serializePartnerPhoto(photo: CatalogPhoto, products: LicenseProduct[]):
     category: photo.category,
     country: photo.country,
     tags: photo.tags.map((t) => t.tag),
+    libraryTier: photo.libraryTier,
+    licenseType: photo.licenseType === 'premium' ? 'premium' : 'free',
     width: photo.width,
     height: photo.height,
     urls: {
@@ -154,28 +152,16 @@ export async function partnerRoutes(app: FastifyInstance) {
 
   app.get('/partner/v1/photos', partner, async (request) => {
     const query = partnerListQuerySchema.parse(request.query)
-    const q = normalizeQuery(query.q)
-    const where = {
-      ...STOCK_PHOTO_FILTER,
-      ...(query.category ? { category: query.category } : {}),
-      ...(query.country ? { country: { contains: query.country, mode: 'insensitive' as const } } : {}),
-      ...(q
-        ? {
-            OR: [
-              { title: { contains: q, mode: 'insensitive' as const } },
-              { description: { contains: q, mode: 'insensitive' as const } },
-              { tags: { some: { tag: { contains: q, mode: 'insensitive' as const } } } },
-            ],
-          }
-        : {}),
-    }
+    // Same stock + facet filters as public search so partners can target
+    // library tiers (incl. Verified+) without inventing a second catalog.
+    const where = buildPhotoWhere(query)
 
     const [total, photos, products] = await Promise.all([
       prisma.photo.count({ where }),
       prisma.photo.findMany({
         where,
         include: catalogPhotoInclude,
-        orderBy: { createdAt: 'desc' },
+        orderBy: photoOrderBy(query.sort),
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
