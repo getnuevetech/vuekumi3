@@ -26,7 +26,18 @@ export const PARTNER_API_TERMS =
   'Usage permission only, never ownership. Licences are granted on VueKumi checkout. '
   + 'AI training is not permitted through this API even when a photograph has a separate AI-training opt-in. '
   + 'Dataset pricing is undecided; VueKumi does not sell training access. '
-  + 'Attribution: photographer name and profile URL.'
+  + 'Attribution required: photographer name and profile URL on every public display. '
+  + 'Report preview downloads via POST /partner/v1/photos/:id/events — this does not grant a licence.'
+
+export const PARTNER_API_EVENT_TYPES = ['view', 'download_preview', 'attribution_ack'] as const
+export type PartnerApiEventType = (typeof PARTNER_API_EVENT_TYPES)[number]
+
+export const partnerApiEventSchema = z.object({
+  eventType: z.enum(PARTNER_API_EVENT_TYPES),
+  fileVariant: z.enum(['thumb', 'preview']).optional(),
+  referrer: z.string().max(500).optional().or(z.literal('')),
+})
+export type PartnerApiEventInput = z.infer<typeof partnerApiEventSchema>
 
 export const createPartnerKeySchema = z.object({
   name: z.string().min(2).max(120),
@@ -86,11 +97,29 @@ export interface PartnerPhotoDto {
   height: number | null
   urls: { thumb: string; preview: string }
   photographer: { name: string; handle: string; profileUrl: string }
+  /** Required credit line for partner surfaces — not optional branding. */
+  attribution: {
+    required: true
+    text: string
+    photographerName: string
+    profileUrl: string
+    webUrl: string
+  }
   licenses: PartnerLicenseDto[]
   webUrl: string
   createdAt: string
   aiTrainingConsented: boolean
   aiTrainingPermitted: false
+}
+
+export interface PartnerApiEventDto {
+  id: string
+  partnerKeyId: string
+  photoId: string
+  eventType: PartnerApiEventType
+  fileVariant: string | null
+  referrer: string | null
+  createdAt: string
 }
 
 /** Why a partner request is rejected, or null when the key is good. */

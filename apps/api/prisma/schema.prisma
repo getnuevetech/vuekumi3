@@ -537,8 +537,29 @@ model PartnerApiKey {
   updatedAt    DateTime         @updatedAt
 
   createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  events    PartnerApiEvent[]
 
   @@index([status])
+}
+
+/// V21-P3 — Partner API attribution / view / preview-download audit (no licence grant, no fees).
+model PartnerApiEvent {
+  id           String   @id @default(cuid())
+  partnerKeyId String
+  photoId      String
+  /// view | download_preview | attribution_ack
+  eventType    String
+  fileVariant  String?
+  referrer     String?
+  source       String?  @default("partner_api")
+  createdAt    DateTime @default(now())
+
+  partnerKey PartnerApiKey @relation(fields: [partnerKeyId], references: [id], onDelete: Cascade)
+  photo      Photo         @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@index([partnerKeyId, createdAt])
+  @@index([photoId, createdAt])
+  @@index([eventType, createdAt])
 }
 
 model Campaign {
@@ -916,6 +937,7 @@ model Photo {
   rightsStrikes    RightsStrike[]
   featuredPins     HomeFeaturedPin[]
   openDownloadEvents OpenDownloadEvent[]
+  partnerApiEvents PartnerApiEvent[]
   compensationProposals CompensationProposal[]
   identityVerifications IdentityVerificationEvidence[]
 

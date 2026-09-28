@@ -220,7 +220,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | --- | --- |
 | **P2-T6** | Real model payouts after finance readiness — **ledger shipped**; **model withdrawal rails shipped behind `payouts.model_withdrawal_enabled` (default false, provider stays `manual`)**. Flip flag after finance readiness — no invented processor. |
 | **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
-| **Partner API depth** | **Shipped** — partner photo DTO exposes `libraryTier` + `licenseType`; list filters reuse catalog `buildPhotoWhere` (`libraryTier`, `license`, `tag`, `photographer`, `sort`) |
+| **Partner API depth** | **Shipped** — `libraryTier`/`licenseType` filters + **V21-P3** required attribution DTO + `PartnerApiEvent` view/preview/ack audit + admin rollup. No enterprise teams; no fee SKUs; events do not grant licences. |
 | **P2-OE** | Content Opportunity Engine foundation — **shipped** (`SearchOpportunityEvent` from catalog search; contributor + admin rollups of unmet demand; seed gaps; no auto-briefs/ML) |
 | **P2-BS** | Brand Studio foundation — **shipped** (`BrandProject` workspace for buyers/agencies; link campaign + lightboxes; `/brand` hub; no production fees / no licence-on-attach) |
 | **P2-HE** | Hire expansion foundation — **shipped** (availability/`hireable` list filters; `/hire` talent browse; Creators + PhotoDetail CTAs into Phase 30 booking; no commission/rails) |
