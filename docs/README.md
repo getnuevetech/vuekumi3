@@ -59,6 +59,8 @@ Read in this order:
    Fail-closed detection (Phase 64) and model-upload parity (Phase 65) shipped — see `10`.
 11. **[runbooks/rights-ops.md](./runbooks/rights-ops.md)** — staff rights-ops SOP
    (Phase 51 / T2). Public holder review: `/rights` (Phase 52 / T4).
+11b. **[runbooks/homepage-cms.md](./runbooks/homepage-cms.md)** — Homepage vs Featured vs
+    Site vs Menu ownership; public `/api/public/home` and `/api/public/site` DTO freeze (H2).
 12. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
    Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
    and the shipped status header.
