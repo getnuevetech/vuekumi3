@@ -76,8 +76,8 @@ Small, high-leverage slices. Approve one at a time; none invent economics.
 | Slice | Scope | Acceptance |
 | --- | --- | --- |
 | **H1 — Wire orphan API tests** | Add to `apps/api` `npm test`: `account-features`, `account-plans`, `buyer-plans`, `home-layout`, `home-slot-uploads` (files exist on disk, omitted from script) | `npm test` runs all five; CI green |
-| **H2 — Homepage CMS contract freeze** | Short runbook: Homepage vs Featured vs Site vs Menu ownership; which DTO fields public `GET /api/public/home` and `GET /api/public/site` expose | Staff can operate without guessing; no schema change unless a bug is found |
-| **H3 — Split oversized modules (pass 1)** | Extract from `apps/api/src/routes/contributor.ts` (~1.3k) and/or `apps/web/src/pages/Home.tsx` (~1.1k) — section components / route submodules **without** behaviour change | Same tests pass; files under ~500–600 LOC each where practical |
+| **H2 — Homepage CMS contract freeze** | Short runbook: Homepage vs Featured vs Site vs Menu ownership; which DTO fields public `GET /api/public/home` and `GET /api/public/site` expose | Staff can operate without guessing; no schema change unless a bug is found — **shipped** (`docs/runbooks/homepage-cms.md`) |
+| **H3 — Split oversized modules (pass 1)** | Extract from `apps/api/src/routes/contributor.ts` (~1.3k) and/or `apps/web/src/pages/Home.tsx` (~1.1k) — section components / route submodules **without** behaviour change | Same tests pass; files under ~500–600 LOC each where practical — **shipped** (`contributor/*` route modules; `Home.tsx` thin) |
 | **H4 — Adopt React Query where it hurts** | Start with `api.home()`, `api.site()`, admin homepage save/reload — Query already in `main.tsx` but unused by pages | Mutations invalidate correctly; no double-fetch on navigation — **shipped** (P1-H4 in `12`) |
 | **H5 — Expand Playwright beyond smoke** | One authenticated contributor upload → people prompt path; one admin homepage reorder save → public home reflects order | Specs stable in CI with seed DB — **shipped** (P1-H5 in `12`; `e2e/h5-invariants.spec.ts`) |
 
@@ -131,14 +131,14 @@ B3  Update 06 with signed answers; then open one build from 10 §4
 ### Track C — Engineering hygiene (approve slices)
 
 ```
-C1  H1 orphan tests          ← default first code slice (smallest)
-C2  H2 homepage CMS runbook  ← docs only
-C3  H3 module split pass 1   ← after H1 green
-C4  H4 React Query foothold  ← optional; after H3 or in parallel on web-only
-C5  H5 Playwright expansion  ← after A5 so local/CI patterns match live
+C1  H1 orphan tests          ← shipped (wired into api npm test)
+C2  H2 homepage CMS runbook  ← shipped (docs/runbooks/homepage-cms.md)
+C3  H3 module split pass 1   ← shipped (contributor/* + thin Home.tsx)
+C4  H4 React Query foothold  ← shipped (P1-H4)
+C5  H5 Playwright expansion  ← shipped (e2e/h5-invariants.spec.ts)
 ```
 
-**Exit:** CI runs the five orphaned tests; one oversized module split; smoke still green.
+**Exit:** H1–H5 complete. Further hygiene only with explicit approval.
 
 ### Track D — Product phases (gated)
 
