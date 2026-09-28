@@ -1,13 +1,17 @@
 # VueKumi — execution plan after review (23 September 2026)
 
 **Status: plan only. Do not start a numbered phase until it is explicitly
-approved.** This document is the current backlog. It reconciles the Trust &
-Markets memo, the Admin Portal engineering spec, and the AI-pipeline request
-with `main` through Phase 61.
+approved.** This document is the **product-phase** backlog. For current ops,
+decision-workshop, and engineering-hygiene sequencing after the 28 September
+2026 repo/app review, see
+[`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md).
+It reconciles the Trust & Markets memo, the Admin Portal engineering spec, and
+the AI-pipeline request with `main` through Phase 65.
 
 Companions:
 
-- [`09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md`](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md) — AI phases 58–63 (58, 59, 61 shipped).
+- [`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md) — ops / Dec-* workshop / hygiene tracks (current default).
+- [`09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md`](./09-AI-PIPELINE-MULTI-PROVIDER-AND-SUBJECT-DETECTION-PLAN.md) — AI phases 58–65 (58–59, 61–65 shipped; 60 blocked).
 - [`07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md`](./07-TRUST-RIGHTS-COMPENSATION-COUNTRY-PLAN.md) — Arc T (T0–T9).
 - [`08-ADMIN-PORTAL-ENGINEERING-SPEC.md`](./08-ADMIN-PORTAL-ENGINEERING-SPEC.md) — three layers, eight modules, PDS, P0–P2.
 - [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md) — Dec-* blanks and live ops.
