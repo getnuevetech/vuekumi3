@@ -117,7 +117,7 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 | Compensation negotiation + Open interaction | **Shipped** (P1-T5) |
 | USD ledger + model likeness lines | **Shipped**; withdrawal **flag OFF** |
 | Public report / DMCA / disputes | **Shipped**; T3 counsel paste pending |
-| Free Library **criteria moderation** queue | **Shipped** — admin filter + `14` criteria; deeper SOP optional |
+| Free Library **criteria moderation** queue | **Shipped** — admin filter + `14` criteria + [`runbooks/free-library-moderation.md`](./runbooks/free-library-moderation.md) |
 | **AI enhance low-res** on Free Library upload | **Shipped** (FC1) |
 | Photo Influencer no-subscription | **Shipped** / locked |
 | Free → paid same-email upgrade | **Shipped** (FC2) |
