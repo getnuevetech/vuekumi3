@@ -104,6 +104,7 @@ test('partner API: admin issues key, cleared inventory only, honest licences, us
       libraryTier: string
       licenseType: string
       photographer: { profileUrl: string }
+      attribution: { required: boolean; text: string; photographerName: string }
       licenses: { type: string; offered: boolean }[]
     }[]
     terms: string
@@ -205,6 +206,64 @@ test('partner API: admin issues key, cleared inventory only, honest licences, us
   const used = await prisma.partnerApiKey.findUniqueOrThrow({ where: { id: partnerKey.id } })
   assert.ok(used.requestCount >= 2)
   assert.ok(used.lastUsedAt)
+
+  // V21-P3: list items carry required attribution; detail logs a view; POST events never grant a licence.
+  const sampleId = body.items[0]!.id
+  assert.ok(
+    body.items.every((item) => item.attribution?.required === true && item.attribution.text && item.attribution.photographerName),
+    'partner photo DTOs must expose required attribution',
+  )
+  const detail = await app.inject({
+    method: 'GET',
+    url: `/api/partner/v1/photos/${sampleId}`,
+    headers: { authorization: `Bearer ${key}` },
+  })
+  assert.equal(detail.statusCode, 200, detail.body)
+  const detailPhoto = (detail.json() as {
+    photo: { attribution: { required: true; text: string; webUrl: string } }
+  }).photo
+  assert.equal(detailPhoto.attribution.required, true)
+  assert.match(detailPhoto.attribution.text, /Photo by/)
+  assert.match(detailPhoto.attribution.webUrl, new RegExp(sampleId))
+
+  const loggedView = await prisma.partnerApiEvent.findFirst({
+    where: { partnerKeyId: partnerKey.id, photoId: sampleId, eventType: 'view' },
+  })
+  assert.ok(loggedView, 'detail fetch should record a partner view event')
+
+  const previewEvent = await app.inject({
+    method: 'POST',
+    url: `/api/partner/v1/photos/${sampleId}/events`,
+    headers: { authorization: `Bearer ${key}` },
+    payload: { eventType: 'download_preview', fileVariant: 'preview', referrer: 'https://partner.example/embed' },
+  })
+  assert.equal(previewEvent.statusCode, 200, previewEvent.body)
+  const previewBody = previewEvent.json() as { licenceGranted: boolean; event: { eventType: string } }
+  assert.equal(previewBody.licenceGranted, false)
+  assert.equal(previewBody.event.eventType, 'download_preview')
+
+  const ack = await app.inject({
+    method: 'POST',
+    url: `/api/partner/v1/photos/${sampleId}/events`,
+    headers: { authorization: `Bearer ${key}` },
+    payload: { eventType: 'attribution_ack' },
+  })
+  assert.equal(ack.statusCode, 200, ack.body)
+
+  const adminEvents = await app.inject({
+    method: 'GET',
+    url: `/api/admin/partner-keys/${partnerKey.id}/events`,
+    headers: { cookie: admin },
+  })
+  assert.equal(adminEvents.statusCode, 200, adminEvents.body)
+  const rollup = adminEvents.json() as {
+    items: { eventType: string }[]
+    totals: Record<string, number>
+  }
+  assert.ok(rollup.totals.view >= 1)
+  assert.ok(rollup.totals.download_preview >= 1)
+  assert.ok(rollup.totals.attribution_ack >= 1)
+  assert.ok(rollup.items.length >= 3)
 
   // Revocation cuts access immediately.
   const revoked = await app.inject({

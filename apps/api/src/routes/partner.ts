@@ -2,10 +2,11 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import type { LicenseProduct } from '@prisma/client'
 import {
   createPartnerKeySchema,
+  partnerApiEventSchema,
   partnerListQuerySchema,
   PARTNER_API_TERMS,
 } from '@vuekumi/shared'
-import type { PartnerKeyDto, PartnerPhotoDto } from '@vuekumi/shared'
+import type { PartnerApiEventDto, PartnerKeyDto, PartnerPhotoDto } from '@vuekumi/shared'
 import { config } from '../config.js'
 import { writeAuditLog } from '../lib/audit.js'
 import { requireAdminCapability } from '../lib/auth-middleware.js'
@@ -51,6 +52,9 @@ function absoluteMediaUrl(src: string): string {
 
 function serializePartnerPhoto(photo: CatalogPhoto, products: LicenseProduct[]): PartnerPhotoDto {
   const handle = photo.contributor.contributorProfile?.handle ?? photo.contributorId
+  const profileUrl = `${config.webUrl}/p/${handle}`
+  const webUrl = `${config.webUrl}/photo/${photo.id}`
+  const photographerName = photo.contributor.name
   return {
     id: photo.id,
     title: photo.title,
@@ -67,9 +71,16 @@ function serializePartnerPhoto(photo: CatalogPhoto, products: LicenseProduct[]):
       preview: absoluteMediaUrl(mediaSrc(photo, 'preview')),
     },
     photographer: {
-      name: photo.contributor.name,
+      name: photographerName,
       handle,
-      profileUrl: `${config.webUrl}/p/${handle}`,
+      profileUrl,
+    },
+    attribution: {
+      required: true,
+      text: `Photo by ${photographerName} / VueKumi (${webUrl})`,
+      photographerName,
+      profileUrl,
+      webUrl,
     },
     // Same guards as checkout: the API never claims an uncleared image is
     // commercially licensable.
@@ -83,11 +94,50 @@ function serializePartnerPhoto(photo: CatalogPhoto, products: LicenseProduct[]):
         ...(dto.blockedReason ? { reason: dto.blockedReason } : {}),
       }
     }),
-    webUrl: `${config.webUrl}/photo/${photo.id}`,
+    webUrl,
     createdAt: photo.createdAt.toISOString(),
     aiTrainingConsented: Boolean((photo as { aiTrainingEligible?: boolean }).aiTrainingEligible),
     aiTrainingPermitted: false as const,
   }
+}
+
+function serializePartnerEvent(row: {
+  id: string
+  partnerKeyId: string
+  photoId: string
+  eventType: string
+  fileVariant: string | null
+  referrer: string | null
+  createdAt: Date
+}): PartnerApiEventDto {
+  return {
+    id: row.id,
+    partnerKeyId: row.partnerKeyId,
+    photoId: row.photoId,
+    eventType: row.eventType as PartnerApiEventDto['eventType'],
+    fileVariant: row.fileVariant,
+    referrer: row.referrer,
+    createdAt: row.createdAt.toISOString(),
+  }
+}
+
+async function recordPartnerEvent(input: {
+  partnerKeyId: string
+  photoId: string
+  eventType: string
+  fileVariant?: string | null
+  referrer?: string | null
+}) {
+  return prisma.partnerApiEvent.create({
+    data: {
+      partnerKeyId: input.partnerKeyId,
+      photoId: input.photoId,
+      eventType: input.eventType,
+      fileVariant: input.fileVariant ?? null,
+      referrer: input.referrer?.trim().slice(0, 500) || null,
+      source: 'partner_api',
+    },
+  })
 }
 
 export async function partnerRoutes(app: FastifyInstance) {
@@ -140,6 +190,29 @@ export async function partnerRoutes(app: FastifyInstance) {
     return { partnerKey: serializePartnerKey(updated) }
   })
 
+  app.get('/admin/partner-keys/:id/events', listKeys, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const key = await prisma.partnerApiKey.findUnique({ where: { id } })
+    if (!key) return reply.code(404).send({ error: 'Key not found' })
+    const q = request.query as { limit?: string }
+    const limit = Math.min(100, Math.max(1, Number(q.limit) || 40))
+    const events = await prisma.partnerApiEvent.findMany({
+      where: { partnerKeyId: id },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    })
+    const byType = await prisma.partnerApiEvent.groupBy({
+      by: ['eventType'],
+      where: { partnerKeyId: id },
+      _count: { _all: true },
+    })
+    return {
+      partnerKey: serializePartnerKey(key),
+      items: events.map(serializePartnerEvent),
+      totals: Object.fromEntries(byType.map((row) => [row.eventType, row._count._all])),
+    }
+  })
+
   const partner = {
     preHandler: (request: FastifyRequest, reply: FastifyReply) => authenticatePartner(request, reply),
     config: {
@@ -189,6 +262,41 @@ export async function partnerRoutes(app: FastifyInstance) {
       where: { active: true },
       orderBy: { sortOrder: 'asc' },
     })
+    // V21-P3: detail fetch counts as a view (attribution surfaces on the DTO).
+    if (request.partnerKeyId) {
+      await recordPartnerEvent({
+        partnerKeyId: request.partnerKeyId,
+        photoId: photo.id,
+        eventType: 'view',
+        referrer: typeof request.headers.referer === 'string' ? request.headers.referer : null,
+      }).catch(() => undefined)
+    }
     return { photo: serializePartnerPhoto(photo, products), terms: PARTNER_API_TERMS }
+  })
+
+  app.post('/partner/v1/photos/:id/events', partner, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const body = partnerApiEventSchema.parse(request.body)
+    const photo = await prisma.photo.findFirst({
+      where: { id, ...STOCK_PHOTO_FILTER },
+      select: { id: true },
+    })
+    if (!photo) return reply.code(404).send({ error: 'Photo not found' })
+    if (!request.partnerKeyId) return reply.code(401).send({ error: 'Partner API key required' })
+
+    const event = await recordPartnerEvent({
+      partnerKeyId: request.partnerKeyId,
+      photoId: photo.id,
+      eventType: body.eventType,
+      fileVariant: body.fileVariant ?? (body.eventType === 'download_preview' ? 'preview' : null),
+      referrer: body.referrer || null,
+    })
+
+    return {
+      event: serializePartnerEvent(event),
+      // Explicit: logging is not checkout and grants nothing.
+      licenceGranted: false,
+      message: 'Event recorded. Licences are still granted only on VueKumi checkout.',
+    }
   })
 }

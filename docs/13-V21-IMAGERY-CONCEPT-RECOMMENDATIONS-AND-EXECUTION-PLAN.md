@@ -1,6 +1,6 @@
 # VueKumi Imagery Concept v2.1 — recommendations & execution plan
 
-**Status: R1–R8 + FC0–FC2 + V21-P2 SHIPPED (28 Sep 2026).** Dec-FreeLib A + Dec-TierMap + Dec-Upgrade locked. Remaining work is **V21-Gated** (finance / counsel / vendor / Dec-Fee / Dec-AI) — do not invent.  
+**Status: R1–R8 + FC0–FC2 + V21-P2 + V21-P3 attribution/events SHIPPED (28 Sep 2026).** Dec-FreeLib A + Dec-TierMap + Dec-Upgrade locked. Remaining work is **V21-Gated** (finance / counsel / vendor / Dec-Fee enterprise SKUs / Dec-AI) — do not invent.  
 Source: *VueKumi Imagery Platform — Full Product, Content, Rights & Commercial Concept* v2.1 (September 2026), plus product direction 28 Sep 2026.  
 Does **not** restart shipped rights/Open/Licensed/Verified+ engineering from [`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md).
 
@@ -199,6 +199,19 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 
 ---
 
+### V21-P3 — Partner distribution depth — **SHIPPED** (foundation; no fees)
+
+| ID | Work | Status |
+| --- | --- | --- |
+| **V21-P3-1** | Required attribution block on partner photo DTO | **Shipped** |
+| **V21-P3-2** | Partner view / preview-download / attribution_ack events | **Shipped** (`PartnerApiEvent`; detail GET logs `view`) |
+| **V21-P3-3** | Admin per-key event rollup | **Shipped** `GET /admin/partner-keys/:id/events` |
+| **V21-P3-4** | Enterprise teams / paid API SKUs | **Held** — Dec-Fee / enterprise |
+
+Events never grant a licence. AI training remains forbidden on the partner API.
+
+---
+
 ### V21-Gated — activate only with owners
 
 | ID | Wait for |
@@ -208,7 +221,7 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 | T9 / Bio ON | Vendor + DPA |
 | Hire/Brand payment rails | Dec-Fee |
 | Verified+ indemnity product | Counsel + finance |
-| Partner API attribution/download events + enterprise teams | Product Phase 3 + Dec-Fee/enterprise |
+| Partner API attribution/download events + enterprise teams | **Attribution + events foundation shipped (V21-P3)**; enterprise teams / fee SKUs still Dec-Fee |
 | AI dataset licensing | Dec-AI |
 
 ---
@@ -230,7 +243,7 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 | --- | --- |
 | Phase 1 — Core marketplace | **Largely shipped**; Free Library program = FC1 delta |
 | Phase 2 — Demand & creator economy | **Shipped** foundations + FC1 + V21-P2 depth |
-| Phase 3 — Distribution & enterprise | Partner API foundation only; enterprise/API SKUs later |
+| Phase 3 — Distribution & enterprise | **V21-P3 attribution/events foundation shipped**; enterprise teams / API SKUs still Dec-Fee |
 
 ---
 
