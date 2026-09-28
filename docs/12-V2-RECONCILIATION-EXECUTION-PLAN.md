@@ -1,19 +1,17 @@
 # VueKumi — Imagery Concept v2.0 reconciliation execution plan
 
-**Status: P0 foundation + P1-T5 negotiation + P1-60 identity evidence (flag OFF)
-shipped.** Companion to
+**Status: Imagery Concept v2.0 reconciliation foundations shipped.** P0–P2
+ungated product slices (including T5 UI, T3/T9 foundations, T6 ledger) are on
+`main`. Remaining work is externally gated: T6 payout **withdrawal**, T3
+counsel-complete (real entity / filed agent), T9 KYC partner activation, and
+Phase 60 / Bio production ON. Companion to
 [`11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md`](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md)
 (Sep 28 repo review) and [`10-POST-REVIEW-EXECUTION-PLAN.md`](./10-POST-REVIEW-EXECUTION-PLAN.md)
 (product phases). Decision blanks updated in
 [`06-OPS-INVENTORY-AND-DECISION-BRIEF.md`](./06-OPS-INVENTORY-AND-DECISION-BRIEF.md).
 
-**Do not implement the full VueKumi Imagery Concept v2.0 UI on top of the old
-backlog yet.** First ship a **reconciliation release** that aligns rights,
-library tiers, Photo Influencer, Open downloads, configurable economics, and
-country activation with v2.0 assumptions.
-
-The prior deferrals were mostly correct legal/business stops. Several items
-are now **partially unblocked** by the locked decisions in §1.
+**Do not invent** finance payout rails, a KYC/OFAC vendor, or signed legal
+entity copy. Counsel and finance own those gates.
 
 ---
 
@@ -94,7 +92,7 @@ and nonmember rights holders remain allowed.
 | **T6** | Ledger now; defer payout rails | Write model `EarningsLedger` lines from Dec-PayBase on grant; certificates must **not** show model economics; withdrawal rails stay finance-gated |
 | **T3** | Correct | Finalize public legal copy + registered agent; engine stays — **foundation shipped** (settings + public surfaces); counsel-complete still blocked |
 | **T8** | Structure OK; signup wrong for v2 | HOLD → waitlist (not full contributor); ACTIVE required to activate |
-| **T9** | Correct | Keep country overlays separate from person/entity sanctions screening |
+| **T9** | Correct | Keep country overlays separate from person/entity sanctions screening — **foundation shipped** (flag OFF + provider slots); partner activation still gated |
 | **H3** | No longer low priority | Split before adding v2 features |
 | **H4** | Bring forward | Home, Search, Site Content, curation |
 | **H5** | Bring forward | Rights, Open downloads, contributor, admin invariants |
