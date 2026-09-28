@@ -48,7 +48,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Re-seed before web smoke
         run: npm run db:seed -w @vuekumi/api
-      - name: Web smoke (Phases 45 + 55)
+      - name: Web smoke + P1-H5 invariants
         run: npm run test:e2e
 
   images:

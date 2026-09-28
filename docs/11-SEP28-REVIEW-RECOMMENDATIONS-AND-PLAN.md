@@ -79,7 +79,7 @@ Small, high-leverage slices. Approve one at a time; none invent economics.
 | **H2 — Homepage CMS contract freeze** | Short runbook: Homepage vs Featured vs Site vs Menu ownership; which DTO fields public `GET /api/public/home` and `GET /api/public/site` expose | Staff can operate without guessing; no schema change unless a bug is found |
 | **H3 — Split oversized modules (pass 1)** | Extract from `apps/api/src/routes/contributor.ts` (~1.3k) and/or `apps/web/src/pages/Home.tsx` (~1.1k) — section components / route submodules **without** behaviour change | Same tests pass; files under ~500–600 LOC each where practical |
 | **H4 — Adopt React Query where it hurts** | Start with `api.home()`, `api.site()`, admin homepage save/reload — Query already in `main.tsx` but unused by pages | Mutations invalidate correctly; no double-fetch on navigation — **shipped** (P1-H4 in `12`) |
-| **H5 — Expand Playwright beyond smoke** | One authenticated contributor upload → people prompt path; one admin homepage reorder save → public home reflects order | Specs stable in CI with seed DB |
+| **H5 — Expand Playwright beyond smoke** | One authenticated contributor upload → people prompt path; one admin homepage reorder save → public home reflects order | Specs stable in CI with seed DB — **shipped** (P1-H5 in `12`; `e2e/h5-invariants.spec.ts`) |
 
 ### R4 — Do not schedule yet
 

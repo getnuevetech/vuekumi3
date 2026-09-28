@@ -1,8 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Phase 45 — thin web smoke against a seeded local stack.
- * API contract coverage stays in apps/api tests; these only check critical UI paths.
+ * Phase 45 smoke + P1-H5 rights/Open/contributor/admin invariants.
+ * API contract coverage stays in apps/api tests; these check critical UI paths
+ * and Open/rights gates against the seeded DB (CI re-seeds before e2e).
  */
 export default defineConfig({
   testDir: './e2e',
@@ -23,12 +24,14 @@ export default defineConfig({
     {
       command: 'npm exec -w @vuekumi/api -- tsx src/index.ts',
       url: 'http://127.0.0.1:3001/api/health',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: process.env.E2E_REUSE === '1',
       timeout: 120_000,
       env: {
         ...process.env,
         PORT: '3001',
         NODE_ENV: 'development',
+        E2E: '1',
+        DISABLE_RATE_LIMIT: '1',
         DATABASE_URL:
           process.env.DATABASE_URL ??
           'postgresql://vuekumi:vuekumi@localhost:5432/vuekumi',
@@ -40,7 +43,7 @@ export default defineConfig({
     {
       command: 'npm exec -w @vuekumi/web -- vite --host 127.0.0.1 --port 3000',
       url: 'http://127.0.0.1:3000',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: process.env.E2E_REUSE === '1',
       timeout: 120_000,
     },
   ],
