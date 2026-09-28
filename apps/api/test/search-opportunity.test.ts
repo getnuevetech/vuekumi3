@@ -88,12 +88,16 @@ test('catalog search logs opportunity; contributor and admin surfaces rollups', 
   const searchBody = search.json() as { total: number }
   assert.equal(searchBody.total, 0)
 
-  // Allow fire-and-forget write to settle.
-  await new Promise((r) => setTimeout(r, 50))
-  const logged = await prisma.searchOpportunityEvent.findFirst({
-    where: { qNorm: marker },
-    orderBy: { createdAt: 'desc' },
-  })
+  // Fire-and-forget write — poll briefly so CI load does not flake on a fixed sleep.
+  let logged: Awaited<ReturnType<typeof prisma.searchOpportunityEvent.findFirst>> = null
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    logged = await prisma.searchOpportunityEvent.findFirst({
+      where: { qNorm: marker },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (logged) break
+    await new Promise((r) => setTimeout(r, 50))
+  }
   assert.ok(logged, 'search should create a SearchOpportunityEvent')
   assert.equal(logged.resultCount, 0)
 
