@@ -95,6 +95,7 @@ const PORTAL_PREFIXES = [
   '/admin',
   '/agency',
   '/bookings',
+  '/brand',
   '/campaigns',
   '/checkout',
   '/collections',
