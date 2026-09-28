@@ -65,7 +65,7 @@ import {
 import { appendRightsLedgerEvent, loadRightsLedger } from '../../lib/ledger.js'
 import { issueAppearanceInvite } from '../models.js'
 import { loadOriginalBytes, screenImageForRights, screeningWriteData } from '../../lib/screening.js'
-import { applyPreviewAdjustment, proposeRemediation, type RemediationProposal } from '../../lib/remediation.js'
+import { applyPreviewAdjustment, enhanceLowResolution, proposeRemediation, type RemediationProposal } from '../../lib/remediation.js'
 import { narrateCatalogEngagement, reportingProviderKind } from '../../lib/analytics-report.js'
 import { evaluateContentApproval } from '../../lib/moderation.js'
 import {
@@ -188,6 +188,7 @@ export {
   screenImageForRights,
   screeningWriteData,
   applyPreviewAdjustment,
+  enhanceLowResolution,
   proposeRemediation,
   narrateCatalogEngagement,
   reportingProviderKind,

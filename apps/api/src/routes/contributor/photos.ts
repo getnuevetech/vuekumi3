@@ -67,6 +67,7 @@ import {
   screenImageForRights,
   screeningWriteData,
   applyPreviewAdjustment,
+  enhanceLowResolution,
   proposeRemediation,
   narrateCatalogEngagement,
   reportingProviderKind,
@@ -348,10 +349,44 @@ export async function registerContributorPhotoRoutes(app: FastifyInstance, gate:
       }
     }
 
-    // Phase 62 — quality / duplicate quarantine. Option A: do not alter the original.
+    // Phase 62 / FC1-6 — Free Library low-res: enhance then re-check; quarantine if still unusable.
     let remediation: RemediationProposal | null = null
     if (image) {
-      remediation = await proposeRemediation(image)
+      let working = image
+      if (libraryTier === 'OPEN' && body.originalKey) {
+        const enhanced = await enhanceLowResolution(working, 800, 600)
+        if (enhanced.enhanced) {
+          await putObject(body.originalKey, enhanced.buffer, 'image/jpeg')
+          working = enhanced.buffer
+          await prisma.photo.update({
+            where: { id: photo.id },
+            data: { width: enhanced.width, height: enhanced.height },
+          })
+          try {
+            await processPhotoAssets(photo.id)
+          } catch (err) {
+            request.log.warn({ err, photoId: photo.id }, 'reprocess after Free Library enhance failed')
+          }
+        }
+      }
+      remediation = await proposeRemediation(working)
+      if (
+        libraryTier === 'OPEN' &&
+        remediation.decision !== 'quarantine' &&
+        ((photo.width != null && photo.width < 800) || (photo.height != null && photo.height < 600))
+      ) {
+        const meta = await enhanceLowResolution(working, 800, 600)
+        if (!meta.enhanced || meta.width < 800 || meta.height < 600) {
+          remediation = {
+            ...remediation,
+            decision: 'quarantine',
+            notes: [
+              `low_resolution: Free Library requires at least 800×600 after enhancement (${meta.width}×${meta.height}).`,
+              ...remediation.notes,
+            ],
+          }
+        }
+      }
       const duplicate = remediation.contentHash
         ? await prisma.photo.findFirst({
             where: {

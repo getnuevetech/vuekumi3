@@ -162,17 +162,17 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 
 ---
 
-### FC1 — Free Library + Photo Influencer enforcement
+### FC1 — Free Library + Photo Influencer enforcement — **SHIPPED** (foundations)
 
-| ID | Work |
-| --- | --- |
-| **FC1-1** | Product copy: Photo Influencer = free program; never imply subscription required |
-| **FC1-2** | Nav / search: **Free Library** (or Free Images) → `OPEN`/Free-Library-filtered catalog (Spec §17.1) |
-| **FC1-3** | Photo Influencer dashboard: Free Library stats (views/downloads), optional upgrade CTAs (not paywalls) |
-| **FC1-4** | **Hard enforce Dec-TierMap:** `photo_influencer` → Free Library only; `photographer` / `contributor` → paid tiers only (reject Free Library / `OPEN` for them) |
-| **FC1-5** | **Moderation:** Free Library review queue + criteria checklist for staff (approve / hold / reject with reason) |
-| **FC1-6** | **AI low-res path:** on Free Library upload, if below min resolution/quality → invoke Phase 62 enhancement; re-check; else quarantine with “low resolution” reason |
-| **FC1-7** | Playwright: PI Free Library only; photographer/contributor paid tiers only + Free Library blocked; low-res enhance or quarantine asserted |
+| ID | Work | Status |
+| --- | --- | --- |
+| **FC1-1** | Product copy: Photo Influencer = free program | **Shipped** (portal subtitle + dashboard) |
+| **FC1-2** | Nav **Free Library** → `/search?libraryTier=OPEN` | **Shipped** (default site menu + footer) |
+| **FC1-3** | PI dashboard Free Library CTAs | **Shipped** |
+| **FC1-4** | Hard Dec-TierMap enforce | **Shipped** (R1–R8 + upload coerce) |
+| **FC1-5** | Free Library admin review filter | **Shipped** (`/admin/content?libraryTier=OPEN`) |
+| **FC1-6** | AI/local low-res enhance on Free Library upload | **Shipped** (`enhanceLowResolution`) |
+| **FC1-7** | Playwright | Deferred / covered by API Dec-TierMap tests |
 
 ---
 

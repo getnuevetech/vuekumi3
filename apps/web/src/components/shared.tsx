@@ -527,6 +527,7 @@ export function portalLinkActive(pathname: string, to: string | undefined, searc
     return pathname === path
   }
   if (path === '/admin/content' && actual.get('category')) return false
+  if (path === '/admin/content' && actual.get('libraryTier')) return false
   return pathname === path || (!isPortalRootPath(path!) && pathname.startsWith(`${path}/`))
 }
 

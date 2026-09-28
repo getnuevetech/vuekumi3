@@ -81,14 +81,15 @@ function Shell({ children }: { children: React.ReactNode }) {
     : features
       ? !features.includes('commercial_stock')
       : isNonCommercialCreator(user?.accountType);
+  const freeLibrary = !staffActing && (user?.accountType === 'photo_influencer' || community)
   return (
     <PortalShell
       title={staffActing ? 'Creator portal (staff)' : `${creatorPortalLabel(user?.accountType)} portal`}
       subtitle={staffActing
         ? 'Acting as a creator. Staff JWT stays — payouts cannot be changed from here.'
-        : community
-          ? 'Portfolio and editorial sharing. Commercial stock is reserved for professional photographers.'
-          : 'Upload, bookings, commercial stock, and copyright income.'}
+        : freeLibrary
+          ? 'Free Library uploads only — no subscription required. Upgrade to Photographer or Contributor for paid tiers.'
+          : 'Upload paid library tiers, bookings, commercial stock, and copyright income.'}
       links={contributorPortalLinks(staffActing ? false : user?.hasModelProfile)}
     >
       {staffActing && (
@@ -280,6 +281,29 @@ export function ContributorDashboard() {
             Habari, {firstName}.
           </h1>
           <p className="mt-1 text-sm text-ink-soft">Here's how your work is performing.</p>
+          {community && !actAsId && (
+            <div className="mt-4 max-w-xl rounded-2xl border border-sand bg-white p-4">
+              <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Free Library</p>
+              <p className="mt-2 text-sm text-ink-soft">
+                You upload only to the Free Library. No subscription is required.
+                Ready for paid Licensed / Verified+ work? Upgrade to Photographer or Contributor after Dec-Upgrade (FC2).
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Link
+                  to="/contributor/upload"
+                  className="bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra"
+                >
+                  Upload to Free Library
+                </Link>
+                <Link
+                  to="/search?libraryTier=OPEN"
+                  className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft hover:border-ink"
+                >
+                  Browse Free Library
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {stats?.handle && (

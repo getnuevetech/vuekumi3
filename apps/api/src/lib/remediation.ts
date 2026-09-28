@@ -99,3 +99,35 @@ export async function proposeRemediation(image: Buffer): Promise<RemediationProp
     provider,
   }
 }
+
+/** Upscale below-minimum Free Library uploads so they meet the published floor. */
+export async function enhanceLowResolution(
+  image: Buffer,
+  minWidth = 800,
+  minHeight = 600,
+): Promise<{ buffer: Buffer; enhanced: boolean; width: number; height: number }> {
+  const meta = await sharp(image).rotate().metadata()
+  const width = meta.width ?? 0
+  const height = meta.height ?? 0
+  if (width <= 0 || height <= 0) {
+    return { buffer: image, enhanced: false, width, height }
+  }
+  if (width >= minWidth && height >= minHeight) {
+    return { buffer: image, enhanced: false, width, height }
+  }
+  const scale = Math.max(minWidth / width, minHeight / height, 1)
+  const nextWidth = Math.max(minWidth, Math.round(width * scale))
+  const nextHeight = Math.max(minHeight, Math.round(height * scale))
+  const buffer = await sharp(image)
+    .rotate()
+    .resize(nextWidth, nextHeight, { fit: 'fill', kernel: sharp.kernel.lanczos3 })
+    .jpeg({ quality: 90 })
+    .toBuffer()
+  const out = await sharp(buffer).metadata()
+  return {
+    buffer,
+    enhanced: true,
+    width: out.width ?? nextWidth,
+    height: out.height ?? nextHeight,
+  }
+}
