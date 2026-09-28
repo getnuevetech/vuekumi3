@@ -83,6 +83,7 @@ export const adminLinks: PortalLink[] = [
     icon: icons.grid,
     children: [
       { to: '/admin/content', label: 'All content', icon: icons.grid },
+      { to: '/admin/content?libraryTier=OPEN', label: 'Free Library', icon: icons.grid },
       ...PHOTO_CATEGORIES.map((category) => ({
         to: `/admin/content?category=${encodeURIComponent(category)}`,
         label: category,

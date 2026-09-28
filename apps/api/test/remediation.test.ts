@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import sharp from 'sharp'
 import { buildApp } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
-import { applyPreviewAdjustment, differenceHash, proposeRemediation } from '../src/lib/remediation.js'
+import { applyPreviewAdjustment, differenceHash, enhanceLowResolution, proposeRemediation } from '../src/lib/remediation.js'
 import { getObjectBuffer, originalKeyFor, putObject } from '../src/lib/storage.js'
 import { withAfricaListOnboarding } from './helpers/onboarding.js'
 
@@ -45,6 +45,16 @@ test('difference hash is stable and changes when the picture changes', async () 
   assert.equal(await differenceHash(left), await differenceHash(await patterned(20)))
   assert.notEqual(await differenceHash(left), await differenceHash(right))
   assert.match(await differenceHash(left), /^[0-9a-f]{16}$/)
+})
+
+test('Free Library low-res enhance upscales below 800×600', async () => {
+  const small = await jpeg(400, 300, { r: 90, g: 110, b: 80 })
+  const result = await enhanceLowResolution(small, 800, 600)
+  assert.equal(result.enhanced, true)
+  assert.ok(result.width >= 800)
+  assert.ok(result.height >= 600)
+  const ok = await enhanceLowResolution(await jpeg(900, 700, { r: 90, g: 110, b: 80 }), 800, 600)
+  assert.equal(ok.enhanced, false)
 })
 
 test('a tiny or nearly black file is quarantined and the buffer is not rewritten', async () => {

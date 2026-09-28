@@ -30,16 +30,31 @@ export async function adminContentRoutes(app: FastifyInstance) {
   const moderationDecide = { preHandler: requireAdminCapability(app, 'moderation.decide') }
 
   app.get('/admin/content', list, async (request) => {
-    const query = request.query as { q?: string; status?: string; page?: string; locked?: string; category?: string }
+    const query = request.query as {
+      q?: string
+      status?: string
+      page?: string
+      locked?: string
+      category?: string
+      libraryTier?: string
+    }
     const page = Math.max(1, Number(query.page) || 1)
     const limit = 25
     const lockedOnly = query.locked === '1' || query.locked === 'true'
     const category = query.category?.trim()
+    const libraryTier = query.libraryTier?.trim().toUpperCase()
     if (category && !(PHOTO_CATEGORIES as readonly string[]).includes(category)) {
+      return { total: 0, page, items: [] }
+    }
+    if (
+      libraryTier &&
+      !['OPEN', 'LICENSED', 'VERIFIED_PLUS', 'EDITORIAL', 'PRIVATE'].includes(libraryTier)
+    ) {
       return { total: 0, page, items: [] }
     }
     const where = {
       ...(category ? { category } : {}),
+      ...(libraryTier ? { libraryTier: libraryTier as 'OPEN' | 'LICENSED' | 'VERIFIED_PLUS' | 'EDITORIAL' | 'PRIVATE' } : {}),
       ...(query.status ? { status: query.status as 'draft' | 'pending' | 'active' | 'rejected' | 'delisted' } : {}),
       ...(lockedOnly ? { commercialLocked: true } : {}),
       ...(query.q

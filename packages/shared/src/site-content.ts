@@ -250,6 +250,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   searchPlaceholder: 'Search Africa…',
   menu: [
     { label: 'Library', to: '/search', audience: 'always' },
+    { label: 'Free Library', to: '/search?libraryTier=OPEN', audience: 'always' },
     { label: 'Creators', to: '/creators', audience: 'always' },
     { label: 'Models', to: '/models', audience: 'always' },
     { label: 'License & Pricing', to: '/pricing', audience: 'always' },
@@ -281,6 +282,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     copyright: '© 2026 Vuekumi — usage permission, never ownership',
     links: [
       { label: 'Library', to: '/search' },
+      { label: 'Free Library', to: '/search?libraryTier=OPEN' },
       { label: 'Creators', to: '/creators' },
       { label: 'Models', to: '/models' },
       { label: 'License & Pricing', to: '/pricing' },

@@ -1016,13 +1016,21 @@ export const api = {
 
   contributorPhotos: () => request<{ items: PhotoDto[] }>('/api/contributor/photos'),
 
-  adminContent: (params?: { q?: string; status?: string; page?: number; locked?: boolean; category?: string }) => {
+  adminContent: (params?: {
+    q?: string
+    status?: string
+    page?: number
+    locked?: boolean
+    category?: string
+    libraryTier?: string
+  }) => {
     const qs = new URLSearchParams()
     if (params?.q) qs.set('q', params.q)
     if (params?.status) qs.set('status', params.status)
     if (params?.page) qs.set('page', String(params.page))
     if (params?.locked) qs.set('locked', '1')
     if (params?.category) qs.set('category', params.category)
+    if (params?.libraryTier) qs.set('libraryTier', params.libraryTier)
     const q = qs.toString()
     return request<{ items: AdminContentRow[]; total: number }>(`/api/admin/content${q ? `?${q}` : ''}`)
   },

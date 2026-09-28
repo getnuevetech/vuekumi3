@@ -31,6 +31,7 @@ export function AdminContent() {
   const queryClient = useQueryClient()
   const [params] = useSearchParams()
   const category = params.get('category') ?? ''
+  const libraryTier = params.get('libraryTier') ?? ''
   const [q, setQ] = useState('')
   const [lockedOnly, setLockedOnly] = useState(false)
   const [items, setItems] = useState<AdminContentRow[]>([])
@@ -42,13 +43,18 @@ export function AdminContent() {
   const [lockReason, setLockReason] = useState<CommercialLockReasonCode>('staff_quarantine')
 
   const load = () => {
-    api.adminContent({ q, locked: lockedOnly || undefined, category: category || undefined }).then((d) => {
+    api.adminContent({
+      q,
+      locked: lockedOnly || undefined,
+      category: category || undefined,
+      libraryTier: libraryTier || undefined,
+    }).then((d) => {
       setItems(d.items)
       setTotal(d.total)
     }).catch((err) => toast.error(err instanceof ApiError ? err.message : 'Failed to load'))
   }
 
-  useEffect(() => { load() }, [q, lockedOnly, category])
+  useEffect(() => { load() }, [q, lockedOnly, category, libraryTier])
 
   const toggleFeatured = async (photo: AdminContentRow) => {
     const featured = !photo.featured
@@ -80,9 +86,17 @@ export function AdminContent() {
 
   return (
     <Shell>
-      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{category || 'Content'}</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{category ? `${category}.` : 'Library & rights.'}</h1>
-      <p className="mt-1 text-sm text-ink-soft">{total} photograph{total === 1 ? '' : 's'}{category ? ` in ${category}` : ''}. Click a row for the rights panel.</p>
+      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">
+        {libraryTier === 'OPEN' ? 'Free Library' : category || 'Content'}
+      </p>
+      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">
+        {libraryTier === 'OPEN' ? 'Free Library review.' : category ? `${category}.` : 'Library & rights.'}
+      </h1>
+      <p className="mt-1 text-sm text-ink-soft">
+        {total} photograph{total === 1 ? '' : 's'}
+        {libraryTier === 'OPEN' ? ' in Free Library' : category ? ` in ${category}` : ''}.
+        Click a row for the rights panel.
+      </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <input
