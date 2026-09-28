@@ -55,6 +55,23 @@ test('buildPhotoWhere applies category, country, and license filters', () => {
   assert.equal(where.OR, undefined)
 })
 
+test('buildPhotoWhere filters by libraryTier including Verified+', () => {
+  const where = buildPhotoWhere({
+    page: 1,
+    limit: 20,
+    sort: 'newest',
+    libraryTier: 'VERIFIED_PLUS',
+  })
+  assert.equal(where.libraryTier, 'VERIFIED_PLUS')
+  assert.deepEqual(where.permissionState, { in: ['editorial', 'restricted', 'commercial', 'exclusive'] })
+})
+
+test('facetWhere can omit libraryTier for facet counts', () => {
+  const where = { status: 'active' as const, libraryTier: 'VERIFIED_PLUS', country: 'Kenya' }
+  assert.equal('libraryTier' in facetWhere(where, 'libraryTier'), false)
+  assert.equal(facetWhere(where, 'libraryTier').country, 'Kenya')
+})
+
 test('photoOrderBy maps sort keys with a createdAt tie-break', () => {
   assert.deepEqual(photoOrderBy('newest'), [{ createdAt: 'desc' }])
   assert.deepEqual(photoOrderBy('downloads'), [{ downloads: 'desc' }, { createdAt: 'desc' }])
