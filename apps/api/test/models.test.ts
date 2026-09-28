@@ -78,7 +78,7 @@ test('public registration can create a model account', () => {
   assert.equal(parsed.success, true)
 })
 
-test('model invite copy states likeness, consent, and that models do not earn', () => {
+test('model invite copy states likeness, consent, and compensation privacy', () => {
   const html = modelInviteEmail({
     displayName: 'Nomsa',
     photographerName: 'Amara Okafor',
@@ -87,7 +87,7 @@ test('model invite copy states likeness, consent, and that models do not earn', 
   })
   assert.match(html, /typed name is not identity/)
   assert.match(html, /checkbox is not consent/)
-  assert.match(html, /do not earn/)
+  assert.match(html, /contributor pool|certificates never list/i)
   assert.match(html, /rights clearance/)
   assert.match(html, /not a marketing list/)
   assert.match(html, /Amara Okafor/)

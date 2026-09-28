@@ -7,8 +7,16 @@ import { decideGrantEarningsStatus } from './holds.js'
 import { assertNewLicenseAllowed } from './policy-decision.js'
 import { isCommerciallyEligible, thirdPartyCopyright, buyerGrantMustExcludeAiTraining } from '@vuekumi/shared'
 import { allocateUnderCurrentPolicy } from './revenue-policy.js'
-import { assertNegotiationForCommercial, CompensationError } from './compensation.js'
+import {
+  assertNegotiationForCommercial,
+  CompensationError,
+  loadActivatedModelAgreements,
+  splitCreatorPoolForModels,
+} from './compensation.js'
 import { RightsError } from './rights.js'
+
+/** EarningsLedger.source for model likeness pay from Contributor Distributable Share. */
+export const LIKENESS_COMPENSATION_SOURCE = 'likeness_compensation'
 
 type Tx = Prisma.TransactionClient
 export type GrantWithRelations = LicenseGrant & { photo: Photo; product: LicenseProduct }
@@ -148,39 +156,80 @@ export async function issueGrant(
     })
   }
 
-  if (allocation && allocation.creatorPoolUsd > 0 && photo.contributor.accountType !== 'model') {
-    const amount = await contributorEarning({
-      userId: photo.contributorId,
-      accountType: photo.contributor.accountType,
-      saleUsd: allocation.creatorPoolUsd,
-    }, client)
-    if (amount <= 0) return created
-    const hold = await decideGrantEarningsStatus({
-      contributorId: photo.contributorId,
-      contributorCreatedAt: photo.contributor.createdAt,
-      amountUsd: amount,
-      commercialLocked: photo.commercialLocked,
-      copyrightStatus: photo.rightsRecord?.copyrightStatus ?? null,
-    })
-    await client.earningsLedger.create({
-      data: {
-        contributorId: photo.contributorId,
-        photoId: input.photoId,
-        paymentId: input.paymentId,
-        grantId: created.id,
-        source: 'licence_sale',
-        amountUsd: amount,
-        status: hold.status,
-        holdReason: hold.holdReason,
-        heldAt: hold.status === 'held' ? new Date() : undefined,
-        revenuePolicyId: allocation.policyId,
-        revenuePolicyVersion: allocation.version,
-      },
-    })
-    await client.contributorProfile.updateMany({
-      where: { userId: photo.contributorId },
-      data: { earnings: { increment: amount } },
-    })
+  if (allocation && allocation.creatorPoolUsd > 0) {
+    const activated = await loadActivatedModelAgreements(input.photoId, client)
+    const { modelLines, photographerPoolUsd } = splitCreatorPoolForModels(
+      allocation.creatorPoolUsd,
+      activated,
+    )
+
+    // P2-T6 — model ledger lines from Contributor Distributable Share (Dec-PayBase).
+    // Actual payout rails stay finance-gated; certificates never list these amounts.
+    for (const line of modelLines) {
+      const modelUser = await client.user.findUnique({
+        where: { id: line.modelUserId },
+        select: { id: true, createdAt: true },
+      })
+      if (!modelUser) continue
+      const hold = await decideGrantEarningsStatus({
+        contributorId: modelUser.id,
+        contributorCreatedAt: modelUser.createdAt,
+        amountUsd: line.amountUsd,
+        commercialLocked: photo.commercialLocked,
+        copyrightStatus: photo.rightsRecord?.copyrightStatus ?? null,
+      })
+      await client.earningsLedger.create({
+        data: {
+          contributorId: modelUser.id,
+          photoId: input.photoId,
+          paymentId: input.paymentId,
+          grantId: created.id,
+          source: LIKENESS_COMPENSATION_SOURCE,
+          amountUsd: line.amountUsd,
+          status: hold.status,
+          holdReason: hold.holdReason,
+          heldAt: hold.status === 'held' ? new Date() : undefined,
+          revenuePolicyId: allocation.policyId,
+          revenuePolicyVersion: allocation.version,
+        },
+      })
+    }
+
+    if (photo.contributor.accountType !== 'model' && photographerPoolUsd > 0) {
+      const amount = await contributorEarning({
+        userId: photo.contributorId,
+        accountType: photo.contributor.accountType,
+        saleUsd: photographerPoolUsd,
+      }, client)
+      if (amount > 0) {
+        const hold = await decideGrantEarningsStatus({
+          contributorId: photo.contributorId,
+          contributorCreatedAt: photo.contributor.createdAt,
+          amountUsd: amount,
+          commercialLocked: photo.commercialLocked,
+          copyrightStatus: photo.rightsRecord?.copyrightStatus ?? null,
+        })
+        await client.earningsLedger.create({
+          data: {
+            contributorId: photo.contributorId,
+            photoId: input.photoId,
+            paymentId: input.paymentId,
+            grantId: created.id,
+            source: 'licence_sale',
+            amountUsd: amount,
+            status: hold.status,
+            holdReason: hold.holdReason,
+            heldAt: hold.status === 'held' ? new Date() : undefined,
+            revenuePolicyId: allocation.policyId,
+            revenuePolicyVersion: allocation.version,
+          },
+        })
+        await client.contributorProfile.updateMany({
+          where: { userId: photo.contributorId },
+          data: { earnings: { increment: amount } },
+        })
+      }
+    }
   }
 
   return created

@@ -3,6 +3,7 @@ import {
   COMPENSATION_PAYMENT_BASE,
   assertMultiModelPercentCap,
   compensationRequestedFromProposals,
+  modelAllocationFromAgreement,
   negotiationTermsSatisfied,
   serializeCompensationProposal,
   termsRequestRevenue,
@@ -338,6 +339,81 @@ export async function activateCompensation(input: {
     return next
   })
   return serializeCompensationProposal(updated)
+}
+
+/**
+ * P2-T6 — activated likeness agreements that can receive ledger lines.
+ * Requires a claimed model account; zero-fee agreements allocate $0.
+ */
+export async function loadActivatedModelAgreements(photoId: string, client: Db = prisma) {
+  return client.compensationProposal.findMany({
+    where: {
+      photoId,
+      status: 'activated',
+      appearance: { modelUserId: { not: null } },
+    },
+    include: {
+      appearance: { select: { id: true, modelUserId: true, displayName: true } },
+    },
+    orderBy: { activatedAt: 'asc' },
+  })
+}
+
+export type ModelLedgerLine = {
+  appearanceId: string
+  modelUserId: string
+  proposalId: string
+  amountUsd: number
+  mode: string
+  percent: number
+  fixedUsd: number
+}
+
+/**
+ * Split Contributor Distributable Share (creator pool) across activated model
+ * agreements (Dec-PayBase). Photographer residual is what remains. Never reduces
+ * platform share (Dec-Split). Caps total model pay at the pool.
+ */
+export function splitCreatorPoolForModels(
+  creatorPoolUsd: number,
+  agreements: Array<{
+    id: string
+    appearanceId: string
+    mode: string
+    percent: number
+    fixedUsd: number
+    appearance: { modelUserId: string | null }
+  }>,
+): { modelLines: ModelLedgerLine[]; photographerPoolUsd: number } {
+  const pool = Math.max(0, creatorPoolUsd)
+  const modelLines: ModelLedgerLine[] = []
+  let allocated = 0
+  for (const row of agreements) {
+    const modelUserId = row.appearance.modelUserId
+    if (!modelUserId) continue
+    const raw = modelAllocationFromAgreement(pool, {
+      mode: row.mode as CompensationTermsInput['mode'],
+      percent: row.percent,
+      fixedUsd: row.fixedUsd,
+    })
+    const remaining = Math.round((pool - allocated) * 100) / 100
+    const amountUsd = Math.round(Math.min(remaining, Math.max(0, raw)) * 100) / 100
+    if (amountUsd <= 0) continue
+    modelLines.push({
+      appearanceId: row.appearanceId,
+      modelUserId,
+      proposalId: row.id,
+      amountUsd,
+      mode: row.mode,
+      percent: row.percent,
+      fixedUsd: row.fixedUsd,
+    })
+    allocated = Math.round((allocated + amountUsd) * 100) / 100
+  }
+  return {
+    modelLines,
+    photographerPoolUsd: Math.round(Math.max(0, pool - allocated) * 100) / 100,
+  }
 }
 
 export { termsRequestRevenue }

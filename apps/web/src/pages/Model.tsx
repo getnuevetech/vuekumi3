@@ -77,7 +77,7 @@ export default function ModelPortal() {
   return (
     <PortalShell
       title="Model portal"
-      subtitle="Confirm likeness, then approve or reject usage. You do not earn from licences in this phase."
+      subtitle="Confirm likeness, then approve or reject usage. Activated compensation creates ledger lines; payout rails stay finance-gated."
       links={links}
     >
       <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Appearances</p>
@@ -87,7 +87,7 @@ export default function ModelPortal() {
         {dualRole ? ' You are also the photographer on this account.' : user?.hasPhotographerAgreement ? ' You have accepted the photographer agreement on this same email. Account type stays model.' : ''}
       </p>
       <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
-        Models do not earn yet. The photographer/model split is undecided. A visual check is optional and cannot grant rights.
+        Activated likeness agreements allocate from the contributor pool. Buyer certificates never show model economics. Payout withdrawal remains finance-gated.
       </p>
       {handle && (
         <p className="mt-3 text-sm text-ink-soft">

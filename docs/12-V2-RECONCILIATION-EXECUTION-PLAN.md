@@ -91,7 +91,7 @@ and nonmember rights holders remain allowed.
 | --- | --- | --- |
 | **Phase 60** | Correctly blocked from *activation* | Build provider-agnostic schema/API; feature flag OFF until vendor/DPA/counsel |
 | **T5** | Can proceed with Dec-PayBase locked | Build negotiation; add Open eligibility rule (zero-price rights required) |
-| **T6** | Defer actual payouts | Refactor ledger off hardcoded 50/50 **before** T6; certificates must **not** show model economics |
+| **T6** | Ledger now; defer payout rails | Write model `EarningsLedger` lines from Dec-PayBase on grant; certificates must **not** show model economics; withdrawal rails stay finance-gated |
 | **T3** | Correct | Finalize public legal copy + registered agent; engine stays |
 | **T8** | Structure OK; signup wrong for v2 | HOLD → waitlist (not full contributor); ACTIVE required to activate |
 | **T9** | Correct | Keep country overlays separate from person/entity sanctions screening |
@@ -221,7 +221,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 
 | ID | Work |
 | --- | --- |
-| **P2-T6** | Real model payouts after finance readiness (uses RevenuePolicy + agreements) |
+| **P2-T6** | Real model payouts after finance readiness — **ledger shipped** (activated likeness agreements → `likeness_compensation` EarningsLedger lines from Contributor Distributable Share; photographer residual; certificates omit model economics). **Payout withdrawal rails still finance-gated.** |
 | **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
 | **Later** | Content Opportunity Engine, Brand Studio, Hire expansion, Partner API depth |
 | **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy |

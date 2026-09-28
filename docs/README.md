@@ -7,8 +7,8 @@ Read in this order:
    Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig; P0 foundation (H1, H3,
    RevenuePolicy, Photo Influencer + library tiers, Open download events, Rights
    alignment); then P1 (T5, Phase 60 schema flag-off, T8 waitlist **shipped**, H4 React Query
-   **shipped**, H5 Playwright invariants **shipped**); P2-VP Verified+ surface **shipped**
-   (T6 still finance-gated). Do
+   **shipped**, H5 Playwright invariants **shipped**); P2-VP Verified+ surface **shipped**;
+   P2-T6 model ledger lines **shipped** (payout withdrawal still finance-gated). Do
    **not** implement full v2 UI before this foundation.
 1. **[11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md)** —
    Sep 28 repo/app review (ops, hygiene, gated product). Sequencing for product
@@ -17,7 +17,7 @@ Read in this order:
    backlog after the 23 September 2026 review. Reconciles the Trust & Markets memo,
    the admin-portal spec, and the AI-pipeline request with Phases 49–61. Phases 62–65
    are shipped. T5 / Phase 60 architecture / T8 proceed under locked Dec-* in `12`;
-   T6 remains finance-gated; T3 is counsel/deploy. Do not restart T1 or P0.
+   T6 ledger lines shipped (withdrawal finance-gated); T3 is counsel/deploy. Do not restart T1 or P0.
 3. **[03-PRODUCT-AND-RIGHTS.md](./03-PRODUCT-AND-RIGHTS.md)** — recovered May 2026 concept
    (VueKumi marketplace vs VueQuatro rights/agency), the four rights layers, two-approval
    rule, invite-the-model, permission states, and what production actually implements today.

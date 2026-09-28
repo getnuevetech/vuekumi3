@@ -9,6 +9,11 @@ import {
 } from '@vuekumi/shared'
 import { buildApp } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
+import {
+  splitCreatorPoolForModels,
+} from '../src/lib/compensation.js'
+import { issueGrant, LIKENESS_COMPENSATION_SOURCE } from '../src/lib/grants.js'
+import { buildCertificatePdf } from '../src/lib/certificate.js'
 
 /** Claimed-model people photo (Ada). Do not use afr-011 — models/permissions own Nomsa invite there. */
 const COMP_PHOTO_ID = 'afr-001'
@@ -319,5 +324,111 @@ test('activating percentage deals that exceed 100% of the creator pool is reject
   } finally {
     await restoreCompensationPhoto(extraIds)
     await app.close()
+  }
+})
+
+test('splitCreatorPoolForModels pays models from creator pool and leaves photographer residual', () => {
+  const split = splitCreatorPoolForModels(100, [
+    {
+      id: 'p1',
+      appearanceId: 'a1',
+      mode: 'percentage',
+      percent: 20,
+      fixedUsd: 0,
+      appearance: { modelUserId: 'model-1' },
+    },
+    {
+      id: 'p2',
+      appearanceId: 'a2',
+      mode: 'zero',
+      percent: 0,
+      fixedUsd: 0,
+      appearance: { modelUserId: 'model-2' },
+    },
+  ])
+  assert.equal(split.modelLines.length, 1)
+  assert.equal(split.modelLines[0]!.amountUsd, 20)
+  assert.equal(split.photographerPoolUsd, 80)
+})
+
+test('buyer certificate PDF never lists model economics', () => {
+  const pdf = buildCertificatePdf({
+    code: 'VK-TEST',
+    issuedAt: '2026-09-28',
+    photoTitle: 'Mirrored Giants',
+    photoId: 'afr-020',
+    photographer: 'Thandiwe Nkosi',
+    licensee: 'Buyer',
+    licenseeEmail: 'buyer@example.com',
+    licenseName: 'Commercial',
+    amountLabel: 'USD 16.00',
+    scopeLines: ['Usage permission only'],
+  }).toString('latin1')
+  assert.match(pdf, /LICENSE CERTIFICATE/)
+  assert.doesNotMatch(pdf, /model %|contributor pool|20%|likeness compensation/i)
+})
+
+test('issuing a paid grant writes likeness_compensation ledger lines from activated agreements', async () => {
+  const appearance = await prepareCompensationPhoto()
+  const ada = await prisma.user.findUniqueOrThrow({ where: { email: MODEL_EMAIL } })
+  const thandiwe = await prisma.user.findUniqueOrThrow({ where: { email: PHOTOGRAPHER_EMAIL } })
+  const member = await prisma.user.findUniqueOrThrow({ where: { email: 'member@vuekumi.demo' } })
+
+  await prisma.compensationProposal.deleteMany({ where: { photoId: COMP_PHOTO_ID } })
+  await prisma.compensationProposal.create({
+    data: {
+      photoId: COMP_PHOTO_ID,
+      appearanceId: appearance.id,
+      proposedById: thandiwe.id,
+      proposedAs: 'photographer',
+      status: 'activated',
+      mode: 'percentage',
+      percent: 20,
+      fixedUsd: 0,
+      paymentBase: 'contributor_distributable_share',
+      activatedAt: new Date(),
+    },
+  })
+
+  // Clear prior test grants/earnings for this buyer+photo+product.
+  await prisma.earningsLedger.deleteMany({
+    where: { photoId: COMP_PHOTO_ID, grantId: { not: null } },
+  })
+  await prisma.licenseGrant.deleteMany({
+    where: { buyerId: member.id, photoId: COMP_PHOTO_ID, licenseType: 'commercial' },
+  })
+
+  try {
+    const grant = await issueGrant({
+      buyerId: member.id,
+      photoId: COMP_PHOTO_ID,
+      productId: 'commercial',
+      licenseType: 'commercial',
+      amountUsd: 100,
+      currency: 'USD',
+      amountLocal: 100,
+      scopeJson: {},
+    })
+
+    const modelRows = await prisma.earningsLedger.findMany({
+      where: { grantId: grant.id, source: LIKENESS_COMPENSATION_SOURCE },
+    })
+    assert.equal(modelRows.length, 1)
+    assert.equal(modelRows[0]!.contributorId, ada.id)
+    // RevenuePolicy 50/50 → creator pool 50; model 20% of 50 = 10
+    assert.equal(modelRows[0]!.amountUsd, 10)
+
+    const photoRows = await prisma.earningsLedger.findMany({
+      where: { grantId: grant.id, source: 'licence_sale' },
+    })
+    assert.equal(photoRows.length, 1)
+    assert.equal(photoRows[0]!.contributorId, thandiwe.id)
+    assert.equal(photoRows[0]!.amountUsd, 40)
+  } finally {
+    await prisma.earningsLedger.deleteMany({ where: { photoId: COMP_PHOTO_ID, source: LIKENESS_COMPENSATION_SOURCE } })
+    await prisma.licenseGrant.deleteMany({
+      where: { buyerId: member.id, photoId: COMP_PHOTO_ID, licenseType: 'commercial' },
+    })
+    await restoreCompensationPhoto()
   }
 })

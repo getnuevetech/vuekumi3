@@ -24,7 +24,7 @@ export const VUEKUMI_AGREEMENT = {
 
 7. Rights-managed. Custom territory, duration and channel deals are quoted — they are not a fixed price.
 
-8. Revenue. Premium and paid licences split 50/50 between the photographer and Vuekumi after payment clears. Models do not earn from licences.
+8. Revenue. Paid licences allocate Net Collected License Revenue under the current RevenuePolicy (platform share + Contributor Distributable Share). Activated likeness compensation is paid from the contributor pool; buyer certificates do not list model economics.
 
 9. Africa-only photographers. Only professional photographers based in African Union member states may license commercial inventory. Buyers may be anywhere.`,
 }
@@ -78,7 +78,7 @@ export const MODEL_UPLOADER_AGREEMENT = {
 
 5. Self-shot commercial path. If you took the photograph yourself, commercial stock still requires the photographer licensing agreement, an African Union country, and a contributor profile on this same email. Your account type stays model. You then earn the photographer 50% as photographer, not as model.
 
-6. Models do not earn from likeness. The photographer/model/platform split remains undecided.
+6. Likeness compensation. When a likeness agreement is activated, model allocations come from the Contributor Distributable Share (Dec-PayBase). Buyer certificates do not list those amounts. Payout withdrawal remains finance-gated.
 
 7. Africa. Models as subjects are not Africa-restricted. Africa is required only if you accept the photographer agreement to enter commercial inventory.
 
@@ -110,7 +110,7 @@ export const BUYER_LICENCE_AGREEMENT = {
 1. The licence type on the certificate is the scope. It is not a transfer of copyright.
 2. AI-training use is not included. Dataset pricing is undecided; this certificate never grants training rights.
 3. VueKumi verified rights at the time of grant. A later consent withdrawal does not silently void this certificate. A dispute uses the rights-report path.
-4. Models do not earn from this grant. Photographer revenue share is 50% of paid licences.`,
+4. Model compensation, when activated under a likeness agreement, is settled from the Contributor Distributable Share. It is not itemized on this certificate.`,
 }
 
 export function agreementForAccountType(accountType: string) {
