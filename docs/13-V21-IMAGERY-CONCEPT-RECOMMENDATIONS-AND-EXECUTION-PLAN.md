@@ -15,17 +15,21 @@ Recorded from product:
 | Lock | Rule |
 | --- | --- |
 | **Photo Influencer = free group** | Keep `accountType: photo_influencer`. **No subscription required** to sign up or upload. Do **not** rename the role to “Free Contributor” in product language. |
-| **Free Library only** | Photo influencers may upload **only** into the **Free Library** image category. Not Licensed / Verified+ / Editorial commercial stock. |
+| **Tier map (locked)** | **Photo Influencer → free tier only (Free Library).** **Photographer + Contributor → paid tiers only** (Licensed / Verified+ / Editorial). No cross-upload. |
+| **Free Library only (PI)** | Photo influencers may upload **only** into **Free Library**. Not Licensed / Verified+ / Editorial. |
+| **Paid tiers only (Photographer / Contributor)** | Photographers and Contributors may upload **only** to paid library tiers. They do **not** upload to Free Library. |
 | **Monitor Free Library** | Staff must review Free Library uploads against published quality/content criteria (queue + reject/hold path). |
 | **AI enhance low-res** | When an upload fails minimum resolution/quality, run **AI image enhancement** (reuse Phase 62 remediation) before accept or quarantine with clear reason. |
 
 **Dec-FC (revised):** Closed as **keep Photo Influencer**; v2.1 “Free Contributor” maps to this existing role for engineering purposes.
 
+**Dec-TierMap (locked):** PI = free tier; Photographer + Contributor = paid tiers. Enforce both directions in upload API/UI.
+
 **Dec-FreeLib (open — pick one before FC1-4 schema):**  
 - **A (preferred):** Public label **Free Library** = existing `libraryTier: OPEN` (zero-price path already shipped). Influencer uploads forced to `OPEN`.  
 - **B:** Add enum `FREE_LIBRARY` and treat as alias/sibling of `OPEN` (larger migration; only if legal/marketing requires a distinct tier code).
 
-**Dec-RolePay (partial lock):** Photo Influencer stays free forever as a role. Paid plans may still apply later to Photographer / Model / Buyer / paid Contributor — not to Photo Influencer.
+**Dec-RolePay (partial lock):** Photo Influencer stays free forever as a role. Paid plans may still apply later to Photographer / Model / Buyer / Contributor — not to Photo Influencer.
 
 ---
 
@@ -62,13 +66,18 @@ Do not restart Open download, rights engine, guest checkout, or Verified+ badge 
 - Keep public name **Photo Influencer** and enum `photo_influencer`.
 - Never require a paid plan to register or use Photo Influencer.
 - Map v2.1 “Free Contributor” language in older concept copy → Photo Influencer in product docs going forward.
-- Community `contributor` remains a separate non-commercial path until product merges it (do not silently merge).
+- **Contributor** is a paid-tier uploader (with Photographer), not the free Free Library role.
 
-### R3 — Separate account permission from image tier — **keep; tighten for influencers**
-Library tier stays image-level. Account type decides **which tiers may be submitted**:
-- Photo Influencer → **Free Library only** (`OPEN` under Dec-FreeLib A).
-- Photographer / paid Contributor → Licensed / Verified+ / Editorial (and optionally Free Library if product allows; default: commercial roles use paid tiers).
-Do not invent a second parallel tier system.
+### R3 — Account → library tier map — **locked**
+Library tier stays image-level. Account type decides **which tiers may be submitted** (hard enforce):
+
+| Account | Allowed upload tiers |
+| --- | --- |
+| **Photo Influencer** | **Free Library only** (free tier; `OPEN` under Dec-FreeLib A) |
+| **Photographer** | **Paid tiers only** — Licensed / Verified+ / Editorial (not Free Library) |
+| **Contributor** | **Paid tiers only** — Licensed / Verified+ / Editorial (not Free Library) |
+
+Do not invent a second parallel tier system. Do not allow Photographer/Contributor Free Library uploads or Influencer paid-tier uploads.
 
 ### R4 — Unlock same-identity upgrade (Dec-Upgrade — still open)
 v2.1 wants upgrade into Photographer / paid Contributor / Model without a new account. That **conflicts** with Phase 29. Recommend:
@@ -97,7 +106,8 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 | --- | --- |
 | Public search / browse | **Shipped** |
 | VueKumi Open + anonymous download + events | **Shipped** (`OPEN`) |
-| **Free Library** public label + influencer-only upload | **Missing** (map or new enum — Dec-FreeLib) |
+| **Free Library** public label + PI-only free tier | **Missing** (map or new enum — Dec-FreeLib) |
+| Photographer/Contributor **paid-tiers-only** upload lock | **Missing** (today may still reach `OPEN`) |
 | Paid Licensed + guest checkout | **Shipped** |
 | Africa contributor eligibility + HOLD waitlist | **Shipped** (P1-T8) |
 | AI person detection + rights workflow | **Shipped** |
@@ -121,6 +131,7 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 | ID | Decision | Status / recommendation |
 | --- | --- | --- |
 | **Dec-FC** | Photo Influencer vs “Free Contributor” naming | **Locked:** keep Photo Influencer; free; no subscription |
+| **Dec-TierMap** | Who uploads free vs paid tiers | **Locked:** PI → Free Library only; Photographer + Contributor → paid tiers only |
 | **Dec-FreeLib** | Free Library = `OPEN` label vs new enum | Prefer **A** (`OPEN` + “Free Library” UX); lock before FC1-4 |
 | **Dec-Upgrade** | Same-email upgrade PI → Photographer/Contributor/Model | Recommend allow with audit; supersede Phase 29 hard block |
 | **Dec-RolePay** | Paid roles behind plan? | PI excluded (**locked**); others deferred |
@@ -154,10 +165,10 @@ v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–F
 | **FC1-1** | Product copy: Photo Influencer = free program; never imply subscription required |
 | **FC1-2** | Nav / search: **Free Library** (or Free Images) → `OPEN`/Free-Library-filtered catalog (Spec §17.1) |
 | **FC1-3** | Photo Influencer dashboard: Free Library stats (views/downloads), optional upgrade CTAs (not paywalls) |
-| **FC1-4** | **Hard enforce:** `photo_influencer` upload API/UI may set only Free Library (`OPEN` or `FREE_LIBRARY`); reject Licensed / Verified+ / Editorial |
+| **FC1-4** | **Hard enforce Dec-TierMap:** `photo_influencer` → Free Library only; `photographer` / `contributor` → paid tiers only (reject Free Library / `OPEN` for them) |
 | **FC1-5** | **Moderation:** Free Library review queue + criteria checklist for staff (approve / hold / reject with reason) |
-| **FC1-6** | **AI low-res path:** on upload, if below min resolution/quality → invoke Phase 62 enhancement; re-check; else quarantine with “low resolution” reason |
-| **FC1-7** | Playwright: influencer can upload Free Library only; commercial tier blocked; low-res enhance or quarantine asserted |
+| **FC1-6** | **AI low-res path:** on Free Library upload, if below min resolution/quality → invoke Phase 62 enhancement; re-check; else quarantine with “low resolution” reason |
+| **FC1-7** | Playwright: PI Free Library only; photographer/contributor paid tiers only + Free Library blocked; low-res enhance or quarantine asserted |
 
 ---
 
@@ -250,4 +261,4 @@ Do not commission all eight Spec §24 docs before FC0 criteria + Dec-FreeLib loc
 | **`01` / `10`** | Historical phase log — update Free Library when FC1 ships |
 | **`06`** | Record Dec-FC (locked), Dec-FreeLib, Dec-Upgrade, Dec-RolePay |
 
-**Immediate ask:** Confirm **Dec-FreeLib A** (Free Library = `OPEN` public name) and Free Library acceptance criteria (min resolution + content rules) so FC1 can start.
+**Immediate ask:** Confirm **Dec-FreeLib A** (Free Library = `OPEN` public name) and Free Library acceptance criteria (min resolution + content rules) so FC1 can start. **Dec-TierMap is locked** (PI free / Photographer+Contributor paid).
