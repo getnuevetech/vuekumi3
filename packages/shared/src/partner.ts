@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { LIBRARY_TIERS, type LibraryTier } from './library-tiers.js'
+import { photoSortSchema } from './photos.js'
 
 /**
  * Phase 33 — partner / distribution API.
@@ -9,6 +11,10 @@ import { z } from 'zod'
  * licence flags on every photo are computed with the same guards as checkout
  * (two-approval commercial lock included) — the API cannot pretend an image is
  * commercially cleared when it is not.
+ *
+ * List filters mirror the public catalog (`libraryTier`, `license`, `tag`,
+ * `photographer`, `sort`) so distributors can target the same placement tiers
+ * partners see on vuekumi.com search.
  *
  * The API distributes usage permission, not ownership. Licences are granted on
  * VueKumi checkout, not by the API. Partner access explicitly excludes
@@ -27,6 +33,21 @@ export const createPartnerKeySchema = z.object({
   note: z.string().max(500).optional().or(z.literal('')),
 })
 export type CreatePartnerKeyInput = z.infer<typeof createPartnerKeySchema>
+
+/** Catalog-aligned list query for `/partner/v1/photos`. */
+export const partnerListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(24),
+  q: z.string().max(120).optional(),
+  category: z.string().max(60).optional(),
+  country: z.string().max(60).optional(),
+  license: z.enum(['free', 'premium']).optional(),
+  libraryTier: z.enum(LIBRARY_TIERS).optional(),
+  tag: z.string().max(60).optional(),
+  photographer: z.string().max(60).optional(),
+  sort: photoSortSchema.default('newest'),
+})
+export type PartnerListQuery = z.infer<typeof partnerListQuerySchema>
 
 export const PARTNER_KEY_STATUSES = ['active', 'revoked'] as const
 export type PartnerKeyStatus = (typeof PARTNER_KEY_STATUSES)[number]
@@ -57,6 +78,10 @@ export interface PartnerPhotoDto {
   category: string
   country: string
   tags: string[]
+  /** Marketplace placement tier (Open / Licensed / Verified+ / Editorial / Private). */
+  libraryTier: LibraryTier
+  /** Catalog pricing class — free RF vs premium paid licences. */
+  licenseType: 'free' | 'premium'
   width: number | null
   height: number | null
   urls: { thumb: string; preview: string }

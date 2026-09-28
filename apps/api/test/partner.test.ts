@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { partnerAuthBlocked, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
+import { partnerAuthBlocked, partnerListQuerySchema, STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { buildApp } from '../src/app.js'
 import { extractPartnerKey, generatePartnerKey, hashPartnerKey } from '../src/lib/partner.js'
 import { prisma } from '../src/lib/prisma.js'
@@ -25,6 +25,23 @@ test('partner key material: format, hashing, extraction, auth guard', () => {
   assert.equal(partnerAuthBlocked({ keyProvided: true, keyFound: false })!.status, 401)
   assert.match(partnerAuthBlocked({ keyProvided: true, keyFound: true, status: 'revoked' })!.error, /revoked/)
   assert.equal(partnerAuthBlocked({ keyProvided: true, keyFound: true, status: 'active' }), null)
+})
+
+test('partnerListQuerySchema accepts catalog-aligned filters', () => {
+  const parsed = partnerListQuerySchema.parse({
+    libraryTier: 'VERIFIED_PLUS',
+    license: 'premium',
+    tag: 'Lagos',
+    photographer: 'ada',
+    sort: 'downloads',
+  })
+  assert.equal(parsed.libraryTier, 'VERIFIED_PLUS')
+  assert.equal(parsed.license, 'premium')
+  assert.equal(parsed.tag, 'Lagos')
+  assert.equal(parsed.photographer, 'ada')
+  assert.equal(parsed.sort, 'downloads')
+  assert.equal(parsed.limit, 24)
+  assert.throws(() => partnerListQuerySchema.parse({ libraryTier: 'NOPE' }))
 })
 
 test('partner API: admin issues key, cleared inventory only, honest licences, usage count, revocation', async () => {
@@ -82,16 +99,30 @@ test('partner API: admin issues key, cleared inventory only, honest licences, us
   })
   assert.equal(list.statusCode, 200, list.body)
   const body = list.json() as {
-    items: { id: string; photographer: { profileUrl: string }; licenses: { type: string; offered: boolean }[] }[]
+    items: {
+      id: string
+      libraryTier: string
+      licenseType: string
+      photographer: { profileUrl: string }
+      licenses: { type: string; offered: boolean }[]
+    }[]
     terms: string
   }
   assert.ok(body.items.length > 0, 'catalog is not empty')
   assert.match(body.terms, /AI training is not permitted/)
   assert.equal(list.body.includes('@vuekumi.demo'), false, 'no emails in partner payloads')
+  for (const item of body.items) {
+    assert.ok(
+      ['OPEN', 'LICENSED', 'VERIFIED_PLUS', 'EDITORIAL', 'PRIVATE'].includes(item.libraryTier),
+      `unexpected libraryTier ${item.libraryTier}`,
+    )
+    assert.ok(['free', 'premium'].includes(item.licenseType), `unexpected licenseType ${item.licenseType}`)
+    assert.notEqual(item.libraryTier, 'PRIVATE', 'PRIVATE tier must not leak through stock partner catalog')
+  }
 
   const returned = await prisma.photo.findMany({
     where: { id: { in: body.items.map((i) => i.id) } },
-    select: { permissionState: true, status: true },
+    select: { permissionState: true, status: true, libraryTier: true },
   })
   for (const photo of returned) {
     assert.equal(photo.status, 'active')
@@ -99,6 +130,35 @@ test('partner API: admin issues key, cleared inventory only, honest licences, us
       (STOCK_PERMISSION_STATES as string[]).includes(photo.permissionState),
       `non-stock state ${photo.permissionState} leaked through the partner API`,
     )
+  }
+
+  // Catalog-aligned filters: libraryTier and license narrow the same way as search.
+  const verifiedPlus = await prisma.photo.findFirst({
+    where: { status: 'active', libraryTier: 'VERIFIED_PLUS', permissionState: { in: [...STOCK_PERMISSION_STATES] } },
+    select: { id: true, libraryTier: true },
+  })
+  if (verifiedPlus) {
+    const filtered = await app.inject({
+      method: 'GET',
+      url: '/api/partner/v1/photos?libraryTier=VERIFIED_PLUS&limit=50',
+      headers: { authorization: `Bearer ${key}` },
+    })
+    assert.equal(filtered.statusCode, 200, filtered.body)
+    const filteredBody = filtered.json() as { items: { id: string; libraryTier: string }[]; total: number }
+    assert.ok(filteredBody.items.length > 0)
+    assert.ok(filteredBody.items.every((i) => i.libraryTier === 'VERIFIED_PLUS'))
+    assert.ok(filteredBody.items.some((i) => i.id === verifiedPlus.id))
+  }
+
+  const licensedFilter = await app.inject({
+    method: 'GET',
+    url: '/api/partner/v1/photos?license=premium&limit=20',
+    headers: { authorization: `Bearer ${key}` },
+  })
+  assert.equal(licensedFilter.statusCode, 200, licensedFilter.body)
+  const licensedBody = licensedFilter.json() as { items: { licenseType: string; libraryTier: string }[] }
+  for (const item of licensedBody.items) {
+    assert.equal(item.licenseType, 'premium')
   }
 
   // Non-stock photographs are unreachable one-by-one too.

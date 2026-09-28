@@ -223,7 +223,8 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | --- | --- |
 | **P2-T6** | Real model payouts after finance readiness — **ledger shipped** (activated likeness agreements → `likeness_compensation` EarningsLedger lines from Contributor Distributable Share; photographer residual; certificates omit model economics). **Payout withdrawal rails still finance-gated.** |
 | **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
-| **Later** | Content Opportunity Engine, Brand Studio, Hire expansion, Partner API depth |
+| **Partner API depth** | **Shipped** — partner photo DTO exposes `libraryTier` + `licenseType`; list filters reuse catalog `buildPhotoWhere` (`libraryTier`, `license`, `tag`, `photographer`, `sort`) |
+| **Later** | Content Opportunity Engine, Brand Studio, Hire expansion |
 | **Guest checkout** | **Shipped** — paid licences via guest email (passwordless `user` session); free RF still requires account |
 | **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy |
 | **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject |
