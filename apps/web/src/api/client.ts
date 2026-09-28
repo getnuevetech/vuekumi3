@@ -80,6 +80,8 @@ import type {
   UpdateBrandProjectInput,
   PartnerKeyDto,
   CreatePartnerKeyInput,
+  CompensationProposalDto,
+  CompensationTermsInput,
 } from '@vuekumi/shared'
 import { firstAdminPath, AI_PROVIDER_PURPOSES, AI_PROVIDER_PURPOSE_LABELS, type AiProviderPurpose } from '@vuekumi/shared'
 import type { AccountType, AgencyRole, LoginInput, OAuthDevInput, RegisterInput, SubmitPhotoInput, UpdatePhotoInput, UpdateProfileInput, ChangePasswordInput } from '@vuekumi/shared'
@@ -895,6 +897,39 @@ export const api = {
     request<{ appearance: PhotoAppearanceDto }>(`/api/model/appearances/${id}/decide`, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+
+  listPhotoCompensation: (photoId: string) =>
+    request<{ items: CompensationProposalDto[] }>(`/api/photos/${photoId}/compensation`),
+
+  proposeCompensation: (appearanceId: string, body: CompensationTermsInput) =>
+    request<{ proposal: CompensationProposalDto }>(`/api/appearances/${appearanceId}/compensation`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  counterCompensation: (proposalId: string, body: CompensationTermsInput) =>
+    request<{ proposal: CompensationProposalDto }>(`/api/compensation/${proposalId}/counter`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  acceptCompensation: (proposalId: string) =>
+    request<{ proposal: CompensationProposalDto }>(`/api/compensation/${proposalId}/accept`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
+  declineCompensation: (proposalId: string) =>
+    request<{ proposal: CompensationProposalDto }>(`/api/compensation/${proposalId}/decline`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
+  activateCompensation: (proposalId: string) =>
+    request<{ proposal: CompensationProposalDto }>(`/api/compensation/${proposalId}/activate`, {
+      method: 'POST',
+      body: JSON.stringify({}),
     }),
 
   verifyLikeness: (id: string, body: VerifyLikenessInput) =>

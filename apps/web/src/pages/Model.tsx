@@ -12,6 +12,7 @@ import {
   type PhotoAppearanceDto,
 } from '@vuekumi/shared'
 import { PortalShell, StatusPill, type PortalLink } from '../components/shared'
+import { CompensationNegotiationPanel } from '../components/CompensationNegotiationPanel'
 import { api, ApiError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
@@ -327,6 +328,9 @@ function AppearanceCard({ row, onChanged }: { row: PhotoAppearanceDto; onChanged
             </Link>
           )}
         </div>
+        {row.photoId && (row.status === 'approved' || row.status === 'claimed') && (
+          <CompensationNegotiationPanel photoId={row.photoId} appearanceId={row.id} onChanged={onChanged} />
+        )}
       </div>
     </article>
   )
