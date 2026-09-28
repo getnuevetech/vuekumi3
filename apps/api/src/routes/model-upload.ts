@@ -229,6 +229,8 @@ export async function modelUploadRoutes(app: FastifyInstance) {
     const libraryTier = resolveLibraryTierForWrite({
       licenseType: 'free',
       permissionState: permission.permissionState,
+      accountType: request.authUser?.accountType,
+      hasPhotographerAgreement: commercialUploader,
     })
 
     let photo = await prisma.$transaction(async (tx) => {
@@ -576,6 +578,8 @@ export async function modelUploadRoutes(app: FastifyInstance) {
     const libraryTier = resolveLibraryTierForWrite({
       licenseType: nextLicenseType as 'free' | 'premium',
       permissionState: permission.permissionState,
+      accountType: request.authUser?.accountType,
+      hasPhotographerAgreement: commercialUploader,
     })
     await prisma.photo.update({
       where: { id },

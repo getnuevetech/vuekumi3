@@ -1,8 +1,8 @@
 import {
   commercialStatusFromLock,
-  defaultLibraryTier,
   deriveRightsStatus,
   openLibraryEligibility,
+  resolveUploadLibraryTier,
   verifiedPlusEligibility,
   type CommercialStatus,
   type CreationClaim,
@@ -15,12 +15,23 @@ export function resolveLibraryTierForWrite(input: {
   licenseType: 'free' | 'premium'
   permissionState?: string | null
   requestedTier?: LibraryTier | null
+  accountType?: string | null
+  hasPhotographerAgreement?: boolean | null
 }): LibraryTier {
-  if (input.requestedTier) return input.requestedTier
-  return defaultLibraryTier({
+  const resolved = resolveUploadLibraryTier({
+    accountType: input.accountType ?? null,
     licenseType: input.licenseType,
     permissionState: input.permissionState,
+    requestedTier: input.requestedTier,
+    hasPhotographerAgreement: input.hasPhotographerAgreement,
   })
+  if (resolved.error && input.requestedTier) {
+    const err = new Error(resolved.error) as Error & { statusCode?: number; reason?: string }
+    err.statusCode = 400
+    err.reason = 'library_tier_forbidden'
+    throw err
+  }
+  return resolved.tier
 }
 
 export function syncCommercialStatus(locked: boolean): CommercialStatus {

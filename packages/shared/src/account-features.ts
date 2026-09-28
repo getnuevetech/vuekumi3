@@ -94,7 +94,17 @@ const COMMUNITY: AccountFeatureKey[] = [
   'campaigns',
 ]
 
-/** Photo influencers and contributors start with the same posting and income tools. */
+/** Photo Influencer Free Library tools (no commercial_stock — Dec-TierMap). */
+const FREE_LIBRARY_CREATOR: AccountFeatureKey[] = [...COMMUNITY]
+
+/** Contributor paid-tier tools (Dec-TierMap: paid library with commercial_stock). */
+const PAID_CONTRIBUTOR: AccountFeatureKey[] = [
+  ...COMMUNITY,
+  'commercial_stock',
+  'ai_training_opt_in',
+]
+
+/** Photographers / Contributors use paid tiers; Photo Influencers use Free Library only. */
 export const DEFAULT_ACCOUNT_TYPE_FEATURES: Record<ConfigurableAccountType, AccountFeatureKey[]> = {
   user: BUYER,
   agency: [...BUYER, 'agency_workspace', 'agency_team', 'agency_quotes'],
@@ -114,8 +124,8 @@ export const DEFAULT_ACCOUNT_TYPE_FEATURES: Record<ConfigurableAccountType, Acco
     'campaigns',
     'request_bookings',
   ],
-  photo_influencer: COMMUNITY,
-  contributor: COMMUNITY,
+  photo_influencer: FREE_LIBRARY_CREATOR,
+  contributor: PAID_CONTRIBUTOR,
   model: ['model_profile', 'model_upload', 'model_bookings'],
 }
 

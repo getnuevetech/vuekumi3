@@ -1,0 +1,266 @@
+# VueKumi Imagery Concept v2.1 — recommendations & execution plan
+
+**Status: R1–R8 ADOPTED (28 Sep 2026). Dec-FreeLib A + Dec-TierMap + Dec-Upgrade locked. FC0–FC2 / V21-P2 execute next.**  
+Source: *VueKumi Imagery Platform — Full Product, Content, Rights & Commercial Concept* v2.1 (September 2026), plus product direction 28 Sep 2026.  
+Does **not** restart shipped rights/Open/Licensed/Verified+ engineering from [`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md).
+
+Companion: technical reconciliation remains in **`12`**. This document is product authority for Photo Influencer / Free Library / upgrade / RolePay sequencing.
+
+---
+
+## 0. Product locks (28 Sep 2026)
+
+Recorded from product:
+
+| Lock | Rule |
+| --- | --- |
+| **Photo Influencer = free group** | Keep `accountType: photo_influencer`. **No subscription required** to sign up or upload. Do **not** rename the role to “Free Contributor” in product language. |
+| **Tier map (locked)** | **Photo Influencer → free tier only (Free Library).** **Photographer + Contributor → paid tiers only** (Licensed / Verified+ / Editorial / Private). No cross-upload. |
+| **Free Library only (PI)** | Photo influencers may upload **only** into **Free Library**. Not Licensed / Verified+ / Editorial. |
+| **Paid tiers only (Photographer / Contributor)** | Photographers and Contributors may upload **only** to paid library tiers. They do **not** upload to Free Library. |
+| **Monitor Free Library** | Staff must review Free Library uploads against published quality/content criteria (queue + reject/hold path). |
+| **AI enhance low-res** | When an upload fails minimum resolution/quality, run **AI image enhancement** (reuse Phase 62 remediation) before accept or quarantine with clear reason. |
+
+**Dec-FC:** **Locked** — keep Photo Influencer; v2.1 “Free Contributor” maps to this role.
+
+**Dec-TierMap:** **Locked** — PI = free tier; Photographer + Contributor = paid tiers.
+
+**Dec-FreeLib:** **Locked (A)** — Public label **Free Library** = existing `libraryTier: OPEN` (no new enum).
+
+**Dec-Upgrade:** **Locked** — allow same-email upgrade Photo Influencer → Photographer / Contributor / Model with agreement re-accept + audit + AfricaElig recheck (supersedes Phase 29 hard block). Implement in **FC2**.
+
+**Dec-RolePay (partial):** Photo Influencer stays free forever. Paid-role hard gates for Photographer/Model/Buyer deferred; soft honesty first.
+
+**R1–R8:** **ADOPTED** — see §2. Engineering foundations for Dec-TierMap / Free Library label ship with R1–R8 execution; FC0–FC2 / V21-P2 continue the build.
+
+---
+
+## 1. Verdict
+
+v2.1 is the right strategic document for VueKumi: **not an African Unsplash clone**, but trusted African imagery infrastructure with frictionless free discovery, explicit rights, Africa-based supply, and worldwide buyers.
+
+Most of Spec Phase 1 is **already shipped** as foundations on `main` (Open downloads, library tiers, guest checkout, rights engine, compensation negotiation, country waitlist, Hire/Brand/Opportunity/Partner API foundations, Verified+ surface, Phase 62 image remediation).
+
+The **real delta** is Free Library program clarity for Photo Influencers + upgrade path + deferred RolePay for paid roles:
+
+| v2.1 / product concept | Current product (`main`) |
+| --- | --- |
+| Free identity for free library uploads | **`photo_influencer` shipped** — keep name; confirm no plan gate |
+| **Free Library** (influencer-only upload target) | `OPEN` tier + Open download shipped; **public “Free Library” label + hard upload lock missing** |
+| Paid Contributor / Photographer / Model / Buyer | Plans exist; roles **not** hard-gated on paid subscription |
+| Upgrade free → paid role same verified identity | Phase 29: photo influencer **cannot** convert on same email |
+| Monitor Free Library quality | Partial (approval/quarantine); **criteria + influencer-only queue UX missing** |
+| AI enhance low-resolution Free Library uploads | Phase 62 remediation **shipped**; **not wired as Free Library upload gate** |
+| Image-level Open / Licensed / Verified+ / Editorial | **Shipped** |
+| No-login Open download; guest paid checkout | **Shipped** |
+| Model compensation from Contributor Distributable Share | Engine + UI + ledger **shipped**; withdrawal flag OFF |
+
+**Recommendation:** Keep Photo Influencer; ship Free Library (label + upload lock + moderation + AI low-res enhance) as **FC1**. Treat `12` as rights/economics technical authority. Do not invent fees, Bio vendors, or entity names.
+
+---
+
+## 2. Recommendations (R1–R8)
+
+### R1 — Do not rebuild the marketplace
+Do not restart Open download, rights engine, guest checkout, or Verified+ badge work. Extend them for Free Library / Photo Influencer rules.
+
+### R2 — Photo Influencer is the free (no-subscription) identity — **locked**
+- Keep public name **Photo Influencer** and enum `photo_influencer`.
+- Never require a paid plan to register or use Photo Influencer.
+- Map v2.1 “Free Contributor” language in older concept copy → Photo Influencer in product docs going forward.
+- **Contributor** is a paid-tier uploader (with Photographer), not the free Free Library role.
+
+### R3 — Account → library tier map — **locked**
+Library tier stays image-level. Account type decides **which tiers may be submitted** (hard enforce):
+
+| Account | Allowed upload tiers |
+| --- | --- |
+| **Photo Influencer** | **Free Library only** (free tier; `OPEN` under Dec-FreeLib A) |
+| **Photographer** | **Paid tiers only** — Licensed / Verified+ / Editorial (not Free Library) |
+| **Contributor** | **Paid tiers only** — Licensed / Verified+ / Editorial (not Free Library) |
+
+Do not invent a second parallel tier system. Do not allow Photographer/Contributor Free Library uploads or Influencer paid-tier uploads.
+
+### R4 — Unlock same-identity upgrade (Dec-Upgrade — still open)
+v2.1 wants upgrade into Photographer / paid Contributor / Model without a new account. That **conflicts** with Phase 29. Recommend:
+- Allow **verified identity upgrade** with audit + agreement re-accept + AfricaElig recheck.
+- Preserve one primary `accountType` at a time (or explicit dual-role rules already used for model+photographer).
+- Free Library assets do **not** silently become commercial on upgrade without reclassification rules.
+
+### R5 — Role paywalls only for paid roles (Dec-RolePay — partial lock)
+- Photo Influencer: **never** subscription-gated (**locked**).
+- Photographer / Model / Buyer / paid Contributor: defer hard gates until pricing + grace + counsel; first ship Buyer plan honesty + upgrade CTAs.
+
+### R6 — Depth over invention for Phase 2 surfaces
+Opportunity Engine, Brand Studio, Hire foundations exist. Next ungated work after FC1: **briefs from demand**, **upgrade CTAs**, **Hire/Brand UX** — not payment rails (Dec-Fee still open).
+
+### R7 — Keep external gates intact
+T3 counsel-complete, T6 withdrawal flag, T9/Bio vendor activation, Verified+ indemnity SKU, Hire/Brand fees, Dec-VQ, Dec-AI dataset sell — do not invent.
+
+### R8 — Spec Phase numbering ≠ engineering sequence
+v2.1 “Phase 1 core marketplace” ≈ already done. Engineering uses **FC0–FC2 / V21-P2** below, not a Spec Phase 1 restart.
+
+---
+
+## 3. Gap matrix (v2.1 + locks → `main`)
+
+| Concept | Status |
+| --- | --- |
+| Public search / browse | **Shipped** |
+| VueKumi Open + anonymous download + events | **Shipped** (`OPEN`) |
+| Photographer/Contributor **paid-tiers-only** upload lock | **Shipped** (R1–R8 foundations; coerce + reject Free Library) |
+| **Free Library** public label (`OPEN`) + PI-only free tier | **Shipped** label + upload coerce; nav/moderation/AI remain FC1 |
+| Paid Licensed + guest checkout | **Shipped** |
+| Africa contributor eligibility + HOLD waitlist | **Shipped** (P1-T8) |
+| AI person detection + rights workflow | **Shipped** |
+| Model/photographer invites + consent hub | **Shipped** |
+| Compensation negotiation + Open interaction | **Shipped** (P1-T5) |
+| USD ledger + model likeness lines | **Shipped**; withdrawal **flag OFF** |
+| Public report / DMCA / disputes | **Shipped**; T3 counsel paste pending |
+| Free Library **criteria moderation** queue | **Partial** — need influencer Free Library review SOP/UI |
+| **AI enhance low-res** on Free Library upload | **Partial** — Phase 62 exists; wire as upload gate |
+| Photo Influencer no-subscription | **Intent locked**; audit plans UI so influencers are never upsold as required |
+| Free → paid same-email upgrade | **Dec-Upgrade locked** — implement FC2 |
+| Paid-role subscription gating | **Deferred** (Dec-RolePay); PI excluded |
+| Verified+ merchandising | **Foundation shipped** (no indemnity SKU) |
+| Opportunity / Brand / Hire / Partner API | **Foundations**; depth = V21-P2 |
+| Tips/donations / enterprise SKUs | **Later** |
+
+---
+
+## 4. Conflicts & decisions
+
+| ID | Decision | Status / recommendation |
+| --- | --- | --- |
+| **Dec-FC** | Photo Influencer vs “Free Contributor” naming | **Locked:** keep Photo Influencer; free; no subscription |
+| **Dec-TierMap** | Who uploads free vs paid tiers | **Locked:** PI → Free Library only; Photographer + Contributor → paid tiers only |
+| **Dec-FreeLib** | Free Library = `OPEN` label vs new enum | **Locked (A):** Free Library = public name for `OPEN` |
+| **Dec-Upgrade** | Same-email upgrade PI → Photographer/Contributor/Model | **Locked:** allow with audit + agreements; implement FC2 |
+| **Dec-RolePay** | Paid roles behind plan? | PI excluded (**locked**); others deferred |
+| **Dec-Fee** | Hire / Brand / representation fees | Undecided — no rails |
+| **Dec-VQ** | VueQuatro entity vs staff mode | Pending |
+| **Dec-AI** | Sell AI-training datasets | Undecided — consent only |
+| **Counsel** | License legal copy; T3 entity/agent | Counsel-gated |
+
+---
+
+## 5. Execution plan
+
+### FC0 — Product lock & mapping (docs / criteria)
+
+| ID | Work | Done when |
+| --- | --- | --- |
+| **FC0-1** | Photo Influencer + Free Library one-pager (benefits, Free-Library-only upload, no subscription, upgrade matrix) | Product sign-off |
+| **FC0-2** | Record Dec-FC + **Dec-FreeLib A** in `06` | **Done** (R1–R8) |
+| **FC0-3** | Publish Free Library **acceptance criteria** (resolution floor, sharpness, Africa/content rules, rejects) | Criteria doc approved |
+| **FC0-4** | Upgrade state machine draft (eligibility, agreements, reclassification of Free Library assets) | Dec-Upgrade recorded |
+| **FC0-5** | RolePay: confirm PI free; draft soft vs hard for other roles | Dec-RolePay deferred or policy recorded |
+
+**Do not add a new `LibraryTier` enum value until Dec-FreeLib is A or B.**
+
+---
+
+### FC1 — Free Library + Photo Influencer enforcement (after Dec-FreeLib)
+
+| ID | Work |
+| --- | --- |
+| **FC1-1** | Product copy: Photo Influencer = free program; never imply subscription required |
+| **FC1-2** | Nav / search: **Free Library** (or Free Images) → `OPEN`/Free-Library-filtered catalog (Spec §17.1) |
+| **FC1-3** | Photo Influencer dashboard: Free Library stats (views/downloads), optional upgrade CTAs (not paywalls) |
+| **FC1-4** | **Hard enforce Dec-TierMap:** `photo_influencer` → Free Library only; `photographer` / `contributor` → paid tiers only (reject Free Library / `OPEN` for them) |
+| **FC1-5** | **Moderation:** Free Library review queue + criteria checklist for staff (approve / hold / reject with reason) |
+| **FC1-6** | **AI low-res path:** on Free Library upload, if below min resolution/quality → invoke Phase 62 enhancement; re-check; else quarantine with “low resolution” reason |
+| **FC1-7** | Playwright: PI Free Library only; photographer/contributor paid tiers only + Free Library blocked; low-res enhance or quarantine asserted |
+
+---
+
+### FC2 — Same-identity upgrade (after Dec-Upgrade)
+
+| ID | Work |
+| --- | --- |
+| **FC2-1** | Upgrade API: Photo Influencer → photographer / paid contributor / model with agreement re-accept |
+| **FC2-2** | AfricaElig + waitlist recheck on upgrade |
+| **FC2-3** | Audit log + Rights Hub messaging; Free Library assets stay Free Library until explicit reclassification |
+| **FC2-4** | Playwright: Free Library upload → upgrade → Licensed path |
+
+---
+
+### V21-P2 — Demand & creator economy depth (ungated UX; no fee invention)
+
+| ID | Work |
+| --- | --- |
+| **V21-P2-1** | Opportunity Engine → **staff/manual creator briefs** (no ML) |
+| **V21-P2-2** | Brand Studio UX depth (briefs, collections) — still no production fee |
+| **V21-P2-3** | Hire messaging / discovery polish — still off-platform settlement |
+| **V21-P2-4** | Buyer plan honesty: collections, purchase history, credit/allowance display |
+| **V21-P2-5** | Verified+ merchandising polish — no indemnity SKU |
+
+---
+
+### V21-Gated — activate only with owners
+
+| ID | Wait for |
+| --- | --- |
+| Model withdrawal ON | Finance (`payouts.model_withdrawal_enabled`) |
+| T3 counsel-complete | Counsel pastes entity/agent |
+| T9 / Bio ON | Vendor + DPA |
+| Hire/Brand payment rails | Dec-Fee |
+| Verified+ indemnity product | Counsel + finance |
+| Partner API attribution/download events + enterprise teams | Product Phase 3 + Dec-Fee/enterprise |
+| AI dataset licensing | Dec-AI |
+
+---
+
+## 6. Suggested immediate build order
+
+1. Lock **Dec-FreeLib** (A recommended: Free Library = `OPEN` label).  
+2. Approve **FC0-3** Free Library criteria (resolution floor + content rules).  
+3. Ship **FC1-1..7** (copy, Free Library nav, upload lock, moderation, AI low-res).  
+4. **Approve Dec-Upgrade** → **FC2**.  
+5. **V21-P2-1** Opportunity → briefs; **V21-P2-4** Buyer plan honesty.  
+6. Hold RolePay hard gates (except PI already free), fees, indemnity, Bio vendor activation.
+
+---
+
+## 7. Spec Phase mapping
+
+| Spec v2.1 phase | Engineering reality |
+| --- | --- |
+| Phase 1 — Core marketplace | **Largely shipped**; Free Library program = FC1 delta |
+| Phase 2 — Demand & creator economy | **Foundations shipped**; depth = FC1 remainder + V21-P2 |
+| Phase 3 — Distribution & enterprise | Partner API foundation only; enterprise/API SKUs later |
+
+---
+
+## 8. Non-goals
+
+- Renaming Photo Influencer to Free Contributor  
+- Requiring subscription for Photo Influencer  
+- Rebuilding Open download or rights engines from scratch  
+- Inventing platform commission rates or Hire/Brand fees  
+- Enabling Bio/KYC or inventing screening vendors  
+- Claiming Copyright Office registration or inventing legal entity names  
+- Selling AI-training access before Dec-AI  
+
+---
+
+## 9. Next documents
+
+1. **Photo Influencer + Free Library Program Spec** (criteria, upload lock, moderation, AI enhance) — highest priority  
+2. Short **Account Upgrade Spec** (Dec-Upgrade)  
+3. PRD deltas only where FC1 changes screens  
+
+Do not commission all eight Spec §24 docs before FC0 criteria + Dec-FreeLib lock.
+
+---
+
+## 10. Relationship to other docs
+
+| Doc | Role after this plan |
+| --- | --- |
+| **`13` (this file)** | v2.1 + Photo Influencer / Free Library product authority + FC / V21 execution |
+| **`12`** | Technical reconciliation; gated activation checklist |
+| **`01` / `10`** | Historical phase log — update Free Library when FC1 ships |
+| **`06`** | Record Dec-FC (locked), Dec-FreeLib, Dec-Upgrade, Dec-RolePay |
+
+**Immediate ask:** Confirm **Dec-FreeLib A** (Free Library = `OPEN` public name) and Free Library acceptance criteria (min resolution + content rules) so FC1 can start. **Dec-TierMap is locked** (PI free / Photographer+Contributor paid).

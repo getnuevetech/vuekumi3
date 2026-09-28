@@ -196,9 +196,15 @@ and only then promote related Track E / Trust & Markets work into
 
 **Locked Sep 2026 (Imagery Concept v2.0 reconciliation):** Dec-Bio, Dec-PayBase,
 Dec-Split, Dec-AfricaElig — see [`12-V2-RECONCILIATION-EXECUTION-PLAN.md`](./12-V2-RECONCILIATION-EXECUTION-PLAN.md).
-Still pending: Dec-VQ, Dec-Fee, Dec-AI. Engineering may proceed on T5 architecture,
-provider-neutral Phase 60 schema (flag OFF), T8 ACTIVE/waitlist, and
-`RevenuePolicy` refactor per that plan. Do **not** invent a permanent platform
+
+**Locked Sep 2026 (Imagery Concept v2.1 / Photo Influencer Free Library):** see [`13`](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md):
+- **Dec-FC** — keep Photo Influencer; free; no subscription
+- **Dec-TierMap** — PI → Free Library only; Photographer + Contributor → paid tiers only
+- **Dec-FreeLib A** — Free Library = public label for `libraryTier: OPEN`
+- **Dec-Upgrade** — same-email PI upgrade allowed (FC2)
+- **Dec-RolePay** — PI never paywalled; other role hard gates deferred
+
+Still pending: Dec-VQ, Dec-Fee, Dec-AI. Do **not** invent a permanent platform
 commission rate; do **not** activate biometrics in production without vendor/DPA/counsel;
 keep zero booking/campaign/representation fees and VueQuatro staff mode until Dec-Fee / Dec-VQ.
 

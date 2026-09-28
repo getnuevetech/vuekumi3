@@ -6,6 +6,11 @@ import {
   deriveRightsStatus,
   openLibraryEligibility,
   verifiedPlusEligibility,
+  resolveUploadLibraryTier,
+  allowedUploadLibraryTiers,
+  FREE_LIBRARY_TIER,
+  FREE_LIBRARY_LABEL,
+  LIBRARY_TIER_LABEL,
   OPEN_LICENSE_VERSION,
 } from '@vuekumi/shared'
 
@@ -136,5 +141,40 @@ test('Verified+ requires Rights Verified + commercial enabled; not private inven
       permissionState: 'portfolio',
     }).reason,
     'private_inventory',
+  )
+})
+
+test('Dec-TierMap: Photo Influencer Free Library only; photographer/contributor paid tiers', () => {
+  assert.equal(FREE_LIBRARY_TIER, 'OPEN')
+  assert.equal(LIBRARY_TIER_LABEL.OPEN, FREE_LIBRARY_LABEL)
+  assert.deepEqual(allowedUploadLibraryTiers('photo_influencer'), ['OPEN'])
+  assert.ok(allowedUploadLibraryTiers('photographer').includes('LICENSED'))
+  assert.ok(!allowedUploadLibraryTiers('photographer').includes('OPEN'))
+  assert.ok(allowedUploadLibraryTiers('contributor').includes('LICENSED'))
+  assert.ok(!allowedUploadLibraryTiers('contributor').includes('OPEN'))
+
+  assert.equal(
+    resolveUploadLibraryTier({ accountType: 'photo_influencer', licenseType: 'free' }).tier,
+    'OPEN',
+  )
+  assert.equal(
+    resolveUploadLibraryTier({
+      accountType: 'photo_influencer',
+      licenseType: 'premium',
+      requestedTier: 'LICENSED',
+    }).error?.includes('Free Library'),
+    true,
+  )
+  assert.equal(
+    resolveUploadLibraryTier({ accountType: 'photographer', licenseType: 'free' }).tier,
+    'LICENSED',
+  )
+  assert.equal(
+    resolveUploadLibraryTier({
+      accountType: 'contributor',
+      licenseType: 'premium',
+      requestedTier: 'OPEN',
+    }).error?.includes('paid library'),
+    true,
   )
 })

@@ -210,7 +210,7 @@ test('contributor cannot commercially license people photos without two-party ap
     payload: { permissionState: 'commercial' },
   })
   assert.equal(blocked.statusCode, 400)
-  assert.match((blocked.json() as { error: string }).error, /Photo influencers cannot enter commercial inventory/)
+  assert.match((blocked.json() as { error: string }).error, /Free Library|Photo influencers/)
 
   const privateOk = await app.inject({
     method: 'GET',

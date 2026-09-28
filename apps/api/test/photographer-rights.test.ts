@@ -8,7 +8,7 @@ function cookies(res: { headers: Record<string, unknown> }) {
   return (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
 }
 
-test('professional photographers enter commercial inventory; community contributors cannot', async () => {
+test('professional photographers and contributors enter commercial inventory; photo influencers cannot', async () => {
   await withAfricaListOnboarding(async () => {
     const app = await buildApp()
 
@@ -27,38 +27,74 @@ test('professional photographers enter commercial inventory; community contribut
     assert.ok(photographer.statusCode === 200 || photographer.statusCode === 201)
     assert.equal((photographer.json() as { user: { accountType: string } }).user.accountType, 'photographer')
 
-    const community = await app.inject({
+    const paidContributor = await app.inject({
       method: 'POST',
       url: '/api/auth/register',
       payload: {
         email: `comm-${Date.now()}@vuekumi.demo`,
         password: 'User12345!',
-        name: 'Imani Community',
+        name: 'Imani Contributor',
         accountType: 'contributor',
         country: 'NG',
         acceptAgreement: true,
       },
     })
-    assert.ok(community.statusCode === 200 || community.statusCode === 201)
-    assert.equal((community.json() as { user: { accountType: string } }).user.accountType, 'contributor')
+    assert.ok(paidContributor.statusCode === 200 || paidContributor.statusCode === 201)
+    assert.equal((paidContributor.json() as { user: { accountType: string } }).user.accountType, 'contributor')
 
-    const blocked = await app.inject({
+    const contributorCommercial = await app.inject({
       method: 'POST',
       url: '/api/contributor/photos',
-      headers: { cookie: cookies(community) },
+      headers: { cookie: cookies(paidContributor) },
       payload: {
         title: 'Market stall',
         category: 'Urban',
         country: 'Nigeria',
         licenseType: 'premium',
         hasRecognizablePeople: false,
-        copyrightHolder: 'Imani Community',
+        copyrightHolder: 'Imani Contributor',
+        copyrightAttested: true,
+        permissionState: 'editorial',
+      },
+    })
+    assert.equal(contributorCommercial.statusCode, 200, contributorCommercial.body)
+    const contributorPhoto = (contributorCommercial.json() as { photo: { libraryTier?: string } }).photo
+    assert.notEqual(contributorPhoto.libraryTier, 'OPEN')
+    assert.ok(
+      contributorPhoto.libraryTier === 'LICENSED' || contributorPhoto.libraryTier === 'EDITORIAL',
+      `expected paid tier, got ${contributorPhoto.libraryTier}`,
+    )
+
+    const influencer = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        email: `inf-${Date.now()}@vuekumi.demo`,
+        password: 'User12345!',
+        name: 'Zuri Influencer',
+        accountType: 'photo_influencer',
+        country: 'NG',
+        acceptAgreement: true,
+      },
+    })
+    assert.ok(influencer.statusCode === 200 || influencer.statusCode === 201)
+    const blocked = await app.inject({
+      method: 'POST',
+      url: '/api/contributor/photos',
+      headers: { cookie: cookies(influencer) },
+      payload: {
+        title: 'Free shot',
+        category: 'Urban',
+        country: 'Nigeria',
+        licenseType: 'premium',
+        hasRecognizablePeople: false,
+        copyrightHolder: 'Zuri Influencer',
         copyrightAttested: true,
         permissionState: 'commercial',
       },
     })
     assert.equal(blocked.statusCode, 400)
-    assert.match((blocked.json() as { error: string }).error, /professional photographer/)
+    assert.match((blocked.json() as { error: string }).error, /Free Library|Photo influencers/)
 
     const landscape = await app.inject({
       method: 'POST',
