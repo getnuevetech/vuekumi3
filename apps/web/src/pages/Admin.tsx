@@ -262,6 +262,36 @@ export function AdminDashboard() {
         </ul>
       )}
 
+      {(overview?.searchOpportunities?.items.length ?? 0) > 0 && (
+        <div className="mt-10">
+          <SectionHead
+            kicker="Opportunities"
+            title="Buyer search demand"
+          />
+          <p className="mt-1 text-sm text-ink-soft">
+            Last {overview?.searchOpportunities?.windowDays ?? 30} days ·{' '}
+            {overview?.searchOpportunities?.zeroResultSearches ?? 0} zero-result of{' '}
+            {overview?.searchOpportunities?.totalSearches ?? 0} logged searches.
+          </p>
+          <ul className="mt-4 divide-y divide-sand-soft rounded-2xl border border-sand-soft bg-white">
+            {overview?.searchOpportunities?.items.map((row) => (
+              <li key={`${row.label}-${row.lastSearchedAt}`} className="flex flex-wrap items-baseline justify-between gap-2 px-5 py-3">
+                <div>
+                  <p className="text-sm font-medium text-ink">{row.label}</p>
+                  <p className="font-mono-tech text-[10px] text-ink-faint">
+                    {row.searches} searches · avg {row.avgResults} results
+                    {row.hasZeroResults ? ' · unmet' : ''}
+                  </p>
+                </div>
+                <span className={`font-mono-tech text-[10px] uppercase tracking-[0.14em] ${row.hasZeroResults ? 'text-terra' : 'text-ink-faint'}`}>
+                  min {row.minResults}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-10">
         <SectionHead kicker="Revenue" title="Revenue vs contributor payouts" />
         <div className="rounded-2xl border border-sand-soft bg-white p-5">

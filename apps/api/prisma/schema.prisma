@@ -446,6 +446,34 @@ model OpenDownloadEvent {
   @@index([anonymousSessionId])
 }
 
+/// Content Opportunity Engine — append-only catalog search demand signal.
+/// Used to surface unmet buyer demand (esp. zero/low-result queries) to contributors and staff.
+model SearchOpportunityEvent {
+  id                 String   @id @default(cuid())
+  /// Raw query string as submitted (may be empty when filters-only).
+  q                  String   @default("")
+  /// Normalized query key for rollups (lowercase, collapsed whitespace).
+  qNorm              String   @default("")
+  category           String?
+  country            String?
+  license            String?
+  libraryTier        String?
+  tag                String?
+  photographer       String?
+  resultCount        Int
+  page               Int      @default(1)
+  userId             String?
+  anonymousSessionId String?
+  source             String?  @default("catalog")
+  referrer           String?
+  createdAt          DateTime @default(now())
+
+  @@index([qNorm])
+  @@index([createdAt])
+  @@index([resultCount])
+  @@index([qNorm, resultCount])
+}
+
 model PartnerApiKey {
   id           String           @id @default(cuid())
   name         String

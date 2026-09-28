@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { accountTypeSchema } from './accounts.js'
 import type { CreatorKind } from './creators.js'
+import type { SearchOpportunitySummaryDto } from './search-opportunity.js'
 
 export interface AdminOverviewStatsDto {
   users: number
@@ -27,6 +28,8 @@ export interface AdminOverviewDto {
   stats: AdminOverviewStatsDto
   series: AdminRevenuePointDto[]
   engagementReport: string[]
+  /** Buyer search demand gaps (Content Opportunity Engine). */
+  searchOpportunities?: SearchOpportunitySummaryDto
 }
 
 export const ADMIN_ACCOUNT_LIST_KINDS = [

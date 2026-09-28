@@ -4,6 +4,7 @@ import { STOCK_PERMISSION_STATES } from '@vuekumi/shared'
 import { narrateCatalogEngagement, reportingProviderKind } from './analytics-report.js'
 import { prisma } from './prisma.js'
 import { roundUsd } from './payouts.js'
+import { loadSearchOpportunitySummary } from './search-opportunity.js'
 
 const LIVE = { status: 'active' as const, permissionState: { in: [...STOCK_PERMISSION_STATES] } }
 
@@ -64,7 +65,7 @@ export function revenuePayoutSeries(
 
 export async function loadAdminOverview(now = new Date()): Promise<AdminOverviewDto> {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const [users, contributors, photosLive, pendingReview, openRightsReports, downloadAgg, payments, subscriptions, payouts, viewAgg, catalogFavorites, licencesIssued, moderationOlderThan7Days, categoryRows, provider] =
+  const [users, contributors, photosLive, pendingReview, openRightsReports, downloadAgg, payments, subscriptions, payouts, viewAgg, catalogFavorites, licencesIssued, moderationOlderThan7Days, categoryRows, provider, searchOpportunities] =
     await Promise.all([
       prisma.user.count(),
       prisma.user.count({
@@ -96,6 +97,7 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
         _sum: { views: true },
       }),
       reportingProviderKind(),
+      loadSearchOpportunitySummary({ limit: 8 }),
     ])
 
   const series = revenuePayoutSeries(
@@ -139,5 +141,6 @@ export async function loadAdminOverview(now = new Date()): Promise<AdminOverview
     },
     series,
     engagementReport,
+    searchOpportunities,
   }
 }

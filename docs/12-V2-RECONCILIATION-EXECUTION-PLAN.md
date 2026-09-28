@@ -115,7 +115,7 @@ These were not in the Sep 28 backlog and must enter the reconciliation:
 | **Guest checkout** | Paid buyer path without full account upfront — **shipped** (passwordless buyer session + email on PhotoDetail; free RF still requires sign-in for quota) |
 | **Free-image rights clearance** | Open requires all necessary rights for a zero-price license |
 | **License-version snapshots** | Downloads/grants stamp which Open/license policy version applied |
-| **Search Opportunity data** | Content Opportunity Engine — **later**, not P0 |
+| **Search Opportunity data** | Content Opportunity Engine — **foundation shipped** (search demand events + contributor/admin rollups); deeper matching / auto-briefs stay later |
 | **Separate state axes** | Rights status ≠ library tier ≠ commercial status |
 
 ### Image state model (required separation)
@@ -224,7 +224,8 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | **P2-T6** | Real model payouts after finance readiness — **ledger shipped** (activated likeness agreements → `likeness_compensation` EarningsLedger lines from Contributor Distributable Share; photographer residual; certificates omit model economics). **Payout withdrawal rails still finance-gated.** |
 | **P2-VP** | Verified+ product surface — **shipped** (admin set + eligibility gate; search `libraryTier` filter/facets; PhotoCard/PhotoDetail badge; seed `afr-020`; ≠ Rights Verified) |
 | **Partner API depth** | **Shipped** — partner photo DTO exposes `libraryTier` + `licenseType`; list filters reuse catalog `buildPhotoWhere` (`libraryTier`, `license`, `tag`, `photographer`, `sort`) |
-| **Later** | Content Opportunity Engine, Brand Studio, Hire expansion |
+| **P2-OE** | Content Opportunity Engine foundation — **shipped** (`SearchOpportunityEvent` from catalog search; contributor + admin rollups of unmet demand; seed gaps; no auto-briefs/ML) |
+| **Later** | Brand Studio, Hire expansion |
 | **Guest checkout** | **Shipped** — paid licences via guest email (passwordless `user` session); free RF still requires account |
 | **T3** | Counsel: legal entity, registered DMCA agent, addresses, deploy public copy |
 | **T9** | Person/entity/beneficial-owner/FI screening via KYC partners; country matrix records which provider covers which function — **not** country-only reject |
