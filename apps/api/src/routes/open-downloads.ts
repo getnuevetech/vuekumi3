@@ -5,6 +5,7 @@ import { OPEN_LICENSE_VERSION } from '@vuekumi/shared'
 import { prisma } from '../lib/prisma.js'
 import { DOWNLOAD_RATE_LIMIT } from '../lib/rate-limit.js'
 import { assertOpenDownloadAllowed } from '../lib/library-tiers.js'
+import { photoCompensationRequested } from '../lib/compensation.js'
 import { mediaSrc } from '../lib/serialize.js'
 
 const openDownloadSchema = z.object({
@@ -30,7 +31,7 @@ export async function openDownloadRoutes(app: FastifyInstance) {
     const body = openDownloadSchema.parse(request.body ?? {})
     const photo = await prisma.photo.findUnique({
       where: { id: photoId },
-      include: { rightsRecord: true },
+      include: { rightsRecord: true, appearances: true },
     })
     if (!photo || photo.status !== 'active') {
       return reply.code(404).send({ error: 'Photo not found' })
@@ -43,6 +44,17 @@ export async function openDownloadRoutes(app: FastifyInstance) {
         copyrightStatus: photo.rightsRecord?.copyrightStatus,
         modelConsentStatus: photo.rightsRecord?.modelConsentStatus,
         commercialLocked: photo.commercialLocked,
+        creationClaim: photo.creationClaim,
+        appearances: photo.appearances.map((row) => ({
+          status: row.status,
+          selfShot: row.selfShot,
+          consentStatus: row.consentStatus,
+          consentQuality: row.consentQuality,
+          verificationLevel: row.verificationLevel,
+          usage: row.usage,
+          confirmedLikeness: row.confirmedLikeness,
+        })),
+        compensationRequested: await photoCompensationRequested(photo.id),
       })
     } catch (err) {
       const status = err && typeof err === 'object' && 'statusCode' in err
