@@ -6,6 +6,9 @@ Read in this order:
    **Imagery Concept v2.1** recommendations + Photo Influencer / Free Library (FC) /
    V21-P2 execution. Photo Influencer stays free (no subscription); Free Library
    upload-only + moderation + AI low-res. Does not restart shipped Open/rights in **`12`**.
+0b. **[14-FREE-LIBRARY-PROGRAM.md](./14-FREE-LIBRARY-PROGRAM.md)** —
+   **FC0** Photo Influencer + Free Library program one-pager, acceptance criteria,
+   upgrade matrix (Dec-Upgrade).
 1. **[12-V2-RECONCILIATION-EXECUTION-PLAN.md](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)** —
    **Technical reconciliation status.** Imagery Concept v2.0/v2.1 rights stack:
    Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig locked; P0–P2 foundations
