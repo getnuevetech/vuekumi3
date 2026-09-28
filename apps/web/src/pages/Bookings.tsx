@@ -116,8 +116,8 @@ export default function Bookings() {
         {!loading && shown.length === 0 && (
           <p className="mt-8 text-sm text-ink-soft">
             No bookings yet. Find someone on the{' '}
-            <Link to="/creators" className="text-terra underline underline-offset-2">creators</Link> or{' '}
-            <Link to="/models" className="text-terra underline underline-offset-2">models</Link> pages.
+            <Link to="/hire" className="text-terra underline underline-offset-2">hire photographers</Link> or{' '}
+            <Link to="/hire?tab=models" className="text-terra underline underline-offset-2">book models</Link>.
           </p>
         )}
 

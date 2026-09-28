@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { modelListQuerySchema, photoListQuerySchema } from '@vuekumi/shared'
+import { hireAvailabilityWhere, modelListQuerySchema, photoListQuerySchema } from '@vuekumi/shared'
 import type { ModelPublicDto } from '@vuekumi/shared'
 import { optionalAuthenticate } from '../lib/auth-middleware.js'
 import {
@@ -53,6 +53,7 @@ export async function modelProfileRoutes(app: FastifyInstance) {
   }, async (request) => {
     const query = modelListQuerySchema.parse(request.query)
     const q = normalizeQuery(query.q)
+    const availabilityFilter = hireAvailabilityWhere(query.availability)
     const visibleAppearance = {
       status: 'approved' as const,
       confirmedLikeness: true,
@@ -61,7 +62,11 @@ export async function modelProfileRoutes(app: FastifyInstance) {
 
     const where = {
       status: 'active' as const,
-      modelProfile: { isNot: null },
+      modelProfile: {
+        is: {
+          ...(availabilityFilter ? { availability: availabilityFilter } : {}),
+        },
+      },
       modelAppearances: { some: visibleAppearance },
       ...(q
         ? {

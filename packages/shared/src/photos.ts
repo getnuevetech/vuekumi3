@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { creatorKindSchema } from './creators.js'
+import { hireAvailabilityFilterSchema } from './hire.js'
 
 export const photoSortSchema = z.enum(['newest', 'downloads', 'views', 'likes'])
 
@@ -24,9 +25,10 @@ export const photographerListQuerySchema = z.object({
   q: z.string().optional(),
   kind: creatorKindSchema.optional(),
   listing: z.enum(['community']).optional(),
+  availability: hireAvailabilityFilterSchema.optional(),
 })
 
-export const modelListQuerySchema = photographerListQuerySchema.omit({ kind: true })
+export const modelListQuerySchema = photographerListQuerySchema.omit({ kind: true, listing: true })
 
 export type PhotoSort = z.infer<typeof photoSortSchema>
 export type PhotoListQuery = z.infer<typeof photoListQuerySchema>

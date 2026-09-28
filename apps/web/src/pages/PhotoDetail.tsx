@@ -316,6 +316,29 @@ export default function PhotoDetail() {
                 </svg>
               </button>
             </div>
+            {user?.contributorHandle !== photographer.handle && (
+              <Link
+                to={`/hire/${photographer.handle}`}
+                className="mt-3 inline-flex border border-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] hover:bg-ink hover:text-paper"
+              >
+                Hire photographer
+              </Link>
+            )}
+            {(view.appearances ?? []).some((a) => a.modelHandle) && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(view.appearances ?? [])
+                  .filter((a) => a.modelHandle)
+                  .map((a) => (
+                    <Link
+                      key={a.modelHandle}
+                      to={`/book/${a.modelHandle}`}
+                      className="inline-flex border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft hover:border-ink hover:text-ink"
+                    >
+                      Book @{a.modelHandle}
+                    </Link>
+                  ))}
+              </div>
+            )}
 
             {((view.appearances ?? []).filter((a) => a.status === 'approved' && a.modelHandle)).length > 0 && (
               <div className="mt-4 border border-sand bg-white p-4">
