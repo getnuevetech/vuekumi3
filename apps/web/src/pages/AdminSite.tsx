@@ -150,7 +150,7 @@ function PageImagesEditor({
     }))
   }
 
-  const usePhoto = (photo: AdminContentRow, mode: 'replace' | 'add') => {
+  const applyCatalogPhoto = (photo: AdminContentRow, mode: 'replace' | 'add') => {
     rememberPhoto(photo)
     if (mode === 'add') {
       if (panel.slides.length >= PAGE_PANEL_SLIDE_LIMIT) return
@@ -163,7 +163,7 @@ function PageImagesEditor({
     writePanel(panel.slides.map((slide, i) => i === index ? { ...slide, imageRef: photo.id, credit: '' } : slide))
   }
 
-  const useUpload = async (file: File, mode: 'replace' | 'add') => {
+  const applyUploadedImage = async (file: File, mode: 'replace' | 'add') => {
     if (mode === 'add' && panel.slides.length >= PAGE_PANEL_SLIDE_LIMIT) return
     const dataBase64 = await fileToBase64(file)
     const saved = await api.uploadSiteImage({ kind: 'panels', contentType: file.type || 'image/jpeg', dataBase64 })
@@ -306,7 +306,7 @@ function PageImagesEditor({
                 const file = e.target.files?.[0]
                 e.target.value = ''
                 if (!file) return
-                void useUpload(file, 'replace').catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not upload the image'))
+                void applyUploadedImage(file, 'replace').catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not upload the image'))
               }}
             />
           </label>
@@ -321,7 +321,7 @@ function PageImagesEditor({
                 const file = e.target.files?.[0]
                 e.target.value = ''
                 if (!file) return
-                void useUpload(file, 'add').catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not upload the image'))
+                void applyUploadedImage(file, 'add').catch((err) => toast.error(err instanceof ApiError ? err.message : 'Could not upload the image'))
               }}
             />
           </label>
@@ -354,7 +354,7 @@ function PageImagesEditor({
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => usePhoto(photo, 'replace')}
+                  onClick={() => applyCatalogPhoto(photo, 'replace')}
                   className="rounded-full bg-ink px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-paper hover:bg-terra"
                 >
                   Use on selected
@@ -362,7 +362,7 @@ function PageImagesEditor({
                 <button
                   type="button"
                   disabled={panel.slides.length >= PAGE_PANEL_SLIDE_LIMIT}
-                  onClick={() => usePhoto(photo, 'add')}
+                  onClick={() => applyCatalogPhoto(photo, 'add')}
                   className="rounded-full border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] disabled:opacity-40"
                 >
                   Add image
