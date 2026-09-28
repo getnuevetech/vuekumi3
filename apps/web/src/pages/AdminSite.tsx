@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import type { MenuFont, SiteMenuAudience } from '@vuekumi/shared'
 import { toast } from 'sonner'
 import {
@@ -16,6 +17,7 @@ import {
 } from '@vuekumi/shared'
 import { api, ApiError, type AdminContentRow } from '../api/client'
 import { menuPathChoices, menuPathLabel } from '../lib/menu-paths'
+import { invalidatePublicSite } from '../lib/query-keys'
 import { AdminShell } from './Admin'
 
 const field = 'mt-1 w-full rounded-2xl border border-sand-soft px-4 py-2 text-sm outline-none focus:border-terra'
@@ -393,6 +395,7 @@ function TextField({ title, value, onChange, area = false }: { title: string; va
 }
 
 export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) {
+  const queryClient = useQueryClient()
   const [content, setContent] = useState<SiteContent | null>(null)
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const [facts, setFacts] = useState<Record<string, SlideFacts>>({})
@@ -443,6 +446,7 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
         })
       }
       setFacts(nextFacts)
+      await invalidatePublicSite(queryClient)
       toast.success('Site content saved')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not save')

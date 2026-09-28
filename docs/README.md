@@ -6,7 +6,8 @@ Read in this order:
    **current next-build track.** Imagery Concept v2.0 reconciliation: locked
    Dec-Bio / Dec-PayBase / Dec-Split / Dec-AfricaElig; P0 foundation (H1, H3,
    RevenuePolicy, Photo Influencer + library tiers, Open download events, Rights
-   alignment); then P1 (T5, Phase 60 schema flag-off, T8 waitlist **shipped**, H4, H5). Do
+   alignment); then P1 (T5, Phase 60 schema flag-off, T8 waitlist **shipped**, H4 React Query
+   **shipped**, H5). Do
    **not** implement full v2 UI before this foundation.
 1. **[11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md](./11-SEP28-REVIEW-RECOMMENDATIONS-AND-PLAN.md)** —
    Sep 28 repo/app review (ops, hygiene, gated product). Sequencing for product

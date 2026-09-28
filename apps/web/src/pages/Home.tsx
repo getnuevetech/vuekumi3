@@ -1,13 +1,14 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   DEFAULT_CATEGORY_BANNER_FRAME,
   DEFAULT_FEATURED_FRAME,
   DEFAULT_HOME_SECTION_ORDER,
   DEFAULT_PEOPLE_FRAME,
-  type HomePageDto,
 } from '@vuekumi/shared'
 import { useSiteContent } from '../context/SiteContentContext'
 import { api } from '../api/client'
+import { publicQueryKeys } from '../lib/query-keys'
 import { INFLUENCER_JOIN, SELL_HREF } from './home/utils'
 import {
   BackToTop,
@@ -30,11 +31,10 @@ import {
 
 export default function Home() {
   const { content } = useSiteContent()
-  const [home, setHome] = useState<HomePageDto | null>(null)
-
-  useEffect(() => {
-    api.home().then(setHome).catch(() => setHome(null))
-  }, [])
+  const { data: home = null } = useQuery({
+    queryKey: publicQueryKeys.home,
+    queryFn: () => api.home(),
+  })
 
   const stats = home?.stats ?? null
   const featured = home?.featured

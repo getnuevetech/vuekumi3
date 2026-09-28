@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { DEFAULT_SITE_CONTENT, STATIC_PANELS, type SiteContent, type SiteFacts, type SitePanelPublic, type StaticPanelKey } from '@vuekumi/shared'
 import { api } from '../api/client'
+import { publicQueryKeys } from '../lib/query-keys'
 
 const DEFAULT_FACTS: SiteFacts = { photographerPct: 50, payoutMinimumUsd: 10 }
 
@@ -35,34 +37,38 @@ type SiteState = {
   ready: boolean
 }
 
-const SiteContentContext = createContext<SiteState>({
+const FALLBACK: SiteState = {
   content: DEFAULT_SITE_CONTENT,
   logoUrl: null,
   facts: DEFAULT_FACTS,
   panels: fallbackPanels(),
   ready: false,
-})
+}
+
+const SiteContentContext = createContext<SiteState>(FALLBACK)
 
 export function SiteContentProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SiteState>({
-    content: DEFAULT_SITE_CONTENT,
-    logoUrl: null,
-    facts: DEFAULT_FACTS,
-    panels: fallbackPanels(),
-    ready: false,
+  const query = useQuery({
+    queryKey: publicQueryKeys.site,
+    queryFn: () => api.site(),
   })
 
-  useEffect(() => {
-    api.site()
-      .then((page) => setState({
-        content: page.content,
-        logoUrl: page.logoUrl,
-        facts: page.facts,
-        panels: page.panels,
+  const state = useMemo<SiteState>(() => {
+    if (query.data) {
+      return {
+        content: query.data.content,
+        logoUrl: query.data.logoUrl,
+        facts: query.data.facts,
+        panels: query.data.panels,
         ready: true,
-      }))
-      .catch(() => setState((current) => ({ ...current, ready: true })))
-  }, [])
+      }
+    }
+    return {
+      ...FALLBACK,
+      panels: fallbackPanels(),
+      ready: query.isFetched || query.isError,
+    }
+  }, [query.data, query.isFetched, query.isError])
 
   return <SiteContentContext.Provider value={state}>{children}</SiteContentContext.Provider>
 }

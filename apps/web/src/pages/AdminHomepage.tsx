@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   DEFAULT_CATEGORY_BANNER_FRAME,
@@ -24,6 +25,7 @@ import {
   type PhotoDto,
 } from '@vuekumi/shared'
 import { api, ApiError } from '../api/client'
+import { invalidatePublicHome } from '../lib/query-keys'
 import { AdminShell } from './Admin'
 
 function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
@@ -65,6 +67,7 @@ type PinTarget =
   | { kind: 'banner'; position: number }
 
 export default function AdminHomepage() {
+  const queryClient = useQueryClient()
   const [page, setPage] = useState<HomeFeaturedAdminDto | null>(null)
   const [pins, setPins] = useState<HomeFeaturedAdminDto['pins'] | null>(null)
   const [uploads, setUploads] = useState<Record<HomeUploadSlotKey, (string | null)[]> | null>(null)
@@ -195,6 +198,7 @@ export default function AdminHomepage() {
       setEditorialCategory(next.editorialCategory ?? '')
       setBannerWidth(String(next.categoryBannerFrame.widthVw))
       setBannerHeight(String(next.categoryBannerFrame.heightVw))
+      await invalidatePublicHome(queryClient)
       toast.success('Homepage featured slots saved')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not save')
@@ -480,6 +484,7 @@ function moveItem(list: string[], index: number, direction: -1 | 1) {
 }
 
 function SectionArrangement({ page, onSaved }: { page: HomeFeaturedAdminDto | null; onSaved: () => void }) {
+  const queryClient = useQueryClient()
   const [order, setOrder] = useState<string[]>([])
   const [hidden, setHidden] = useState<string[]>([])
   const [addKey, setAddKey] = useState('')
@@ -512,6 +517,7 @@ function SectionArrangement({ page, onSaved }: { page: HomeFeaturedAdminDto | nu
           })),
         } : {}),
       })
+      await invalidatePublicHome(queryClient)
       toast.success('Homepage sections saved')
       onSaved()
     } catch (err) {
@@ -620,6 +626,7 @@ function SectionArrangement({ page, onSaved }: { page: HomeFeaturedAdminDto | nu
 }
 
 function PeopleEditor({ slot, page, busy, onSaved }: { slot: HomePeopleSlot; page: HomeFeaturedAdminDto | null; busy: boolean; onSaved: () => void }) {
+  const queryClient = useQueryClient()
   const saved = page?.people[slot]
   const [mode, setMode] = useState<HomePeopleMode>('downloads')
   const [people, setPeople] = useState<HomeContributorPick[]>([])
@@ -668,6 +675,7 @@ function PeopleEditor({ slot, page, busy, onSaved }: { slot: HomePeopleSlot; pag
         pins: {},
         people: { [slot]: { mode, ids: people.map((person) => person.id), randomize, frame: { widthVw, heightVw } } },
       })
+      await invalidatePublicHome(queryClient)
       toast.success(`${label} saved`)
       onSaved()
     } catch (err) {
@@ -770,6 +778,7 @@ function draftsFrom(banners: HomeStaticBannerDto[]): BannerDraft[] {
 }
 
 function StaticBanners({ page, busy, onSaved }: { page: HomeFeaturedAdminDto | null; busy: boolean; onSaved: () => void }) {
+  const queryClient = useQueryClient()
   const [banners, setBanners] = useState<BannerDraft[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -823,6 +832,7 @@ function StaticBanners({ page, busy, onSaved }: { page: HomeFeaturedAdminDto | n
     setSaving(true)
     try {
       await api.saveHomepage({ pins: {}, staticBanners: payload })
+      await invalidatePublicHome(queryClient)
       toast.success('Static banner sections saved')
       onSaved()
     } catch (err) {
