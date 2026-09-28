@@ -468,9 +468,14 @@ async function main() {
     })
     await prisma.platformSetting.createMany({
       data: [
-        { key: 'dmca.agent_name', value: 'VueKumi DMCA Agent', secret: false, label: 'DMCA designated agent name', group: 'DMCA', updatedAt: new Date() },
+        { key: 'legal.operator_display_name', value: 'Counsel sets the contracting display name', secret: false, label: 'Contracting display name', group: 'Legal', updatedAt: new Date() },
+        { key: 'legal.entity_legal_name', value: 'Counsel sets the legal entity name', secret: false, label: 'Legal entity name', group: 'Legal', updatedAt: new Date() },
+        { key: 'legal.entity_jurisdiction', value: 'Counsel sets jurisdiction (e.g. state of incorporation)', secret: false, label: 'Entity jurisdiction', group: 'Legal', updatedAt: new Date() },
+        { key: 'legal.principal_address', value: 'Counsel sets the principal business address', secret: false, label: 'Principal business address', group: 'Legal', updatedAt: new Date() },
+        { key: 'legal.public_contact_email', value: 'legal@vuekumi.com', secret: false, label: 'Public legal contact email', group: 'Legal', updatedAt: new Date() },
+        { key: 'dmca.agent_name', value: 'Counsel sets the designated agent name', secret: false, label: 'DMCA designated agent name', group: 'DMCA', updatedAt: new Date() },
         { key: 'dmca.agent_email', value: 'dmca@vuekumi.com', secret: false, label: 'DMCA designated agent email', group: 'DMCA', updatedAt: new Date() },
-        { key: 'dmca.agent_address', value: 'Counsel sets the street address. Copyright Office filing is ops/counsel.', secret: false, label: 'DMCA designated agent address', group: 'DMCA', updatedAt: new Date() },
+        { key: 'dmca.agent_address', value: 'Counsel sets the designated agent street address. Copyright Office filing is ops/counsel.', secret: false, label: 'DMCA designated agent address', group: 'DMCA', updatedAt: new Date() },
         { key: 'dmca.repeat_infringer_threshold', value: '3', secret: false, label: 'Repeat-infringer strike threshold', group: 'DMCA', updatedAt: new Date() },
         { key: 'dmca.counter_wait_days', value: '14', secret: false, label: 'Counter-notice wait (business days)', group: 'DMCA', updatedAt: new Date() },
         { key: 'payouts.new_seller_hold_days', value: '14', secret: false, label: 'New-seller payout hold (days)', group: 'Payouts', updatedAt: new Date() },

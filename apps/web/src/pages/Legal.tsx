@@ -39,6 +39,22 @@ export default function LegalPage() {
         </p>
         <p className="mt-2 font-mono-tech text-[10px] text-ink-faint">{page?.counselGated}</p>
 
+        {page?.operator && (
+          <div className="mt-8 rounded-2xl border border-sand-soft bg-white p-5 text-sm">
+            <p className="font-mono-tech text-[10px] uppercase tracking-[0.16em] text-ink-faint">Contracting entity</p>
+            {page.operator.counselPending && (
+              <p className="mt-2 font-mono-tech text-[10px] text-terra">
+                Counsel-pending — Admin Settings → Legal. Not a filed entity until counsel pastes real values.
+              </p>
+            )}
+            <p className="mt-2 font-medium">{page.operator.operatorDisplayName}</p>
+            <p className="text-ink-soft">{page.operator.entityLegalName}</p>
+            <p className="text-ink-soft">{page.operator.entityJurisdiction}</p>
+            <p className="text-ink-soft">{page.operator.principalAddress}</p>
+            <p className="text-ink-soft">{page.operator.publicContactEmail}</p>
+          </div>
+        )}
+
         <ol className="mt-8 list-decimal space-y-2 pl-5 text-sm text-ink-soft">
           {(page?.rules ?? []).map((rule) => (
             <li key={rule}>{rule}</li>

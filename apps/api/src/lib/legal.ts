@@ -2,7 +2,9 @@ import type { Country } from '@prisma/client'
 import {
   AGREEMENT_STACK,
   BUYER_LICENCE_AGREEMENT_VERSION,
+  DEFAULT_LEGAL_OPERATOR,
   GLOBAL_RIGHTS_STANDARD,
+  legalOperatorIsCounselPending,
   overlayKindForCountry,
   overlayContributorAllowedBlocked,
   placeholderCommissionedPhotoPrompt,
@@ -15,11 +17,13 @@ import {
   aiTrainingProductRules,
   isPriorityOverlayCountry,
   creatorCountryAllowed,
+  type LegalOperatorDto,
   type LegalOverlayDto,
   type LegalOverlayKind,
 } from '@vuekumi/shared'
 import { prisma } from './prisma.js'
 import { ALL_COUNTRIES } from '../data/countries.js'
+import { getSettingSafe } from './settings.js'
 
 export { BUYER_LICENCE_AGREEMENT_VERSION }
 
@@ -143,7 +147,29 @@ export async function assertCreatorCountry(accountType: string | undefined, coun
   return country
 }
 
-export function globalRightsStandardDto() {
+export async function loadLegalOperator(): Promise<LegalOperatorDto> {
+  const [display, entity, jurisdiction, address, email] = await Promise.all([
+    getSettingSafe('legal.operator_display_name'),
+    getSettingSafe('legal.entity_legal_name'),
+    getSettingSafe('legal.entity_jurisdiction'),
+    getSettingSafe('legal.principal_address'),
+    getSettingSafe('legal.public_contact_email'),
+  ])
+  const operator = {
+    operatorDisplayName: display?.trim() || DEFAULT_LEGAL_OPERATOR.operatorDisplayName,
+    entityLegalName: entity?.trim() || DEFAULT_LEGAL_OPERATOR.entityLegalName,
+    entityJurisdiction: jurisdiction?.trim() || DEFAULT_LEGAL_OPERATOR.entityJurisdiction,
+    principalAddress: address?.trim() || DEFAULT_LEGAL_OPERATOR.principalAddress,
+    publicContactEmail: email?.trim() || DEFAULT_LEGAL_OPERATOR.publicContactEmail,
+  }
+  return {
+    ...operator,
+    counselPending: legalOperatorIsCounselPending(operator),
+  }
+}
+
+export async function globalRightsStandardDto() {
+  const operator = await loadLegalOperator()
   return {
     ...GLOBAL_RIGHTS_STANDARD,
     priorityCountries: [...PRIORITY_OVERLAY_COUNTRIES],
@@ -151,5 +177,6 @@ export function globalRightsStandardDto() {
     rightsClearanceContactCopy: RIGHTS_CLEARANCE_CONTACT_COPY,
     withdrawal: consentWithdrawalEffect(),
     aiTraining: aiTrainingProductRules(),
+    operator,
   }
 }

@@ -232,7 +232,7 @@ Suggested order minimizes counsel blockers and avoids inventing money.
 | **T0** | Doctrine + Dec workshop update | — | This doc accepted; `06` Dec-Split / Dec-PayBase blanks updated; matrix PDF in repo |
 | **T1** | Public `/report-content` + category taxonomy | T0 | **Shipped Phase 50.** Guest hub live; deep-link from photo; queues + safety fast-path |
 | **T2** | Rights ops SOP in admin | T1 | **Shipped Phase 51.** Preserve / notify / escalate on `/admin/reports`; DMCA unlock separation; `docs/runbooks/rights-ops.md` |
-| **T3** | Public DMCA/repeat-infringer policy hardening | Counsel copy | `/dmca` policy matches entity + agent; counter-notice clock documented; repeat policy public |
+| **T3** | Public DMCA/repeat-infringer policy hardening | Counsel copy | **Foundation shipped** — `/dmca` + `/legal` surface Admin Settings agent/entity placeholders with counsel-pending markers; Copyright Office filing stays ops/counsel. **Counsel-complete** (real entity, filed agent, signed copy) still blocked. |
 | **T4** | `/rights` hub (consolidate guest + model) | T1 | **Shipped Phase 52.** Token/auth dashboard for review/approve without compensation |
 | **T5** | Compensation negotiation (commercial lock) | **Dec-PayBase signed**; T4 | Propose/counter/agree; commercial off until agree or explicit zero; multi-model cap validation; **no payout yet** if pay rails unreadiness |
 | **T6** | Model likeness payouts in ledger | T5 + finance | Ledger lines from Dec-PayBase; certificates stamp agreed terms; Africa nonmember fee OK |

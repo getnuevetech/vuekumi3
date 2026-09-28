@@ -82,11 +82,25 @@ test('public legal standard and Nigeria overlay are counsel-gated product copy',
   const app = await buildApp()
   const standard = await app.inject({ method: 'GET', url: '/api/legal/standard' })
   assert.equal(standard.statusCode, 200, standard.body)
-  const body = standard.json() as { name: string; counselGated: string; agreementStack: { kind: string }[]; withdrawal: { voidPastGrants: boolean } }
+  const body = standard.json() as {
+    name: string
+    counselGated: string
+    agreementStack: { kind: string }[]
+    withdrawal: { voidPastGrants: boolean }
+    operator: {
+      operatorDisplayName: string
+      entityLegalName: string
+      counselPending: boolean
+    }
+  }
   assert.match(body.name, /Global Rights Standard/)
   assert.match(body.counselGated, /counsel-gated/)
   assert.equal(body.agreementStack.some((row) => row.kind === 'buyer_licence'), true)
   assert.equal(body.withdrawal.voidPastGrants, false)
+  assert.ok(body.operator)
+  assert.equal(body.operator.counselPending, true)
+  assert.match(body.operator.operatorDisplayName, /Counsel sets/)
+  assert.match(body.operator.entityLegalName, /Counsel sets/)
 
   const ng = await app.inject({ method: 'GET', url: '/api/legal/overlays/NG' })
   if (ng.statusCode === 404) {

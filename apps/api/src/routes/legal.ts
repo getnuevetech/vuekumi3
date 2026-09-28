@@ -15,10 +15,13 @@ import { prisma } from '../lib/prisma.js'
 export async function legalRoutes(app: FastifyInstance) {
   app.get('/legal/standard', async () => globalRightsStandardDto())
 
-  app.get('/legal/agreements', async () => ({
-    items: globalRightsStandardDto().agreementStack,
-    counselGated: globalRightsStandardDto().counselGated,
-  }))
+  app.get('/legal/agreements', async () => {
+    const standard = await globalRightsStandardDto()
+    return {
+      items: standard.agreementStack,
+      counselGated: standard.counselGated,
+    }
+  })
 
   app.get('/legal/overlays/:code', async (request, reply) => {
     const { code } = request.params as { code: string }
@@ -32,13 +35,16 @@ export async function legalRoutes(app: FastifyInstance) {
 
   app.get('/admin/legal/overlays', listOverlays, async (request) => {
     const query = request.query as { kind?: string }
-    const overlays = await prisma.legalOverlay.findMany({
-      where: query.kind && query.kind !== 'all' ? { overlayKind: query.kind } : undefined,
-      include: { country: true },
-      orderBy: { countryCode: 'asc' },
-    })
+    const [standard, overlays] = await Promise.all([
+      globalRightsStandardDto(),
+      prisma.legalOverlay.findMany({
+        where: query.kind && query.kind !== 'all' ? { overlayKind: query.kind } : undefined,
+        include: { country: true },
+        orderBy: { countryCode: 'asc' },
+      }),
+    ])
     return {
-      standard: globalRightsStandardDto(),
+      standard,
       items: overlays.map((row) => serializeLegalOverlay(row, row.country)),
     }
   })
