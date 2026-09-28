@@ -176,14 +176,14 @@ See [`14-FREE-LIBRARY-PROGRAM.md`](./14-FREE-LIBRARY-PROGRAM.md).
 
 ---
 
-### FC2 — Same-identity upgrade (after Dec-Upgrade)
+### FC2 — Same-identity upgrade — **SHIPPED**
 
-| ID | Work |
-| --- | --- |
-| **FC2-1** | Upgrade API: Photo Influencer → photographer / paid contributor / model with agreement re-accept |
-| **FC2-2** | AfricaElig + waitlist recheck on upgrade |
-| **FC2-3** | Audit log + Rights Hub messaging; Free Library assets stay Free Library until explicit reclassification |
-| **FC2-4** | Playwright: Free Library upload → upgrade → Licensed path |
+| ID | Work | Status |
+| --- | --- | --- |
+| **FC2-1** | Upgrade API Photo Influencer → photographer / contributor / model | **Shipped** `POST /api/account/upgrade` |
+| **FC2-2** | AfricaElig + waitlist recheck on upgrade | **Shipped** |
+| **FC2-3** | Audit log; Free Library assets stay Free Library | **Shipped** |
+| **FC2-4** | API test covering upgrade + asset lock | **Shipped** |
 
 ---
 
