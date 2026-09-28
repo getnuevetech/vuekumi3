@@ -212,6 +212,11 @@ export const api = {
   publicAccountTypes: () => request<{ items: import('@vuekumi/shared').AccountTypeConfigDto[] }>('/api/public/account-types'),
 
   accountFeatures: () => request<{ accountType: string; enabled: boolean; features: import('@vuekumi/shared').AccountFeatureKey[] }>('/api/account/features'),
+  accountUpgrade: (body: { targetAccountType: 'photographer' | 'contributor' | 'model'; acceptAgreement: true }) =>
+    request<{ user: AuthUser; upgradedTo: string; waitlisted: boolean; message?: string }>('/api/account/upgrade', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   adminAccountTypes: () => request<{ items: import('@vuekumi/shared').AccountTypeConfigDto[] }>('/api/admin/account-types'),
 

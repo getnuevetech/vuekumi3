@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import {
+  accountUpgradeSchema,
   changePasswordSchema,
   CREATOR_ACCOUNT_TYPES,
   forgotPasswordSchema,
@@ -40,6 +41,7 @@ import { resolveContributorSignup } from '../lib/policy-decision.js'
 import { enrollContributorWaitlist } from '../lib/waitlist.js'
 import { evaluateAccountApproval } from '../lib/moderation.js'
 import { clearAuthCookies, issueTokens } from '../lib/session.js'
+import { upgradeFromPhotoInfluencer } from '../lib/account-upgrade.js'
 
 import { agreementVersionForAccountType } from '../data/licenses.js'
 
@@ -448,6 +450,29 @@ export async function authRoutes(app: FastifyInstance) {
     const items = await loadAccountTypeConfigs()
     const row = items.find((item) => item.accountType === accountType)
     return { accountType, enabled: row?.enabled ?? true, features: row?.features ?? [] }
+  })
+
+  app.post('/account/upgrade', {
+    preHandler: (request, reply) => authenticate(app, request, reply),
+  }, async (request, reply) => {
+    const body = accountUpgradeSchema.parse(request.body)
+    try {
+      const result = await upgradeFromPhotoInfluencer({
+        userId: request.userId!,
+        targetAccountType: body.targetAccountType,
+        ipAddress: request.ip,
+      })
+      const full = await prisma.user.findUnique({ where: { id: request.userId! }, include: authUserInclude })
+      return {
+        user: serializeUser(full!),
+        upgradedTo: result.accountType,
+        waitlisted: result.waitlisted ?? false,
+        message: result.message,
+      }
+    } catch (err) {
+      const e = err as Error & { statusCode?: number }
+      return reply.code(e.statusCode ?? 500).send({ error: e.message })
+    }
   })
 
   app.get('/account/profile-fields', {

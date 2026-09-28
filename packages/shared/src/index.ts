@@ -1,6 +1,7 @@
 export * from './types.js'
 export * from './names.js'
 export * from './accounts.js'
+export * from './account-upgrade.js'
 export * from './auth.js'
 export * from './photos.js'
 export * from './licenses.js'

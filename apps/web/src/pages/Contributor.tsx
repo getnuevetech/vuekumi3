@@ -212,7 +212,8 @@ function RepresentationCard() {
 /* ---------------- dashboard ---------------- */
 
 export function ContributorDashboard() {
-  const { user } = useAuth()
+  const { user, refresh } = useAuth()
+  const navigate = useNavigate()
   const actAsId = getActAsCreatorId()
   const staffNeedsTarget = user?.accountType === 'admin' && adminHas(user, 'content.impersonate_creator') && !actAsId
   const features = useAccountFeatures()
@@ -223,6 +224,25 @@ export function ContributorDashboard() {
       : isNonCommercialCreator(user?.accountType)
   const [stats, setStats] = useState<ContributorStatsDto | null>(null)
   const [statsError, setStatsError] = useState<string | null>(null)
+  const [upgrading, setUpgrading] = useState<'photographer' | 'contributor' | 'model' | null>(null)
+
+  const runUpgrade = async (targetAccountType: 'photographer' | 'contributor' | 'model') => {
+    setUpgrading(targetAccountType)
+    try {
+      const result = await api.accountUpgrade({ targetAccountType, acceptAgreement: true })
+      await refresh()
+      toast.success(
+        result.waitlisted
+          ? `Upgraded to ${targetAccountType} (waitlisted for country activation).`
+          : `Upgraded to ${targetAccountType}. Free Library photos stay in Free Library.`,
+      )
+      navigate(targetAccountType === 'model' ? '/model' : '/contributor')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Upgrade failed')
+    } finally {
+      setUpgrading(null)
+    }
+  }
   useEffect(() => {
     if (staffNeedsTarget) {
       setStats(null)
@@ -286,7 +306,7 @@ export function ContributorDashboard() {
               <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">Free Library</p>
               <p className="mt-2 text-sm text-ink-soft">
                 You upload only to the Free Library. No subscription is required.
-                Ready for paid Licensed / Verified+ work? Upgrade to Photographer or Contributor after Dec-Upgrade (FC2).
+                Upgrade on this same email to Photographer, Contributor, or Model — Free Library photos stay Free Library until reclassified.
               </p>
               <div className="mt-3 flex flex-wrap gap-3">
                 <Link
@@ -295,12 +315,30 @@ export function ContributorDashboard() {
                 >
                   Upload to Free Library
                 </Link>
-                <Link
-                  to="/search?libraryTier=OPEN"
-                  className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft hover:border-ink"
+                <button
+                  type="button"
+                  disabled={upgrading !== null}
+                  onClick={() => void runUpgrade('photographer')}
+                  className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft hover:border-ink disabled:opacity-50"
                 >
-                  Browse Free Library
-                </Link>
+                  {upgrading === 'photographer' ? 'Upgrading…' : 'Upgrade to Photographer'}
+                </button>
+                <button
+                  type="button"
+                  disabled={upgrading !== null}
+                  onClick={() => void runUpgrade('contributor')}
+                  className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft hover:border-ink disabled:opacity-50"
+                >
+                  {upgrading === 'contributor' ? 'Upgrading…' : 'Upgrade to Contributor'}
+                </button>
+                <button
+                  type="button"
+                  disabled={upgrading !== null}
+                  onClick={() => void runUpgrade('model')}
+                  className="border border-sand px-4 py-2 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft hover:border-ink disabled:opacity-50"
+                >
+                  {upgrading === 'model' ? 'Upgrading…' : 'Upgrade to Model'}
+                </button>
               </div>
             </div>
           )}
