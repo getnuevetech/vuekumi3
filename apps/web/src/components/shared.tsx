@@ -683,7 +683,7 @@ export function PortalShell({
       {/* sidebar */}
       <aside className="border-b border-sand bg-ink text-paper lg:fixed lg:inset-y-0 lg:flex lg:w-[260px] lg:flex-col lg:border-b-0">
         <div className="flex items-center justify-between px-5 py-4 lg:block lg:px-6 lg:py-7">
-          <LogoMark dark condensed accent="#bc773f" />
+          <LogoMark dark condensed accent="#1e5aa8" />
           <span className="hidden lg:mt-1.5 lg:block font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper-soft">
             {title}
           </span>
