@@ -42,7 +42,8 @@ Implements Spec §24.5 intent without renaming Photo Influencer.
 
 ## 4. Free Library acceptance criteria (FC0-3)
 
-Staff must apply these before Free Library images go live. Thresholds are product defaults; admin settings may raise them.
+Staff must apply these before Free Library images go live. Thresholds are product defaults; admin settings may raise them.  
+Operational SOP: [`runbooks/free-library-moderation.md`](./runbooks/free-library-moderation.md).
 
 ### 4.1 Technical quality
 
@@ -98,7 +99,7 @@ Phase 29 hard block is superseded by Dec-Upgrade (implement FC2).
 
 | Track | Status |
 | --- | --- |
-| **FC1** | **Shipped** — Free Library nav, PI CTAs, Dec-TierMap, admin filter, AI low-res, Playwright (`e2e/fc1-free-library.spec.ts`) |
+| **FC1** | **Shipped** — Free Library nav, PI CTAs, Dec-TierMap, admin filter, AI low-res, Playwright, [moderation SOP](./runbooks/free-library-moderation.md) |
 | **FC2** | **Shipped** — upgrade API + tests |
 | **V21-P2** | **Shipped** — Opportunity briefs, Brand/Hire UX, Buyer honesty, Verified+ polish |
 | **V21-Gated** | Wait for owners — Dec-Fee, T3 counsel, finance withdrawal, Bio vendor, Dec-AI |

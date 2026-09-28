@@ -61,6 +61,8 @@ Read in this order:
    (Phase 51 / T2). Public holder review: `/rights` (Phase 52 / T4).
 11b. **[runbooks/homepage-cms.md](./runbooks/homepage-cms.md)** — Homepage vs Featured vs
     Site vs Menu ownership; public `/api/public/home` and `/api/public/site` DTO freeze (H2).
+11c. **[runbooks/free-library-moderation.md](./runbooks/free-library-moderation.md)** — Free Library
+    staff SOP (Dec-FreeLib / Dec-TierMap criteria from `14`).
 12. **[04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md](./04-ADMIN-ACL-AND-SYMMETRIC-RIGHTS.md)** —
    Arc D procedure (Phases 35–40 shipped). Historical gap tables may lag; prefer §0 locks
    and the shipped status header.
