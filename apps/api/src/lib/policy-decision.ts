@@ -28,7 +28,7 @@ export type PolicyVersionRow = Awaited<ReturnType<typeof getLatestPolicyVersion>
 
 export async function getContributorOnboardingPolicy(): Promise<ContributorOnboardingPolicy> {
   const raw = (await getSettingSafe('geo.contributor_onboarding_policy'))?.trim()
-  if (raw === 'africa_list_and_country_active') return 'africa_list_and_country_active'
+  if (raw === 'africa_list' || raw === 'africa_list_and_country_active') return raw
   return DEFAULT_CONTRIBUTOR_ONBOARDING_POLICY
 }
 
@@ -534,6 +534,18 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
     }
 
     const onboarding = await getContributorOnboardingPolicy()
+    const regulating = await getRegulatingMarketPolicy(countryCode)
+    if (regulating?.status === 'SUSPENDED') {
+      return {
+        decision: 'DENY',
+        reasonCodes: ['market_suspended', 'dec_africa_elig_suspended', `country:${countryCode}`],
+        policyVersion: `${regulating.countryCode}:v${regulating.version}`,
+        expiresAt,
+        evidenceRequired: [],
+      }
+    }
+
+    // Legacy escape hatch: AU list only (still blocks SUSPENDED above).
     if (onboarding === 'africa_list') {
       return {
         decision: 'ALLOW',
@@ -544,17 +556,29 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
       }
     }
 
+    // Dec-AfricaElig / P1-T8: ACTIVE required for full activation; HOLD → waitlist (REVIEW).
     const active = await getActivePolicyVersion(countryCode)
-    if (!active) {
+    if (active && hasValidActivationTransition(active)) {
+      const signup = featureScopeState(active, 'contributor_signup')
+      if (signup === 'ON') {
+        return {
+          decision: 'ALLOW',
+          reasonCodes: ['africa_list_ok', 'country_policy_active', 'contributor_signup_on', 'dec_africa_elig_active'],
+          policyVersion: `${active.countryCode}:v${active.version}`,
+          expiresAt,
+          evidenceRequired: [],
+        }
+      }
       return {
-        decision: 'DENY',
-        reasonCodes: ['policy_unavailable', 'no_active_country_policy'],
-        policyVersion: null,
+        decision: 'REVIEW',
+        reasonCodes: ['feature_scope_hold:contributor_signup', 'waitlist_hold', `scope:${signup ?? 'missing'}`],
+        policyVersion: `${active.countryCode}:v${active.version}`,
         expiresAt,
-        evidenceRequired: COUNTRY_GATE_CODES.map((c) => c as CountryGateCode),
+        evidenceRequired: [],
       }
     }
-    if (!hasValidActivationTransition(active)) {
+
+    if (active && !hasValidActivationTransition(active)) {
       return {
         decision: 'DENY',
         reasonCodes: ['policy_invalid_no_transition', 'direct_db_status_flip'],
@@ -563,22 +587,19 @@ export async function evaluatePolicy(input: PolicyEvaluateInput): Promise<Policy
         evidenceRequired: [],
       }
     }
-    const signup = featureScopeState(active, 'contributor_signup')
-    if (signup !== 'ON') {
-      return {
-        decision: 'DENY',
-        reasonCodes: ['feature_scope_hold:contributor_signup', `scope:${signup ?? 'missing'}`],
-        policyVersion: `${active.countryCode}:v${active.version}`,
-        expiresAt,
-        evidenceRequired: [],
-      }
-    }
+
+    const latest = await getLatestPolicyVersion(countryCode)
     return {
-      decision: 'ALLOW',
-      reasonCodes: ['africa_list_ok', 'country_policy_active', 'contributor_signup_on'],
-      policyVersion: `${active.countryCode}:v${active.version}`,
+      decision: 'REVIEW',
+      reasonCodes: [
+        'waitlist_hold',
+        'dec_africa_elig_hold',
+        latest ? `policy_status:${latest.status}` : 'no_active_country_policy',
+        `country:${countryCode}`,
+      ],
+      policyVersion: latest ? `${latest.countryCode}:v${latest.version}` : null,
       expiresAt,
-      evidenceRequired: [],
+      evidenceRequired: COUNTRY_GATE_CODES.map((c) => c as CountryGateCode),
     }
   }
 
@@ -744,15 +765,22 @@ export async function assertContributorCountryViaPds(countryCode?: string) {
     countryCode,
   })
   if (result.decision !== 'ALLOW') {
+    const suspended = result.reasonCodes.includes('market_suspended')
+    const waitlist = result.decision === 'REVIEW' || result.reasonCodes.includes('waitlist_hold')
     const msg =
       result.reasonCodes.includes('l1_africa_geo_deny') ||
       result.reasonCodes.includes('country_unknown_or_disabled')
         ? 'Vuekumi only accepts contributors from African countries'
-        : `Contributor onboarding denied (${result.reasonCodes.join(', ')})`
+        : suspended
+          ? 'Contributor onboarding is suspended for this market'
+          : waitlist
+            ? 'This African market is on HOLD. You can join the waitlist; full contributor activation opens when the country is ACTIVE.'
+            : `Contributor onboarding denied (${result.reasonCodes.join(', ')})`
     throw Object.assign(new Error(msg), {
-      statusCode: 400,
+      statusCode: waitlist ? 409 : 400,
       reasonCodes: result.reasonCodes,
       policyVersion: result.policyVersion,
+      waitlist,
     })
   }
   const country = await prisma.country.findUnique({
@@ -765,4 +793,51 @@ export async function assertContributorCountryViaPds(countryCode?: string) {
     })
   }
   return country
+}
+
+export type ContributorSignupOutcome = 'allow' | 'waitlist' | 'deny'
+
+export async function resolveContributorSignup(countryCode?: string): Promise<{
+  outcome: ContributorSignupOutcome
+  reasonCodes: string[]
+  policyVersion: string | null
+  message: string
+}> {
+  if (!countryCode) {
+    return {
+      outcome: 'deny',
+      reasonCodes: ['country_required'],
+      policyVersion: null,
+      message: 'Contributors must select an African country',
+    }
+  }
+  const result = await evaluatePolicy({ action: 'contributor.create', countryCode })
+  if (result.decision === 'ALLOW') {
+    return {
+      outcome: 'allow',
+      reasonCodes: result.reasonCodes,
+      policyVersion: result.policyVersion,
+      message: 'Contributor onboarding allowed',
+    }
+  }
+  if (result.decision === 'REVIEW' || result.reasonCodes.includes('waitlist_hold')) {
+    return {
+      outcome: 'waitlist',
+      reasonCodes: result.reasonCodes,
+      policyVersion: result.policyVersion,
+      message:
+        'This African market is on HOLD. You are eligible for the waitlist; full contributor activation opens when the country is ACTIVE.',
+    }
+  }
+  const suspended = result.reasonCodes.includes('market_suspended')
+  return {
+    outcome: 'deny',
+    reasonCodes: result.reasonCodes,
+    policyVersion: result.policyVersion,
+    message: suspended
+      ? 'Contributor onboarding is suspended for this market'
+      : result.reasonCodes.includes('l1_africa_geo_deny')
+        ? 'Vuekumi only accepts contributors from African countries'
+        : `Contributor onboarding denied (${result.reasonCodes.join(', ')})`,
+  }
 }

@@ -203,7 +203,7 @@ Example allocation is illustrative only — rates stay policy-versioned.
 | --- | --- | --- |
 | **P1-T5** | Compensation negotiation (Proposal → Negotiation → Agreement → Activation) + Open interaction | Commercial off until agree/zero; Open blocked if revenue % requested; multi-model cap vs Contributor Distributable Share — **engine shipped** (API + gates; no Rights hub UI / no T6 payouts) |
 | **P1-60** | Phase 60 provider-neutral schema/API behind **OFF** feature flag | Evidence fields only; no prod activation; no biometric DB — **schema + flag-gated API shipped** (`identity.verification_enabled` default false) |
-| **P1-T8** | Country ACTIVE / HOLD waitlist / SUSPENDED enforcement per Dec-AfricaElig | HOLD cannot fully activate contributors; waitlist exists |
+| **P1-T8** | Country ACTIVE / HOLD waitlist / SUSPENDED enforcement per Dec-AfricaElig | HOLD cannot fully activate contributors; waitlist exists — **shipped** (`ContributorWaitlist`; default `africa_list_and_country_active`; admin list/promote) |
 | **P1-H4** | React Query on public marketplace: Home, Search, Site Content, curation | Admin save invalidates public keys |
 | **P1-H5** | Expanded Playwright for rights/Open/contributor/admin invariants | Specs below green in CI |
 

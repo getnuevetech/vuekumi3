@@ -376,6 +376,7 @@ model User {
   compensationEvents      CompensationProposalEvent[] @relation("CompensationEventActor")
   identityVerifications   IdentityVerificationEvidence[] @relation("IdentitySubject")
   identityVerificationsRecorded IdentityVerificationEvidence[] @relation("IdentityRecorder")
+  contributorWaitlist     ContributorWaitlist?
 
   @@index([accountType])
   @@index([status])
@@ -1835,9 +1836,36 @@ model Country {
   policyVersions CountryPolicyVersion[]
   payoutConfig   CountryPayoutConfig?
   payoutRate     PayoutFxRate?
+  waitlistEntries ContributorWaitlist[]
 
   @@index([region])
   @@index([contributorEligible])
+}
+
+/// Dec-AfricaElig / P1-T8 — HOLD-market interest without full contributor activation.
+model ContributorWaitlist {
+  id            String   @id @default(cuid())
+  email         String
+  userId        String?  @unique
+  countryCode   String
+  accountType   String
+  name          String
+  status        String   @default("waiting")
+  reasonCodes   String[] @default([])
+  policyVersion String?
+  notes         String?
+  promotedAt    DateTime?
+  promotedById  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  country Country  @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  @@unique([email, countryCode, accountType])
+  @@index([countryCode])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model LegalOverlay {

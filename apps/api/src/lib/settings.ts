@@ -105,7 +105,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     label: 'Contributor onboarding policy (africa_list | africa_list_and_country_active)',
     group: 'Geo / Country policy',
     secret: false,
-    placeholder: 'africa_list',
+    placeholder: 'africa_list_and_country_active',
   },
   {
     key: 'moderation.ai_auto_approve_accounts',

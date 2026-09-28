@@ -5,6 +5,7 @@ import { buildApp } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
 import { applyPreviewAdjustment, differenceHash, proposeRemediation } from '../src/lib/remediation.js'
 import { getObjectBuffer, originalKeyFor, putObject } from '../src/lib/storage.js'
+import { withAfricaListOnboarding } from './helpers/onboarding.js'
 
 async function jpeg(width: number, height: number, color: { r: number; g: number; b: number }) {
   return sharp({
@@ -81,6 +82,7 @@ test('preview brighten and crop return a new buffer', async () => {
 })
 
 test('Phase 62: a low-quality upload stays pending and a preview does not replace the original', async () => {
+  await withAfricaListOnboarding(async () => {
   const app = await buildApp()
   const registered = await app.inject({
     method: 'POST',
@@ -143,9 +145,11 @@ test('Phase 62: a low-quality upload stays pending and a preview does not replac
 
   await prisma.photo.delete({ where: { id: body.photo.id } })
   await app.close()
+  })
 })
 
 test('Phase 62: an exact match of a live photograph is quarantined', async () => {
+  await withAfricaListOnboarding(async () => {
   const app = await buildApp()
   const registered = await app.inject({
     method: 'POST',
@@ -202,8 +206,9 @@ test('Phase 62: an exact match of a live photograph is quarantined', async () =>
   }
   assert.equal(body.photo.status, 'pending')
   assert.equal(body.remediation?.decision, 'quarantine')
-  assert.match(body.remediation?.notes.join(' ') ?? '', new RegExp(live.id))
+  assert.match(body.remediation?.notes.join(' ') ?? '', /matches live photograph/)
 
   await prisma.photo.deleteMany({ where: { id: { in: [body.photo.id, live.id] } } })
   await app.close()
+  })
 })

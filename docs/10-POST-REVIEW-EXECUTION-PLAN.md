@@ -40,7 +40,7 @@ The three control layers stay the architecture:
 
 | Layer | Question | Enforced today |
 | --- | --- | --- |
-| L1 Country eligibility | May this person register as an Africa-based contributor? | PDS `contributor.create`. Default onboarding policy is still the static AU list (`africa_list`). ACTIVE-country requirement waits on Dec-AfricaElig and a counsel-backed pilot (T8). |
+| L1 Country eligibility | May this person register as an Africa-based contributor? | PDS `contributor.create`. Default onboarding is `africa_list_and_country_active` (P1-T8 / Dec-AfricaElig): HOLD → waitlist; ACTIVE required for full activation; SUSPENDED → deny. |
 | L2 Identity and image rights | Who are they, and are copyright and likeness cleared for this asset? | Rights record, appearances, invite, two-approval lock. Government-ID and identity-bound face match wait on Dec-Bio (Phase 60). |
 | L3 Commercial licence and payout | May this image be licensed, and may each payee be paid? | Checkout rechecks rights and, when a market is ACTIVE or SUSPENDED, `license.issue`. Payouts stay photographer 50% / platform 50%. Model negotiation waits on Dec-PayBase (T5/T6). |
 

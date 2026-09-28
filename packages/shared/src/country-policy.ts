@@ -98,8 +98,26 @@ export const CONTRIBUTOR_ONBOARDING_POLICIES = [
 export const contributorOnboardingPolicySchema = z.enum(CONTRIBUTOR_ONBOARDING_POLICIES)
 export type ContributorOnboardingPolicy = z.infer<typeof contributorOnboardingPolicySchema>
 
-/** Default until product flips after pilot ACTIVE countries (docs/07 §6.1). */
-export const DEFAULT_CONTRIBUTOR_ONBOARDING_POLICY: ContributorOnboardingPolicy = 'africa_list'
+/** Default after P1-T8: ACTIVE African required to fully activate; HOLD → waitlist. */
+export const DEFAULT_CONTRIBUTOR_ONBOARDING_POLICY: ContributorOnboardingPolicy = 'africa_list_and_country_active'
+
+export const WAITLIST_STATUSES = ['waiting', 'promoted', 'withdrawn'] as const
+export type WaitlistStatus = (typeof WAITLIST_STATUSES)[number]
+
+export interface ContributorWaitlistDto {
+  id: string
+  email: string
+  userId?: string | null
+  countryCode: string
+  accountType: string
+  name: string
+  status: WaitlistStatus
+  reasonCodes: string[]
+  policyVersion?: string | null
+  notes?: string | null
+  promotedAt?: string | null
+  createdAt: string
+}
 
 export const COUNTRY_TRANSITION_KINDS = [
   'draft',

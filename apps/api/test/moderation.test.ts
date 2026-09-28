@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { buildApp } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
 import { evaluateAccountApproval, evaluateContentApproval } from '../src/lib/moderation.js'
+import { withAfricaListOnboarding } from './helpers/onboarding.js'
 
 function cookies(res: { headers: Record<string, unknown> }) {
   const raw = res.headers['set-cookie']
@@ -109,6 +110,7 @@ test('evaluateAccountApproval: disposable email domain always goes to review; cl
 })
 
 test('registration: disposable email keeps a photographer pending and blocks upload; clean signup uploads straight to active', async () => {
+  await withAfricaListOnboarding(async () => {
   const app = await buildApp()
   try {
     const flagged = await app.inject({
@@ -185,4 +187,5 @@ test('registration: disposable email keeps a photographer pending and blocks upl
   } finally {
     await app.close()
   }
+  })
 })
