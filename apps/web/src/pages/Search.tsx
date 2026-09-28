@@ -72,19 +72,19 @@ export default function Search() {
   const total = query.data?.pages[0]?.total ?? 0
   const loading = query.isLoading
   const loadingMore = query.isFetchingNextPage
-  const hasMore = Boolean(query.hasNextPage)
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = query
 
   useEffect(() => {
     const el = sentinel.current
     if (!el) return
     const io = new IntersectionObserver((entries) => {
       if (!entries.some((entry) => entry.isIntersecting)) return
-      if (!query.hasNextPage || query.isFetchingNextPage) return
-      void query.fetchNextPage()
+      if (!hasNextPage || isFetchingNextPage) return
+      void fetchNextPage()
     }, { rootMargin: '700px' })
     io.observe(el)
     return () => io.disconnect()
-  }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage, hasMore, items.length])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, items.length])
 
   const heading = q ? `Results for “${q}”` : tag ? `Tagged ${tag}` : photographer ? `@${photographer}` : library.title
 
