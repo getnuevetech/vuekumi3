@@ -59,9 +59,9 @@ export default function Creators() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{page.kicker}</p>
-        <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">{page.title}</h1>
+      <div className="mx-auto max-w-[1500px] px-5 pb-16 pt-8 md:px-8">
+        <p className="text-sm font-semibold text-terra">{page.kicker}</p>
+        <h1 className="font-display mt-1 text-5xl text-ink">{page.title}</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{page.intro}</p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">

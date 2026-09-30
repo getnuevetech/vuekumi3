@@ -25,8 +25,8 @@ function modelCredit(photo: PhotoDto) {
 function CategoryCard({ photo, modelCredits }: { photo: PhotoDto; modelCredits: boolean }) {
   const credit = modelCredits ? modelCredit(photo) : null
   return (
-    <Link to={`/photo/${photo.id}`} className="group relative mb-3 block break-inside-avoid overflow-hidden bg-cream">
-      <img src={photo.src} alt={photo.title} loading="lazy" className="min-h-48 w-full object-cover" />
+    <Link to={`/photo/${photo.id}`} className="group relative mb-4 block break-inside-avoid overflow-hidden rounded-2xl bg-cream">
+      <img src={photo.src} alt={photo.title} loading="lazy" className="min-h-52 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
       <CountryMark country={photo.country} />
       <PhotoHoverActions photo={photo} />
       <div data-on-photo className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/85 to-transparent p-3 pt-16">
@@ -143,15 +143,26 @@ export function CategoryBrowse({
     return () => io.disconnect()
   }, [category, modelCredits, q, hasMore, loading, items.length])
 
+  const hero = items[0]
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">
-          {modelCredits ? modelsCopy.kicker : 'Category'}
-        </p>
-        <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">
-          {modelCredits ? modelsCopy.title : category}
-        </h1>
+      {hero?.src && (
+        <div className="relative h-64 overflow-hidden md:h-80">
+          <img src={hero.src} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-noir/80 via-noir/25 to-noir/10" />
+          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-[1500px] px-5 pb-8 md:px-8">
+            <p className="text-sm font-semibold text-white/80">{modelCredits ? modelsCopy.kicker : 'Category'}</p>
+            <h1 className="font-display text-4xl text-white md:text-6xl">{modelCredits ? modelsCopy.title : category}</h1>
+          </div>
+        </div>
+      )}
+      <div className="mx-auto max-w-[1500px] px-5 pb-16 pt-8 md:px-8">
+        {!hero?.src && (
+          <>
+            <p className="text-sm font-semibold text-terra">{modelCredits ? modelsCopy.kicker : 'Category'}</p>
+            <h1 className="font-display mt-1 text-5xl text-ink">{modelCredits ? modelsCopy.title : category}</h1>
+          </>
+        )}
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
           {modelCredits ? modelsCopy.intro : `${loading ? '…' : total} photographs in ${category}.`}
         </p>
@@ -172,7 +183,7 @@ export function CategoryBrowse({
             name="q"
             defaultValue={q}
             placeholder={modelCredits ? 'Search by title or model name' : 'Search this category'}
-            className="w-full border border-sand bg-white px-4 py-2.5 text-sm outline-none focus:border-terra"
+            className="w-full rounded-full border border-sand bg-white px-4 py-2.5 text-sm outline-none focus:border-terra"
           />
         </form>
 

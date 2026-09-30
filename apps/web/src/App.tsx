@@ -109,7 +109,7 @@ function PortalTheme() {
 
 function MarketplaceLayout() {
   return (
-    <div className="min-h-screen bg-noir font-sans text-paper antialiased">
+    <div className="min-h-screen bg-paper font-sans text-ink antialiased">
       <SiteHeader />
       <Outlet />
       <PublicFooter />

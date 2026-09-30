@@ -10,6 +10,7 @@ import { useSiteContent } from '../context/SiteContentContext'
 import { api } from '../api/client'
 import { publicQueryKeys } from '../lib/query-keys'
 import { INFLUENCER_JOIN, SELL_HREF } from './home/utils'
+import { SiteHeader } from '../components/shared'
 import {
   BackToTop,
   CategoryBanners,
@@ -22,7 +23,6 @@ import {
   Marquee,
   ModelsRail,
   NoirFooter,
-  NoirHeader,
   NoirPricing,
   PeopleRail,
   StaticBannerSection,
@@ -105,8 +105,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-noir font-sans text-paper antialiased">
-      <NoirHeader />
+    <div className="min-h-screen bg-paper font-sans text-ink antialiased">
+      <SiteHeader />
       {order.map((key) => <Fragment key={key}>{section(key)}</Fragment>)}
       <NoirFooter />
       <BackToTop />

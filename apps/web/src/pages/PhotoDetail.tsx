@@ -145,7 +145,7 @@ export default function PhotoDetail() {
   if (status === 'missing') {
     return (
       <div className="min-h-screen bg-paper text-ink">
-        <div className="mx-auto max-w-md px-6 pb-24 pt-40 text-center">
+        <div className="mx-auto max-w-md px-6 pb-24 pt-8 text-center">
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
           <h1 className="font-serif-display mt-2 text-4xl font-light">Photograph not found.</h1>
           <Link to="/search" className="mt-8 inline-block bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper">
@@ -159,7 +159,7 @@ export default function PhotoDetail() {
   if (status === 'loading' || !photo) {
     return (
       <div className="min-h-screen bg-paper text-ink">
-        <p className="pt-40 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading photograph…</p>
+        <p className="pt-8 text-center font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading photograph…</p>
       </div>
     )
   }
@@ -253,7 +253,7 @@ export default function PhotoDetail() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
+      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-8 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">
           <Link to="/search" className="hover:text-terra">Library</Link>
           <span className="mx-2 text-ink-faint">/</span>
@@ -263,8 +263,8 @@ export default function PhotoDetail() {
         </p>
 
         <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_380px]">
-          <div className="border border-sand bg-cream p-2">
-            <BlurImage src={view.src} alt={view.title} className="w-full object-contain" />
+          <div className="overflow-hidden rounded-3xl border border-sand bg-cream p-2">
+            <BlurImage src={view.src} alt={view.title} className="w-full rounded-2xl object-contain" />
             <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-3 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
               <span>{view.country}</span>
               <span>{fmt(view.views)} views · {fmt(view.downloads)} downloads · {fmt(view.likes)} likes</span>
@@ -272,7 +272,7 @@ export default function PhotoDetail() {
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <h1 className="font-serif-display text-4xl tracking-tight">{view.title}</h1>
+            <h1 className="font-display text-4xl text-ink">{view.title}</h1>
             <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
               Usage permission — not ownership
             </p>

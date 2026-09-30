@@ -2,11 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { PHOTO_CATEGORIES, type FeaturedFrame, type HomeCategoryBannerDto, type HomeIconKey, type HomeStaticBannerDto, type ModelPublicDto, type PhotoDto, type PhotographerDto, type PublicStatsDto, type SectionFrame } from '@vuekumi/shared'
-import { fillSiteTokens, isCreatorAccount, isPhotographerAccount, menuLinkVisible, menuTypeClass, sortMenuLinks } from '@vuekumi/shared'
-import { ThemeToggle } from '../../components/ThemeToggle'
+import { fillSiteTokens, isCreatorAccount, isPhotographerAccount } from '@vuekumi/shared'
 import { CountryMark, PhotoHoverActions } from '../../components/PhotoActions'
 import { categoryPath } from '../../lib/categories'
-import { AccountMenu, LogoMark, Reveal, SearchForm } from '../../components/shared'
+import { PublicFooter, Reveal, SearchForm } from '../../components/shared'
 import { useAuth } from '../../context/AuthContext'
 import { useCurrency } from '../../context/CurrencyContext'
 import { useSiteContent } from '../../context/SiteContentContext'
@@ -15,90 +14,7 @@ import { fmt } from '../../lib/format'
 import { publicQueryKeys } from '../../lib/query-keys'
 import { SELL_HREF, siteTokens, contributorPortalHref } from './utils'
 
-
-export function NoirHeader() {
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
-  const { user } = useAuth();
-  const { content } = useSiteContent();
-  const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user));
-  const menuClass = `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`;
-  const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' };
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  return (
-    <>
-      <header
-        className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-          scrolled ? 'border-b border-noir bg-noir/85 backdrop-blur-md' : 'bg-transparent'
-        }`}
-      >
-        <div className="flex items-center justify-between px-5 py-4 md:px-10">
-          <LogoMark dark condensed accent="#bc773f" />
-          <nav className="hidden items-center gap-5 lg:flex">
-            {links.map((l) => (
-              <Link
-                key={l.label}
-                to={l.to}
-                style={menuStyle}
-                className={menuClass}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3">
-            <ThemeToggle tone="dark" />
-            <AccountMenu tone="dark" />
-            {!user && (
-              <Link
-                to={contributorPortalHref()}
-                className="hidden border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra lg:inline-block"
-              >
-                {content.actions.sell}
-              </Link>
-            )}
-            <button
-              onClick={() => setOpen(!open)}
-              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
-              aria-label="Menu"
-            >
-              <span className={`h-px w-6 bg-paper transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
-              <span className={`h-px w-6 bg-paper transition-transform ${open ? '-translate-y-[3.5px] -rotate-45' : ''}`} />
-            </button>
-          </div>
-        </div>
-        <div className="px-5 pb-4 md:px-10">
-          <SearchForm dark wide />
-        </div>
-      </header>
-      {open && (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 bg-noir/95 backdrop-blur-xl lg:hidden">
-          {links.map((l) => (
-            <Link
-              key={l.label}
-              to={l.to}
-              onClick={() => setOpen(false)}
-              className="font-condensed text-2xl font-light uppercase tracking-[0.25em] text-paper"
-            >
-              {l.label}
-            </Link>
-          ))}
-          <Link to={contributorPortalHref(user?.accountType)} onClick={() => setOpen(false)} className="mt-4 border border-terra px-8 py-3 font-condensed text-sm uppercase tracking-[0.25em] text-terra">
-            {content.actions.sell}
-          </Link>
-        </div>
-      )}
-    </>
-  );
-}
-
-/* ---------------- full-screen hero slider ---------------- */
+/* ---------------- discovery hero ---------------- */
 
 export function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: PublicStatsDto | null }) {
   const [active, setActive] = useState(0);
@@ -136,82 +52,80 @@ export function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: Publi
   }, [slides.length]);
 
   const slide = slides[active];
+  const collage = (photos.length ? photos : []).filter((photo) => photo.src).slice(0, 4);
+  const chips = (stats?.categories ?? []).slice(0, 8);
 
   return (
-    <section data-on-photo className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-noir">
-      {slides.map((s, i) => (
-        <div key={s.title} className={`noir-slide absolute inset-0 ${i === active ? 'is-active' : ''}`}>
-          {s.src ? <img src={s.src} alt={s.alt} className="h-full w-full object-cover" /> : <div className="h-full w-full bg-noir" />}
-          <div className="absolute inset-0 bg-gradient-to-t from-noir via-noir/35 to-noir/30" />
-        </div>
-      ))}
-
-      {/* copy */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-        <p key={`s-${active}`} className="font-script text-5xl text-terra md:text-7xl">
-          {slide.script}
-        </p>
-        <h1
-          key={`t-${active}`}
-          className="font-condensed mt-1 text-[clamp(4.5rem,16vw,13rem)] font-semibold uppercase leading-[0.9] tracking-[0.04em] text-paper"
-        >
-          {slide.title}
-        </h1>
-        <p className="mt-5 max-w-md text-sm leading-relaxed text-paper-soft">{slide.sub}</p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          {content.home.hero.primaryTo.startsWith('#') ? (
-            <a
-              href={content.home.hero.primaryTo}
-              className="bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
-            >
-              {content.home.hero.primaryLabel}
-            </a>
-          ) : (
-            <Link
-              to={content.home.hero.primaryTo}
-              className="bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
-            >
-              {content.home.hero.primaryLabel}
-            </Link>
+    <section className="bg-paper">
+      <div className="mx-auto grid max-w-[1500px] items-center gap-8 px-5 py-8 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-14">
+        <div>
+          <p className="text-sm font-semibold text-terra">{slide.script}</p>
+          <h1 key={`t-${active}`} className="font-display mt-2 text-5xl leading-[1.02] text-ink md:text-6xl">
+            {slide.title}
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-soft">{slide.sub}</p>
+          <div className="mt-6 max-w-xl">
+            <SearchForm wide />
+          </div>
+          {chips.length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {chips.map((row) => (
+                <Link
+                  key={row.value}
+                  to={categoryPath(row.value)}
+                  className="rounded-full border border-sand bg-white px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-terra"
+                >
+                  {row.value}
+                </Link>
+              ))}
+            </div>
           )}
-          <Link
-            to={content.home.hero.secondaryTo}
-            className="border border-paper/50 px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-paper transition-colors hover:border-terra hover:text-terra"
-          >
-            {content.home.hero.secondaryLabel}
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {content.home.hero.primaryTo.startsWith('#') ? (
+              <a
+                href={content.home.hero.primaryTo}
+                className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-terra"
+              >
+                {content.home.hero.primaryLabel}
+              </a>
+            ) : (
+              <Link
+                to={content.home.hero.primaryTo}
+                className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-terra"
+              >
+                {content.home.hero.primaryLabel}
+              </Link>
+            )}
+            <Link
+              to={content.home.hero.secondaryTo}
+              className="rounded-full border border-sand px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-terra"
+            >
+              {content.home.hero.secondaryLabel}
+            </Link>
+          </div>
+          {slides.length > 1 && (
+            <div className="mt-6 flex gap-2">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => go(i)}
+                  aria-label={`Slide ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${i === active ? 'w-8 bg-terra' : 'w-3 bg-sand hover:bg-terra/60'}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* edge tabs */}
-      <button
-        onClick={() => go(active - 1)}
-        aria-label="Previous slide"
-        className="v-text absolute left-0 top-1/2 hidden -translate-y-1/2 border-y border-r border-paper/20 bg-noir/50 px-2.5 py-5 font-condensed text-[11px] uppercase tracking-[0.3em] text-paper-soft backdrop-blur-sm transition-colors hover:text-terra md:block"
-      >
-        Prev
-      </button>
-      <button
-        onClick={() => go(active + 1)}
-        aria-label="Next slide"
-        className="v-text absolute right-0 top-1/2 hidden -translate-y-1/2 border-y border-l border-paper/20 bg-noir/50 px-2.5 py-5 font-condensed text-[11px] uppercase tracking-[0.3em] text-paper-soft backdrop-blur-sm transition-colors hover:text-terra md:block"
-      >
-        Next
-      </button>
-
-      {/* bottom meta */}
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-6 md:px-10">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.2em] text-paper-soft">
-          {String(active + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}{slide.tag ? ` — ${slide.tag}` : ''}
-        </p>
-        <div className="flex gap-1.5">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => go(i)}
-              aria-label={`Slide ${i + 1}`}
-              className={`h-[3px] transition-all ${i === active ? 'w-10 bg-terra' : 'w-5 bg-paper/30 hover:bg-paper/60'}`}
-            />
+        <div className="grid grid-cols-2 gap-3">
+          {(collage.length ? collage : [{ src: slide.src, title: slide.alt, id: 'hero' }]).slice(0, 4).map((photo, index) => (
+            <div key={`${photo.id ?? index}`} className={`overflow-hidden rounded-2xl bg-cream ${index === 0 ? 'col-span-2 aspect-[16/9]' : 'aspect-[4/5]'}`}>
+              {photo.src ? (
+                <img src={photo.src} alt={photo.title || ''} className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full min-h-40 w-full bg-cream" />
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -224,20 +138,17 @@ export function HeroSlider({ photos, stats }: { photos: PhotoDto[]; stats: Publi
 export function Marquee({ categories }: { categories: string[] }) {
   const { content } = useSiteContent();
   const items = categories.length ? categories : content.home.marqueeFallback;
-  const row = [...items, ...items];
   return (
-    <div className="overflow-hidden border-y border-noir bg-noir py-4">
-      <div className="marquee-track items-center gap-10">
-        {row.map((t, i) => (
-          <span key={i} className="flex items-center gap-10 whitespace-nowrap">
-            <Link
-              to={categoryPath(t)}
-              className="font-condensed text-xl font-light uppercase tracking-[0.3em] text-paper-soft hover:text-terra"
-            >
-              {t}
-            </Link>
-            <span className="h-1.5 w-1.5 rotate-45 bg-terra" />
-          </span>
+    <div className="border-y border-sand bg-white">
+      <div className="mx-auto flex max-w-[1500px] gap-2 overflow-x-auto px-5 py-3 no-scrollbar md:px-8">
+        {items.map((t) => (
+          <Link
+            key={t}
+            to={categoryPath(t)}
+            className="shrink-0 rounded-full bg-cream px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-terra hover:text-white"
+          >
+            {t}
+          </Link>
         ))}
       </div>
     </div>
@@ -300,16 +211,16 @@ export function IconRow() {
   const { content } = useSiteContent();
   const feats = content.home.messages;
   return (
-    <section className="bg-noir px-6 py-20 md:px-10 md:py-28">
-      <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-3 md:gap-8">
+    <section className="bg-white px-6 py-14 md:px-10">
+      <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3">
         {feats.map((f, i) => (
           <Reveal key={f.title} delay={i * 90}>
-            <div className="text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-noir bg-noir-soft text-terra">
+            <div className="rounded-2xl border border-sand bg-paper p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cream text-terra">
                 <HomeIcon name={f.icon} />
               </div>
-              <h3 className="font-condensed mt-5 text-lg font-medium uppercase tracking-[0.25em] text-paper">{f.title}</h3>
-              <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-noir-soft">{f.text}</p>
+              <h3 className="mt-4 text-lg font-semibold text-ink">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-soft">{f.text}</p>
             </div>
           </Reveal>
         ))}
@@ -382,30 +293,32 @@ export function FeaturedStrip({ photos, frame }: { photos: PhotoDto[]; frame: Fe
   if (photos.length === 0) return null
   return (
     <section
-      className="bg-noir"
+      className="bg-paper px-5 py-12 md:px-8"
       aria-label="Featured images"
       style={{ ['--featured-width' as string]: `${frame.widthVw}vw`, ['--featured-height' as string]: `${frame.heightVw}vw` }}
     >
+      <div className="mx-auto mb-6 flex max-w-[1500px] items-end justify-between">
+        <h2 className="font-display text-3xl text-ink md:text-4xl">Featured photos</h2>
+        <Link to="/search" className="text-sm font-semibold text-terra">View all</Link>
+      </div>
       <div
         ref={setNode}
         data-strip="featured"
-        className="no-scrollbar flex cursor-grab gap-1 overflow-x-auto overscroll-x-contain active:cursor-grabbing"
+        className="no-scrollbar mx-auto flex max-w-[1500px] cursor-grab gap-4 overflow-x-auto overscroll-x-contain active:cursor-grabbing"
       >
         {photos.map((p, i) => (
           <Link
             key={p.id}
             to={`/photo/${p.id}`}
-            className="strip-cell featured-frame group relative block shrink-0 overflow-hidden"
+            className="group block w-[78vw] shrink-0 sm:w-[46vw] lg:w-[31%]"
           >
-            <img src={p.src} alt={p.title} loading={i > 1 ? 'lazy' : undefined} className="h-full w-full object-cover" />
-            <CountryMark country={p.country} />
-            <PhotoHoverActions photo={p} />
-            <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
-              <p className="font-condensed text-lg font-medium uppercase tracking-[0.18em] text-paper">{p.title}</p>
-              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">
-                {p.category} — {p.photographerName ?? p.photographer}
-              </p>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-cream">
+              <img src={p.src} alt={p.title} loading={i > 1 ? 'lazy' : undefined} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+              <CountryMark country={p.country} />
+              <PhotoHoverActions photo={p} />
             </div>
+            <p className="mt-3 text-base font-semibold text-ink">{p.title}</p>
+            <p className="text-sm text-ink-soft">{p.category} · {p.photographerName ?? p.photographer}</p>
           </Link>
         ))}
       </div>
@@ -419,30 +332,27 @@ export function CategoryBanners({ banners, frame }: { banners: HomeCategoryBanne
   useBidirectionalWheel(node)
   if (banners.length === 0) return null
   return (
-    <section className="bg-noir pb-8" aria-label="Category banners">
-      <div className="px-5 pb-4 pt-10 md:px-10">
-        <p className="font-script text-3xl text-terra">{content.home.categories.kicker}</p>
-        <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-          {content.home.categories.title}
-        </h2>
+    <section className="bg-white px-5 py-12 md:px-8" aria-label="Category banners">
+      <div className="mx-auto mb-6 max-w-[1500px]">
+        <p className="text-sm font-semibold text-terra">{content.home.categories.kicker}</p>
+        <h2 className="font-display mt-1 text-3xl text-ink md:text-4xl">{content.home.categories.title}</h2>
       </div>
       <div
         ref={setNode}
         data-strip="categories"
-        className="no-scrollbar flex cursor-grab gap-1 overflow-x-auto overscroll-x-contain px-1 active:cursor-grabbing"
+        className="no-scrollbar mx-auto flex max-w-[1500px] cursor-grab gap-4 overflow-x-auto overscroll-x-contain active:cursor-grabbing"
       >
         {banners.map((banner) => (
           <Link
             key={`${banner.category}-${banner.photo.id}`}
             to={categoryPath(banner.category)}
-            className="strip-cell group relative block shrink-0 overflow-hidden"
-            style={{ width: `min(92vw, ${frame.widthVw}vw)`, aspectRatio: `${frame.widthVw} / ${frame.heightVw}` }}
+            className="group w-[70vw] shrink-0 sm:w-[280px]"
           >
-            <img src={banner.photo.src} alt={banner.category} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="strip-meta absolute inset-x-0 bottom-0 p-5">
-              <p className="font-condensed text-lg font-medium uppercase tracking-[0.18em] text-paper">{banner.category}</p>
-              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-terra">{banner.photo.title}</p>
+            <div className="relative overflow-hidden rounded-2xl bg-cream" style={{ aspectRatio: `${frame.widthVw} / ${frame.heightVw}` }}>
+              <img src={banner.photo.src} alt={banner.category} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
             </div>
+            <p className="mt-3 text-base font-semibold text-ink">{banner.category}</p>
+            <p className="text-sm text-ink-soft">{banner.photo.title}</p>
           </Link>
         ))}
       </div>
@@ -456,14 +366,14 @@ export function CtaBand() {
   const { user } = useAuth();
   const { content } = useSiteContent();
   return (
-    <section className="border-y border-noir bg-noir-soft">
-      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-14 md:flex-row md:items-center md:px-10">
-        <h2 className="font-condensed max-w-2xl text-2xl font-light uppercase leading-snug tracking-[0.12em] text-paper md:text-3xl">
+    <section className="px-5 py-6 md:px-8">
+      <div className="mx-auto flex max-w-[1500px] flex-col items-start justify-between gap-6 rounded-3xl bg-[#0b0a09] px-8 py-12 md:flex-row md:items-center">
+        <h2 className="font-display max-w-2xl text-3xl leading-tight text-[#faf6f3] md:text-4xl">
           {content.home.cta.text}<span className="text-terra">{content.home.cta.emphasis}</span>
         </h2>
         <Link
           to={contributorPortalHref(user?.accountType)}
-          className="shrink-0 bg-paper px-8 py-3.5 font-condensed text-[12px] uppercase tracking-[0.25em] text-noir transition-colors hover:bg-terra hover:text-paper"
+          className="shrink-0 rounded-full bg-terra px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-ink"
         >
           {isPhotographerAccount(user?.accountType) ? 'Open photographer portal' : user?.accountType === 'photo_influencer' ? 'Open photo influencer portal' : isCreatorAccount(user?.accountType) ? 'Open contributor portal' : content.actions.sell}
         </Link>
@@ -476,28 +386,17 @@ export function CtaBand() {
 
 function FeedCard({ photo }: { photo: PhotoDto }) {
   return (
-    <Link to={`/photo/${photo.id}`} className="strip-cell group relative mb-1 block break-inside-avoid overflow-hidden">
-      <img src={photo.src} alt={photo.title} loading="lazy" className="min-h-48 w-full object-cover" />
-      <CountryMark country={photo.country} />
-      <PhotoHoverActions photo={photo} />
-      <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-4 pt-10">
-        <div className="flex items-end justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate font-condensed text-sm font-medium uppercase tracking-[0.14em] text-paper">
-              {photo.title}
-            </p>
-            <p className="mt-0.5 font-mono-tech text-[9px] uppercase tracking-[0.16em] text-terra">
-              {photo.photographerName ?? photo.photographer} — {photo.country}
-            </p>
-          </div>
-          <span className="shrink-0 font-mono-tech text-[9px] text-paper-soft">{fmt(photo.downloads)}↓</span>
-        </div>
-      </div>
-      {photo.license === 'premium' && (
-        <span className="absolute left-2 top-8 bg-terra px-2 py-0.5 font-mono-tech text-[8px] uppercase tracking-[0.18em] text-paper">
-          Premium
+    <Link to={`/photo/${photo.id}`} className="group block">
+      <div className="relative overflow-hidden rounded-2xl bg-cream">
+        <img src={photo.src} alt={photo.title} loading="lazy" className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+        <CountryMark country={photo.country} />
+        <PhotoHoverActions photo={photo} />
+        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink">
+          {photo.license === 'premium' ? 'Premium' : 'Free Library'}
         </span>
-      )}
+      </div>
+      <p className="mt-2 truncate text-sm font-semibold text-ink">{photo.title}</p>
+      <p className="truncate text-xs text-ink-soft">{photo.photographerName ?? photo.photographer} · {photo.country}</p>
     </Link>
   );
 }
@@ -537,20 +436,20 @@ export function InfiniteFeed() {
   })
 
   return (
-    <section id="feed" className="bg-noir">
-      <div className="flex items-end justify-between px-5 pb-6 pt-16 md:px-10">
+    <section id="feed" className="bg-paper px-5 py-12 md:px-8">
+      <div className="mx-auto flex max-w-[1500px] items-end justify-between pb-6">
         <div>
-          <p className="font-script text-3xl text-terra">{content.home.feed.kicker}</p>
-          <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-6xl">
-            {content.home.feed.title}<span className="text-outline-paper">{content.home.feed.titleAccent}</span>
+          <p className="text-sm font-semibold text-terra">{content.home.feed.kicker}</p>
+          <h2 className="font-display mt-1 text-3xl text-ink md:text-4xl">
+            {content.home.feed.title} {content.home.feed.titleAccent}
           </h2>
         </div>
-        <Link to="/search" className="hidden font-mono-tech text-[10px] uppercase tracking-[0.2em] text-noir-soft hover:text-terra md:block">
+        <Link to="/search" className="hidden text-sm font-semibold text-terra md:block">
           {content.home.feed.browseLabel}
         </Link>
       </div>
 
-      <div className="columns-2 gap-1 px-1 md:columns-3 xl:columns-4">
+      <div className="mx-auto grid max-w-[1500px] grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         {items.map((p) => (
           <FeedCard key={p.id} photo={p} />
         ))}
@@ -558,13 +457,11 @@ export function InfiniteFeed() {
 
       <div className="flex items-center justify-center py-10">
         {loading ? (
-          <span className="font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-            {content.home.feed.loading}
-          </span>
+          <span className="text-sm text-ink-soft">{content.home.feed.loading}</span>
         ) : (
           <Link
             to="/search"
-            className="border border-paper px-8 py-3 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra"
+            className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-terra"
           >
             Load more images
           </Link>
@@ -594,58 +491,46 @@ export function EditorialSplit({ photos, stats }: { photos: PhotoDto[]; stats: P
     ? '/contributor/upload'
     : SELL_HREF;
   return (
-    <section className="relative flex flex-col bg-noir lg:flex-row">
-      <div className="hidden w-16 shrink-0 items-center justify-center border-r border-noir lg:flex">
-        <span className="v-text font-condensed text-sm font-light uppercase tracking-[0.4em] text-noir-soft">
-          {editorial.side}
-        </span>
-      </div>
-      <div className="group relative flex-1">
-        {a ? <img src={a.src} alt={a.title || ''} loading="lazy" className="h-72 w-full object-cover md:h-[520px]" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+    <section className="bg-white px-5 py-12 md:px-8">
+      <div className="mx-auto grid max-w-[1500px] items-center gap-6 lg:grid-cols-[1fr_1.1fr_1fr]">
+      <div className="group relative overflow-hidden rounded-2xl">
+        {a ? <img src={a.src} alt={a.title || ''} loading="lazy" className="h-72 w-full object-cover md:h-[460px]" /> : <div className="h-72 bg-cream md:h-[460px]" />}
         {a && <CountryMark country={a.country} />}
         {a && !a.id.startsWith('upload-') && <PhotoHoverActions photo={a} />}
-        {a?.country && (
-          <p className="absolute bottom-4 left-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
-            {a.title} — {a.country}
-          </p>
-        )}
       </div>
-      <div className="flex flex-1 flex-col justify-center px-6 py-14 md:px-14">
-        <p className="font-script text-4xl text-terra">{editorial.kicker}</p>
-        <h2 className="font-condensed mt-2 text-4xl font-semibold uppercase leading-[1.02] tracking-[0.05em] text-paper md:text-5xl">
+      <div className="flex flex-col justify-center px-2 py-4 md:px-6">
+        <p className="text-sm font-semibold text-terra">{editorial.kicker}</p>
+        <h2 className="font-display mt-2 text-4xl leading-tight text-ink">
           {editorial.title}
         </h2>
-        <p className="mt-5 max-w-md text-sm leading-relaxed text-noir-soft">
+        <p className="mt-4 text-sm leading-relaxed text-ink-soft">
           {fillSiteTokens(editorial.body, siteTokens(facts))}
         </p>
-        <div className="mt-8 grid grid-cols-3 gap-4 border-t border-noir pt-6">
+        <div className="mt-8 grid grid-cols-3 gap-4 border-t border-sand pt-6">
           {[
             [`${facts.photographerPct}%`, editorial.royaltyLabel],
             [fmt(stats?.photosLive ?? 0), editorial.photosLabel],
             [String(stats?.countries ?? 0), editorial.countriesLabel],
           ].map(([v, l]) => (
             <div key={l}>
-              <p className="font-condensed text-3xl font-medium text-terra">{v}</p>
-              <p className="mt-1 font-mono-tech text-[9px] uppercase tracking-[0.15em] text-noir-faint">{l}</p>
+              <p className="font-display text-3xl text-terra">{v}</p>
+              <p className="mt-1 text-xs text-ink-soft">{l}</p>
             </div>
           ))}
         </div>
         <Link
           to={uploadHref}
-          className="mt-8 w-fit border border-terra px-7 py-3 font-condensed text-[12px] uppercase tracking-[0.25em] text-terra transition-colors hover:bg-terra hover:text-paper"
+          className="mt-8 w-fit rounded-full bg-terra px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-ink"
         >
           {editorial.cta}
         </Link>
+        <p className="mt-4 text-xs text-ink-faint">{editorial.side}</p>
       </div>
-      <div className="group relative flex-1">
-        {b ? <img src={b.src} alt={b.title || ''} loading="lazy" className="h-72 w-full object-cover md:h-[520px] lg:h-full" /> : <div className="h-72 bg-noir-soft md:h-[520px]" />}
+      <div className="group relative overflow-hidden rounded-2xl">
+        {b ? <img src={b.src} alt={b.title || ''} loading="lazy" className="h-72 w-full object-cover md:h-[460px]" /> : <div className="h-72 bg-cream md:h-[460px]" />}
         {b && <CountryMark country={b.country} />}
         {b && !b.id.startsWith('upload-') && <PhotoHoverActions photo={b} />}
-        {b?.country && (
-          <p className="absolute bottom-4 right-4 bg-noir/70 px-3 py-1.5 font-mono-tech text-[9px] uppercase tracking-[0.2em] text-paper backdrop-blur-sm">
-            {b.title} — {b.country}
-          </p>
-        )}
+      </div>
       </div>
     </section>
   );
@@ -707,13 +592,6 @@ export function StatsBand({
   );
 }
 
-function cardFrame(frame: SectionFrame): { width: string; aspectRatio: string } {
-  return {
-    width: `min(92vw, ${frame.widthVw}vw)`,
-    aspectRatio: `${frame.widthVw} / ${frame.heightVw}`,
-  }
-}
-
 export function PeopleRail({
   copy,
   people,
@@ -729,49 +607,30 @@ export function PeopleRail({
   browseTo: string
   badge?: string
 }) {
-  const shape = cardFrame(frame)
+  void frame
   return (
-    <section className="bg-noir py-20 md:py-24">
-      <div className="flex items-end justify-between px-5 md:px-10">
+    <section className="bg-paper px-5 py-12 md:px-8">
+      <div className="mx-auto flex max-w-[1500px] items-end justify-between">
         <div>
-          <p className="font-script text-3xl text-terra">{copy.kicker}</p>
-          <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-            {copy.title}
-          </h2>
+          <p className="text-sm font-semibold text-terra">{copy.kicker}</p>
+          <h2 className="font-display mt-1 text-3xl text-ink md:text-4xl">{copy.title}</h2>
         </div>
-        <Link to={browseTo} className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-paper-soft transition-colors hover:text-terra md:block">
+        <Link to={browseTo} className="hidden text-sm font-semibold text-terra md:block">
           {copy.linkLabel}
         </Link>
       </div>
-      <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
+      <div className="no-scrollbar mx-auto mt-8 flex max-w-[1500px] gap-5 overflow-x-auto">
         {people.map((ph) => (
-          <Link
-            key={ph.handle}
-            to={`/p/${ph.handle}`}
-            className="strip-cell group relative shrink-0 snap-start overflow-hidden"
-            style={shape}
-          >
-            <img src={ph.avatarUrl ?? '/images/avatars/photographer-bw.jpg'} alt={ph.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-5 pt-12">
-              <p className="font-condensed text-xl font-medium uppercase tracking-[0.15em] text-paper">
-                {ph.name} <span className="mx-1 text-terra">—</span> <span className="text-sm font-light text-paper-soft">{ph.location}</span>
-              </p>
-              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
-                {badge ? `${badge} · ` : ''}
-                {fmt(ph.followers)} followers · {ph.photosCount} photographs
-              </p>
-            </div>
+          <Link key={ph.handle} to={`/p/${ph.handle}`} className="w-40 shrink-0 text-center">
+            <img src={ph.avatarUrl ?? '/images/avatars/photographer-bw.jpg'} alt="" loading="lazy" className="mx-auto h-28 w-28 rounded-full object-cover ring-4 ring-white" />
+            <p className="mt-3 text-sm font-semibold text-ink">{ph.name}</p>
+            <p className="text-xs text-ink-soft">{badge ? `${badge} · ` : ''}{ph.location}</p>
+            <p className="text-xs text-ink-faint">{fmt(ph.followers)} followers · {ph.photosCount}</p>
           </Link>
         ))}
-        <Link
-          to={joinTo}
-          className="flex shrink-0 snap-start items-center justify-center border border-noir bg-noir-soft transition-colors hover:border-terra"
-          style={shape}
-        >
-          <span className="text-center">
-            <span className="font-script block text-4xl text-terra">{copy.joinScript}</span>
-            <span className="font-condensed mt-2 block text-sm uppercase tracking-[0.3em] text-paper-soft">{copy.joinLabel}</span>
-          </span>
+        <Link to={joinTo} className="flex w-40 shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed border-sand bg-white px-3 text-center">
+          <span className="font-script text-3xl text-terra">{copy.joinScript}</span>
+          <span className="mt-2 text-xs font-semibold text-ink">{copy.joinLabel}</span>
         </Link>
       </div>
     </section>
@@ -781,8 +640,8 @@ export function PeopleRail({
 export function StaticBannerSection({ banner }: { banner: HomeStaticBannerDto }) {
   if (!banner.images.length && !banner.title) return null
   return (
-    <section className="bg-noir px-5 py-12 md:px-10" aria-label={banner.title}>
-      <h2 className="font-condensed text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
+    <section className="bg-paper px-5 py-12 md:px-8" aria-label={banner.title}>
+      <h2 className="font-display mx-auto max-w-[1500px] text-3xl text-ink md:text-4xl">
         {banner.title}
       </h2>
       {banner.images.length > 0 && (
@@ -822,40 +681,27 @@ export function ModelsRail() {
   if (people.length === 0) return null;
 
   return (
-    <section className="bg-noir pb-20 md:pb-24">
-      <div className="flex items-end justify-between px-5 md:px-10">
+    <section className="bg-white px-5 py-12 md:px-8">
+      <div className="mx-auto flex max-w-[1500px] items-end justify-between">
         <div>
-          <p className="font-script text-3xl text-terra">{copy.kicker}</p>
-          <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-            {copy.title}
-          </h2>
+          <p className="text-sm font-semibold text-terra">{copy.kicker}</p>
+          <h2 className="font-display mt-1 text-3xl text-ink md:text-4xl">{copy.title}</h2>
         </div>
-        <Link to="/models" className="hidden font-condensed text-[12px] uppercase tracking-[0.25em] text-noir-soft transition-colors hover:text-terra md:block">
+        <Link to="/models" className="hidden text-sm font-semibold text-terra md:block">
           {copy.linkLabel}
         </Link>
       </div>
-      <div className="no-scrollbar mt-8 flex snap-x snap-mandatory gap-1 overflow-x-auto px-1">
+      <div className="no-scrollbar mx-auto mt-8 flex max-w-[1500px] gap-5 overflow-x-auto">
         {people.map((model) => (
-          <Link
-            key={model.handle}
-            to={`/m/${model.handle}`}
-            className="strip-cell group relative w-[58vw] shrink-0 snap-start overflow-hidden sm:w-[36vw] lg:w-[22vw]"
-          >
-            <img src={model.avatarUrl ?? '/images/avatars/portrait-botswana.jpg'} alt={model.name} loading="lazy" className="aspect-[3/4] w-full object-cover" />
-            <div className="strip-meta absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent p-5 pt-12">
-              <p className="font-condensed text-xl font-medium uppercase tracking-[0.15em] text-paper">
-                {model.name}
-              </p>
-              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.16em] text-terra">
-                @{model.handle} · {model.photosCount} approved
-              </p>
-            </div>
+          <Link key={model.handle} to={`/m/${model.handle}`} className="w-40 shrink-0 text-center">
+            <img src={model.avatarUrl ?? '/images/avatars/portrait-botswana.jpg'} alt="" loading="lazy" className="mx-auto h-28 w-28 rounded-full object-cover ring-4 ring-white" />
+            <p className="mt-3 text-sm font-semibold text-ink">{model.name}</p>
+            <p className="text-xs text-ink-soft">@{model.handle}</p>
+            <p className="text-xs text-ink-faint">{model.photosCount} approved</p>
           </Link>
         ))}
       </div>
-      <p className="mt-6 px-5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-noir-soft md:px-10">
-        {copy.note}
-      </p>
+      <p className="mx-auto mt-6 max-w-[1500px] text-sm text-ink-soft">{copy.note}</p>
     </section>
   );
 }
@@ -881,21 +727,20 @@ export function NoirPricing({ photos }: { photos: PhotoDto[] }) {
   }));
   if (plans.length === 0) return null;
   return (
-    <section className="bg-noir px-5 pb-24 pt-4 md:px-10">
-      <p className="font-script text-3xl text-terra">{pack.home.kicker}</p>
-      <h2 className="font-condensed mt-1 text-4xl font-semibold uppercase tracking-[0.06em] text-paper md:text-5xl">
-        {pack.home.title}
-      </h2>
-      <div className="mt-10 grid gap-6 md:grid-cols-3">
+    <section className="bg-paper px-5 pb-16 pt-4 md:px-8">
+      <div className="mx-auto max-w-[1500px]">
+      <p className="text-sm font-semibold text-terra">{pack.home.kicker}</p>
+      <h2 className="font-display mt-1 text-3xl text-ink md:text-4xl">{pack.home.title}</h2>
+      <div className="mt-8 grid gap-6 md:grid-cols-3">
         {plans.map((p, i) => (
           <Reveal key={p.name} delay={i * 90}>
-            <div className="group overflow-hidden border border-noir bg-noir-soft transition-colors hover:border-terra/60">
+            <div className="group overflow-hidden rounded-2xl border border-sand bg-white">
               <div className="relative aspect-[16/9] overflow-hidden">
                 {p.photo ? (
                 <img
                   src={p.photo.src} alt=""
                   loading="lazy"
-                  className="h-full w-full object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 ) : (
                   <div className="h-full w-full bg-noir" />
@@ -904,19 +749,19 @@ export function NoirPricing({ photos }: { photos: PhotoDto[] }) {
                   {p.name}
                 </span>
               </div>
-              <div className="p-7">
-                <p className="font-condensed text-5xl font-light text-paper">
+              <div className="p-6">
+                <p className="font-display text-4xl text-ink">
                   {p.price}
-                  {p.per && <span className="text-base text-noir-soft">{p.per}</span>}
+                  {p.per && <span className="text-base text-ink-soft">{p.per}</span>}
                 </p>
-                <ul className="mt-5 space-y-2.5">
+                <ul className="mt-4 space-y-2">
                   {p.feats.map((f) => (
-                    <li key={f} className="font-serif-display text-sm italic text-noir-soft">{f}</li>
+                    <li key={f} className="text-sm text-ink-soft">{f}</li>
                   ))}
                 </ul>
                 <Link
                   to="/pricing"
-                  className="mt-7 block border border-paper/30 py-3 text-center font-condensed text-[11px] uppercase tracking-[0.3em] text-paper transition-colors hover:border-terra hover:bg-terra"
+                  className="mt-6 block rounded-full bg-ink py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-terra"
                 >
                   {content.home.pricingCta}
                 </Link>
@@ -925,6 +770,7 @@ export function NoirPricing({ photos }: { photos: PhotoDto[] }) {
           </Reveal>
         ))}
       </div>
+      </div>
     </section>
   );
 }
@@ -932,30 +778,7 @@ export function NoirPricing({ photos }: { photos: PhotoDto[] }) {
 /* ---------------- footer + back-to-top ---------------- */
 
 export function NoirFooter() {
-  const { content } = useSiteContent();
-  const name = content.brand.name;
-  const mark = content.brand.accent;
-  const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name;
-  return (
-    <footer className="border-t border-noir bg-noir px-6 py-16 text-center">
-      <Link to="/" className="font-condensed text-3xl font-semibold uppercase tracking-[0.3em] text-paper">
-        {highlight}{mark && name.endsWith(mark) ? <span className="text-terra">{mark}</span> : null}
-      </Link>
-      <p className="mx-auto mt-4 max-w-md text-[13px] leading-relaxed text-noir-soft">
-        {content.footer.blurb}
-      </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-        {sortMenuLinks(content.footer.links).map((s) => (
-          <Link key={`${s.to}-${s.label}`} to={s.to} className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
-            {s.label}
-          </Link>
-        ))}
-      </div>
-      <p className="mt-10 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-        {content.footer.copyright}
-      </p>
-    </footer>
-  );
+  return <PublicFooter />
 }
 
 export function BackToTop() {

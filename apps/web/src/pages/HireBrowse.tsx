@@ -61,7 +61,7 @@ export default function HireBrowse() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
+      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-8 md:px-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Hire</p>
         <h1 className="font-serif-display mt-2 text-5xl font-light tracking-tight">Talent open for briefs.</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{HIRE_NOTE}</p>

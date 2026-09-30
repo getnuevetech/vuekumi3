@@ -51,7 +51,7 @@ export default function ModelProfile() {
   if (status === 'missing' || !handle) {
     return (
       <div className="min-h-screen bg-paper text-ink">
-        <div className="mx-auto max-w-md px-6 pb-24 pt-40 text-center">
+        <div className="mx-auto max-w-md px-6 pb-24 pt-16 text-center">
           <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
           <h1 className="font-serif-display mt-2 text-4xl font-light">Model not found.</h1>
           <Link to="/models" className="mt-8 inline-block bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper">
@@ -64,9 +64,15 @@ export default function ModelProfile() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
+      {items[0]?.src && (
+        <div className="relative h-56 overflow-hidden md:h-72">
+          <img src={items[0].src} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-noir/70 to-noir/10" />
+        </div>
+      )}
+      <div className="mx-auto max-w-[1500px] px-5 pb-16 md:px-8">
         {profile && (
-          <div className="flex flex-col gap-6 border border-sand bg-white p-6 md:flex-row md:items-center">
+          <div className={`flex flex-col gap-6 rounded-3xl border border-sand bg-white p-6 md:flex-row md:items-center ${items[0]?.src ? '-mt-16' : 'mt-8'}`}>
             {profile.avatarUrl ? (
               <img src={profile.avatarUrl} alt="" className="h-28 w-28 rounded-full object-cover" />
             ) : (
@@ -74,7 +80,7 @@ export default function ModelProfile() {
             )}
             <div className="flex-1">
               <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Model</p>
-              <h1 className="font-serif-display mt-1 text-4xl font-light tracking-tight">{profile.name}</h1>
+              <h1 className="font-display mt-1 text-4xl text-ink">{profile.name}</h1>
               <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
                 @{profile.handle} · {profile.location ?? 'Africa'}
               </p>

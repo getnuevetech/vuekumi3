@@ -91,12 +91,12 @@ export default function Pricing() {
   }))
 
   return (
-    <div className="pt-40 pb-28">
+    <div className="pt-8 pb-28">
       <div className="mx-auto max-w-[1400px] px-6 md:px-12">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
             <p className="font-mono-tech text-[10px] uppercase tracking-[0.3em] text-terra">{page.kicker}</p>
-            <h1 className="font-serif-display mt-4 text-5xl font-light leading-[1.05] tracking-tight md:text-6xl">
+            <h1 className="font-display mt-4 text-5xl leading-[1.05] text-ink md:text-6xl">
               {page.title}
               <br />
               <em className="text-terra">{page.titleEmphasis}</em>

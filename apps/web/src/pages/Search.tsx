@@ -92,23 +92,26 @@ export default function Search() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto max-w-[1500px] px-5 pb-24 pt-40 md:px-8">
-        <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{library.kicker}</p>
-        <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight md:text-5xl">{heading}</h1>
-        <p className="mt-2 text-sm text-ink-soft">
+      <div className="mx-auto max-w-[1500px] px-5 pb-16 pt-8 md:px-8">
+        <p className="text-sm text-ink-soft">Home / Library</p>
+        <p className="mt-3 text-sm font-semibold text-terra">{library.kicker}</p>
+        <h1 className="font-display mt-1 text-4xl text-ink md:text-5xl">{heading}</h1>
+        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
           {loading ? 'Searching…' : fillSiteTokens(library.intro, { count: total })}
         </p>
 
-        <div className="mt-8">
-          <SearchForm defaultQuery={q} />
+        <div className="mt-6 max-w-2xl">
+          <SearchForm wide defaultQuery={q} />
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-8 grid items-start gap-8 lg:grid-cols-[240px_1fr]">
+        <aside className="space-y-3 rounded-2xl border border-sand bg-white p-4">
+          <p className="text-sm font-semibold text-ink">Filters</p>
           <select
             aria-label="Category"
             value={category}
             onChange={(e) => setFilter({ category: e.target.value })}
-            className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none focus:border-terra"
+            className="w-full rounded-xl border border-sand bg-paper px-3 py-2 text-sm outline-none focus:border-terra"
           >
             <option value="">All categories</option>
             {(facets?.categories.map((f) => f.value) ?? categories.filter((c) => c !== 'All')).map((c) => (
@@ -119,7 +122,7 @@ export default function Search() {
             aria-label="Country"
             value={country}
             onChange={(e) => setFilter({ country: e.target.value })}
-            className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none focus:border-terra"
+            className="w-full rounded-xl border border-sand bg-paper px-3 py-2 text-sm outline-none focus:border-terra"
           >
             <option value="">All countries</option>
             {(facets?.countries ?? []).map((c) => (
@@ -130,7 +133,7 @@ export default function Search() {
             aria-label="Licence"
             value={license}
             onChange={(e) => setFilter({ license: e.target.value })}
-            className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none focus:border-terra"
+            className="w-full rounded-xl border border-sand bg-paper px-3 py-2 text-sm outline-none focus:border-terra"
           >
             <option value="">Free + premium</option>
             <option value="free">Free</option>
@@ -140,7 +143,7 @@ export default function Search() {
             aria-label="Library tier"
             value={libraryTier}
             onChange={(e) => setFilter({ libraryTier: e.target.value })}
-            className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none focus:border-terra"
+            className="w-full rounded-xl border border-sand bg-paper px-3 py-2 text-sm outline-none focus:border-terra"
           >
             <option value="">All library tiers</option>
             {(facets?.libraryTiers?.length
@@ -173,18 +176,19 @@ export default function Search() {
             aria-label="Sort"
             value={sort}
             onChange={(e) => setFilter({ sort: e.target.value })}
-            className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none focus:border-terra"
+            className="w-full rounded-xl border border-sand bg-paper px-3 py-2 text-sm outline-none focus:border-terra"
           >
             {sorts.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
           {(q || category || country || license || libraryTier || tag || photographer) && (
-            <Link to="/search" className="px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-terra">
-              Clear filters
+            <Link to="/search" className="inline-block text-sm font-semibold text-terra">
+              Clear all
             </Link>
           )}
-        </div>
+        </aside>
+        <div>
 
         {facets?.tags && facets.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
@@ -193,8 +197,8 @@ export default function Search() {
                 key={t.value}
                 type="button"
                 onClick={() => setFilter({ tag: tag === t.value ? '' : t.value })}
-                className={`border px-2.5 py-1 font-mono-tech text-[9px] uppercase tracking-[0.12em] ${
-                  tag === t.value ? 'border-terra bg-terra/10 text-terra' : 'border-sand text-ink-soft hover:border-ink/40'
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  tag === t.value ? 'border-terra bg-terra text-white' : 'border-sand bg-white text-ink-soft hover:border-ink/40'
                 }`}
               >
                 {t.value}
@@ -211,8 +215,10 @@ export default function Search() {
 
         <div ref={sentinel} className="mt-10 flex justify-center">
           {loadingMore && (
-            <span className="font-mono-tech text-[10px] uppercase tracking-[0.18em] text-ink-soft">Loading more</span>
+            <span className="text-sm text-ink-soft">Loading more</span>
           )}
+        </div>
+        </div>
         </div>
       </div>
     </div>

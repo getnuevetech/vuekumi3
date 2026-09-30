@@ -31,7 +31,7 @@ export default function LegalPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto max-w-2xl px-6 pb-24 pt-40">
+      <div className="mx-auto max-w-2xl px-6 pb-24 pt-8">
         <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">{pageCopy.kicker}</p>
         <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">{pageCopy.title}</h1>
         <p className="mt-3 text-sm text-ink-soft">

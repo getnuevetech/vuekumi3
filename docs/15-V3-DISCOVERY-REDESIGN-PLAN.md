@@ -1,6 +1,6 @@
 # VueKumi v3 discovery redesign — recommendations and implementation plan
 
-**Status: plan only. Do not start implementation until this sequence is explicitly approved.**
+**Status: D-R2 visual shell is in progress.** Public pages now use the light image-forward chrome (header, home, library, category, profiles). Routes, CMS data, rights, and portals stay. Dark mode remains available from the header toggle; the default visit is the light marketplace. Profile depth, Digital ID, and cursor search are still outstanding.
 
 Sources reviewed 30 September 2026 against `main`:
 

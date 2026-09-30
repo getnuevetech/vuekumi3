@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { LIBRARY_TIER_LABEL, menuTypeClass, sortMenuLinks } from '@vuekumi/shared'
+import { LIBRARY_TIER_LABEL, sortMenuLinks } from '@vuekumi/shared'
 import { menuLinkVisible, type PhotoDto } from '@vuekumi/shared'
-import { fmt, type Photo } from '../data/content'
+import { type Photo } from '../data/content'
 import { api, type GeoCountry } from '../api/client'
 import { useCurrency } from '../context/CurrencyContext'
 import { ThemeToggle } from './ThemeToggle'
@@ -134,12 +134,12 @@ function CurrencySelect({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
 
 /* ---------------- Logo ---------------- */
 
-export function LogoMark({ dark = false, accent = '#bc773f' }: { dark?: boolean; accent?: string; condensed?: boolean }) {
+export function LogoMark({ dark = false, accent = '#bc773f', locked = false }: { dark?: boolean; accent?: string; condensed?: boolean; locked?: boolean }) {
   const { content, logoUrl } = useSiteContent()
   const name = content.brand.name
   const mark = content.brand.accent
   const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name
-  const tone = dark ? 'text-paper' : 'text-ink'
+  const tone = locked ? 'text-[#faf6f3]' : dark ? 'text-paper' : 'text-ink'
   return (
     <Link to="/" className={`flex items-center gap-2.5 ${tone}`}>
       {logoUrl ? (
@@ -190,19 +190,28 @@ export function SearchForm({
   }
 
   return (
-    <form onSubmit={submit} className={wide ? 'w-full' : compact ? 'w-44 xl:w-56' : 'w-full max-w-md'}>
+    <form
+      onSubmit={submit}
+      className={`flex items-center overflow-hidden rounded-full border bg-white shadow-sm ${
+        wide ? 'w-full' : compact ? 'w-44 xl:w-56' : 'w-full max-w-2xl'
+      } ${dark ? 'border-white/30' : 'border-sand'}`}
+    >
       <label className="sr-only" htmlFor={inputId}>Search the library</label>
       <input
         id={inputId}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={content.searchPlaceholder}
-        className={`w-full font-mono-tech uppercase tracking-[0.14em] outline-none ${wide ? 'px-4 py-3 text-[11px]' : 'px-3 py-2 text-[10px]'} ${
-          dark
-            ? 'border border-paper/30 bg-transparent text-paper placeholder:text-paper-soft/70 focus:border-terra'
-            : 'border border-sand bg-transparent text-ink placeholder:text-ink-faint focus:border-terra'
+        className={`min-w-0 flex-1 bg-transparent px-5 py-3 text-sm text-ink outline-none placeholder:text-ink-faint ${
+          wide ? '' : ''
         }`}
       />
+      <button
+        type="submit"
+        className="m-1 shrink-0 rounded-full bg-terra px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink"
+      >
+        Search
+      </button>
     </form>
   )
 }
@@ -281,80 +290,80 @@ export function AccountMenu({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
 }
 
 export function SiteHeader() {
-  const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const { user } = useAuth()
   const { content } = useSiteContent()
+  const location = useLocation()
   const links = sortMenuLinks(content.menu).filter((link) => menuLinkVisible(link, user))
-  const menuClass = `${menuTypeClass(content.menuStyle.font)} font-light uppercase text-paper-soft transition-colors hover:text-terra`
-  const menuStyle = { fontSize: `${content.menuStyle.sizePx}px`, letterSpacing: '0.14em' }
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    setOpen(false)
+  }, [location.pathname])
 
   return (
-    <>
-      <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          scrolled ? 'border-b border-noir bg-noir/85 backdrop-blur-md' : 'bg-transparent'
-        }`}
-      >
-        <div className="flex items-center justify-between gap-6 px-5 py-4 md:px-10">
-          <LogoMark dark condensed />
-          <nav className={`hidden items-center gap-5 uppercase lg:flex ${menuClass}`}>
-            {links.map((link) => (
-              <Link key={`${link.to}-${link.label}`} to={link.to} style={menuStyle}>{link.label}</Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3">
-            <ThemeToggle tone="dark" />
-            <div className="hidden md:block">
-              <CurrencySelect tone="dark" />
-            </div>
-            <AccountMenu tone="dark" />
-            {!user && (
-              <Link
-                to="/login?redirect=/contributor/upload&signup=photographer"
-                className="hidden border border-paper/70 px-5 py-2 font-condensed text-[12px] uppercase tracking-[0.22em] text-paper transition-colors hover:border-terra hover:bg-terra lg:inline-block"
-              >
-                {content.actions.sell}
-              </Link>
-            )}
-            <button
-              onClick={() => setOpen(!open)}
-              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
-              aria-label="Toggle menu"
-            >
-              <span className={`block h-px w-5 bg-paper transition-transform ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
-              <span className={`block h-px w-5 bg-paper transition-transform ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
-            </button>
-          </div>
-        </div>
-        <div className="px-5 pb-4 md:px-10">
-          <SearchForm dark wide defaultQuery="" />
-        </div>
-      </header>
-      <div
-        className={`fixed inset-0 z-40 bg-noir/95 backdrop-blur transition-opacity duration-300 lg:hidden ${
-          open ? 'opacity-100' : 'pointer-events-none opacity-0'
-        }`}
-      >
-        <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
-          {links.map((item) => (
+    <header className="sticky top-0 z-50 border-b border-sand bg-white/95 backdrop-blur">
+      <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-3 md:px-6">
+        <LogoMark />
+        <nav className="ml-2 hidden items-center gap-4 xl:flex">
+          {links.map((link) => (
             <Link
-              key={`${item.to}-${item.label}`}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              className="font-condensed text-2xl font-light uppercase tracking-[0.25em] text-paper"
+              key={`${link.to}-${link.label}`}
+              to={link.to}
+              className="text-[13px] font-medium text-ink-soft transition-colors hover:text-ink"
             >
-              {item.label}
+              {link.label}
             </Link>
           ))}
+        </nav>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="hidden lg:block">
+            <CurrencySelect />
+          </div>
+          <ThemeToggle />
+          <Link to="/search" className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink xl:hidden" aria-label="Search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+            </svg>
+          </Link>
+          <AccountMenu />
+          {!user && (
+            <Link
+              to="/login?redirect=/contributor/upload&signup=photographer"
+              className="hidden rounded-full bg-terra px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink sm:inline-block"
+            >
+              {content.actions.sell}
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 xl:hidden"
+            aria-label="Toggle menu"
+            aria-expanded={open}
+          >
+            <span className={`block h-0.5 w-5 bg-ink transition-transform ${open ? 'translate-y-[4px] rotate-45' : ''}`} />
+            <span className={`block h-0.5 w-5 bg-ink transition-transform ${open ? '-translate-y-[4px] -rotate-45' : ''}`} />
+          </button>
         </div>
       </div>
-    </>
+      {open && (
+        <div className="border-t border-sand bg-white px-4 py-4 xl:hidden">
+          <div className="flex flex-col gap-1">
+            {links.map((item) => (
+              <Link
+                key={`${item.to}-${item.label}`}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink hover:bg-cream"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </header>
   )
 }
 
@@ -362,27 +371,33 @@ export function PublicFooter() {
   const { pathname } = useLocation()
   const { content } = useSiteContent()
   if (isPortalPath(pathname)) return null
-  const name = content.brand.name
-  const mark = content.brand.accent
-  const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name
+  const links = sortMenuLinks(content.footer.links)
+  const size = Math.ceil(links.length / 3) || 1
+  const columns = [links.slice(0, size), links.slice(size, size * 2), links.slice(size * 2)].filter((column) => column.length > 0)
+  const headings = ['Explore', 'For creators', 'Trust']
   return (
-    <footer className="border-t border-noir bg-noir px-6 py-16 text-center">
-      <Link to="/" className="font-condensed text-3xl font-semibold uppercase tracking-[0.3em] text-paper">
-        {highlight}{mark && name.endsWith(mark) ? <span className="text-terra">{mark}</span> : null}
-      </Link>
-      <p className="mx-auto mt-4 max-w-md text-[13px] leading-relaxed text-noir-soft">
-        {content.footer.blurb}
-      </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-        {sortMenuLinks(content.footer.links).map((s) => (
-          <Link key={`${s.to}-${s.label}`} to={s.to} className="font-condensed text-[13px] font-light uppercase tracking-[0.3em] text-paper-soft transition-colors hover:text-terra">
-            {s.label}
-          </Link>
+    <footer className="bg-[#0b0a09] text-[#faf6f3]">
+      <div className="mx-auto grid max-w-[1500px] gap-10 px-6 py-14 md:grid-cols-4 md:px-10">
+        <div>
+          <LogoMark dark locked />
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#c4b8ae]">{content.footer.blurb}</p>
+        </div>
+        {columns.map((column, index) => (
+          <div key={headings[index] ?? index}>
+            <p className="text-sm font-semibold text-white">{headings[index] ?? 'More'}</p>
+            <div className="mt-4 flex flex-col gap-2">
+              {column.map((link) => (
+                <Link key={`${link.to}-${link.label}`} to={link.to} className="text-sm text-[#c4b8ae] transition-colors hover:text-[#e0a36a]">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
-      <p className="mt-10 font-mono-tech text-[9px] uppercase tracking-[0.25em] text-noir-faint">
-        {content.footer.copyright}
-      </p>
+      <div className="border-t border-white/10">
+        <p className="mx-auto max-w-[1500px] px-6 py-4 text-xs text-[#8a8078] md:px-10">{content.footer.copyright}</p>
+      </div>
     </footer>
   )
 }
@@ -430,40 +445,32 @@ export function PhotoCard({
   const name = photographer?.name ?? ('photographerName' in photo ? photo.photographerName : undefined) ?? photo.photographer
   const verifiedPlus = 'libraryTier' in photo && photo.libraryTier === 'VERIFIED_PLUS'
 
+  const tier = 'libraryTier' in photo ? photo.libraryTier : undefined
+  const tierLabel = tier ? LIBRARY_TIER_LABEL[tier] : photo.license === 'premium' ? 'Premium' : 'Free Library'
+
   return (
-    <Link to={`/photo/${photo.id}`} className="group relative block overflow-hidden bg-cream">
-      <BlurImage
-        src={photo.src}
-        alt={photo.title}
-        className="min-h-40 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-      />
-      {/* hover overlay */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/30 via-transparent to-black/55 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
-        <div className="flex items-start justify-end gap-1 p-2">
+    <Link to={`/photo/${photo.id}`} className="group block">
+      <div className="relative overflow-hidden rounded-2xl bg-cream">
+        <BlurImage
+          src={photo.src}
+          alt={photo.title}
+          className="min-h-48 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-end p-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
           <PhotoHoverActions
             inline
             photo={{ id: photo.id, src: photo.src, title: photo.title, country: photo.country, license: photo.license, price: photo.price, favorited: photo.favorited }}
           />
         </div>
-        <div className="flex items-end justify-between p-3">
-          <div>
-            <p className="font-mono-tech text-[10px] uppercase tracking-[0.14em] text-white/95">{photo.title}</p>
-            <p className="mt-0.5 font-mono-tech text-[9px] uppercase tracking-[0.12em] text-white/60">
-              {name} — {photo.country}
-            </p>
-          </div>
-          <span className="font-mono-tech text-[9px] text-white/70">{fmt(photo.downloads)}↓</span>
-        </div>
-      </div>
-      <CountryMark country={photo.country} />
-      {verifiedPlus && (
-        <span
-          className="pointer-events-none absolute right-2 top-2 z-10 bg-ink/80 px-1.5 py-0.5 font-mono-tech text-[8px] uppercase tracking-[0.14em] text-paper"
-          aria-label={LIBRARY_TIER_LABEL.VERIFIED_PLUS}
-        >
-          {LIBRARY_TIER_LABEL.VERIFIED_PLUS}
+        <CountryMark country={photo.country} />
+        <span className="pointer-events-none absolute left-2 top-2 z-10 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink">
+          {verifiedPlus ? LIBRARY_TIER_LABEL.VERIFIED_PLUS : tierLabel}
         </span>
-      )}
+      </div>
+      <p className="mt-2 truncate text-sm font-semibold text-ink">{photo.title}</p>
+      <p className="truncate text-xs text-ink-soft">
+        {name} · {photo.country}
+      </p>
     </Link>
   )
 }

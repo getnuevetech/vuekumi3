@@ -16,8 +16,7 @@ function readStored(): ThemeChoice | null {
 }
 
 function applyTheme(choice: ThemeChoice | null) {
-  if (choice) document.documentElement.dataset.theme = choice
-  else delete document.documentElement.dataset.theme
+  document.documentElement.dataset.theme = choice ?? 'light'
 }
 
 interface ThemeContextValue {
@@ -30,7 +29,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { user, refresh } = useAuth()
   const [choice, setChoiceState] = useState<ThemeChoice | null>(() => {
-    const stored = readStored()
+    const stored = readStored() ?? 'light'
     applyTheme(stored)
     return stored
   })

@@ -60,6 +60,12 @@
   .font-script {
     font-family: 'Ms Madi', cursive;
   }
+  .font-display {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 560;
+    letter-spacing: -0.03em;
+    text-transform: none;
+  }
 
   /* noir variant tokens */
   .bg-noir { background-color: #0b0a09; }
@@ -169,7 +175,7 @@
   /* masonry grid */
   .masonry {
     columns: 2;
-    column-gap: 4px;
+    column-gap: 14px;
   }
   @media (min-width: 768px) {
     .masonry { columns: 3; }
@@ -179,7 +185,7 @@
   }
   .masonry > * {
     break-inside: avoid;
-    margin-bottom: 4px;
+    margin-bottom: 14px;
   }
 
   /* image lazy blur-up */
