@@ -2,11 +2,16 @@
 
 Read in this order:
 
-0. **[13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)** —
+0. **[15-V3-DISCOVERY-REDESIGN-PLAN.md](./15-V3-DISCOVERY-REDESIGN-PLAN.md)** —
+   **Plan only (30 Sep 2026).** Public discovery redesign against Design Page Index
+   v1.0 (D01–D07) and Master Development Specification v3.0. D-R2 then D-R3.
+   Does not restart shipped rights, RevenuePolicy, or Free Library work in **`12`** / **`13`**.
+   Photo Influencer stays the public name for the v3 “Free Contributor” layout.
+0b. **[13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)** —
    **Imagery Concept v2.1** — R1–R8 + FC0–FC2 + V21-P2 **shipped**. Photo Influencer
    stays free; Free Library upload-only + moderation + AI low-res. Remaining work is
    **V21-Gated** (finance/counsel/vendor/Dec-Fee/Dec-AI). Does not restart Open/rights in **`12`**.
-0b. **[14-FREE-LIBRARY-PROGRAM.md](./14-FREE-LIBRARY-PROGRAM.md)** —
+0c. **[14-FREE-LIBRARY-PROGRAM.md](./14-FREE-LIBRARY-PROGRAM.md)** —
    Photo Influencer + Free Library program one-pager, acceptance criteria,
    upgrade matrix (Dec-Upgrade) — FC0–FC2 shipped.
 1. **[12-V2-RECONCILIATION-EXECUTION-PLAN.md](./12-V2-RECONCILIATION-EXECUTION-PLAN.md)** —
