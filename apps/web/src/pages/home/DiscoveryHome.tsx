@@ -237,6 +237,10 @@ const DESIGN_CREATORS = [
   { name: 'Lila Tesfaye', country: 'Ethiopia', src: '/home/design/creator-6.png', href: '/creators' },
   { name: 'Moses Kiplagat', country: 'Kenya', src: '/home/design/creator-7.png', href: '/creators' },
   { name: 'Nadia Ali', country: 'Egypt', src: '/home/design/creator-8.png', href: '/models' },
+  { name: 'Youssef El Fassi', country: 'Morocco', src: '/home/design/creator-9.png', href: '/creators' },
+  { name: 'Aline Uwase', country: 'Rwanda', src: '/home/design/creator-10.png', href: '/creators' },
+  { name: 'Samuel Okello', country: 'Uganda', src: '/home/design/creator-11.png', href: '/creators' },
+  { name: 'Selma Nakale', country: 'Namibia', src: '/home/design/creator-12.png', href: '/creators' },
 ]
 
 export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
@@ -260,7 +264,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
     ...(!hidden(home, 'photo_influencers') ? influencerRail : []),
     ...(!hidden(home, 'photographers') ? photographerRail : []),
     ...(!hidden(home, 'contributors') ? contributorRail : []),
-  ][0]
+  ].slice(0, 2)
   const showSpotlight = !(home && hidden(home, 'photo_influencers') && hidden(home, 'photographers') && hidden(home, 'contributors'))
 
   const { data: latest = [] } = useQuery({
@@ -364,8 +368,9 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
   ].slice(0, 24)
   const licenseSrc = pricing[0]?.src ?? art.balloons
   const continentSrc = featured?.statsBackground?.src ?? art.sunset
-  const spotlightPhoto = spotlight
-    ? (heroPhotos.find((photo) => photo.photographer === spotlight.handle)?.src ?? spotlight.avatarUrl ?? art.camera)
+  const spotlightLead = spotlight[0]
+  const spotlightPhoto = spotlightLead
+    ? (heroPhotos.find((photo) => photo.photographer === spotlightLead.handle)?.src ?? spotlightLead.avatarUrl ?? art.camera)
     : art.camera
 
   return (
@@ -489,7 +494,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
         </section>
       )}
 
-      {showSpotlight && <Spotlight person={spotlight} photo={spotlightPhoto} />}
+      {showSpotlight && <Spotlight people={spotlight} photo={spotlightPhoto} />}
 
       {!hidden(home, 'contributors') && (
         <section className="mx-auto max-w-[1440px] px-3 py-6 lg:px-4">
@@ -609,7 +614,7 @@ function CreatorRow({ people }: { people: { name: string; country: string; src?:
 
 function CreatorChip({ name, country, src, href }: { name: string; country: string; src?: string | null; href: string }) {
   return (
-    <div className="flex flex-1 items-center gap-1.5">
+    <div className="flex shrink-0 items-center gap-1.5 pr-2">
       <Link to={href} className="shrink-0">
         {src ? (
           <span className="block h-[58px] w-[58px] overflow-hidden rounded-full ring-1 ring-[#ece6e0]">
@@ -631,15 +636,89 @@ function CreatorChip({ name, country, src, href }: { name: string; country: stri
   )
 }
 
-function Spotlight({ person, photo }: { person?: PhotographerDto; photo: string }) {
-  const href = person ? `/p/${person.handle}` : '/creators'
-  const design = !person
-  const name = person?.name ?? 'Kojo Mensah'
-  const place = person?.location ?? 'Accra, Ghana'
-  const portrait = design ? '/home/design/creator-2.png' : (person?.avatarUrl || photo)
+const CREATOR_FLAG: Record<string, string> = {
+  Nigeria: '🇳🇬',
+  Ghana: '🇬🇭',
+  'South Africa': '🇿🇦',
+  Senegal: '🇸🇳',
+  Ethiopia: '🇪🇹',
+  Kenya: '🇰🇪',
+  Egypt: '🇪🇬',
+  Tanzania: '🇹🇿',
+  Morocco: '🇲🇦',
+  Namibia: '🇳🇦',
+  Zimbabwe: '🇿🇼',
+  Botswana: '🇧🇼',
+  Uganda: '🇺🇬',
+  Rwanda: '🇷🇼',
+}
+
+type SpotlightCard = {
+  name: string
+  place: string
+  flag: string
+  portrait: string
+  assets: string
+  downloads: string
+  rating: string
+  tags: string[]
+  qr: string
+  href: string
+}
+
+const DESIGN_SPOTLIGHT: SpotlightCard[] = [
+  {
+    name: 'Kojo Mensah',
+    place: 'Accra, Ghana',
+    flag: '🇬🇭',
+    portrait: '/home/design/creator-2.png',
+    assets: '320',
+    downloads: '126K',
+    rating: '4.9',
+    tags: ['People', 'Nature', 'Culture', 'Travel'],
+    qr: '/home/design/creator-qr.png',
+    href: '/creators',
+  },
+  {
+    name: 'Amina Bello',
+    place: 'Lagos, Nigeria',
+    flag: '🇳🇬',
+    portrait: '/home/design/creator-1.png',
+    assets: '248',
+    downloads: '98K',
+    rating: '4.8',
+    tags: ['Portrait', 'Fashion', 'City', 'People'],
+    qr: '/home/design/creator-qr-2.png',
+    href: '/creators',
+  },
+]
+
+function spotlightCard(person: PhotographerDto, photo: string, index: number): SpotlightCard {
+  const country = countryFromLocation(person.location)
+  const fallback = DESIGN_SPOTLIGHT[index] ?? DESIGN_SPOTLIGHT[0]
+  return {
+    name: person.name,
+    place: person.location?.trim() || country,
+    flag: CREATOR_FLAG[country] ?? '',
+    portrait: person.avatarUrl || photo || fallback.portrait,
+    assets: fmt(person.photosCount ?? 0),
+    downloads: fmt(person.downloads ?? 0),
+    rating: fmt(person.followers ?? 0),
+    tags: fallback.tags,
+    qr: fallback.qr,
+    href: `/p/${person.handle}`,
+  }
+}
+
+function Spotlight({ people, photo }: { people: PhotographerDto[]; photo: string }) {
+  const design = people.length === 0
+  const cards = design
+    ? DESIGN_SPOTLIGHT
+    : [...people.map((person, index) => spotlightCard(person, photo, index)), ...DESIGN_SPOTLIGHT].slice(0, 2)
   const scene = design ? '/home/design/spotlight-photo.png' : photo
+  const lead = people[0]
   return (
-    <section className="mx-auto max-w-[1180px] px-5 py-6 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-5 py-6 lg:px-8">
       <div className="mb-3 flex items-baseline justify-between gap-4">
         <div className="flex flex-wrap items-baseline gap-3">
           <h2 className="font-display text-[32px] leading-none text-ink">Contributor Spotlight</h2>
@@ -647,20 +726,20 @@ function Spotlight({ person, photo }: { person?: PhotographerDto; photo: string 
         </div>
         <Link to="/creators" className="shrink-0 text-sm font-semibold text-[#ef5b24]">View all contributors →</Link>
       </div>
-      <div className="flex w-fit max-w-full flex-wrap items-center gap-4 lg:flex-nowrap">
+      <div className="flex w-full flex-wrap items-center gap-4 xl:flex-nowrap">
         {design ? (
-          <Link to="/login?redirect=/contributor/upload&signup=photographer" className="block w-[min(100%,620px)] shrink-0 overflow-hidden rounded-[8px]">
+          <Link to="/login?redirect=/contributor/upload&signup=photographer" className="block w-[min(100%,560px)] shrink-0 overflow-hidden rounded-[8px]">
             <img src="/home/design/spotlight-banner.png" alt="Real creators. Global impact. Join as a Contributor." className="h-auto w-full" />
           </Link>
         ) : (
-          <div className="relative min-h-[200px] w-[min(100%,620px)] shrink-0 overflow-hidden rounded-[8px] bg-[#1a120c] text-white">
+          <div className="relative min-h-[200px] w-[min(100%,560px)] shrink-0 overflow-hidden rounded-[8px] bg-[#1a120c] text-white">
             <img src={scene} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_30%]" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/20" />
             <div className="relative flex min-h-[200px] items-center justify-between gap-3 p-5">
               <div className="max-w-xs">
                 <h3 className="font-display text-3xl leading-[1.05]">Real creators.<br />Global impact.</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/85">{person?.bio || 'VueKumi empowers African photographers, filmmakers and visual storytellers to share the world with their voice.'}</p>
-                <Link to={href} className="mt-3 inline-flex rounded-full bg-[#ef5b24] px-4 py-2 text-sm font-semibold text-white">Join as a Contributor →</Link>
+                <p className="mt-2 text-sm leading-relaxed text-white/85">{lead?.bio || 'VueKumi empowers African photographers, filmmakers and visual storytellers to share the world with their voice.'}</p>
+                <Link to={cards[0].href} className="mt-3 inline-flex rounded-full bg-[#ef5b24] px-4 py-2 text-sm font-semibold text-white">Join as a Contributor →</Link>
               </div>
               <ul className="hidden space-y-1.5 text-sm sm:block">
                 <li className="flex items-center gap-2"><Check /> Earn from your work</li>
@@ -670,32 +749,42 @@ function Spotlight({ person, photo }: { person?: PhotographerDto; photo: string 
             </div>
           </div>
         )}
-        <div className="w-[240px] shrink-0">
-          <div className="flex items-center gap-3">
-            <img src={portrait} alt="" className="h-14 w-14 rounded-full object-cover" />
-            <div className="min-w-0">
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#ef5b24] px-2 py-0.5 text-[10px] font-semibold text-white">✓ Verified Creator</span>
-              <p className="mt-1 truncate text-base font-semibold text-ink">{name}</p>
-              <p className="truncate text-xs text-ink-soft">📍 {place} <span aria-hidden="true">🇬🇭</span></p>
-            </div>
-          </div>
-          <dl className="mt-3 grid grid-cols-3 text-center">
-            <Stat label="Assets" value={design ? '320' : fmt(person?.photosCount ?? 0)} />
-            <Stat label="Downloads" value={design ? '126K' : fmt(person?.downloads ?? 0)} />
-            <Stat label="Rating" value={design ? '4.9' : fmt(person?.followers ?? 0)} />
-          </dl>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {['People', 'Nature', 'Culture', 'Travel'].map((label) => (
-              <span key={label} className="rounded-full bg-[#f3eee9] px-2.5 py-1 text-[11px] font-medium text-ink">{label}</span>
-            ))}
-          </div>
-        </div>
-        <Link to={href} className="flex w-[112px] shrink-0 flex-col items-center text-center">
-          <img src="/home/design/creator-qr.png" alt="" className="h-[108px] w-[108px] rounded-[4px] bg-white" />
-          <span className="mt-1.5 max-w-[7.5rem] text-[11px] leading-snug text-ink-soft">Scan to view my VueKumi Creator ID</span>
-        </Link>
+        {cards.map((card) => (
+          <CreatorIdCard key={card.name} card={card} />
+        ))}
       </div>
     </section>
+  )
+}
+
+function CreatorIdCard({ card }: { card: SpotlightCard }) {
+  return (
+    <div className="flex shrink-0 items-center gap-3">
+      <div className="w-[236px]">
+        <div className="flex items-center gap-3">
+          <img src={card.portrait} alt="" className="h-14 w-14 rounded-full object-cover" />
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#ef5b24] px-2 py-0.5 text-[10px] font-semibold text-white">✓ Verified Creator</span>
+            <p className="mt-1 truncate text-base font-semibold text-ink">{card.name}</p>
+            <p className="truncate text-xs text-ink-soft">📍 {card.place} {card.flag ? <span aria-hidden="true">{card.flag}</span> : null}</p>
+          </div>
+        </div>
+        <dl className="mt-3 grid grid-cols-3 text-center">
+          <Stat label="Assets" value={card.assets} />
+          <Stat label="Downloads" value={card.downloads} />
+          <Stat label="Rating" value={card.rating} />
+        </dl>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {card.tags.map((label) => (
+            <span key={label} className="rounded-full bg-[#f3eee9] px-2.5 py-1 text-[11px] font-medium text-ink">{label}</span>
+          ))}
+        </div>
+      </div>
+      <Link to={card.href} className="flex w-[112px] shrink-0 flex-col items-center text-center">
+        <img src={card.qr} alt="" className="h-[108px] w-[108px] rounded-[4px] bg-white" />
+        <span className="mt-1.5 max-w-[7.5rem] text-[11px] leading-snug text-ink-soft">Scan to view my VueKumi Creator ID</span>
+      </Link>
+    </div>
   )
 }
 

@@ -454,17 +454,6 @@ export function PublicFooter() {
           </form>
         </div>
       </div>
-      <svg viewBox="0 0 180 240" className="pointer-events-none absolute bottom-4 right-2 h-40 w-32" aria-hidden="true">
-        <path
-          fill="none"
-          stroke="#ef5b24"
-          strokeWidth="3"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          d="M70 22 L96 16 L120 26 L134 40 L140 58 L152 74 L162 96 L150 112 L142 132 L134 158 L124 186 L112 214 L100 206 L90 184 L80 160 L74 136 L60 118 L46 102 L38 84 L48 62 L58 40 Z"
-        />
-        <path fill="none" stroke="#ef5b24" strokeWidth="3" strokeLinejoin="round" d="M150 168 L160 174 L162 196 L150 206 L142 190 Z" />
-      </svg>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-[1240px] flex-col items-start justify-between gap-3 px-6 py-4 text-xs text-[#8a8078] md:flex-row md:items-center md:px-8">
           <span>{content.footer.copyright}</span>
