@@ -70,9 +70,9 @@ function Arrow() {
   )
 }
 
-function StoryCard({ frame, className = '' }: { frame: Frame; className?: string }) {
+function StoryCard({ frame, className = '', radius = 'rounded-[6px]' }: { frame: Frame; className?: string; radius?: string }) {
   return (
-    <Link to={frame.href} className={`group relative block overflow-hidden rounded-2xl bg-[#1c1612] ${className}`}>
+    <Link to={frame.href} className={`group relative block overflow-hidden bg-[#1c1612] ${radius} ${className}`}>
       <img src={frame.src} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/10" />
       {frame.chip && (
@@ -103,24 +103,15 @@ function GeoPattern({ id }: { id: string }) {
   )
 }
 
-function Laurel({ flip = false }: { flip?: boolean }) {
-  return (
-    <svg width="18" height="28" viewBox="0 0 18 28" className={flip ? '-scale-x-100' : ''} aria-hidden="true">
-      <path d="M9 26c2-6 2-10 0-16" fill="none" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M9 22c-4-1-6-4-6-7 3 0 5 2 6 5zM9 17c-4-1-6-4-5-7 3 1 5 3 5 6zM9 12c-3-2-4-5-3-8 2 2 3 4 3 7z" fill="currentColor" />
-    </svg>
-  )
-}
-
 const DESIGN_CREATORS = [
-  { name: 'Amina Bello', role: 'Photographer', src: art.fashion, href: '/creators' },
-  { name: 'Kojo Mensah', role: 'Photographer', src: art.camera, href: '/creators' },
-  { name: 'Zuri Ndlovu', role: 'Photo Influencer', src: art.hoops, href: '/creators' },
-  { name: 'Fatima Diallo', role: 'Model', src: art.portrait, href: '/models' },
-  { name: 'Tunde Okafor', role: 'Photographer', src: art.smile, href: '/creators' },
-  { name: 'Lila Tesfaye', role: 'Photo Influencer', src: art.cityWoman, href: '/creators' },
-  { name: 'Moses Kiplagat', role: 'Photographer', src: art.orange, href: '/creators' },
-  { name: 'Nadia Ali', role: 'Model', src: art.fashion, href: '/models' },
+  { name: 'Amina Bello', country: 'Nigeria', flag: '🇳🇬', src: '/home/design/creator-1.png', href: '/creators' },
+  { name: 'Kojo Mensah', country: 'Ghana', flag: '🇬🇭', src: '/home/design/creator-2.png', href: '/creators' },
+  { name: 'Zuri Ndlovu', country: 'South Africa', flag: '🇿🇦', src: '/home/design/creator-3.png', href: '/creators' },
+  { name: 'Fatima Diallo', country: 'Senegal', flag: '🇸🇳', src: '/home/design/creator-4.png', href: '/models' },
+  { name: 'Tunde Okafor', country: 'Nigeria', flag: '🇳🇬', src: '/home/design/creator-5.png', href: '/creators' },
+  { name: 'Lila Tesfaye', country: 'Ethiopia', flag: '🇪🇹', src: '/home/design/creator-6.png', href: '/creators' },
+  { name: 'Moses Kiplagat', country: 'Kenya', flag: '🇰🇪', src: '/home/design/creator-7.png', href: '/creators' },
+  { name: 'Nadia Ali', country: 'Egypt', flag: '🇪🇬', src: '/home/design/creator-8.png', href: '/models' },
 ]
 
 export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
@@ -147,10 +138,6 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
   ][0]
   const showSpotlight = !(home && hidden(home, 'photo_influencers') && hidden(home, 'photographers') && hidden(home, 'contributors'))
 
-  const { data: models = [] } = useQuery({
-    queryKey: [...publicQueryKeys.home, 'models'],
-    queryFn: () => api.models({ limit: 6 }).then((data) => data.items).catch(() => []),
-  })
   const { data: latest = [] } = useQuery({
     queryKey: publicQueryKeys.homeFeed,
     queryFn: () => api.photos({ page: 1, limit: 8, facets: '0' }).then((data) => data.items).catch(() => [] as PhotoDto[]),
@@ -168,12 +155,12 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
     frameFromPhoto(edge[0], { src: art.orange, title: '', subtitle: '', href: categoryPath('Culture') }),
   ]
   const featuredMain = [
-    frameFromPhoto(edge[0], { src: art.portrait, title: 'Women of Africa', subtitle: 'Strength. Beauty. Leadership.', href: categoryPath('People'), chip: 'People' }),
-    frameFromPhoto(edge[1], { src: art.city, title: 'Modern Africa', subtitle: 'Dynamic cities. Endless opportunities.', href: categoryPath('Urban'), chip: 'City' }),
+    frameFromPhoto(edge[0], { src: '/home/design/feat-women.png', title: 'Women of Africa', subtitle: 'Strength. Beauty. Leadership.', href: categoryPath('People'), chip: 'People' }),
+    frameFromPhoto(edge[1], { src: '/home/design/feat-city.png', title: 'Modern Africa', subtitle: 'Dynamic cities. Endless opportunities.', href: categoryPath('Urban'), chip: 'City' }),
   ]
   const featuredStack = [
-    frameFromPhoto(edge[2], { src: art.elephants, title: "Africa's Majestic Nature", subtitle: 'Wildlife. Icons of the continent.', href: categoryPath('Wildlife'), chip: 'Wildlife' }),
-    frameFromPhoto(editorial[0], { src: art.beach, title: 'Breathtaking Landscapes', subtitle: 'Coast. Travel. Open light.', href: categoryPath('Coast'), chip: 'Travel' }),
+    frameFromPhoto(edge[2], { src: '/home/design/feat-wildlife.png', title: "Africa's Majestic Nature", subtitle: 'Wildlife. Icons of the continent.', href: categoryPath('Wildlife'), chip: 'Wildlife' }),
+    frameFromPhoto(editorial[0], { src: '/home/design/feat-coast.png', title: 'Breathtaking Landscapes', subtitle: 'Coast. Travel. Open light.', href: categoryPath('Coast'), chip: 'Travel' }),
   ]
   const icons = [
     { label: 'People', href: categoryPath('People'), src: art.portrait },
@@ -254,20 +241,9 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
                 </Link>
               </div>
             </div>
-            <div className="relative grid min-h-[340px] grid-cols-4 grid-rows-2 gap-1.5 p-2 lg:min-h-[460px]">
-              <Link to={collage[0].href} className="col-span-2 row-span-2 overflow-hidden rounded-2xl">
-                <img src={collage[0].src} alt="" className="h-full w-full object-cover object-[center_15%]" />
-              </Link>
-              <Link to={collage[1].href} className="overflow-hidden rounded-xl"><img src={collage[1].src} alt="" className="h-full w-full object-cover" /></Link>
-              <Link to={collage[2].href} className="overflow-hidden rounded-xl"><img src={collage[2].src} alt="" className="h-full w-full object-cover object-top" /></Link>
-              <Link to={collage[3].href} className="overflow-hidden rounded-xl"><img src={collage[3].src} alt="" className="h-full w-full object-cover" /></Link>
-              <Link to={collage[4].href} className="overflow-hidden rounded-xl"><img src={collage[4].src} alt="" className="h-full w-full object-cover object-top" /></Link>
-              <span className="pointer-events-none absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-[#e6c27a] px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-[#3c2a12]">
-                <Laurel />
-                Premium African Visuals for a Global Audience
-                <Laurel flip />
-              </span>
-            </div>
+            <Link to={collage[0].href} className="relative block self-center">
+              <img src="/home/design/hero-collage.png" alt="" className="h-auto w-full object-contain" />
+            </Link>
           </div>
           <div className="border-t border-white/10 bg-black/45">
             <div className="mx-auto flex max-w-[1440px] items-center gap-2 overflow-x-auto px-6 py-2.5 no-scrollbar">
@@ -284,11 +260,11 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
 
       {!hidden(home, 'marquee') && (
         <section className="border-b border-[#efe8e1] bg-white">
-          <div className="mx-auto flex max-w-[1440px] items-start justify-between gap-3 overflow-x-auto px-5 py-5 no-scrollbar lg:px-8">
+          <div className="mx-auto flex max-w-[1440px] items-start justify-between gap-1 overflow-x-auto px-5 py-4 no-scrollbar lg:px-8">
             {icons.map((icon) => (
-              <Link key={icon.label} to={icon.href} className="w-[92px] shrink-0 text-center">
-                <img src={icon.src} alt="" className={`mx-auto h-16 w-16 rounded-2xl object-cover shadow-sm ${'pos' in icon ? icon.pos : ''}`} />
-                <p className="mt-2 text-[11px] font-medium leading-tight text-ink">{icon.label}</p>
+              <Link key={icon.label} to={icon.href} className="w-[104px] shrink-0 text-center">
+                <img src={icon.src} alt="" className={`mx-auto h-[77px] w-[96px] rounded-[6px] object-cover shadow-sm ${'pos' in icon ? icon.pos : ''}`} />
+                <p className="mt-1.5 text-[11px] font-medium leading-tight text-ink">{icon.label}</p>
               </Link>
             ))}
           </div>
@@ -298,11 +274,11 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {!hidden(home, 'featured') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Featured Photos" text="Handpicked African stories from across the continent." to="/search" label="View all featured" />
-          <div className="grid h-auto gap-4 md:grid-cols-3 md:h-[460px]">
+          <div className="grid h-auto gap-3 md:grid-cols-3 md:h-[420px]">
             {featuredMain.map((card) => (
               <StoryCard key={card.title} frame={card} className="h-[280px] md:h-full" />
             ))}
-            <div className="grid gap-4 md:grid-rows-2">
+            <div className="grid gap-2 md:grid-rows-2">
               {featuredStack.map((card) => (
                 <StoryCard key={card.title} frame={card} className="h-[200px] md:h-full" />
               ))}
@@ -317,7 +293,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
             <SectionHead title="Browse by Categories" text="Explore Africa’s diversity through curated categories." to="/search" label="View all categories" />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
               {browse.map((card) => (
-                <Link key={card.label} to={card.href} className="group relative h-40 overflow-hidden rounded-2xl">
+                <Link key={card.label} to={card.href} className="group relative h-40 overflow-hidden rounded-[6px]">
                   <img src={card.src} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
                   <p className="absolute bottom-3 left-3 flex items-center gap-1.5 text-sm font-semibold text-white">
@@ -336,7 +312,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
           <SectionHead title="Featured Collections" text="Curated stories for every project." to="/search" label="View all collections" />
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {collections.map((card) => (
-              <StoryCard key={card.title} frame={card} className="h-52" />
+              <StoryCard key={card.title} frame={card} radius="rounded-[3px]" className="h-52" />
             ))}
           </div>
         </section>
@@ -347,11 +323,11 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
           <img src={continentSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35" />
           <GeoPattern id="vk-continent-geo" />
-          <div className="relative mx-auto flex max-w-[1440px] flex-col items-start justify-between gap-6 px-6 py-12 md:flex-row md:items-center md:px-10">
+          <div className="relative mx-auto flex max-w-[1440px] flex-col items-start justify-between gap-4 px-6 py-7 md:flex-row md:items-center md:px-10">
             <div>
-              <h2 className="font-display text-4xl leading-[1.05] md:text-5xl">A continent of stories.<br />For creators like you.</h2>
-              <p className="mt-3 max-w-xl text-sm text-white/80">Get the visuals you need to tell authentic African stories.</p>
-              <Link to="/search" className="mt-5 inline-flex rounded-full bg-[#ef5b24] px-5 py-3 text-sm font-semibold text-white">Explore Photos</Link>
+              <h2 className="font-display text-3xl leading-[1.05] md:text-4xl">A continent of stories.<br />For creators like you.</h2>
+              <p className="mt-2 max-w-xl text-sm text-white/80">Get the visuals you need to tell authentic African stories.</p>
+              <Link to="/search" className="mt-3 inline-flex rounded-full bg-[#ef5b24] px-5 py-2.5 text-sm font-semibold text-white">Explore Photos</Link>
             </div>
             <div className="flex flex-col items-start gap-2 text-xs font-semibold md:items-end">
               <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">Authentic</span>
@@ -367,22 +343,27 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {!hidden(home, 'contributors') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Top African Creators" text="Talented photographers, filmmakers and visual artists from across Africa." to="/creators" label="View all creators" />
-          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-            {people.length > 0 ? people.slice(0, 8).map((person) => (
-              <CreatorChip key={person.handle} name={person.name} role={person.creatorKind === 'photo_influencer' ? 'Photo Influencer' : 'Photographer'} src={person.avatarUrl} href={`/p/${person.handle}`} />
-            )) : DESIGN_CREATORS.map((person) => (
-              <CreatorChip key={person.name} name={person.name} role={person.role} src={person.src} href={person.href} />
-            ))}
-            {people.length > 0 && !hidden(home, 'models') && models.slice(0, 4).map((model) => (
-              <CreatorChip key={model.handle} name={model.name} role="Model" src={model.avatarUrl} href={`/m/${model.handle}`} />
-            ))}
+          <div className="flex items-center gap-2">
+            <button type="button" aria-label="Previous creators" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] text-ink" onClick={(event) => event.currentTarget.parentElement?.querySelector('[data-creators]')?.scrollBy({ left: -240, behavior: 'smooth' })}>‹</button>
+            <div data-creators className="flex flex-1 gap-3 overflow-x-auto pb-2 no-scrollbar">
+              {(people.length > 0 ? people.slice(0, 8).map((person) => ({
+                name: person.name,
+                country: person.location || 'Africa',
+                flag: '',
+                src: person.avatarUrl,
+                href: `/p/${person.handle}`,
+              })) : DESIGN_CREATORS).map((person) => (
+                <CreatorChip key={person.name} name={person.name} country={person.country} flag={person.flag} src={person.src} href={person.href} />
+              ))}
+            </div>
+            <button type="button" aria-label="Next creators" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] text-ink" onClick={(event) => event.currentTarget.parentElement?.querySelector('[data-creators]')?.scrollBy({ left: 240, behavior: 'smooth' })}>›</button>
           </div>
         </section>
       )}
 
       {!hidden(home, 'pricing') && (
         <section className="px-5 pb-2 lg:px-8">
-          <Link to="/pricing" className="relative mx-auto flex min-h-[190px] max-w-[1440px] items-center justify-between gap-6 overflow-hidden rounded-3xl px-8 py-10 text-white">
+          <Link to="/pricing" className="relative mx-auto flex min-h-[150px] max-w-[1440px] items-center justify-between gap-6 overflow-hidden px-8 py-8 text-white">
             <img src={licenseSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/15" />
             <div className="relative">
@@ -396,23 +377,28 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
 
       {!hidden(home, 'feed') && (
         <section id="feed" className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-            <div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-baseline gap-3">
               <h2 className="font-display text-[32px] leading-none text-ink">Latest from the Library</h2>
-              <p className="mt-1 text-sm text-ink-soft">Fresh African imagery, added daily.</p>
+              <p className="text-sm text-ink-soft">Fresh African imagery, added daily.</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">Photos</span>
-              <Link to="/search" className="rounded-full border border-[#e6ddd4] px-3 py-1 text-xs font-semibold text-ink-soft hover:border-ink">Videos</Link>
-              <Link to="/search" className="rounded-full border border-[#e6ddd4] px-3 py-1 text-xs font-semibold text-ink-soft hover:border-ink">Illustrations</Link>
+              <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">All</span>
+              <Link to="/search" className="rounded-full bg-[#f3eee9] px-3 py-1 text-xs font-semibold text-ink">Photos</Link>
+              <Link to="/search" className="rounded-full bg-[#f3eee9] px-3 py-1 text-xs font-semibold text-ink">Videos</Link>
+              <Link to="/search" className="rounded-full bg-[#f3eee9] px-3 py-1 text-xs font-semibold text-ink">Illustrations</Link>
               <Link to="/search" className="ml-2 text-sm font-semibold text-[#ef5b24]">View more →</Link>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
-            {film.map((item) => (
-              <Link key={item.href + item.src + item.title} to={item.href} className="group block">
-                <img src={item.src} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
-                <p className="mt-1 truncate text-[11px] text-ink-soft">{item.title}</p>
+          <div className="grid grid-cols-5 gap-1 sm:grid-cols-10">
+            {(latest.length ? film : Array.from({ length: 10 }, (_, index) => ({
+              src: `/home/design/latest-${index + 1}.png`,
+              title: '',
+              subtitle: '',
+              href: '/search',
+            }))).slice(0, 10).map((item, index) => (
+              <Link key={item.src + index} to={item.href} className="block overflow-hidden rounded-[6px]">
+                <img src={item.src} alt="" className="aspect-[3/4] w-full object-cover" />
               </Link>
             ))}
           </div>
@@ -422,17 +408,17 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
   )
 }
 
-function CreatorChip({ name, role, src, href }: { name: string; role: string; src?: string | null; href: string }) {
+function CreatorChip({ name, country, flag, src, href }: { name: string; country: string; flag: string; src?: string | null; href: string }) {
   return (
-    <div className="w-[104px] shrink-0 text-center">
+    <div className="w-[108px] shrink-0 text-center">
       <Link to={href}>
         {src ? (
-          <img src={src} alt="" className="mx-auto h-[76px] w-[76px] rounded-full object-cover" />
+          <img src={src} alt="" className="mx-auto h-[72px] w-[72px] rounded-full object-cover" />
         ) : (
-          <span className="mx-auto flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#efe6dc] text-lg font-semibold">{name.slice(0, 1)}</span>
+          <span className="mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#efe6dc] text-lg font-semibold">{name.slice(0, 1)}</span>
         )}
         <p className="mt-2 truncate text-sm font-semibold text-ink">{name}</p>
-        <p className="truncate text-[11px] text-ink-soft">{role}</p>
+        <p className="truncate text-[11px] text-ink-soft">{flag} {country}</p>
       </Link>
       <Link to={href} className="mt-2 inline-flex rounded-full border border-[#ef5b24] px-3 py-1 text-[11px] font-semibold text-[#ef5b24]">Follow</Link>
     </div>
@@ -444,59 +430,62 @@ function Spotlight({ person, photo }: { person?: PhotographerDto; photo: string 
   const design = !person
   const name = person?.name ?? 'Kojo Mensah'
   const place = person?.location ?? 'Accra, Ghana'
-  const role = person?.creatorKind === 'photo_influencer' ? 'Photo Influencer · Open Creator' : 'Verified Creator'
+  const portrait = design ? '/home/design/creator-2.png' : (person?.avatarUrl || photo)
+  const scene = design ? '/home/design/spotlight-photo.png' : photo
   return (
-    <section className="mx-auto max-w-[1440px] px-5 py-12 lg:px-8">
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#ef5b24]">Contributor Spotlight</h2>
-        <Link to="/creators" className="text-sm font-semibold text-[#ef5b24]">View all contributors →</Link>
-      </div>
-      <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1fr_0.95fr]">
-        <div>
-          <h3 className="font-display text-4xl leading-[1.05] text-ink md:text-5xl">Real creators.<br />Global impact.</h3>
-          <p className="mt-4 text-sm leading-relaxed text-ink-soft">
-            {person?.bio || 'VueKumi empowers African photographers, filmmakers and visual storytellers to share the world with their voice.'}
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-ink">
-            <li className="flex items-center gap-2"><Check /> Earn from your work</li>
-            <li className="flex items-center gap-2"><Check /> Keep your creative rights</li>
-          </ul>
-          <Link to={person ? href : '/login?redirect=/contributor/upload&signup=photographer'} className="mt-5 inline-flex rounded-full bg-[#ef5b24] px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink">
-            {person ? 'View profile' : 'Join as a Contributor'}
-          </Link>
+    <section className="mx-auto max-w-[1440px] px-5 py-8 lg:px-8">
+      <div className="mb-4 flex items-baseline justify-between gap-4">
+        <div className="flex flex-wrap items-baseline gap-3">
+          <h2 className="font-display text-[32px] leading-none text-ink">Contributor Spotlight</h2>
+          <p className="text-sm text-ink-soft">Meet amazing African creators shaping global visuals.</p>
         </div>
-        <Link to={href} className="overflow-hidden rounded-[28px] bg-[#efe6dc]">
-          <img src={photo} alt="" className="aspect-[4/3] w-full object-cover object-[center_20%]" />
-        </Link>
-        <div className="rounded-[28px] border border-[#eadfd4] bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <img src={person?.avatarUrl || photo} alt="" className="h-14 w-14 rounded-full object-cover" />
-            <div>
-              <p className="flex items-center gap-1.5 text-lg font-semibold text-ink">
-                {name}
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#ef5b24] text-[9px] text-white">✓</span>
+        <Link to="/creators" className="shrink-0 text-sm font-semibold text-[#ef5b24]">View all contributors →</Link>
+      </div>
+      <div className="grid items-center gap-5 lg:grid-cols-[1.45fr_0.95fr_150px]">
+        <div className="relative min-h-[230px] overflow-hidden bg-[#1a120c] text-white">
+          <img src={scene} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_30%]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/25" />
+          <div className="relative flex h-full min-h-[230px] items-center justify-between gap-4 p-6">
+            <div className="max-w-sm">
+              <h3 className="font-display text-4xl leading-[1.05]">Real creators.<br />Global impact.</h3>
+              <p className="mt-3 text-sm leading-relaxed text-white/85">
+                {person?.bio || 'VueKumi empowers African photographers, filmmakers and visual storytellers to share the world with their voice.'}
               </p>
-              <p className="text-sm text-ink-soft">{role} · {place}</p>
+              <Link to={person ? href : '/login?redirect=/contributor/upload&signup=photographer'} className="mt-4 inline-flex rounded-full bg-[#ef5b24] px-4 py-2 text-sm font-semibold text-white">
+                Join as a Contributor →
+              </Link>
+            </div>
+            <ul className="hidden space-y-2 text-sm sm:block">
+              <li className="flex items-center gap-2"><Check /> Earn from your work</li>
+              <li className="flex items-center gap-2"><Check /> Global exposure</li>
+              <li className="flex items-center gap-2"><Check /> Keep your creative rights</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center gap-3">
+            <img src={portrait} alt="" className="h-16 w-16 rounded-full object-cover" />
+            <div>
+              <span className="inline-flex rounded-full bg-[#ef5b24] px-2 py-0.5 text-[10px] font-semibold text-white">Verified Creator</span>
+              <p className="mt-1 text-lg font-semibold text-ink">{name} <span aria-hidden="true">🇬🇭</span></p>
+              <p className="text-sm text-ink-soft">{place}</p>
             </div>
           </div>
-          <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <Stat label="Photos" value={design ? '320' : fmt(person?.photosCount ?? 0)} />
+          <dl className="mt-4 grid grid-cols-3 text-center">
+            <Stat label="Assets" value={design ? '320' : fmt(person?.photosCount ?? 0)} />
             <Stat label="Downloads" value={design ? '126K' : fmt(person?.downloads ?? 0)} />
-            <Stat label={design ? 'Rating' : 'Followers'} value={design ? '4.9' : fmt(person?.followers ?? 0)} />
+            <Stat label="Rating" value={design ? '4.9' : fmt(person?.followers ?? 0)} />
           </dl>
           <div className="mt-4 flex flex-wrap gap-2">
-            {['People', 'Nature', 'Travel'].map((label) => (
-              <span key={label} className="rounded-full bg-[#f6f1eb] px-3 py-1 text-[11px] font-medium text-ink">{label}</span>
+            {['People', 'Nature', 'Culture', 'Travel'].map((label) => (
+              <span key={label} className="rounded-full bg-[#f3eee9] px-3 py-1 text-[11px] font-medium text-ink">{label}</span>
             ))}
           </div>
-          <Link to={href} className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-[#eadfd4] p-3">
-            <span>
-              <span className="block text-xs font-semibold text-ink">Scan to view my VueKumi Creator ID</span>
-              <span className="mt-1 block text-[11px] text-ink-soft">{person ? `@${person.handle}` : 'Creator profile'}</span>
-            </span>
-            <QrMark />
-          </Link>
         </div>
+        <Link to={href} className="flex flex-col items-center text-center">
+          <QrMark />
+          <span className="mt-2 max-w-[9rem] text-[11px] leading-snug text-ink-soft">Scan to view my VueKumi Creator ID</span>
+        </Link>
       </div>
     </section>
   )
@@ -510,20 +499,21 @@ function Check() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-[#f7f3ee] px-2 py-3">
-      <dd className="text-sm font-semibold text-ink">{value}</dd>
+    <div className="px-1">
+      <dd className="text-lg font-semibold text-ink">{value}</dd>
       <dt className="text-[11px] text-ink-soft">{label}</dt>
     </div>
   )
 }
 
 function QrMark() {
-  const cells = [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0]
+  const cells = [1,1,1,0,1,0,1,1,1, 1,0,1,0,0,1,0,1,0,1, 1,1,1,0,1,0,1,1,1, 0,0,0,0,1,0,0,0,0, 1,0,1,1,0,1,1,0,1, 0,1,0,0,1,0,0,1,0, 1,1,1,0,1,0,1,1,1, 1,0,1,0,0,1,0,1,0,1, 1,1,1,0,1,0,1,1,1]
   return (
-    <span className="grid h-14 w-14 shrink-0 grid-cols-5 gap-px rounded bg-white p-1 ring-1 ring-[#eadfd4]" aria-hidden="true">
+    <span className="relative grid h-[92px] w-[92px] shrink-0 grid-cols-9 gap-px border border-[#eadfd4] bg-white p-1.5" aria-hidden="true">
       {cells.map((on, index) => (
-        <span key={index} className={on ? 'bg-[#ef5b24]' : 'bg-transparent'} />
+        <span key={index} className={on ? 'bg-ink' : 'bg-transparent'} />
       ))}
+      <span className="absolute left-1/2 top-1/2 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-white text-sm font-bold text-[#ef5b24]">V</span>
     </span>
   )
 }

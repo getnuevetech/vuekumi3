@@ -454,9 +454,16 @@ export function PublicFooter() {
           </form>
         </div>
       </div>
-      <svg viewBox="0 0 200 230" className="pointer-events-none absolute bottom-14 right-6 h-28 w-24 text-[#3a2e24]" aria-hidden="true">
-        <path fill="currentColor" d="M92 8c16 2 28 16 30 32 12 4 24 16 22 32 10 6 16 20 10 34-4 16-16 22-12 38 4 14 10 22 4 36-6 16-20 24-24 40-6 14-10 22-24 24-12 2-18-10-28-8-12 8-28 4-34-10-6-12-2-26 8-34-8-10-14-24-8-38 6-16 4-28 14-40-4-14 2-28 14-38 8-16 6-30 16-42 8-8 20-12 16-26z" />
-        <path fill="currentColor" d="M158 150c6 2 10 10 8 18-2 8-8 12-8 18 0 4 6 8 4 12-4 6-14 4-16-2-2-6 2-10 0-16-2-8 2-16 6-20 2-4 4-8 6-10z" />
+      <svg viewBox="0 0 180 240" className="pointer-events-none absolute bottom-4 right-2 h-40 w-32" aria-hidden="true">
+        <path
+          fill="none"
+          stroke="#ef5b24"
+          strokeWidth="3"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          d="M70 22 L96 16 L120 26 L134 40 L140 58 L152 74 L162 96 L150 112 L142 132 L134 158 L124 186 L112 214 L100 206 L90 184 L80 160 L74 136 L60 118 L46 102 L38 84 L48 62 L58 40 Z"
+        />
+        <path fill="none" stroke="#ef5b24" strokeWidth="3" strokeLinejoin="round" d="M150 168 L160 174 L162 196 L150 206 L142 190 Z" />
       </svg>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-[1240px] flex-col items-start justify-between gap-3 px-6 py-4 text-xs text-[#8a8078] md:flex-row md:items-center md:px-8">
