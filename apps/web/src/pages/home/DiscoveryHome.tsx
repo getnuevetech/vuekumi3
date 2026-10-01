@@ -62,9 +62,9 @@ function hidden(home: HomePageDto | null, key: string) {
   return Boolean(home?.layout.hidden.includes(key))
 }
 
-function SectionHead({ title, text, to, label }: { title: string; text: string; to: string; label: string }) {
+function SectionHead({ title, text, to, label, className = 'mb-4' }: { title: string; text: string; to: string; label: string; className?: string }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
+    <div className={`flex items-end justify-between gap-4 ${className}`}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="font-display text-[32px] leading-none text-ink">{title}</h2>
         <p className="text-sm text-ink-soft">{text}</p>
@@ -209,15 +209,38 @@ function GeoPattern({ id }: { id: string }) {
   )
 }
 
+const CREATOR_ISO: Record<string, string> = {
+  Nigeria: 'ng',
+  Ghana: 'gh',
+  'South Africa': 'za',
+  Senegal: 'sn',
+  Ethiopia: 'et',
+  Kenya: 'ke',
+  Egypt: 'eg',
+  Tanzania: 'tz',
+  Morocco: 'ma',
+  Namibia: 'na',
+  Zimbabwe: 'zw',
+  Botswana: 'bw',
+  Uganda: 'ug',
+  Rwanda: 'rw',
+}
+
+function countryFromLocation(location?: string | null) {
+  const value = location?.trim() || 'Africa'
+  const known = Object.keys(CREATOR_ISO).sort((a, b) => b.length - a.length)
+  return known.find((country) => value.toLowerCase().includes(country.toLowerCase())) ?? value
+}
+
 const DESIGN_CREATORS = [
-  { name: 'Amina Bello', country: 'Nigeria', flag: '🇳🇬', src: '/home/design/creator-1.png', href: '/creators' },
-  { name: 'Kojo Mensah', country: 'Ghana', flag: '🇬🇭', src: '/home/design/creator-2.png', href: '/creators' },
-  { name: 'Zuri Ndlovu', country: 'South Africa', flag: '🇿🇦', src: '/home/design/creator-3.png', href: '/creators' },
-  { name: 'Fatima Diallo', country: 'Senegal', flag: '🇸🇳', src: '/home/design/creator-4.png', href: '/models' },
-  { name: 'Tunde Okafor', country: 'Nigeria', flag: '🇳🇬', src: '/home/design/creator-5.png', href: '/creators' },
-  { name: 'Lila Tesfaye', country: 'Ethiopia', flag: '🇪🇹', src: '/home/design/creator-6.png', href: '/creators' },
-  { name: 'Moses Kiplagat', country: 'Kenya', flag: '🇰🇪', src: '/home/design/creator-7.png', href: '/creators' },
-  { name: 'Nadia Ali', country: 'Egypt', flag: '🇪🇬', src: '/home/design/creator-8.png', href: '/models' },
+  { name: 'Amina Bello', country: 'Nigeria', src: '/home/design/creator-1.png', href: '/creators' },
+  { name: 'Kojo Mensah', country: 'Ghana', src: '/home/design/creator-2.png', href: '/creators' },
+  { name: 'Zuri Ndlovu', country: 'South Africa', src: '/home/design/creator-3.png', href: '/creators' },
+  { name: 'Fatima Diallo', country: 'Senegal', src: '/home/design/creator-4.png', href: '/models' },
+  { name: 'Tunde Okafor', country: 'Nigeria', src: '/home/design/creator-5.png', href: '/creators' },
+  { name: 'Lila Tesfaye', country: 'Ethiopia', src: '/home/design/creator-6.png', href: '/creators' },
+  { name: 'Moses Kiplagat', country: 'Kenya', src: '/home/design/creator-7.png', href: '/creators' },
+  { name: 'Nadia Ali', country: 'Egypt', src: '/home/design/creator-8.png', href: '/models' },
 ]
 
 export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
@@ -466,19 +489,14 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {showSpotlight && <Spotlight person={spotlight} photo={spotlightPhoto} />}
 
       {!hidden(home, 'contributors') && (
-        <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
-          <SectionHead title="Top African Creators" text="Talented photographers, filmmakers and visual artists from across Africa." to="/creators" label="View all creators" />
-          <ScrollRow name="creators">
-            {(people.length > 0 ? people.slice(0, 8).map((person) => ({
-              name: person.name,
-              country: person.location || 'Africa',
-              flag: '',
-              src: person.avatarUrl,
-              href: `/p/${person.handle}`,
-            })) : DESIGN_CREATORS).map((person) => (
-              <CreatorChip key={person.name} name={person.name} country={person.country} flag={person.flag} src={person.src} href={person.href} />
-            ))}
-          </ScrollRow>
+        <section className="mx-auto max-w-[1440px] px-3 py-6 lg:px-4">
+          <SectionHead className="mb-3" title="Top African Creators" text="Talented photographers, filmmakers and visual artists from across Africa." to="/creators" label="View all creators" />
+          <CreatorRow people={people.length > 0 ? people.slice(0, 12).map((person) => ({
+            name: person.name,
+            country: countryFromLocation(person.location),
+            src: person.avatarUrl,
+            href: `/p/${person.handle}`,
+          })) : DESIGN_CREATORS} />
         </section>
       )}
 
@@ -557,19 +575,60 @@ function CollectionCard({ shot }: { shot: Shot }) {
   )
 }
 
-function CreatorChip({ name, country, flag, src, href }: { name: string; country: string; flag: string; src?: string | null; href: string }) {
+function Chevron({ dir }: { dir: 'left' | 'right' }) {
   return (
-    <div className="w-[112px] shrink-0 text-center">
-      <Link to={href}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      {dir === 'left' ? <path d="M14.5 6.5 9 12l5.5 5.5" /> : <path d="M9.5 6.5 15 12l-5.5 5.5" />}
+    </svg>
+  )
+}
+
+function CreatorFlag({ country }: { country: string }) {
+  const code = CREATOR_ISO[country]
+  if (!code) return null
+  return <img src={`https://flagcdn.com/w40/${code}.png`} alt="" className="h-2.5 w-[14px] shrink-0 rounded-[1px] object-cover" />
+}
+
+function CreatorRow({ people }: { people: { name: string; country: string; src?: string | null; href: string }[] }) {
+  const [node, setNode] = useState<HTMLDivElement | null>(null)
+  useBidirectionalWheel(node)
+  return (
+    <div className="flex items-center gap-1.5">
+      <button type="button" aria-label="Scroll creators left" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4ddd6] bg-white text-[#3f3a36]" onClick={() => node?.scrollBy({ left: -340, behavior: 'smooth' })}>
+        <Chevron dir="left" />
+      </button>
+      <div ref={setNode} className="no-scrollbar flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
+        {people.map((person) => (
+          <CreatorChip key={person.name} name={person.name} country={person.country} src={person.src} href={person.href} />
+        ))}
+      </div>
+      <button type="button" aria-label="Scroll creators right" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4ddd6] bg-white text-[#3f3a36]" onClick={() => node?.scrollBy({ left: 340, behavior: 'smooth' })}>
+        <Chevron dir="right" />
+      </button>
+    </div>
+  )
+}
+
+function CreatorChip({ name, country, src, href }: { name: string; country: string; src?: string | null; href: string }) {
+  return (
+    <div className="flex flex-1 items-center gap-1.5">
+      <Link to={href} className="shrink-0">
         {src ? (
-          <img src={src} alt="" className="mx-auto h-[76px] w-[76px] rounded-full object-cover" />
+          <span className="block h-[58px] w-[58px] overflow-hidden rounded-full ring-1 ring-[#ece6e0]">
+            <img src={src} alt="" className="h-full w-full scale-110 object-cover" />
+          </span>
         ) : (
-          <span className="mx-auto flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#efe6dc] text-lg font-semibold">{name.slice(0, 1)}</span>
+          <span className="flex h-[58px] w-[58px] items-center justify-center rounded-full bg-[#efe6dc] text-lg font-semibold ring-1 ring-[#ece6e0]">{name.slice(0, 1)}</span>
         )}
-        <p className="mt-2 truncate text-[13px] font-semibold text-ink">{name}</p>
-        <p className="truncate text-[11px] text-ink-soft">{flag ? `${flag} ` : ''}{country}</p>
       </Link>
-      <Link to={href} className="mt-1.5 inline-flex rounded-full border border-[#d5cdc4] bg-white px-3.5 py-1 text-[11px] font-medium text-ink hover:border-ink">Follow</Link>
+      <div>
+        <Link to={href} className="block whitespace-nowrap text-[13px] font-semibold leading-tight text-ink">{name}</Link>
+        <p className="mt-1 flex items-center gap-1 text-[11px] leading-none text-[#8a837c]">
+          <CreatorFlag country={country} />
+          <span className="truncate">{country}</span>
+        </p>
+        <Link to={href} className="mt-1.5 inline-flex rounded-full border border-[#e4ddd6] bg-white px-3 py-1 text-[11px] font-medium leading-none text-[#3f3a36] hover:border-[#cfc6bd]">Follow</Link>
+      </div>
     </div>
   )
 }
