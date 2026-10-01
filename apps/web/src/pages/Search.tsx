@@ -187,7 +187,7 @@ export default function Search() {
               )}
               {libraryTier === 'OPEN' && (
                 <p className="mt-2 text-[11px] text-ink-soft">
-                  Free Library is the public name for Open. Photo Influencers upload here only.
+                  Free Library (Open) — zero-price downloads when rights allow. Photo Influencers upload here only.
                 </p>
               )}
             </div>

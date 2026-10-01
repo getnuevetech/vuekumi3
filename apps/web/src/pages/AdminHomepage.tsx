@@ -577,7 +577,7 @@ function SectionArrangement({ page, onSaved }: { page: HomeFeaturedAdminDto | nu
 
   return (
     <section id="d01-visibility" className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
-      <h2 className="font-display text-3xl">Show or hide D01 modules</h2>
+      <h2 className="font-display text-3xl">Section arrangement</h2>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
         Hide a module to keep its pins and leave it off the public landing page. The public page keeps the D01 order, so moving a row does not rearrange the homepage. Photo Influencers stay a separate account from Photographers. The header, footer, and back-to-top stay in place.
       </p>

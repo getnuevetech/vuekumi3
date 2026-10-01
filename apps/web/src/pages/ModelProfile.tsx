@@ -229,7 +229,7 @@ export default function ModelProfile() {
             <div className="rounded-3xl border border-sand bg-white p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-terra">Public profile</p>
               <p className="font-display mt-2 text-3xl">{profile.name}</p>
-              <p className="mt-1 text-sm text-ink-soft">@{profile.handle} · {profile.location ?? 'Africa'}</p>
+              <p className="mt-1 text-sm text-ink-soft">{profile.location ?? 'Africa'}</p>
               <p className="mt-3 text-sm text-ink-soft">Models do not earn from licences. Copyright stays with the photographer.</p>
             </div>
             <div className="rounded-3xl border border-sand bg-white p-6">
