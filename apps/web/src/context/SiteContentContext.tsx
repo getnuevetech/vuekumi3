@@ -1,6 +1,6 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { DEFAULT_SITE_CONTENT, STATIC_PANELS, type SiteContent, type SiteFacts, type SitePanelPublic, type StaticPanelKey } from '@vuekumi/shared'
+import { DEFAULT_SITE_CONTENT, STATIC_PANELS, siteFontFamily, type SiteContent, type SiteFacts, type SitePanelPublic, type StaticPanelKey } from '@vuekumi/shared'
 import { api } from '../api/client'
 import { publicQueryKeys } from '../lib/query-keys'
 
@@ -69,6 +69,12 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
       ready: query.isFetched || query.isError,
     }
   }, [query.data, query.isFetched, query.isError])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--font-display', siteFontFamily(state.content.typography.heading))
+    root.style.setProperty('--font-body', siteFontFamily(state.content.typography.body))
+  }, [state.content.typography.heading, state.content.typography.body])
 
   return <SiteContentContext.Provider value={state}>{children}</SiteContentContext.Provider>
 }

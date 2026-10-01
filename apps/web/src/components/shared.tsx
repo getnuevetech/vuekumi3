@@ -136,8 +136,8 @@ function CurrencySelect({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
 
 export function LogoMark({ dark = false, accent = '#bc773f', locked = false, tagline = false }: { dark?: boolean; accent?: string; condensed?: boolean; locked?: boolean; tagline?: boolean }) {
   const { content, logoUrl } = useSiteContent()
-  const name = content.brand.name
-  const mark = content.brand.accent
+  const name = content.brand.name.toLocaleUpperCase()
+  const mark = content.brand.accent.toLocaleUpperCase()
   const highlight = mark && name.endsWith(mark) ? name.slice(0, name.length - mark.length) : name
   const tone = locked ? 'text-[#faf6f3]' : dark ? 'text-paper' : 'text-ink'
   return (
@@ -153,7 +153,7 @@ export function LogoMark({ dark = false, accent = '#bc773f', locked = false, tag
         </svg>
       )}
       <span className="flex flex-col leading-none">
-        <span className="font-sans text-[22px] font-semibold tracking-tight">
+        <span className="text-[22px] font-semibold uppercase tracking-[0.08em]">
           {highlight}
           {mark && name.endsWith(mark) ? <span style={{ color: accent }}>{mark}</span> : null}
         </span>

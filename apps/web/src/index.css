@@ -24,6 +24,8 @@
     --input: 30 25% 85%;
     --ring: 26 49% 49%;
     --radius: 0.5rem;
+    --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+    --font-display: 'Fraunces', Georgia, serif;
   }
 
   html {
@@ -33,7 +35,7 @@
   body {
     background-color: #faf6f3;
     color: #3c3835;
-    font-family: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
+    font-family: var(--font-body), 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
@@ -46,10 +48,10 @@
 
 @layer utilities {
   .font-serif-display {
-    font-family: 'Oswald', 'Arial Narrow', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 560;
+    letter-spacing: -0.02em;
+    text-transform: none;
   }
   .font-mono-tech {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -61,7 +63,7 @@
     font-family: 'Ms Madi', cursive;
   }
   .font-display {
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: var(--font-display), Georgia, serif;
     font-weight: 560;
     letter-spacing: -0.03em;
     text-transform: none;
@@ -249,12 +251,11 @@
   }
 }
 
-/* One type system with the homepage. Display titles stay Oswald even when a utility asks for a lighter serif. */
-.font-serif-display {
-  font-family: 'Oswald', 'Arial Narrow', sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+/* Titles follow the landing template: the admin-chosen display face, not a condensed sans. */
+.font-serif-display,
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  text-transform: none;
 }
 
 /* Default and dark: noir ground, paper type, on the homepage and every other page. */
@@ -281,7 +282,7 @@ html:not([data-theme='light']) {
 html:not([data-theme='light']) body {
   background-color: #0b0a09;
   color: #f3ece3;
-  font-family: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-body), 'Segoe UI', sans-serif;
 }
 
 html:not([data-theme='light']) .bg-paper { background-color: #141210; }
@@ -325,7 +326,7 @@ html[data-theme='light'] {
 html[data-theme='light'] body {
   background-color: #f6f1ea;
   color: #1a120c;
-  font-family: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-body), 'Segoe UI', sans-serif;
 }
 
 html[data-theme='light'] .bg-noir { background-color: #f6f1ea; }
@@ -520,7 +521,7 @@ html body.portal-theme {
   --ring: 215 62% 28%;
   background-color: #ffffff;
   color: #12243f;
-  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  font-family: var(--font-body), 'Segoe UI', sans-serif;
   font-size: 16px;
   line-height: 1.5;
 }
@@ -531,9 +532,10 @@ html body.portal-theme ::selection {
 }
 
 html body.portal-theme .font-serif-display,
+html body.portal-theme .font-display,
 html body.portal-theme .font-mono-tech,
 html body.portal-theme .font-condensed {
-  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  font-family: var(--font-body), 'Segoe UI', sans-serif;
 }
 
 html body.portal-theme .font-serif-display {

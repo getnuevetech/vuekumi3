@@ -136,16 +136,12 @@ function useBidirectionalWheel(node: HTMLDivElement | null) {
   }, [node])
 }
 
-function ScrollRow({ name, children }: { name: string; children: ReactNode }) {
+function ScrollStrip({ children, className = '' }: { children: ReactNode; className?: string }) {
   const [node, setNode] = useState<HTMLDivElement | null>(null)
   useBidirectionalWheel(node)
   return (
-    <div className="flex items-center gap-2">
-      <button type="button" aria-label={`Scroll ${name} left`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] bg-white text-lg leading-none text-ink" onClick={() => node?.scrollBy({ left: -380, behavior: 'smooth' })}>‹</button>
-      <div ref={setNode} className="no-scrollbar flex min-w-0 flex-1 cursor-grab gap-3 overflow-x-auto overscroll-x-contain pb-1 active:cursor-grabbing">
-        {children}
-      </div>
-      <button type="button" aria-label={`Scroll ${name} right`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] bg-white text-lg leading-none text-ink" onClick={() => node?.scrollBy({ left: 380, behavior: 'smooth' })}>›</button>
+    <div ref={setNode} className={`no-scrollbar flex cursor-grab gap-3 overflow-x-auto overscroll-x-contain pb-1 active:cursor-grabbing ${className}`}>
+      {children}
     </div>
   )
 }
@@ -354,11 +350,18 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
     { src: art.food, title: 'Shared plate', subtitle: '', href: categoryPath('Food & Craft'), country: 'Kenya' },
     { src: art.business, title: 'At work', subtitle: '', href: '/search?q=business', country: 'Nigeria' },
     { src: art.safari, title: 'Safari evening', subtitle: '', href: categoryPath('Wildlife'), country: 'Tanzania' },
+    { src: art.portrait, title: 'Studio light', subtitle: '', href: categoryPath('People'), country: 'Nigeria' },
+    { src: art.city, title: 'Skyline', subtitle: '', href: categoryPath('Urban'), country: 'South Africa' },
+    { src: art.family, title: 'Afternoon', subtitle: '', href: categoryPath('People'), country: 'Senegal' },
+    { src: art.desert, title: 'Dunes', subtitle: '', href: categoryPath('Landscape'), country: 'Namibia' },
+    { src: art.camels, title: 'Caravan', subtitle: '', href: categoryPath('Landscape'), country: 'Morocco' },
+    { src: art.coast, title: 'Open coast', subtitle: '', href: categoryPath('Coast'), country: 'South Africa' },
+    { src: art.fashion, title: 'Textile', subtitle: '', href: categoryPath('Fashion'), country: 'Ghana' },
   ]
   const film: Shot[] = [
     ...latest.map((photo) => shotFrom(photo, { src: photo.src, title: photo.title, subtitle: photo.category, href: `/photo/${photo.id}`, country: photo.country || 'Nigeria' })),
     ...latestDemo,
-  ].slice(0, 16)
+  ].slice(0, 24)
   const licenseSrc = pricing[0]?.src ?? art.balloons
   const continentSrc = featured?.statsBackground?.src ?? art.sunset
   const spotlightPhoto = spotlight
@@ -427,11 +430,11 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {!hidden(home, 'featured') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Featured Photos" text="Handpicked African stories from across the continent." to="/search" label="View all featured" />
-          <ScrollRow name="featured photos">
+          <ScrollStrip>
             {featuredShots.map((card) => (
               <PortraitCard key={card.title + card.src} shot={card} />
             ))}
-          </ScrollRow>
+          </ScrollStrip>
         </section>
       )}
 
@@ -458,11 +461,11 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {!hidden(home, 'editorial') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Featured Collections" text="Curated stories for every project." to="/search" label="View all collections" />
-          <ScrollRow name="featured collections">
+          <ScrollStrip>
             {collections.map((card) => (
               <CollectionCard key={card.title + card.src} shot={card} />
             ))}
-          </ScrollRow>
+          </ScrollStrip>
         </section>
       )}
 
@@ -529,15 +532,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
               <Link to="/search" className="ml-2 text-sm font-semibold text-[#ef5b24]">View more →</Link>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-1 sm:grid-cols-8">
-            {film.map((item, index) => (
-              <Link key={item.src + index} to={item.href} className="group relative block overflow-hidden rounded-[6px]">
-                <img src={item.src} alt="" className="aspect-[3/4] w-full object-cover" />
-                <Marks country={item.country} photo={item.photo} />
-                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-2 pt-8 text-[11px] font-semibold leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">{item.title}</span>
-              </Link>
-            ))}
-          </div>
+          <LatestStrip items={film} />
         </section>
       )}
     </div>
@@ -546,7 +541,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
 
 function PortraitCard({ shot }: { shot: Shot }) {
   return (
-    <Link to={shot.href} className="group relative block h-[340px] w-[220px] shrink-0 overflow-hidden rounded-[6px] bg-[#1c1612]">
+    <Link to={shot.href} className="group relative block h-[476px] w-[264px] shrink-0 overflow-hidden rounded-[6px] bg-[#1c1612]">
       <img src={shot.src} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
       <Marks country={shot.country} photo={shot.photo} />
@@ -575,11 +570,22 @@ function CollectionCard({ shot }: { shot: Shot }) {
   )
 }
 
-function Chevron({ dir }: { dir: 'left' | 'right' }) {
+function LatestStrip({ items }: { items: Shot[] }) {
+  const [node, setNode] = useState<HTMLDivElement | null>(null)
+  useBidirectionalWheel(node)
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      {dir === 'left' ? <path d="M14.5 6.5 9 12l5.5 5.5" /> : <path d="M9.5 6.5 15 12l-5.5 5.5" />}
-    </svg>
+    <div
+      ref={setNode}
+      className="no-scrollbar grid cursor-grab auto-cols-[336px] grid-flow-col grid-rows-4 gap-2 overflow-x-auto overscroll-x-contain active:cursor-grabbing"
+    >
+      {items.map((item, index) => (
+        <Link key={item.src + index} to={item.href} className="group relative block h-[450px] overflow-hidden rounded-[6px]">
+          <img src={item.src} alt="" className="h-full w-full object-cover" />
+          <Marks country={item.country} photo={item.photo} />
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-2 pt-8 text-[11px] font-semibold leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">{item.title}</span>
+        </Link>
+      ))}
+    </div>
   )
 }
 
@@ -593,18 +599,10 @@ function CreatorRow({ people }: { people: { name: string; country: string; src?:
   const [node, setNode] = useState<HTMLDivElement | null>(null)
   useBidirectionalWheel(node)
   return (
-    <div className="flex items-center gap-1.5">
-      <button type="button" aria-label="Scroll creators left" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4ddd6] bg-white text-[#3f3a36]" onClick={() => node?.scrollBy({ left: -340, behavior: 'smooth' })}>
-        <Chevron dir="left" />
-      </button>
-      <div ref={setNode} className="no-scrollbar flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
-        {people.map((person) => (
-          <CreatorChip key={person.name} name={person.name} country={person.country} src={person.src} href={person.href} />
-        ))}
-      </div>
-      <button type="button" aria-label="Scroll creators right" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4ddd6] bg-white text-[#3f3a36]" onClick={() => node?.scrollBy({ left: 340, behavior: 'smooth' })}>
-        <Chevron dir="right" />
-      </button>
+    <div ref={setNode} className="no-scrollbar flex cursor-grab items-center gap-3 overflow-x-auto overscroll-x-contain active:cursor-grabbing">
+      {people.map((person) => (
+        <CreatorChip key={person.name} name={person.name} country={person.country} src={person.src} href={person.href} />
+      ))}
     </div>
   )
 }

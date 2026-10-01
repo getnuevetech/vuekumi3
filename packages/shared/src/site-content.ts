@@ -77,6 +77,43 @@ export function sortMenuLinks<T extends { sort?: number }>(links: T[]): Array<T 
     .map(({ link, sort }) => ({ ...link, sort }))
 }
 
+/** Faces close to the landing template: a soft serif for titles, a plain sans for text. */
+export const SITE_FONTS = [
+  { id: 'fraunces', label: 'Fraunces', family: "'Fraunces', Georgia, serif" },
+  { id: 'newsreader', label: 'Newsreader', family: "'Newsreader', Georgia, serif" },
+  { id: 'libre-baskerville', label: 'Libre Baskerville', family: "'Libre Baskerville', Georgia, serif" },
+  { id: 'source-serif', label: 'Source Serif 4', family: "'Source Serif 4', Georgia, serif" },
+  { id: 'playfair', label: 'Playfair Display', family: "'Playfair Display', Georgia, serif" },
+  { id: 'source-sans', label: 'Source Sans 3', family: "'Source Sans 3', 'Segoe UI', sans-serif" },
+  { id: 'dm-sans', label: 'DM Sans', family: "'DM Sans', 'Segoe UI', sans-serif" },
+  { id: 'nunito-sans', label: 'Nunito Sans', family: "'Nunito Sans', 'Segoe UI', sans-serif" },
+  { id: 'outfit', label: 'Outfit', family: "'Outfit', 'Segoe UI', sans-serif" },
+  { id: 'space-grotesk', label: 'Space Grotesk', family: "'Space Grotesk', 'Segoe UI', sans-serif" },
+] as const
+export const SITE_FONT_IDS = [
+  'fraunces',
+  'newsreader',
+  'libre-baskerville',
+  'source-serif',
+  'playfair',
+  'source-sans',
+  'dm-sans',
+  'nunito-sans',
+  'outfit',
+  'space-grotesk',
+] as const
+export type SiteFontId = (typeof SITE_FONT_IDS)[number]
+
+export function siteFontFamily(id: string): string {
+  return SITE_FONTS.find((font) => font.id === id)?.family ?? "'Fraunces', Georgia, serif"
+}
+
+export const siteTypographySchema = z.object({
+  heading: z.enum(SITE_FONT_IDS),
+  body: z.enum(SITE_FONT_IDS),
+})
+export type SiteTypography = z.infer<typeof siteTypographySchema>
+
 export const MENU_FONTS = ['condensed', 'serif', 'mono'] as const
 export type MenuFont = (typeof MENU_FONTS)[number]
 
@@ -102,6 +139,7 @@ export const siteContentSchema = z.object({
   menu: z.array(siteMenuLinkSchema).min(1).max(24),
   accountMenu: z.array(siteMenuLinkSchema).min(1).max(16),
   menuStyle: siteMenuStyleSchema,
+  typography: siteTypographySchema,
   actions: z.object({
     login: line(40),
     logout: line(40),
@@ -276,6 +314,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     { label: 'Log out', to: '#logout', audience: 'signed_in', sort: 7 },
   ],
   menuStyle: { font: 'condensed', sizePx: 10 },
+  typography: { heading: 'fraunces', body: 'source-sans' },
   actions: { login: 'Log in', logout: 'Log out', sell: 'Sell your photos' },
   footer: {
     blurb: "The stock image platform for authentic African photography. Free and premium images, licensed directly from the continent's photographers.",

@@ -17,6 +17,9 @@ test('missing site content falls back to the built-in homepage words', () => {
   assert.equal(content.menu.some((link) => link.label === 'Free Library' && link.to.includes('libraryTier=OPEN')), true)
   assert.equal(content.menuStyle.font, 'condensed')
   assert.equal(content.menuStyle.sizePx, 10)
+  assert.equal(content.typography.heading, 'fraunces')
+  assert.equal(content.typography.body, 'source-sans')
+  assert.equal(mergeSiteContent({ brand: { name: 'Vuekumi' } }).typography.body, 'source-sans')
   assert.equal(content.menu[0]?.sort, 1)
   assert.equal(content.accountMenu.some((link) => link.to === '#logout' && link.label === 'Log out'), true)
   assert.deepEqual(mergeSiteContent({

@@ -8,6 +8,7 @@ import {
   MENU_FONTS,
   PAGE_PANEL_SLIDE_LIMIT,
   PHOTO_CATEGORIES,
+  SITE_FONTS,
   SITE_MENU_AUDIENCES,
   STATIC_PANELS,
   sortMenuLinks,
@@ -651,7 +652,36 @@ export default function AdminSite({ menuOnly = false }: { menuOnly?: boolean }) 
           <TextField title="Accent letters" value={content.brand.accent} onChange={(accent) => set({ ...content, brand: { ...content.brand, accent } })} />
           <TextField title="Logo image URL or photo id" value={content.brand.logoRef ?? ''} onChange={(logoRef) => set({ ...content, brand: { ...content.brand, logoRef: logoRef.trim() || null } })} />
         </div>
-        <p className="mt-2 text-sm text-ink-soft">Leave the image blank to keep the aperture mark. A photo id must be a live photograph.</p>
+        <p className="mt-2 text-sm text-ink-soft">Leave the image blank to keep the aperture mark. A photo id must be a live photograph. The wordmark is shown in capitals.</p>
+      </section>
+
+      <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
+        <h2 className="font-serif-display text-2xl font-light">Fonts</h2>
+        <p className="mt-1 max-w-2xl text-sm text-ink-soft">Headings start as Fraunces and body text as Source Sans 3, the pair closest to the landing template. A saved choice applies across the public site and the portals.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <label className="block">
+            <span className={label}>Heading font</span>
+            <select
+              aria-label="Heading font"
+              value={content.typography.heading}
+              onChange={(e) => set({ ...content, typography: { ...content.typography, heading: e.target.value as SiteContent['typography']['heading'] } })}
+              className={field}
+            >
+              {SITE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className={label}>Body font</span>
+            <select
+              aria-label="Body font"
+              value={content.typography.body}
+              onChange={(e) => set({ ...content, typography: { ...content.typography, body: e.target.value as SiteContent['typography']['body'] } })}
+              className={field}
+            >
+              {SITE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
+            </select>
+          </label>
+        </div>
       </section>
 
       <PageImagesEditor content={content} setContent={set} previews={previews} setPreviews={setPreviews} facts={facts} setFacts={setFacts} />
