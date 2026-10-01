@@ -173,7 +173,7 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
     pins,
     liveIds,
     holds: {
-      hero: uploads.hero.map(Boolean),
+      hero: [true, true, true],
       editorial: uploads.editorial.map(Boolean),
       pricing: uploads.pricing.map(Boolean),
       stats_background: uploads.stats_background.map(Boolean),
@@ -212,6 +212,22 @@ export async function loadHomeFeaturedAdmin(): Promise<HomeFeaturedAdminDto> {
           source: 'upload',
           eligible: true,
           ineligibleReason: null,
+        })
+        continue
+      }
+      // Hero frames stay on their positions. Empty means the public page keeps the built-in design.
+      if (slot === 'hero') {
+        const pinnedId = pins.hero[i] ?? null
+        const photo = pinnedId ? lookup.get(pinnedId) : undefined
+        const ineligibleReason = pinnedId ? homeFeaturedBlocked(photo ?? null) : null
+        positions.push({
+          position: i,
+          photoId: pinnedId,
+          photo: photo ? serializeCatalogPhoto(photo) : null,
+          imageSrc: null,
+          source: pinnedId ? 'pinned' : 'auto',
+          eligible: !ineligibleReason,
+          ineligibleReason,
         })
         continue
       }

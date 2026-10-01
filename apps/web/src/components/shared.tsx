@@ -542,14 +542,14 @@ export function PhotoCard({
           alt={photo.title}
           className="min-h-48 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-end p-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end p-2">
           <PhotoHoverActions
             inline
             photo={{ id: photo.id, src: photo.src, title: photo.title, country: photo.country, license: photo.license, price: photo.price, favorited: photo.favorited }}
           />
         </div>
         <CountryMark country={photo.country} />
-        <span className="pointer-events-none absolute left-2 top-2 z-10 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink">
+        <span className="pointer-events-none absolute bottom-2 left-2 z-10 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink">
           {verifiedPlus ? LIBRARY_TIER_LABEL.VERIFIED_PLUS : tierLabel}
         </span>
       </div>

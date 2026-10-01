@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import type { ModelPublicDto, PhotoDto } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS } from '@vuekumi/shared'
 import { PhotoMasonry } from '../components/shared'
+import { CountryMark, PhotoHoverActions } from '../components/PhotoActions'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
 import { fmt } from '../data/content'
@@ -181,7 +182,11 @@ export default function ModelProfile() {
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {featured.map((photo) => (
               <Link key={photo.id} to={`/photo/${photo.id}`} className="group block overflow-hidden rounded-2xl bg-cream">
-                <img src={photo.src} alt={photo.title} className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                <div className="relative">
+                  <img src={photo.src} alt={photo.title} className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                  <CountryMark country={photo.country} />
+                  <PhotoHoverActions photo={photo} />
+                </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-ink">{photo.title}</p>
                   <p className="truncate text-xs text-ink-soft">{photo.photographerName ?? photo.photographer}</p>

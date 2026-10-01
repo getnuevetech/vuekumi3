@@ -31,7 +31,7 @@ export const HOME_EDITORIAL_MODES = ['pins', 'category'] as const
 export type HomeEditorialMode = (typeof HOME_EDITORIAL_MODES)[number]
 
 export const HOME_FEATURED_SLOT_LABEL: Record<HomeFeaturedSlotKey, string> = {
-  hero: 'D01 Hero collage',
+  hero: 'D01 Hero banner and background',
   edge: 'Featured images',
   editorial: 'D01 Featured Collections',
   pricing: 'D01 License banner',

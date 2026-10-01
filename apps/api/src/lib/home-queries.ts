@@ -81,7 +81,8 @@ export async function loadHomePage(): Promise<HomePageDto> {
     pins,
     liveIds,
     holds: {
-      hero: uploads.hero.map(Boolean),
+      // Hero banner and background stay empty until staff pin or upload them.
+      hero: [true, true, true],
       pricing: uploads.pricing.map(Boolean),
       stats_background: uploads.stats_background.map(Boolean),
       ...(editorialMode === 'pins' ? { editorial: uploads.editorial.map(Boolean) } : {}),
@@ -126,7 +127,7 @@ export async function loadHomePage(): Promise<HomePageDto> {
       ),
     },
     featured: {
-      hero: mixUploads(slots.hero, uploads.hero, lookup, 'hero'),
+      hero: alignedHero(pins.hero, uploads.hero, lookup),
       edge: mapSlot(slots.edge, lookup),
       editorial,
       pricing: mixUploads(slots.pricing, uploads.pricing, lookup, 'pricing'),
@@ -161,6 +162,28 @@ function uploadedSlide(src: string, slot: string, index: number): PhotoDto {
     tags: [],
     status: 'active',
   }
+}
+
+function alignedHero(pinned: (string | null)[] | undefined, uploads: (string | null)[], lookup: Map<string, CatalogPhoto>): PhotoDto[] {
+  const photos: PhotoDto[] = []
+  for (let i = 0; i < HOME_FEATURED_CAPACITY.hero; i++) {
+    const src = uploads[i]
+    if (src) {
+      photos.push(uploadedSlide(src, 'hero', i))
+      continue
+    }
+    const id = pinned?.[i]
+    const photo = id ? lookup.get(id) : undefined
+    if (photo) {
+      photos.push(serializeCatalogPhoto(photo))
+      continue
+    }
+    const empty = uploadedSlide('', 'hero', i)
+    empty.id = `empty-hero-${i}`
+    empty.src = ''
+    photos.push(empty)
+  }
+  return photos
 }
 
 function mixUploads(ids: string[], uploads: (string | null)[], lookup: Map<string, CatalogPhoto>, slot: string): PhotoDto[] {

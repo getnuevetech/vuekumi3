@@ -32,8 +32,10 @@ function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
   return { ...page.pins }
 }
 
+const HERO_FRAME = ['Hero banner', 'Hero background', 'Not shown on the page']
+
 const DESIGN_SLOT_TITLE: Record<HomeFeaturedSlotKey, string> = {
-  hero: 'D01 Hero collage',
+  hero: 'D01 Hero banner and background',
   edge: 'D01 Featured Photos',
   editorial: 'D01 Featured Collections',
   pricing: 'D01 License banner',
@@ -47,7 +49,7 @@ const PEOPLE_DESIGN_TITLE: Record<HomePeopleSlot, string> = {
 }
 
 const SLOT_NOTE: Partial<Record<HomeFeaturedSlotKey, string>> = {
-  hero: 'These images fill the landing-page collage beside “Images that tell Africa’s story.” Upload an image or pin a live photograph. An empty frame picks a photograph from the library.',
+  hero: 'Position 1 is the hero banner, the photograph on the right of the headline. Position 2 is the background behind the headline. Upload an image or pin a live photograph for either one. Leave a position empty to keep the built-in design. Position 3 is not shown.',
   edge: 'Featured Photos on the landing page. Edit them on Featured Photos, or with the Feature switch in Content.',
   editorial: 'These photographs become the Featured Collections row. Each card links to that photograph’s category.',
   pricing: 'The first image is the background of the license banner. Plan names and prices stay under Buyer plans.',
@@ -232,7 +234,7 @@ export default function AdminHomepage() {
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {[
-          ['#d01-hero', 'D01 Hero collage', 'Images beside “Images that tell Africa’s story.”'],
+          ['#d01-hero', 'D01 Hero banner and background', 'The right-hand banner and the background behind the headline.'],
           ['/admin/featured', 'D01 Featured Photos', 'The three large photographs under the category row.'],
           ['#d01-categories', 'D01 Browse by Categories', 'Category chips and the category image row.'],
           ['#d01-editorial', 'D01 Featured Collections', 'Editorial pins, shown as category collection cards.'],
@@ -354,12 +356,13 @@ export default function AdminHomepage() {
                     className={`rounded-2xl border bg-white p-3 ${selected ? 'border-terra' : 'border-sand-soft'}`}
                   >
                     <button type="button" className="w-full text-left" onClick={() => setTarget({ kind: 'slot', slot, position: row.position })}>
+                      {slot === 'hero' && <p className="mb-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-terra">{HERO_FRAME[row.position]}</p>}
                       {uploaded || row.photo ? (
                         <img src={uploaded || row.photo?.src} alt="" className="h-28 w-full rounded-xl object-cover" />
                       ) : (
-                        <div className="flex h-28 items-center justify-center rounded-xl bg-cream text-sm text-ink-faint">Empty — auto fill</div>
+                        <div className="flex h-28 items-center justify-center rounded-xl bg-cream text-sm text-ink-faint">{slot === 'hero' ? 'Empty — built-in design' : 'Empty — auto fill'}</div>
                       )}
-                      <p className="mt-2 text-sm font-medium">{uploaded ? 'Uploaded image' : (row.photo?.title ?? 'No photograph yet')}</p>
+                      <p className="mt-2 text-sm font-medium">{uploaded ? 'Uploaded image' : (row.photo?.title ?? (slot === 'hero' ? 'Built-in design' : 'No photograph yet'))}</p>
                       <p className="font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-faint">
                         #{row.position + 1} · {uploaded ? 'upload' : row.source}{row.ineligibleReason ? ` · ${row.ineligibleReason}` : ''}
                       </p>

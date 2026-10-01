@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS, creatorKindLabel } from '@vuekumi/shared'
 import { PhotoMasonry } from '../components/shared'
+import { CountryMark, PhotoHoverActions } from '../components/PhotoActions'
 import { FollowButton } from '../components/FollowButton'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
@@ -284,8 +285,10 @@ function PhotoRow({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {photos.map((photo) => (
           <Link key={photo.id} to={`/photo/${photo.id}`} className="group block">
-            <div className="overflow-hidden rounded-2xl bg-cream">
+            <div className="relative overflow-hidden rounded-2xl bg-cream">
               <img src={photo.src} alt={photo.title} className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+              <CountryMark country={photo.country} />
+              <PhotoHoverActions photo={photo} />
             </div>
             <p className="mt-2 truncate text-sm font-semibold text-ink">{photo.title}</p>
             <p className="truncate text-xs text-ink-soft">{photo.country} · {fmt(photo.downloads)} downloads</p>

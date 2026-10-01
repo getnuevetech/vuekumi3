@@ -138,7 +138,7 @@ export default function AdminFeatured() {
       <h1 className="font-display mt-2 text-4xl text-ink">Featured Photos</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
         These pins are the Featured Photos row on the public landing page. The first three appear as the large cards. The same photographs can be switched on from Content. Contributors cannot mark their own images as featured.
-        Other landing modules — hero collage, categories, collections, creators, and the license banner — stay on <Link to="/admin/homepage" className="text-terra">Homepage design</Link>.
+        Other landing modules — the hero banner, the hero background, categories, collections, creators, and the license banner — stay on <Link to="/admin/homepage" className="text-terra">Homepage design</Link>.
         Empty places fill from the live library until you choose a photograph.
       </p>
 

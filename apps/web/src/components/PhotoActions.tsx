@@ -23,10 +23,29 @@ function loadCountries() {
   return countryLoad
 }
 
+const LOCAL_ISO: Record<string, string> = {
+  algeria: 'DZ', angola: 'AO', benin: 'BJ', botswana: 'BW', 'burkina faso': 'BF', burundi: 'BI', cameroon: 'CM',
+  'cape verde': 'CV', chad: 'TD', comoros: 'KM', congo: 'CG', 'democratic republic of the congo': 'CD', djibouti: 'DJ',
+  egypt: 'EG', 'equatorial guinea': 'GQ', eritrea: 'ER', eswatini: 'SZ', ethiopia: 'ET', gabon: 'GA', gambia: 'GM',
+  ghana: 'GH', guinea: 'GN', 'guinea-bissau': 'GW', 'ivory coast': 'CI', "côte d'ivoire": 'CI', kenya: 'KE',
+  lesotho: 'LS', liberia: 'LR', libya: 'LY', madagascar: 'MG', malawi: 'MW', mali: 'ML', mauritania: 'MR',
+  mauritius: 'MU', morocco: 'MA', mozambique: 'MZ', namibia: 'NA', niger: 'NE', nigeria: 'NG', rwanda: 'RW',
+  senegal: 'SN', seychelles: 'SC', 'sierra leone': 'SL', somalia: 'SO', 'south africa': 'ZA', 'south sudan': 'SS',
+  sudan: 'SD', tanzania: 'TZ', togo: 'TG', tunisia: 'TN', uganda: 'UG', zambia: 'ZM', zimbabwe: 'ZW',
+}
+
+function localIso(country: string) {
+  const key = country.trim().toLowerCase()
+  if (/^[a-z]{2}$/i.test(key)) return key.toUpperCase()
+  return LOCAL_ISO[key] ?? null
+}
+
 function useCountryCode(country: string) {
-  const [code, setCode] = useState<string | null>(null)
+  const [code, setCode] = useState<string | null>(() => localIso(country))
   useEffect(() => {
     let cancelled = false
+    const fallback = localIso(country)
+    setCode(fallback)
     const known = countryList?.find((row) => row.name.toLowerCase() === country.toLowerCase() || row.code.toLowerCase() === country.toLowerCase())
     if (known) {
       setCode(known.code)
@@ -35,7 +54,7 @@ function useCountryCode(country: string) {
     loadCountries().then((rows) => {
       if (cancelled) return
       const hit = rows.find((row) => row.name.toLowerCase() === country.toLowerCase() || row.code.toLowerCase() === country.toLowerCase())
-      setCode(hit?.code ?? null)
+      setCode(hit?.code ?? fallback)
     })
     return () => { cancelled = true }
   }, [country])
@@ -166,7 +185,7 @@ export function PhotoHoverActions({ photo, inline = false }: { photo: HoverPhoto
       <div
         className={inline
           ? 'flex items-center gap-1'
-          : 'absolute right-2 top-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100'}
+          : 'absolute right-2 top-2 z-20 flex items-center gap-1'}
         onPointerDown={(event) => event.stopPropagation()}
       >
         <button type="button" className={iconButton} aria-label="Download" onClick={onDownload}>

@@ -1,7 +1,9 @@
-import { Link } from 'react-router'
+import { useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { HomePageDto, PhotoDto, PhotographerDto } from '@vuekumi/shared'
 import { SearchForm } from '../../components/shared'
+import { CountryMark, PhotoHoverActions, type HoverPhoto } from '../../components/PhotoActions'
 import { api } from '../../api/client'
 import { categoryPath } from '../../lib/categories'
 import { fmt } from '../../lib/format'
@@ -36,20 +38,28 @@ const art = {
 }
 
 type Frame = { src: string; title: string; subtitle: string; href: string; chip?: string }
+type Shot = Frame & { country: string; photo?: HoverPhoto }
+
+function toHover(photo: PhotoDto): HoverPhoto {
+  return {
+    id: photo.id,
+    src: photo.src,
+    title: photo.title,
+    country: photo.country,
+    license: photo.license,
+    price: photo.price,
+    favorited: photo.favorited,
+  }
+}
+
+function managedHeroSrc(photos: PhotoDto[], index: number) {
+  const row = photos[index]
+  if (!row?.src || row.id.startsWith('empty-hero-')) return null
+  return row.src
+}
 
 function hidden(home: HomePageDto | null, key: string) {
   return Boolean(home?.layout.hidden.includes(key))
-}
-
-function frameFromPhoto(photo: PhotoDto | undefined, fallback: Frame): Frame {
-  if (!photo) return fallback
-  return {
-    src: photo.src,
-    title: photo.title,
-    subtitle: [photo.photographerName ?? photo.photographer, photo.country].filter(Boolean).join(' · '),
-    href: `/photo/${photo.id}`,
-    chip: fallback.chip,
-  }
 }
 
 function SectionHead({ title, text, to, label }: { title: string; text: string; to: string; label: string }) {
@@ -70,23 +80,119 @@ function Arrow() {
   )
 }
 
-function StoryCard({ frame, className = '', radius = 'rounded-[6px]' }: { frame: Frame; className?: string; radius?: string }) {
+function useBidirectionalWheel(node: HTMLDivElement | null) {
+  useEffect(() => {
+    if (!node) return
+    const onWheel = (event: WheelEvent) => {
+      const max = node.scrollWidth - node.clientWidth
+      if (max <= 1) return
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+      if (delta === 0) return
+      const atStart = node.scrollLeft <= 0 && delta < 0
+      const atEnd = node.scrollLeft >= max - 1 && delta > 0
+      if (atStart || atEnd) return
+      event.preventDefault()
+      node.scrollLeft = Math.max(0, Math.min(max, node.scrollLeft + delta))
+    }
+    let dragging = false
+    let moved = false
+    let startX = 0
+    let startLeft = 0
+    const onDown = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return
+      dragging = true
+      moved = false
+      startX = event.clientX
+      startLeft = node.scrollLeft
+    }
+    const onMove = (event: PointerEvent) => {
+      if (!dragging) return
+      const dx = event.clientX - startX
+      if (Math.abs(dx) < 5) return
+      moved = true
+      node.scrollLeft = startLeft - dx
+    }
+    const onUp = () => { dragging = false }
+    const onClick = (event: MouseEvent) => {
+      if (!moved) return
+      event.preventDefault()
+      event.stopPropagation()
+      moved = false
+    }
+    node.addEventListener('wheel', onWheel, { passive: false })
+    node.addEventListener('pointerdown', onDown)
+    node.addEventListener('pointermove', onMove)
+    node.addEventListener('pointerup', onUp)
+    node.addEventListener('pointercancel', onUp)
+    node.addEventListener('click', onClick, true)
+    return () => {
+      node.removeEventListener('wheel', onWheel)
+      node.removeEventListener('pointerdown', onDown)
+      node.removeEventListener('pointermove', onMove)
+      node.removeEventListener('pointerup', onUp)
+      node.removeEventListener('pointercancel', onUp)
+      node.removeEventListener('click', onClick, true)
+    }
+  }, [node])
+}
+
+function ScrollRow({ name, children }: { name: string; children: ReactNode }) {
+  const [node, setNode] = useState<HTMLDivElement | null>(null)
+  useBidirectionalWheel(node)
   return (
-    <Link to={frame.href} className={`group relative block overflow-hidden bg-[#1c1612] ${radius} ${className}`}>
-      <img src={frame.src} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/10" />
-      {frame.chip && (
-        <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[11px] font-semibold text-ink">{frame.chip}</span>
-      )}
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-        <div className="min-w-0">
-          <p className="text-lg font-semibold leading-tight text-white">{frame.title}</p>
-          {frame.subtitle && <p className="mt-0.5 truncate text-xs text-white/80">{frame.subtitle}</p>}
-        </div>
-        <Arrow />
+    <div className="flex items-center gap-2">
+      <button type="button" aria-label={`Scroll ${name} left`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] bg-white text-lg leading-none text-ink" onClick={() => node?.scrollBy({ left: -380, behavior: 'smooth' })}>‹</button>
+      <div ref={setNode} className="no-scrollbar flex min-w-0 flex-1 cursor-grab gap-3 overflow-x-auto overscroll-x-contain pb-1 active:cursor-grabbing">
+        {children}
       </div>
-    </Link>
+      <button type="button" aria-label={`Scroll ${name} right`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] bg-white text-lg leading-none text-ink" onClick={() => node?.scrollBy({ left: 380, behavior: 'smooth' })}>›</button>
+    </div>
   )
+}
+
+function DemoActions() {
+  const navigate = useNavigate()
+  const go = (event: ReactMouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    navigate('/login')
+  }
+  const button = 'flex h-8 w-8 items-center justify-center text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.9))]'
+  return (
+    <div className="absolute right-1.5 top-1.5 z-20 flex items-center">
+      <button type="button" className={button} aria-label="Download" onClick={go}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3v12" /><path d="M7 11l5 5 5-5" /><path d="M5 21h14" /></svg>
+      </button>
+      <button type="button" className={button} aria-label="Add to collection" onClick={go}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 7h5l2 2h11v10H3z" /></svg>
+      </button>
+      <button type="button" className={button} aria-label="Save to favorites" onClick={go}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+      </button>
+    </div>
+  )
+}
+
+function Marks({ country, photo }: { country: string; photo?: HoverPhoto }) {
+  const real = Boolean(photo?.id && !photo.id.startsWith('demo-') && !photo.id.startsWith('empty-') && !photo.id.startsWith('upload-'))
+  return (
+    <>
+      <CountryMark country={country} />
+      {real && photo ? <PhotoHoverActions photo={photo} /> : <DemoActions />}
+    </>
+  )
+}
+
+function shotFrom(photo: PhotoDto | undefined, fallback: Shot): Shot {
+  if (!photo?.src) return fallback
+  return {
+    src: photo.src,
+    title: photo.title || fallback.title,
+    subtitle: [photo.category, photo.country].filter(Boolean).join(' · ') || fallback.subtitle,
+    href: photo.id.startsWith('upload-') ? fallback.href : `/photo/${photo.id}`,
+    country: photo.country || fallback.country,
+    photo: toHover(photo),
+  }
 }
 
 function GeoPattern({ id }: { id: string }) {
@@ -140,28 +246,36 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
 
   const { data: latest = [] } = useQuery({
     queryKey: publicQueryKeys.homeFeed,
-    queryFn: () => api.photos({ page: 1, limit: 8, facets: '0' }).then((data) => data.items).catch(() => [] as PhotoDto[]),
+    queryFn: () => api.photos({ page: 1, limit: 16, facets: '0' }).then((data) => data.items).catch(() => [] as PhotoDto[]),
   })
 
   const heroLink = content.home.hero.primaryTo.startsWith('#')
     ? (hidden(home, 'feed') ? '/search' : content.home.hero.primaryTo)
     : content.home.hero.primaryTo
 
-  const collage = [
-    frameFromPhoto(heroPhotos[0], { src: art.portrait, title: '', subtitle: '', href: categoryPath('People') }),
-    frameFromPhoto(heroPhotos[1], { src: art.city, title: '', subtitle: '', href: categoryPath('Urban') }),
-    frameFromPhoto(heroPhotos[2], { src: art.family, title: '', subtitle: '', href: categoryPath('People') }),
-    frameFromPhoto(heroPhotos[3], { src: art.elephants, title: '', subtitle: '', href: categoryPath('Wildlife') }),
-    frameFromPhoto(edge[0], { src: art.orange, title: '', subtitle: '', href: categoryPath('Culture') }),
+  const bannerSrc = managedHeroSrc(heroPhotos, 0) ?? '/home/design/hero-collage.png'
+  const backgroundSrc = managedHeroSrc(heroPhotos, 1)
+  const bannerPhoto = heroPhotos[0]
+  const bannerHref = bannerPhoto?.src && !bannerPhoto.id.startsWith('empty-hero-') && !bannerPhoto.id.startsWith('upload-hero-')
+    ? `/photo/${bannerPhoto.id}`
+    : categoryPath('People')
+  const featuredFallback: Shot[] = [
+    { src: art.portrait, title: 'Women of Africa', subtitle: 'Strength. Beauty. Leadership.', href: categoryPath('People'), country: 'Nigeria' },
+    { src: art.city, title: 'Modern Africa', subtitle: 'Dynamic cities. Endless opportunities.', href: categoryPath('Urban'), country: 'South Africa' },
+    { src: art.elephants, title: "Africa's Majestic Nature", subtitle: 'Wildlife. Icons of the continent.', href: categoryPath('Wildlife'), country: 'Kenya' },
+    { src: art.coast, title: 'Breathtaking Landscapes', subtitle: 'Coast. Travel. Open light.', href: categoryPath('Coast'), country: 'South Africa' },
+    { src: art.falls, title: 'Highland Water', subtitle: 'Nature. Travel.', href: categoryPath('Landscape'), country: 'Zimbabwe' },
+    { src: art.fashion, title: 'Ankara Light', subtitle: 'Fashion. Culture.', href: categoryPath('Fashion'), country: 'Ghana' },
+    { src: art.business, title: 'African Business', subtitle: 'Work. Cities. Ambition.', href: '/search?q=business', country: 'Nigeria' },
+    { src: art.food, title: 'From the Market', subtitle: 'Food. Craft.', href: categoryPath('Food & Craft'), country: 'Kenya' },
+    { src: art.safari, title: 'On Safari', subtitle: 'Wildlife. Travel.', href: categoryPath('Wildlife'), country: 'Tanzania' },
+    { src: art.beach, title: 'Coastal Light', subtitle: 'Travel. Landscapes.', href: categoryPath('Coast'), country: 'Ghana' },
+    { src: art.family, title: 'Together', subtitle: 'People. Family.', href: categoryPath('People'), country: 'Nigeria' },
+    { src: art.desert, title: 'Desert Road', subtitle: 'Landscape. Travel.', href: categoryPath('Landscape'), country: 'Namibia' },
   ]
-  const featuredMain = [
-    frameFromPhoto(edge[0], { src: '/home/design/feat-women.png', title: 'Women of Africa', subtitle: 'Strength. Beauty. Leadership.', href: categoryPath('People'), chip: 'People' }),
-    frameFromPhoto(edge[1], { src: '/home/design/feat-city.png', title: 'Modern Africa', subtitle: 'Dynamic cities. Endless opportunities.', href: categoryPath('Urban'), chip: 'City' }),
-  ]
-  const featuredStack = [
-    frameFromPhoto(edge[2], { src: '/home/design/feat-wildlife.png', title: "Africa's Majestic Nature", subtitle: 'Wildlife. Icons of the continent.', href: categoryPath('Wildlife'), chip: 'Wildlife' }),
-    frameFromPhoto(editorial[0], { src: '/home/design/feat-coast.png', title: 'Breathtaking Landscapes', subtitle: 'Coast. Travel. Open light.', href: categoryPath('Coast'), chip: 'Travel' }),
-  ]
+  const featuredShots: Shot[] = edge.length
+    ? edge.map((photo) => shotFrom(photo, { src: photo.src, title: photo.title, subtitle: photo.category, href: `/photo/${photo.id}`, country: photo.country || 'Nigeria' }))
+    : featuredFallback
   const icons = [
     { label: 'People', href: categoryPath('People'), src: art.portrait },
     { label: 'Africa Cities', href: categoryPath('Urban'), src: art.city },
@@ -184,11 +298,13 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
     { label: 'Food', href: categoryPath('Food & Craft'), src: categories.find((row) => row.category === 'Food & Craft')?.photo.src ?? art.food, icon: 'food' },
     { label: 'Fashion', href: categoryPath('Fashion'), src: categories.find((row) => row.category === 'Fashion')?.photo.src ?? art.hoops, icon: 'fashion' },
   ]
-  const collections = [
-    frameFromPhoto(editorial[0], { src: art.portrait, title: 'Pan African Pride', subtitle: 'People. Beauty. Leadership.', href: categoryPath('People') }),
-    frameFromPhoto(editorial[1], { src: art.elephants, title: 'African Wildlife', subtitle: 'Icons of the Continent', href: categoryPath('Wildlife') }),
-    frameFromPhoto(editorial[2], { src: art.family, title: 'Vibrant Cultures', subtitle: 'Traditions. Festivals. Heritage.', href: categoryPath('Culture') }),
-    frameFromPhoto(editorial[3], { src: art.city, title: 'African Cities', subtitle: 'Progress. Innovation. Tomorrow.', href: categoryPath('Urban') }),
+  const collections: Shot[] = [
+    shotFrom(editorial[0], { src: art.portrait, title: 'Pan African Pride', subtitle: 'People. Beauty. Leadership.', href: categoryPath('People'), country: 'Nigeria' }),
+    shotFrom(editorial[1], { src: art.elephants, title: 'African Wildlife', subtitle: 'Icons of the Continent', href: categoryPath('Wildlife'), country: 'Kenya' }),
+    shotFrom(editorial[2], { src: art.family, title: 'Vibrant Cultures', subtitle: 'Traditions. Festivals. Heritage.', href: categoryPath('Culture'), country: 'Ghana' }),
+    shotFrom(editorial[3], { src: art.city, title: 'African Cities', subtitle: 'Progress. Innovation. Tomorrow.', href: categoryPath('Urban'), country: 'South Africa' }),
+    shotFrom(editorial[4], { src: art.beach, title: 'Coastal Africa', subtitle: 'Travel. Open water.', href: categoryPath('Coast'), country: 'Tanzania' }),
+    shotFrom(editorial[5], { src: art.food, title: 'Market Tables', subtitle: 'Food. Craft. Colour.', href: categoryPath('Food & Craft'), country: 'Morocco' }),
   ]
   const trending = [
     { label: 'African business', href: '/search?q=business' },
@@ -198,19 +314,28 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
     { label: 'Culture', href: categoryPath('Culture') },
     { label: 'Travel', href: categoryPath('Coast') },
   ]
-  const latestFallback: Frame[] = [
-    { src: art.city, title: 'Cities', subtitle: '', href: categoryPath('Urban') },
-    { src: art.desert, title: 'Desert', subtitle: '', href: categoryPath('Landscape') },
-    { src: art.family, title: 'People', subtitle: '', href: categoryPath('People') },
-    { src: art.food, title: 'Food', subtitle: '', href: categoryPath('Food & Craft') },
-    { src: art.portrait, title: 'Portrait', subtitle: '', href: categoryPath('People') },
-    { src: art.camels, title: 'Travel', subtitle: '', href: categoryPath('Landscape') },
-    { src: art.safari, title: 'Safari', subtitle: '', href: categoryPath('Wildlife') },
-    { src: art.coast, title: 'Coast', subtitle: '', href: categoryPath('Coast') },
+  const latestDemo: Shot[] = [
+    { src: '/home/design/latest-1.png', title: 'City at dusk', subtitle: '', href: '/search', country: 'South Africa' },
+    { src: '/home/design/latest-2.png', title: 'Desert light', subtitle: '', href: '/search', country: 'Namibia' },
+    { src: '/home/design/latest-3.png', title: 'Market day', subtitle: '', href: '/search', country: 'Nigeria' },
+    { src: '/home/design/latest-4.png', title: 'Portrait study', subtitle: '', href: '/search', country: 'Ghana' },
+    { src: '/home/design/latest-5.png', title: 'Wildlife', subtitle: '', href: '/search', country: 'Kenya' },
+    { src: '/home/design/latest-6.png', title: 'Coast road', subtitle: '', href: '/search', country: 'South Africa' },
+    { src: '/home/design/latest-7.png', title: 'Family', subtitle: '', href: '/search', country: 'Senegal' },
+    { src: '/home/design/latest-8.png', title: 'Pattern', subtitle: '', href: '/search', country: 'Ghana' },
+    { src: '/home/design/latest-9.png', title: 'Architecture', subtitle: '', href: '/search', country: 'Morocco' },
+    { src: '/home/design/latest-10.png', title: 'Waterfall', subtitle: '', href: '/search', country: 'Zimbabwe' },
+    { src: art.elephants, title: 'Herd at dusk', subtitle: '', href: categoryPath('Wildlife'), country: 'Kenya' },
+    { src: art.falls, title: 'Highland falls', subtitle: '', href: categoryPath('Landscape'), country: 'Zimbabwe' },
+    { src: art.beach, title: 'Shoreline', subtitle: '', href: categoryPath('Coast'), country: 'Ghana' },
+    { src: art.food, title: 'Shared plate', subtitle: '', href: categoryPath('Food & Craft'), country: 'Kenya' },
+    { src: art.business, title: 'At work', subtitle: '', href: '/search?q=business', country: 'Nigeria' },
+    { src: art.safari, title: 'Safari evening', subtitle: '', href: categoryPath('Wildlife'), country: 'Tanzania' },
   ]
-  const film: Frame[] = latest.length
-    ? latest.map((photo) => frameFromPhoto(photo, { src: art.acacia, title: photo.title, subtitle: photo.category, href: `/photo/${photo.id}` }))
-    : latestFallback
+  const film: Shot[] = [
+    ...latest.map((photo) => shotFrom(photo, { src: photo.src, title: photo.title, subtitle: photo.category, href: `/photo/${photo.id}`, country: photo.country || 'Nigeria' })),
+    ...latestDemo,
+  ].slice(0, 16)
   const licenseSrc = pricing[0]?.src ?? art.balloons
   const continentSrc = featured?.statsBackground?.src ?? art.sunset
   const spotlightPhoto = spotlight
@@ -223,7 +348,12 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
         <section className="relative overflow-hidden bg-[#120f0c] text-white">
           <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.15fr)]">
             <div className="relative px-6 py-8 lg:px-10 lg:py-10">
-              <GeoPattern id="vk-hero-geo" />
+              {backgroundSrc && (
+                <>
+                  <img src={backgroundSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-[#120f0c]/72" />
+                </>
+              )}
               <div className="relative max-w-xl">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#e6c27a]">Authentic people. Diverse places. Real Africa.</p>
                 <h1 className="font-display mt-3 text-[44px] leading-[0.95] text-white md:text-[58px]">
@@ -241,8 +371,8 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
                 </Link>
               </div>
             </div>
-            <Link to={collage[0].href} className="relative block self-center">
-              <img src="/home/design/hero-collage.png" alt="" className="h-auto w-full object-contain" />
+            <Link to={bannerHref} className="relative block self-center">
+              <img src={bannerSrc} alt="" className="h-auto w-full object-contain" />
             </Link>
           </div>
           <div className="border-t border-white/10 bg-black/45">
@@ -262,8 +392,8 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
         <section className="border-b border-[#efe8e1] bg-white">
           <div className="mx-auto flex max-w-[1440px] items-start justify-between gap-1 overflow-x-auto px-5 py-4 no-scrollbar lg:px-8">
             {icons.map((icon) => (
-              <Link key={icon.label} to={icon.href} className="w-[104px] shrink-0 text-center">
-                <img src={icon.src} alt="" className={`mx-auto h-[77px] w-[96px] rounded-[6px] object-cover shadow-sm ${'pos' in icon ? icon.pos : ''}`} />
+              <Link key={icon.label} to={icon.href} className="w-[124px] shrink-0 text-center">
+                <img src={icon.src} alt="" className={`mx-auto h-[77px] w-[115px] rounded-[6px] object-cover shadow-sm ${'pos' in icon ? icon.pos : ''}`} />
                 <p className="mt-1.5 text-[11px] font-medium leading-tight text-ink">{icon.label}</p>
               </Link>
             ))}
@@ -274,16 +404,11 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {!hidden(home, 'featured') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Featured Photos" text="Handpicked African stories from across the continent." to="/search" label="View all featured" />
-          <div className="grid h-auto gap-3 md:grid-cols-3 md:h-[420px]">
-            {featuredMain.map((card) => (
-              <StoryCard key={card.title} frame={card} className="h-[280px] md:h-full" />
+          <ScrollRow name="featured photos">
+            {featuredShots.map((card) => (
+              <PortraitCard key={card.title + card.src} shot={card} />
             ))}
-            <div className="grid gap-2 md:grid-rows-2">
-              {featuredStack.map((card) => (
-                <StoryCard key={card.title} frame={card} className="h-[200px] md:h-full" />
-              ))}
-            </div>
-          </div>
+          </ScrollRow>
         </section>
       )}
 
@@ -310,11 +435,11 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {!hidden(home, 'editorial') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Featured Collections" text="Curated stories for every project." to="/search" label="View all collections" />
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <ScrollRow name="featured collections">
             {collections.map((card) => (
-              <StoryCard key={card.title} frame={card} radius="rounded-[3px]" className="h-52" />
+              <CollectionCard key={card.title + card.src} shot={card} />
             ))}
-          </div>
+          </ScrollRow>
         </section>
       )}
 
@@ -343,21 +468,17 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
       {!hidden(home, 'contributors') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Top African Creators" text="Talented photographers, filmmakers and visual artists from across Africa." to="/creators" label="View all creators" />
-          <div className="flex items-center gap-2">
-            <button type="button" aria-label="Previous creators" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] text-ink" onClick={(event) => event.currentTarget.parentElement?.querySelector('[data-creators]')?.scrollBy({ left: -240, behavior: 'smooth' })}>‹</button>
-            <div data-creators className="flex flex-1 gap-3 overflow-x-auto pb-2 no-scrollbar">
-              {(people.length > 0 ? people.slice(0, 8).map((person) => ({
-                name: person.name,
-                country: person.location || 'Africa',
-                flag: '',
-                src: person.avatarUrl,
-                href: `/p/${person.handle}`,
-              })) : DESIGN_CREATORS).map((person) => (
-                <CreatorChip key={person.name} name={person.name} country={person.country} flag={person.flag} src={person.src} href={person.href} />
-              ))}
-            </div>
-            <button type="button" aria-label="Next creators" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e6ddd4] text-ink" onClick={(event) => event.currentTarget.parentElement?.querySelector('[data-creators]')?.scrollBy({ left: 240, behavior: 'smooth' })}>›</button>
-          </div>
+          <ScrollRow name="creators">
+            {(people.length > 0 ? people.slice(0, 8).map((person) => ({
+              name: person.name,
+              country: person.location || 'Africa',
+              flag: '',
+              src: person.avatarUrl,
+              href: `/p/${person.handle}`,
+            })) : DESIGN_CREATORS).map((person) => (
+              <CreatorChip key={person.name} name={person.name} country={person.country} flag={person.flag} src={person.src} href={person.href} />
+            ))}
+          </ScrollRow>
         </section>
       )}
 
@@ -390,15 +511,12 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
               <Link to="/search" className="ml-2 text-sm font-semibold text-[#ef5b24]">View more →</Link>
             </div>
           </div>
-          <div className="grid grid-cols-5 gap-1 sm:grid-cols-10">
-            {(latest.length ? film : Array.from({ length: 10 }, (_, index) => ({
-              src: `/home/design/latest-${index + 1}.png`,
-              title: '',
-              subtitle: '',
-              href: '/search',
-            }))).slice(0, 10).map((item, index) => (
-              <Link key={item.src + index} to={item.href} className="block overflow-hidden rounded-[6px]">
+          <div className="grid grid-cols-4 gap-1 sm:grid-cols-8">
+            {film.map((item, index) => (
+              <Link key={item.src + index} to={item.href} className="group relative block overflow-hidden rounded-[6px]">
                 <img src={item.src} alt="" className="aspect-[3/4] w-full object-cover" />
+                <Marks country={item.country} photo={item.photo} />
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-2 pt-8 text-[11px] font-semibold leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">{item.title}</span>
               </Link>
             ))}
           </div>
@@ -408,19 +526,50 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
   )
 }
 
+function PortraitCard({ shot }: { shot: Shot }) {
+  return (
+    <Link to={shot.href} className="group relative block h-[340px] w-[220px] shrink-0 overflow-hidden rounded-[6px] bg-[#1c1612]">
+      <img src={shot.src} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+      <Marks country={shot.country} photo={shot.photo} />
+      <div className="absolute inset-x-0 bottom-0 p-3">
+        <p className="text-base font-semibold leading-tight text-white">{shot.title}</p>
+        {shot.subtitle && <p className="mt-0.5 truncate text-xs text-white/80">{shot.subtitle}</p>}
+      </div>
+    </Link>
+  )
+}
+
+function CollectionCard({ shot }: { shot: Shot }) {
+  return (
+    <Link to={shot.href} className="group relative block h-52 w-[320px] shrink-0 overflow-hidden rounded-[3px] bg-[#1c1612]">
+      <img src={shot.src} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/15" />
+      <Marks country={shot.country} photo={shot.photo} />
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
+        <div className="min-w-0">
+          <p className="text-lg font-semibold leading-tight text-white">{shot.title}</p>
+          {shot.subtitle && <p className="mt-0.5 truncate text-xs text-white/80">{shot.subtitle}</p>}
+        </div>
+        <Arrow />
+      </div>
+    </Link>
+  )
+}
+
 function CreatorChip({ name, country, flag, src, href }: { name: string; country: string; flag: string; src?: string | null; href: string }) {
   return (
-    <div className="w-[108px] shrink-0 text-center">
+    <div className="w-[112px] shrink-0 text-center">
       <Link to={href}>
         {src ? (
-          <img src={src} alt="" className="mx-auto h-[72px] w-[72px] rounded-full object-cover" />
+          <img src={src} alt="" className="mx-auto h-[76px] w-[76px] rounded-full object-cover" />
         ) : (
-          <span className="mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#efe6dc] text-lg font-semibold">{name.slice(0, 1)}</span>
+          <span className="mx-auto flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#efe6dc] text-lg font-semibold">{name.slice(0, 1)}</span>
         )}
-        <p className="mt-2 truncate text-sm font-semibold text-ink">{name}</p>
-        <p className="truncate text-[11px] text-ink-soft">{flag} {country}</p>
+        <p className="mt-2 truncate text-[13px] font-semibold text-ink">{name}</p>
+        <p className="truncate text-[11px] text-ink-soft">{flag ? `${flag} ` : ''}{country}</p>
       </Link>
-      <Link to={href} className="mt-2 inline-flex rounded-full border border-[#ef5b24] px-3 py-1 text-[11px] font-semibold text-[#ef5b24]">Follow</Link>
+      <Link to={href} className="mt-1.5 inline-flex rounded-full border border-[#d5cdc4] bg-white px-3.5 py-1 text-[11px] font-medium text-ink hover:border-ink">Follow</Link>
     </div>
   )
 }
@@ -433,58 +582,60 @@ function Spotlight({ person, photo }: { person?: PhotographerDto; photo: string 
   const portrait = design ? '/home/design/creator-2.png' : (person?.avatarUrl || photo)
   const scene = design ? '/home/design/spotlight-photo.png' : photo
   return (
-    <section className="mx-auto max-w-[1440px] px-5 py-8 lg:px-8">
-      <div className="mb-4 flex items-baseline justify-between gap-4">
+    <section className="mx-auto max-w-[1180px] px-5 py-6 lg:px-8">
+      <div className="mb-3 flex items-baseline justify-between gap-4">
         <div className="flex flex-wrap items-baseline gap-3">
           <h2 className="font-display text-[32px] leading-none text-ink">Contributor Spotlight</h2>
           <p className="text-sm text-ink-soft">Meet amazing African creators shaping global visuals.</p>
         </div>
         <Link to="/creators" className="shrink-0 text-sm font-semibold text-[#ef5b24]">View all contributors →</Link>
       </div>
-      <div className="grid items-center gap-5 lg:grid-cols-[1.45fr_0.95fr_150px]">
-        <div className="relative min-h-[230px] overflow-hidden bg-[#1a120c] text-white">
-          <img src={scene} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_30%]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/25" />
-          <div className="relative flex h-full min-h-[230px] items-center justify-between gap-4 p-6">
-            <div className="max-w-sm">
-              <h3 className="font-display text-4xl leading-[1.05]">Real creators.<br />Global impact.</h3>
-              <p className="mt-3 text-sm leading-relaxed text-white/85">
-                {person?.bio || 'VueKumi empowers African photographers, filmmakers and visual storytellers to share the world with their voice.'}
-              </p>
-              <Link to={person ? href : '/login?redirect=/contributor/upload&signup=photographer'} className="mt-4 inline-flex rounded-full bg-[#ef5b24] px-4 py-2 text-sm font-semibold text-white">
-                Join as a Contributor →
-              </Link>
+      <div className="flex w-fit max-w-full flex-wrap items-center gap-4 lg:flex-nowrap">
+        {design ? (
+          <Link to="/login?redirect=/contributor/upload&signup=photographer" className="block w-[min(100%,620px)] shrink-0 overflow-hidden rounded-[8px]">
+            <img src="/home/design/spotlight-banner.png" alt="Real creators. Global impact. Join as a Contributor." className="h-auto w-full" />
+          </Link>
+        ) : (
+          <div className="relative min-h-[200px] w-[min(100%,620px)] shrink-0 overflow-hidden rounded-[8px] bg-[#1a120c] text-white">
+            <img src={scene} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_30%]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/20" />
+            <div className="relative flex min-h-[200px] items-center justify-between gap-3 p-5">
+              <div className="max-w-xs">
+                <h3 className="font-display text-3xl leading-[1.05]">Real creators.<br />Global impact.</h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/85">{person?.bio || 'VueKumi empowers African photographers, filmmakers and visual storytellers to share the world with their voice.'}</p>
+                <Link to={href} className="mt-3 inline-flex rounded-full bg-[#ef5b24] px-4 py-2 text-sm font-semibold text-white">Join as a Contributor →</Link>
+              </div>
+              <ul className="hidden space-y-1.5 text-sm sm:block">
+                <li className="flex items-center gap-2"><Check /> Earn from your work</li>
+                <li className="flex items-center gap-2"><Check /> Global exposure</li>
+                <li className="flex items-center gap-2"><Check /> Keep your creative rights</li>
+              </ul>
             </div>
-            <ul className="hidden space-y-2 text-sm sm:block">
-              <li className="flex items-center gap-2"><Check /> Earn from your work</li>
-              <li className="flex items-center gap-2"><Check /> Global exposure</li>
-              <li className="flex items-center gap-2"><Check /> Keep your creative rights</li>
-            </ul>
           </div>
-        </div>
-        <div>
+        )}
+        <div className="w-[240px] shrink-0">
           <div className="flex items-center gap-3">
-            <img src={portrait} alt="" className="h-16 w-16 rounded-full object-cover" />
-            <div>
-              <span className="inline-flex rounded-full bg-[#ef5b24] px-2 py-0.5 text-[10px] font-semibold text-white">Verified Creator</span>
-              <p className="mt-1 text-lg font-semibold text-ink">{name} <span aria-hidden="true">🇬🇭</span></p>
-              <p className="text-sm text-ink-soft">{place}</p>
+            <img src={portrait} alt="" className="h-14 w-14 rounded-full object-cover" />
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#ef5b24] px-2 py-0.5 text-[10px] font-semibold text-white">✓ Verified Creator</span>
+              <p className="mt-1 truncate text-base font-semibold text-ink">{name}</p>
+              <p className="truncate text-xs text-ink-soft">📍 {place} <span aria-hidden="true">🇬🇭</span></p>
             </div>
           </div>
-          <dl className="mt-4 grid grid-cols-3 text-center">
+          <dl className="mt-3 grid grid-cols-3 text-center">
             <Stat label="Assets" value={design ? '320' : fmt(person?.photosCount ?? 0)} />
             <Stat label="Downloads" value={design ? '126K' : fmt(person?.downloads ?? 0)} />
             <Stat label="Rating" value={design ? '4.9' : fmt(person?.followers ?? 0)} />
           </dl>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {['People', 'Nature', 'Culture', 'Travel'].map((label) => (
-              <span key={label} className="rounded-full bg-[#f3eee9] px-3 py-1 text-[11px] font-medium text-ink">{label}</span>
+              <span key={label} className="rounded-full bg-[#f3eee9] px-2.5 py-1 text-[11px] font-medium text-ink">{label}</span>
             ))}
           </div>
         </div>
-        <Link to={href} className="flex flex-col items-center text-center">
-          <QrMark />
-          <span className="mt-2 max-w-[9rem] text-[11px] leading-snug text-ink-soft">Scan to view my VueKumi Creator ID</span>
+        <Link to={href} className="flex w-[112px] shrink-0 flex-col items-center text-center">
+          <img src="/home/design/creator-qr.png" alt="" className="h-[108px] w-[108px] rounded-[4px] bg-white" />
+          <span className="mt-1.5 max-w-[7.5rem] text-[11px] leading-snug text-ink-soft">Scan to view my VueKumi Creator ID</span>
         </Link>
       </div>
     </section>
@@ -503,18 +654,6 @@ function Stat({ label, value }: { label: string; value: string }) {
       <dd className="text-lg font-semibold text-ink">{value}</dd>
       <dt className="text-[11px] text-ink-soft">{label}</dt>
     </div>
-  )
-}
-
-function QrMark() {
-  const cells = [1,1,1,0,1,0,1,1,1, 1,0,1,0,0,1,0,1,0,1, 1,1,1,0,1,0,1,1,1, 0,0,0,0,1,0,0,0,0, 1,0,1,1,0,1,1,0,1, 0,1,0,0,1,0,0,1,0, 1,1,1,0,1,0,1,1,1, 1,0,1,0,0,1,0,1,0,1, 1,1,1,0,1,0,1,1,1]
-  return (
-    <span className="relative grid h-[92px] w-[92px] shrink-0 grid-cols-9 gap-px border border-[#eadfd4] bg-white p-1.5" aria-hidden="true">
-      {cells.map((on, index) => (
-        <span key={index} className={on ? 'bg-ink' : 'bg-transparent'} />
-      ))}
-      <span className="absolute left-1/2 top-1/2 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-white text-sm font-bold text-[#ef5b24]">V</span>
-    </span>
   )
 }
 
