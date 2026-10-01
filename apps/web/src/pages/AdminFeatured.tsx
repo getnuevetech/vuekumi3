@@ -133,13 +133,12 @@ export default function AdminFeatured() {
   }
 
   return (
-    <AdminShell subtitle="The homepage featured strip. Only an admin can choose these photographs.">
-      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Featured images</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Featured images.</h1>
+    <AdminShell subtitle="D01 Featured Photos. The first three pins are the large cards on the landing page.">
+      <p className="text-sm font-semibold text-terra">D01 Landing</p>
+      <h1 className="font-display mt-2 text-4xl text-ink">Featured Photos</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-        This is the only place the homepage featured strip is edited. The same photographs can be switched on from Content, and they appear in this list. Choose photographs from any category. Contributors cannot mark their own images as featured.
-        A paid featuring offer for contributors can be added later. It is not available from contributor accounts.
-        Other homepage slots stay on <Link to="/admin/homepage" className="text-terra">Homepage</Link>.
+        These pins are the Featured Photos row on the public landing page. The first three appear as the large cards. The same photographs can be switched on from Content. Contributors cannot mark their own images as featured.
+        Other landing modules — hero collage, categories, collections, creators, and the license banner — stay on <Link to="/admin/homepage" className="text-terra">Homepage design</Link>.
         Empty places fill from the live library until you choose a photograph.
       </p>
 
@@ -188,7 +187,7 @@ export default function AdminFeatured() {
       </section>
 
       <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
-        <h2 className="font-serif-display text-2xl font-light">On the homepage</h2>
+        <h2 className="font-display text-3xl">On the D01 landing page</h2>
         <p className="mt-1 text-sm text-ink-soft">
           {rows.filter((row) => row.photo).length} photographs
           {page ? ` · ${page.capacities.edge} places` : ''}

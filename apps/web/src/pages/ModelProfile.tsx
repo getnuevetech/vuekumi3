@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import type { ModelPublicDto, PhotoDto } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS } from '@vuekumi/shared'
@@ -6,6 +6,7 @@ import { PhotoMasonry } from '../components/shared'
 import { useAuth } from '../context/AuthContext'
 import { api, ApiError } from '../api/client'
 import { fmt } from '../data/content'
+import { categoryPath } from '../lib/categories'
 
 export default function ModelProfile() {
   const { handle } = useParams()
@@ -48,13 +49,32 @@ export default function ModelProfile() {
     setPage(next)
   }
 
+  const featured = items.slice(0, 4)
+  const categories = useMemo(() => {
+    const counts = new Map<string, { count: number; photo: PhotoDto }>()
+    for (const photo of items) {
+      const current = counts.get(photo.category)
+      if (current) current.count += 1
+      else counts.set(photo.category, { count: 1, photo })
+    }
+    return [...counts.entries()].slice(0, 6)
+  }, [items])
+  const photographers = useMemo(() => {
+    const seen = new Map<string, PhotoDto>()
+    for (const photo of items) {
+      if (!photo.photographer || seen.has(photo.photographer)) continue
+      seen.set(photo.photographer, photo)
+    }
+    return [...seen.values()].slice(0, 8)
+  }, [items])
+
   if (status === 'missing' || !handle) {
     return (
       <div className="min-h-screen bg-paper text-ink">
         <div className="mx-auto max-w-md px-6 pb-24 pt-16 text-center">
-          <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">404</p>
-          <h1 className="font-serif-display mt-2 text-4xl font-light">Model not found.</h1>
-          <Link to="/models" className="mt-8 inline-block bg-ink px-6 py-3 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-terra">404</p>
+          <h1 className="font-display mt-2 text-4xl">Model not found.</h1>
+          <Link to="/models" className="mt-8 inline-flex rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white">
             Browse models
           </Link>
         </div>
@@ -64,76 +84,73 @@ export default function ModelProfile() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      {items[0]?.src && (
-        <div className="relative h-56 overflow-hidden md:h-72">
-          <img src={items[0].src} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-noir/70 to-noir/10" />
-        </div>
-      )}
-      <div className="mx-auto max-w-[1500px] px-5 pb-16 md:px-8">
-        {profile && (
-          <div className={`flex flex-col gap-6 rounded-3xl border border-sand bg-white p-6 md:flex-row md:items-center ${items[0]?.src ? '-mt-16' : 'mt-8'}`}>
-            {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="" className="h-28 w-28 rounded-full object-cover" />
+      <section className="bg-[#14110e] text-white">
+        <div className="mx-auto grid max-w-[1500px] items-end gap-8 px-5 py-10 md:px-8 lg:grid-cols-[280px_1fr]">
+          <div className="overflow-hidden rounded-3xl bg-white/10">
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="" className="aspect-[3/4] w-full object-cover" />
+            ) : items[0]?.src ? (
+              <img src={items[0].src} alt="" className="aspect-[3/4] w-full object-cover" />
             ) : (
-              <div className="h-28 w-28 rounded-full bg-cream" />
+              <div className="aspect-[3/4] w-full" />
             )}
-            <div className="flex-1">
-              <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Model</p>
-              <h1 className="font-display mt-1 text-4xl text-ink">{profile.name}</h1>
-              <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
-                @{profile.handle} · {profile.location ?? 'Africa'}
-              </p>
-              {profile.bio && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{profile.bio}</p>}
-              <p className="mt-4 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
-                {profile.photosCount} approved photograph{profile.photosCount === 1 ? '' : 's'}
-                {profile.profileViews != null ? ` · ${fmt(profile.profileViews)} profile views` : ''}
-                {' · does not earn from licences'}
-              </p>
-              <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
-                {AVAILABILITY_LABELS[profile.availability]}
-                {profile.dayRateUsd != null ? ` · from $${profile.dayRateUsd.toLocaleString()} / day` : ''}
-              </p>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
-                Photographs this model approved for use. Copyright stays with the photographer.
-                Vuekumi sells usage permission, not ownership.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {profile.availability !== 'unavailable' && user?.modelHandle !== profile.handle && (
-                <Link
-                  to={`/book/${profile.handle}`}
-                  className="bg-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] text-paper hover:bg-terra"
-                >
-                  Book {profile.name.split(' ')[0]}
-                </Link>
-              )}
-              {profile.photographerHandle && (
-                <Link
-                  to={`/p/${profile.photographerHandle}`}
-                  className="border border-ink px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
-                >
-                  Photographer page
-                </Link>
-              )}
-              <Link
-                to="/models"
-                className="border border-sand px-5 py-2.5 font-mono-tech text-[10px] uppercase tracking-[0.18em] hover:border-ink"
-              >
-                All models
-              </Link>
-            </div>
           </div>
-        )}
+          <div className="pb-2">
+            <p className="text-sm text-white/70">Home / Models{profile ? ` / ${profile.name}` : ''}</p>
+            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-[#e0a36a]">Model</p>
+            <h1 className="font-display mt-2 text-5xl md:text-6xl">{profile?.name ?? 'Model'}</h1>
+            {profile && <p className="mt-2 text-sm text-white/75">@{profile.handle} · {profile.location ?? 'Africa'}</p>}
+            {profile?.bio && <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/80">{profile.bio}</p>}
+            <p className="mt-4 max-w-xl text-sm text-white/70">
+              Photographs this model approved for use. Copyright stays with the photographer. Models do not earn from licences.
+            </p>
+            {profile && (
+              <div className="mt-6 flex flex-wrap gap-3">
+                {profile.availability !== 'unavailable' && user?.modelHandle !== profile.handle && (
+                  <Link to={`/book/${profile.handle}`} className="rounded-full bg-terra px-5 py-2.5 text-sm font-semibold text-white">
+                    Book {profile.name.split(' ')[0]}
+                  </Link>
+                )}
+                {profile.photographerHandle && (
+                  <Link to={`/p/${profile.photographerHandle}`} className="rounded-full border border-white/30 px-5 py-2.5 text-sm font-semibold">
+                    Photographer page
+                  </Link>
+                )}
+                <Link to="/models" className="rounded-full border border-white/30 px-5 py-2.5 text-sm font-semibold">All models</Link>
+              </div>
+            )}
+            {profile && (
+              <dl className="mt-6 grid max-w-lg grid-cols-3 gap-3">
+                <div>
+                  <dt className="text-xs text-white/60">Appearances</dt>
+                  <dd className="text-xl font-semibold">{fmt(profile.photosCount)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-white/60">Profile views</dt>
+                  <dd className="text-xl font-semibold">{fmt(profile.profileViews ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-white/60">Availability</dt>
+                  <dd className="text-sm font-semibold">{AVAILABILITY_LABELS[profile.availability]}</dd>
+                </div>
+              </dl>
+            )}
+          </div>
+        </div>
+      </section>
 
-        <div className="mt-10 flex items-end justify-between">
-          <h2 className="font-serif-display text-2xl tracking-tight">
-            {status === 'loading'
-              ? 'Loading…'
-              : total === 0
-                ? 'No public photographs yet'
-                : `${total} photograph${total === 1 ? '' : 's'}`}
-          </h2>
+      <div className="mx-auto max-w-[1500px] px-5 pb-16 pt-10 md:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-3xl text-ink">Featured Appearances</h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              {status === 'loading'
+                ? 'Loading…'
+                : total === 0
+                  ? 'No public photographs yet'
+                  : `${total} photograph${total === 1 ? '' : 's'}`}
+            </p>
+          </div>
           {total > 0 && (
             <select
               aria-label="Sort"
@@ -144,7 +161,7 @@ export default function ModelProfile() {
                 else next.set('sort', e.target.value)
                 setParams(next)
               }}
-              className="border border-sand bg-white px-3 py-2 font-mono-tech text-[10px] uppercase tracking-[0.12em] outline-none"
+              className="rounded-full border border-sand bg-white px-3 py-2 text-sm outline-none"
             >
               <option value="newest">Newest</option>
               <option value="downloads">Downloads</option>
@@ -160,14 +177,89 @@ export default function ModelProfile() {
           </p>
         )}
 
-        <PhotoMasonry photos={items} />
+        {featured.length > 0 && (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {featured.map((photo) => (
+              <Link key={photo.id} to={`/photo/${photo.id}`} className="group block overflow-hidden rounded-2xl bg-cream">
+                <img src={photo.src} alt={photo.title} className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                <div className="p-3">
+                  <p className="truncate text-sm font-semibold text-ink">{photo.title}</p>
+                  <p className="truncate text-xs text-ink-soft">{photo.photographerName ?? photo.photographer}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {photographers.length > 0 && (
+          <section className="mt-12">
+            <h2 className="font-display text-3xl text-ink">Collaborating photographers</h2>
+            <div className="mt-4 flex gap-5 overflow-x-auto no-scrollbar">
+              {photographers.map((photo) => (
+                <Link key={photo.photographer} to={`/p/${photo.photographer}`} className="w-28 shrink-0 text-center">
+                  {photo.photographerAvatar ? (
+                    <img src={photo.photographerAvatar} alt="" className="mx-auto h-20 w-20 rounded-full object-cover" />
+                  ) : (
+                    <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-cream text-lg font-semibold">{(photo.photographerName ?? photo.photographer).slice(0, 1)}</span>
+                  )}
+                  <p className="mt-2 truncate text-sm font-semibold">{photo.photographerName ?? photo.photographer}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {categories.length > 0 && (
+          <section className="mt-12">
+            <h2 className="font-display text-3xl text-ink">Style categories</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {categories.map(([name, row]) => (
+                <Link key={name} to={categoryPath(name)} className="relative aspect-square overflow-hidden rounded-2xl">
+                  <img src={row.photo.src} alt="" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  <p className="absolute bottom-2 left-3 text-sm font-semibold text-white">{name}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {profile && (
+          <section className="mt-12 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-3xl border border-sand bg-white p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-terra">Public profile</p>
+              <p className="font-display mt-2 text-3xl">{profile.name}</p>
+              <p className="mt-1 text-sm text-ink-soft">@{profile.handle} · {profile.location ?? 'Africa'}</p>
+              <p className="mt-3 text-sm text-ink-soft">Models do not earn from licences. Copyright stays with the photographer.</p>
+            </div>
+            <div className="rounded-3xl border border-sand bg-white p-6">
+              <h2 className="font-display text-3xl">Availability</h2>
+              <p className="mt-3 text-sm text-ink-soft">{AVAILABILITY_LABELS[profile.availability]}</p>
+              {profile.dayRateUsd != null && (
+                <p className="mt-2 text-sm text-ink-soft">From ${profile.dayRateUsd.toLocaleString()} / day</p>
+              )}
+              {profile.availability !== 'unavailable' && user?.modelHandle !== profile.handle && (
+                <Link to={`/book/${profile.handle}`} className="mt-5 inline-flex rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-terra">
+                  Send a booking inquiry
+                </Link>
+              )}
+            </div>
+          </section>
+        )}
+
+        {items.length > 4 && (
+          <section className="mt-12">
+            <h2 className="font-display text-3xl text-ink">Portfolio</h2>
+            <PhotoMasonry photos={items.slice(4)} />
+          </section>
+        )}
 
         {hasMore && (
           <div className="mt-10 text-center">
             <button
               type="button"
               onClick={() => void loadMore()}
-              className="border border-ink px-8 py-3 font-mono-tech text-[11px] uppercase tracking-[0.18em] hover:bg-ink hover:text-paper"
+              className="rounded-full border border-ink px-8 py-3 text-sm font-semibold hover:bg-ink hover:text-white"
             >
               Load more
             </button>

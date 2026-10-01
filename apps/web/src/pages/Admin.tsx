@@ -95,8 +95,8 @@ export const adminLinks: PortalLink[] = [
     label: 'Site',
     icon: icons.dash,
     children: [
-      { to: '/admin/featured', label: 'Featured images', icon: icons.dash },
-      { to: '/admin/homepage', label: 'Homepage', icon: icons.dash },
+      { to: '/admin/featured', label: 'Featured Photos', icon: icons.dash },
+      { to: '/admin/homepage', label: 'Homepage design', icon: icons.dash },
       { to: '/admin/site', label: 'Site content', icon: icons.dash },
     ],
   },

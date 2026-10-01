@@ -152,9 +152,9 @@ export function LogoMark({ dark = false, accent = '#bc773f', locked = false }: {
           <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke="currentColor" strokeWidth="1.4" />
         </svg>
       )}
-      <span className="font-condensed text-lg font-medium uppercase tracking-[0.24em]">
+      <span className="font-sans text-[22px] font-semibold tracking-tight">
         {highlight}
-        {mark && name.endsWith(mark) ? <span>{mark}</span> : null}
+        {mark && name.endsWith(mark) ? <span className="text-terra">{mark}</span> : null}
       </span>
     </Link>
   )
@@ -229,7 +229,7 @@ export function AccountMenu({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
   const { user, logout } = useAuth()
   const { content } = useSiteContent()
   const [open, setOpen] = useState(false)
-  const text = `font-condensed text-[13px] font-light uppercase tracking-[0.22em] transition-colors hover:text-terra ${
+  const text = `text-sm font-medium transition-colors hover:text-terra ${
     tone === 'dark' ? 'text-paper-soft' : 'text-ink'
   }`
   if (!user) {
@@ -320,7 +320,7 @@ export function SiteHeader() {
             <CurrencySelect />
           </div>
           <ThemeToggle />
-          <Link to="/search" className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink xl:hidden" aria-label="Search">
+          <Link to="/search" className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink" aria-label="Search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
               <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
@@ -332,7 +332,7 @@ export function SiteHeader() {
               to="/login?redirect=/contributor/upload&signup=photographer"
               className="hidden rounded-full bg-terra px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink sm:inline-block"
             >
-              {content.actions.sell}
+              Join VueKumi
             </Link>
           )}
           <button
@@ -374,10 +374,10 @@ export function PublicFooter() {
   const links = sortMenuLinks(content.footer.links)
   const size = Math.ceil(links.length / 3) || 1
   const columns = [links.slice(0, size), links.slice(size, size * 2), links.slice(size * 2)].filter((column) => column.length > 0)
-  const headings = ['Explore', 'For creators', 'Trust']
+  const headings = ['Explore', 'For creators', 'Help']
   return (
     <footer className="bg-[#0b0a09] text-[#faf6f3]">
-      <div className="mx-auto grid max-w-[1500px] gap-10 px-6 py-14 md:grid-cols-4 md:px-10">
+      <div className="mx-auto grid max-w-[1500px] gap-10 px-6 py-14 md:grid-cols-5 md:px-10">
         <div>
           <LogoMark dark locked />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#c4b8ae]">{content.footer.blurb}</p>
@@ -394,6 +394,13 @@ export function PublicFooter() {
             </div>
           </div>
         ))}
+        <div>
+          <p className="text-sm font-semibold text-white">Join VueKumi</p>
+          <p className="mt-4 text-sm leading-relaxed text-[#c4b8ae]">Share authentic African photographs with buyers around the world.</p>
+          <Link to="/login?redirect=/contributor/upload&signup=photographer" className="mt-4 inline-flex rounded-full bg-terra px-4 py-2 text-sm font-semibold text-white hover:bg-white hover:text-ink">
+            Join VueKumi
+          </Link>
+        </div>
       </div>
       <div className="border-t border-white/10">
         <p className="mx-auto max-w-[1500px] px-6 py-4 text-xs text-[#8a8078] md:px-10">{content.footer.copyright}</p>

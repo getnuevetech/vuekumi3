@@ -32,12 +32,26 @@ function emptyPins(page: HomeFeaturedAdminDto): HomeFeaturedAdminDto['pins'] {
   return { ...page.pins }
 }
 
+const DESIGN_SLOT_TITLE: Record<HomeFeaturedSlotKey, string> = {
+  hero: 'D01 Hero collage',
+  edge: 'D01 Featured Photos',
+  editorial: 'D01 Featured Collections',
+  pricing: 'D01 License banner',
+  stats_background: 'D01 Continent banner',
+}
+
+const PEOPLE_DESIGN_TITLE: Record<HomePeopleSlot, string> = {
+  photographers: 'D01 Top African Creators — Photographers',
+  photo_influencers: 'D01 Contributor Spotlight — Photo Influencers',
+  contributors: 'D01 Top African Creators — Contributors',
+}
+
 const SLOT_NOTE: Partial<Record<HomeFeaturedSlotKey, string>> = {
-  hero: 'Upload an image for a slide, or pin a live photograph. An empty slide picks a random photograph from the whole library.',
-  edge: 'Featured images are edited only on Featured images, and from the switch on each photograph in Content. Empty frames pick a random photograph from the whole library.',
-  editorial: 'Upload an image, pin photographs that change on a timer, or choose a category. An upload fills that slide. Empty slides pick a random photograph from the whole library, or from the chosen category.',
-  pricing: 'Upload an image or pin a photograph for a pricing card that does not have its own plan image. Plan names, prices, and the lines on the cards are edited under Buyer plans. An empty card picks a random photograph from the whole library.',
-  stats_background: 'Upload a background image, or pin a live photograph. An empty background picks a random photograph from the whole library.',
+  hero: 'These images fill the landing-page collage beside “Images that tell Africa’s story.” Upload an image or pin a live photograph. An empty frame picks a photograph from the library.',
+  edge: 'Featured Photos on the landing page. Edit them on Featured Photos, or with the Feature switch in Content.',
+  editorial: 'These photographs become the Featured Collections row. Each card links to that photograph’s category.',
+  pricing: 'The first image is the background of the license banner. Plan names and prices stay under Buyer plans.',
+  stats_background: 'Background of the “A continent of stories” banner. An empty background stays a dark panel.',
 }
 
 function emptyUploads(page: HomeFeaturedAdminDto): Record<HomeUploadSlotKey, (string | null)[]> {
@@ -208,14 +222,36 @@ export default function AdminHomepage() {
   }
 
   return (
-    <AdminShell subtitle="Section order, people rows, category banners, and static banners.">
-      <p className="font-mono-tech text-[10px] uppercase tracking-[0.25em] text-terra">Homepage</p>
-      <h1 className="font-serif-display mt-2 text-4xl font-light tracking-tight">Homepage layout.</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-        The public menu is edited under <Link to="/admin/menu" className="text-terra">Menu</Link>. Other words and the logo are under <Link to="/admin/site" className="text-terra">Site content</Link>. Featuring a photograph is curation, not a licence and not AI-training consent.
-        Private, portfolio, and agency-protected inventory cannot appear on the public homepage.
-        The homepage featured strip is edited only on <Link to="/admin/featured" className="text-terra">Featured images</Link>, including the switch on each photograph in Content.
-        Category banners sit below the three messages. Upload a banner image here, or choose a live photograph. Empty positions pick a random photograph from the whole library so the page stays moving.
+    <AdminShell subtitle="Manage the public design sections: hero, featured photos, categories, creators, and the library.">
+      <p className="text-sm font-semibold text-terra">D01 Landing</p>
+      <h1 className="font-display mt-2 text-4xl text-ink">Homepage design</h1>
+      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-soft">
+        The public landing page follows the D01 layout: hero collage, category chips, Featured Photos, Browse by Categories, Featured Collections, the continent banner, contributor spotlight, Top African Creators, the license banner, and Latest from the Library.
+        Hide a module below to take it off that page. Moving a row saves your list and does not change that design order.
+        Featuring a photograph is curation, not a licence and not AI-training consent. Private, portfolio, and agency-protected inventory cannot appear on the public homepage.
+      </p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {[
+          ['#d01-hero', 'D01 Hero collage', 'Images beside “Images that tell Africa’s story.”'],
+          ['/admin/featured', 'D01 Featured Photos', 'The three large photographs under the category row.'],
+          ['#d01-categories', 'D01 Browse by Categories', 'Category chips and the category image row.'],
+          ['#d01-editorial', 'D01 Featured Collections', 'Editorial pins, shown as category collection cards.'],
+          ['#d01-continent', 'D01 Continent banner', '“A continent of stories,” with the stats background.'],
+          ['#d01-people', 'D01 Creators', 'Spotlight and Top African Creators. Photo Influencer stays the public name.'],
+          ['#d01-license', 'D01 License banner', 'Banner image. Plan prices stay under Buyer plans.'],
+          ['#d01-visibility', 'Show or hide modules', 'Hide a labeled section without deleting its pins.'],
+        ].map(([to, title, note]) => (
+          <Link key={title} to={to} className="rounded-2xl border border-sand bg-white p-4 hover:border-terra">
+            <p className="font-semibold text-ink">{title}</p>
+            <p className="mt-1 text-sm text-ink-soft">{note}</p>
+          </Link>
+        ))}
+      </div>
+      <p className="mt-4 flex flex-wrap gap-4 text-sm">
+        <Link to="/admin/featured" className="font-semibold text-terra">Featured Photos</Link>
+        <Link to="/admin/content" className="font-semibold text-terra">Content</Link>
+        <Link to="/admin/menu" className="font-semibold text-terra">Menu</Link>
+        <Link to="/admin/site" className="font-semibold text-terra">Site content</Link>
       </p>
 
       <SectionArrangement page={page} onSaved={load} />
@@ -272,7 +308,7 @@ export default function AdminHomepage() {
       <div className="mt-10 space-y-10">
         {HOME_FEATURED_SLOT_KEYS.filter((slot) => slot !== 'edge').map((slot) => (
           <section key={slot}>
-            <h2 className="font-serif-display text-2xl font-light">{page?.labels[slot] ?? slot}</h2>
+            <h2 id={slot === 'hero' ? 'd01-hero' : slot === 'editorial' ? 'd01-editorial' : slot === 'pricing' ? 'd01-license' : slot === 'stats_background' ? 'd01-continent' : undefined} className="font-display text-3xl">{DESIGN_SLOT_TITLE[slot]}</h2>
             <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
               {page?.capacities[slot] ?? 0} positions
             </p>
@@ -379,8 +415,8 @@ export default function AdminHomepage() {
         {HOME_PEOPLE_SLOTS.map((slot) => (
           <PeopleEditor key={slot} slot={slot} page={page} busy={busy} onSaved={load} />
         ))}
-        <section className="mt-10">
-                <h2 className="font-serif-display text-2xl font-light">Category banners</h2>
+        <section id="d01-categories" className="mt-10">
+                <h2 className="font-display text-3xl">D01 Browse by Categories</h2>
                 <p className="mt-1 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
                   {page?.categoryBannerCapacity ?? banners?.length ?? 0} positions
                 </p>
@@ -540,10 +576,10 @@ function SectionArrangement({ page, onSaved }: { page: HomeFeaturedAdminDto | nu
   }
 
   return (
-    <section className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
-      <h2 className="font-serif-display text-2xl font-light">Section arrangement</h2>
+    <section id="d01-visibility" className="mt-8 rounded-3xl border border-sand-soft bg-white p-5">
+      <h2 className="font-display text-3xl">Show or hide D01 modules</h2>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
-        This list is the public homepage. Photographers and photo influencers are separate rows. Hide a row to keep it here and leave it off the page. Remove a row to take it out of the list. Add a row to put it back, or add an image section. The header, footer, and back-to-top stay in place.
+        Hide a module to keep its pins and leave it off the public landing page. The public page keeps the D01 order, so moving a row does not rearrange the homepage. Photo Influencers stay a separate account from Photographers. The header, footer, and back-to-top stay in place.
       </p>
       <ol className="mt-4 space-y-2">
         {order.map((key, index) => {
@@ -686,8 +722,9 @@ function PeopleEditor({ slot, page, busy, onSaved }: { slot: HomePeopleSlot; pag
   }
 
   return (
-    <section className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
-      <h2 className="font-serif-display text-2xl font-light">{label}</h2>
+    <section id={slot === 'photographers' ? 'd01-people' : undefined} className="mt-10 rounded-3xl border border-sand-soft bg-white p-5">
+      <h2 className="font-display text-3xl">{PEOPLE_DESIGN_TITLE[slot]}</h2>
+      <p className="mt-1 text-sm text-ink-faint">{label}</p>
       <p className="mt-1 max-w-2xl text-sm text-ink-soft">
         Show chosen profiles, rank by number of downloads, or show chosen profiles first and fill the rest by downloads.
         Width and height are a percent of the screen width. The starting card is {DEFAULT_PEOPLE_FRAME.widthVw} wide and {DEFAULT_PEOPLE_FRAME.heightVw} tall.

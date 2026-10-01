@@ -31,11 +31,11 @@ export const HOME_EDITORIAL_MODES = ['pins', 'category'] as const
 export type HomeEditorialMode = (typeof HOME_EDITORIAL_MODES)[number]
 
 export const HOME_FEATURED_SLOT_LABEL: Record<HomeFeaturedSlotKey, string> = {
-  hero: 'Hero slider',
+  hero: 'D01 Hero collage',
   edge: 'Featured images',
-  editorial: 'Editorial split',
-  pricing: 'Pricing cards',
-  stats_background: 'Stats background',
+  editorial: 'D01 Featured Collections',
+  pricing: 'D01 License banner',
+  stats_background: 'D01 Continent banner',
 }
 
 export function homeFeaturedCapacity(slot: HomeFeaturedSlotKey): number {
@@ -115,20 +115,20 @@ export const HOME_BUILTIN_SECTIONS = [
 export type HomeBuiltinSection = (typeof HOME_BUILTIN_SECTIONS)[number]
 
 export const HOME_SECTION_LABEL: Record<HomeBuiltinSection, string> = {
-  hero: 'Hero slider',
-  marquee: 'Category marquee',
-  featured: 'Featured images',
-  icons: 'Icon messages',
-  category_banners: 'Category banners',
-  cta: 'Contributor band',
-  feed: 'Library feed',
-  editorial: 'Editorial split',
-  stats: 'Stats',
-  photo_influencers: 'Photo influencers',
-  photographers: 'Photographers',
-  contributors: 'Contributors',
-  models: 'Models',
-  pricing: 'Pricing',
+  hero: 'D01 Hero — Images that tell Africa’s story',
+  marquee: 'D01 Category chips',
+  featured: 'D01 Featured Photos',
+  icons: 'D01 Trust row',
+  category_banners: 'D01 Browse by Categories',
+  cta: 'D01 Continent banner',
+  feed: 'D01 Latest from the Library',
+  editorial: 'D01 Editorial feature',
+  stats: 'D01 Library stats',
+  photo_influencers: 'D01 Photo Influencer spotlight',
+  photographers: 'D01 Top photographers',
+  contributors: 'D01 Top contributors',
+  models: 'D01 Top models',
+  pricing: 'D01 License banner',
 }
 
 /** Photo influencers sit where photographers used to, and photographers sit where contributors used to. */
