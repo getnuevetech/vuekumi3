@@ -134,7 +134,7 @@ function CurrencySelect({ tone = 'light' }: { tone?: 'dark' | 'light' }) {
 
 /* ---------------- Logo ---------------- */
 
-export function LogoMark({ dark = false, accent = '#bc773f', locked = false }: { dark?: boolean; accent?: string; condensed?: boolean; locked?: boolean }) {
+export function LogoMark({ dark = false, accent = '#bc773f', locked = false, tagline = false }: { dark?: boolean; accent?: string; condensed?: boolean; locked?: boolean; tagline?: boolean }) {
   const { content, logoUrl } = useSiteContent()
   const name = content.brand.name
   const mark = content.brand.accent
@@ -152,9 +152,16 @@ export function LogoMark({ dark = false, accent = '#bc773f', locked = false }: {
           <path d="M13 1v4M13 21v4M1 13h4M21 13h4" stroke="currentColor" strokeWidth="1.4" />
         </svg>
       )}
-      <span className="font-sans text-[22px] font-semibold tracking-tight">
-        {highlight}
-        {mark && name.endsWith(mark) ? <span className="text-terra">{mark}</span> : null}
+      <span className="flex flex-col leading-none">
+        <span className="font-sans text-[22px] font-semibold tracking-tight">
+          {highlight}
+          {mark && name.endsWith(mark) ? <span style={{ color: accent }}>{mark}</span> : null}
+        </span>
+        {tagline && (
+          <span className="mt-1 text-[8px] font-semibold uppercase tracking-[0.16em]" style={{ color: accent }}>
+            Africa in every frame
+          </span>
+        )}
       </span>
     </Link>
   )
@@ -162,16 +169,31 @@ export function LogoMark({ dark = false, accent = '#bc773f', locked = false }: {
 
 /* ---------------- Public search ---------------- */
 
+function SearchGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function SearchForm({
   dark = false,
   defaultQuery = '',
   compact = false,
   wide = false,
+  placeholder,
+  iconButton = false,
+  scope = false,
 }: {
   dark?: boolean
   defaultQuery?: string
   compact?: boolean
   wide?: boolean
+  placeholder?: string
+  iconButton?: boolean
+  scope?: boolean
 }) {
   const reactId = useId()
   const { content } = useSiteContent()
@@ -197,20 +219,27 @@ export function SearchForm({
       } ${dark ? 'border-white/30' : 'border-sand'}`}
     >
       <label className="sr-only" htmlFor={inputId}>Search the library</label>
+      {scope && (
+        <select aria-label="Content type" defaultValue="all" className="h-full shrink-0 border-r border-sand bg-transparent py-3 pl-4 pr-2 text-xs font-medium text-ink outline-none">
+          <option value="all">All content</option>
+          <option value="photos">Photos</option>
+        </select>
+      )}
       <input
         id={inputId}
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder={content.searchPlaceholder}
-        className={`min-w-0 flex-1 bg-transparent px-5 py-3 text-sm text-ink outline-none placeholder:text-ink-faint ${
-          wide ? '' : ''
-        }`}
+        placeholder={placeholder ?? content.searchPlaceholder}
+        className={`min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint ${scope ? 'px-3' : 'px-5'} py-3`}
       />
       <button
         type="submit"
-        className="m-1 shrink-0 rounded-full bg-terra px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink"
+        aria-label="Search"
+        className={iconButton
+          ? 'm-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ef5b24] text-white transition-colors hover:bg-ink'
+          : 'm-1 shrink-0 rounded-full bg-terra px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink'}
       >
-        Search
+        {iconButton ? <SearchGlyph /> : 'Search'}
       </button>
     </form>
   )
@@ -303,8 +332,8 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-sand bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-3 md:px-6">
-        <LogoMark />
-        <nav className="ml-2 hidden items-center gap-4 xl:flex">
+        <LogoMark tagline accent="#ef5b24" />
+        <nav className="ml-4 hidden items-center gap-5 xl:flex">
           {links.map((link) => (
             <Link
               key={`${link.to}-${link.label}`}
@@ -315,12 +344,15 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
+        <div className="mx-3 hidden min-w-0 max-w-md flex-1 lg:block">
+          <SearchForm wide iconButton placeholder="Search authentic African photos, people, places" />
+        </div>
         <div className="ml-auto flex items-center gap-2">
-          <div className="hidden lg:block">
+          <div className="hidden 2xl:block">
             <CurrencySelect />
           </div>
           <ThemeToggle />
-          <Link to="/search" className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink" aria-label="Search">
+          <Link to="/search" className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink lg:hidden" aria-label="Search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
               <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
@@ -330,7 +362,7 @@ export function SiteHeader() {
           {!user && (
             <Link
               to="/login?redirect=/contributor/upload&signup=photographer"
-              className="hidden rounded-full bg-terra px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink sm:inline-block"
+              className="hidden rounded-full bg-[#ef5b24] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink sm:inline-block"
             >
               Join VueKumi
             </Link>
@@ -372,19 +404,32 @@ export function PublicFooter() {
   const { content } = useSiteContent()
   if (isPortalPath(pathname)) return null
   const links = sortMenuLinks(content.footer.links)
-  const size = Math.ceil(links.length / 3) || 1
-  const columns = [links.slice(0, size), links.slice(size, size * 2), links.slice(size * 2)].filter((column) => column.length > 0)
-  const headings = ['Explore', 'For creators', 'Help']
+  const explore = links.filter((link) => /search|creators|models/i.test(link.to))
+  const creators = links.filter((link) => /signup|account|upload/i.test(link.to))
+  const business = links.filter((link) => /pricing/i.test(link.to))
+  const help = links.filter((link) => !explore.includes(link) && !creators.includes(link) && !business.includes(link))
+  const columns = [
+    ['Explore', explore],
+    ['For creators', creators],
+    ['For business', business],
+    ['Help', help],
+  ].filter((column) => column[1].length > 0) as [string, typeof links][]
   return (
-    <footer className="bg-[#0b0a09] text-[#faf6f3]">
-      <div className="mx-auto grid max-w-[1500px] gap-10 px-6 py-14 md:grid-cols-5 md:px-10">
-        <div>
-          <LogoMark dark locked />
+    <footer className="relative overflow-hidden bg-[#14110e] text-[#faf6f3]">
+      <div className="mx-auto grid max-w-[1240px] gap-10 px-6 py-14 md:grid-cols-8 md:px-8">
+        <div className="md:col-span-2">
+          <LogoMark dark locked tagline accent="#ef5b24" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#c4b8ae]">{content.footer.blurb}</p>
+          <div className="mt-5 flex gap-2 text-[#c4b8ae]">
+            <FooterIcon label="X"><path d="M6 6l12 12M18 6L6 18" /></FooterIcon>
+            <FooterIcon label="Instagram"><rect x="5" y="5" width="14" height="14" rx="4" /><circle cx="12" cy="12" r="3.2" /><circle cx="16.5" cy="7.5" r="0.8" fill="currentColor" /></FooterIcon>
+            <FooterIcon label="Facebook"><path d="M14 8h2V5h-2c-2.2 0-4 1.8-4 4v2H8v3h2v6h3v-6h2.2l.8-3H13V9c0-.6.4-1 1-1z" /></FooterIcon>
+            <FooterIcon label="LinkedIn"><rect x="5" y="5" width="14" height="14" rx="2" /><path d="M8 11v5M8 8h.01M12 16v-3.2a1.8 1.8 0 013.6 0V16" /></FooterIcon>
+          </div>
         </div>
-        {columns.map((column, index) => (
-          <div key={headings[index] ?? index}>
-            <p className="text-sm font-semibold text-white">{headings[index] ?? 'More'}</p>
+        {columns.map(([heading, column]) => (
+          <div key={heading}>
+            <p className="text-sm font-semibold text-white">{heading}</p>
             <div className="mt-4 flex flex-col gap-2">
               {column.map((link) => (
                 <Link key={`${link.to}-${link.label}`} to={link.to} className="text-sm text-[#c4b8ae] transition-colors hover:text-[#e0a36a]">
@@ -394,18 +439,45 @@ export function PublicFooter() {
             </div>
           </div>
         ))}
-        <div>
-          <p className="text-sm font-semibold text-white">Join VueKumi</p>
-          <p className="mt-4 text-sm leading-relaxed text-[#c4b8ae]">Share authentic African photographs with buyers around the world.</p>
-          <Link to="/login?redirect=/contributor/upload&signup=photographer" className="mt-4 inline-flex rounded-full bg-terra px-4 py-2 text-sm font-semibold text-white hover:bg-white hover:text-ink">
-            Join VueKumi
-          </Link>
+        <div className="md:col-span-2">
+          <p className="text-sm font-semibold text-white">Join our global creative community.</p>
+          <form
+            className="mt-4 flex overflow-hidden rounded-full bg-white"
+            onSubmit={(event) => {
+              event.preventDefault()
+              window.location.href = '/login?redirect=/contributor/upload&signup=photographer'
+            }}
+          >
+            <label className="sr-only" htmlFor="footer-join">Email address</label>
+            <input id="footer-join" type="email" required placeholder="Email address" className="min-w-0 flex-1 bg-transparent px-4 py-2 text-sm text-ink outline-none" />
+            <button type="submit" className="m-1 shrink-0 rounded-full bg-terra px-4 py-2 text-sm font-semibold text-white">Subscribe</button>
+          </form>
         </div>
       </div>
+      <svg viewBox="0 0 200 230" className="pointer-events-none absolute bottom-14 right-6 h-28 w-24 text-[#3a2e24]" aria-hidden="true">
+        <path fill="currentColor" d="M92 8c16 2 28 16 30 32 12 4 24 16 22 32 10 6 16 20 10 34-4 16-16 22-12 38 4 14 10 22 4 36-6 16-20 24-24 40-6 14-10 22-24 24-12 2-18-10-28-8-12 8-28 4-34-10-6-12-2-26 8-34-8-10-14-24-8-38 6-16 4-28 14-40-4-14 2-28 14-38 8-16 6-30 16-42 8-8 20-12 16-26z" />
+        <path fill="currentColor" d="M158 150c6 2 10 10 8 18-2 8-8 12-8 18 0 4 6 8 4 12-4 6-14 4-16-2-2-6 2-10 0-16-2-8 2-16 6-20 2-4 4-8 6-10z" />
+      </svg>
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-[1500px] px-6 py-4 text-xs text-[#8a8078] md:px-10">{content.footer.copyright}</p>
+        <div className="mx-auto flex max-w-[1240px] flex-col items-start justify-between gap-3 px-6 py-4 text-xs text-[#8a8078] md:flex-row md:items-center md:px-8">
+          <span>{content.footer.copyright}</span>
+          <span className="flex gap-4">
+            <Link to="/legal" className="hover:text-[#e0a36a]">Terms of Service</Link>
+            <Link to="/legal" className="hover:text-[#e0a36a]">Privacy Policy</Link>
+            <Link to="/legal" className="hover:text-[#e0a36a]">Cookie Policy</Link>
+          </span>
+          <span>Authentic African imagery. A more inclusive visual world.</span>
+        </div>
       </div>
     </footer>
+  )
+}
+
+function FooterIcon({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span aria-label={label} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6">{children}</svg>
+    </span>
   )
 }
 
