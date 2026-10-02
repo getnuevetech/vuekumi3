@@ -2251,3 +2251,20 @@ model AiProvider {
 
   @@index([purpose, enabled, priority])
 }
+
+/// D-R3 — public Digital ID card. Evidence of a public profile card / QR target,
+/// not KYC. Never store email, phone, document numbers, or biometrics here.
+model DigitalIdentityCard {
+  id          String    @id @default(cuid())
+  profileId   String
+  cardType    String
+  publicToken String    @unique
+  status      String    @default("active")
+  issuedAt    DateTime  @default(now())
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([profileId, cardType])
+  @@index([status])
+}

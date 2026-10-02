@@ -62,6 +62,7 @@ import BrandStudio from './pages/BrandStudio'
 import Creators from './pages/Creators'
 import Models from './pages/Models'
 import Category from './pages/Category'
+import DigitalIdPage from './pages/DigitalId'
 import Favorites from './pages/Favorites'
 import Following from './pages/Following'
 import Collections from './pages/Collections'
@@ -130,6 +131,7 @@ export default function App() {
         <Route path="/m/:handle" element={<ModelProfile />} />
         <Route path="/creators" element={<Creators />} />
         <Route path="/models" element={<Models />} />
+        <Route path="/id/:token" element={<DigitalIdPage />} />
         <Route path="/category/:slug" element={<Category />} />
         <Route path="/hire" element={<HireBrowse />} />
         <Route path="/hire/:handle" element={<BookCreator kind="photographer" />} />

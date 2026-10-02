@@ -6,3 +6,4 @@
 export { SiteHeader, PublicFooter, SearchForm, PhotoCard, PhotoMasonry, LogoMark, AccountMenu } from '../shared'
 export { PhotoTile, PhotoTileMasonry, type PhotoDensity } from './PhotoTile'
 export { FilterOption, LibraryFilterPanel, type FacetRow } from './FilterPanel'
+export { DigitalIdCard, DigitalIdPublicView } from './DigitalIdCard'

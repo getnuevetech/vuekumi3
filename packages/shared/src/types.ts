@@ -286,6 +286,8 @@ export interface PhotographerDto {
   location: string | null
   bio: string | null
   creatorKind: CreatorKind
+  /** Primary account type — distinguishes paid Contributor (D05) from Photographer. */
+  accountType?: 'photographer' | 'photo_influencer' | 'contributor'
   availability: BookingAvailability
   dayRateUsd: number | null
   represented: boolean
@@ -295,6 +297,14 @@ export interface PhotographerDto {
   profileViews?: number
   following?: boolean
   modelHandle?: string | null
+  /** Cover image for profile hero (latest public photo). */
+  coverPhotoUrl?: string | null
+  /** ISO date string — member since. */
+  memberSince?: string | null
+  /** Top category labels from public portfolio. */
+  specialties?: string[]
+  /** Digital ID preview — never includes PII beyond public profile fields. */
+  digitalId?: import('./digital-id.js').DigitalIdPreviewDto | null
 }
 
 export interface ModelPublicDto {
@@ -309,6 +319,12 @@ export interface ModelPublicDto {
   photographerHandle: string | null
   earns: false
   profileViews?: number
+  coverPhotoUrl?: string | null
+  memberSince?: string | null
+  specialties?: string[]
+  /** Approved commercial appearances (public count only). */
+  commercialAppearanceCount?: number
+  digitalId?: import('./digital-id.js').DigitalIdPreviewDto | null
 }
 
 export interface FollowResult {

@@ -466,6 +466,8 @@ export const api = {
     return request<PhotographerProfileDto>(`/api/photographers/${encodeURIComponent(handle)}${query ? `?${query}` : ''}`)
   },
 
+  digitalId: (token: string) => request<import('@vuekumi/shared').DigitalIdPublicDto>(`/api/digital-id/${encodeURIComponent(token)}`),
+
   models: (params?: Record<string, string | number | undefined>) => {
     const qs = new URLSearchParams()
     if (params) {

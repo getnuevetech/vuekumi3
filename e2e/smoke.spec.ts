@@ -105,4 +105,37 @@ test.describe('Phase 45 + 55 web smoke', () => {
     await expect(page.getByText(/Usage permission/i)).toBeVisible()
     await expect(page.locator('img').first()).toBeVisible()
   })
+
+  test('D-R3: photo influencer profile shows Open Creator without license performance', async ({ page }) => {
+    await page.goto('/p/amara-okafor')
+    await expect(page.getByRole('heading', { name: /Amara/i }).first()).toBeVisible()
+    await expect(page.getByText(/Open Creator/i).first()).toBeVisible()
+    await expect(page.getByText(/Upgrade account/i)).toBeVisible()
+    await expect(page.getByText(/Digital ID/i).first()).toBeVisible()
+    await expect(page.getByText(/Top licensed work/i)).toHaveCount(0)
+  })
+
+  test('D-R3: photographer premium header and model directory cards', async ({ page }) => {
+    await page.goto('/p/thandiwe-nkosi')
+    await expect(page.getByRole('heading', { name: /Thandiwe/i }).first()).toBeVisible()
+    await expect(page.getByText(/Digital ID/i).first()).toBeVisible()
+
+    await page.goto('/models')
+    await expect(page.getByRole('heading', { name: 'Models.' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Ada Molefe/i }).first()).toBeVisible()
+
+    await page.goto('/m/ada-molefe')
+    await expect(page.getByRole('heading', { name: 'Ada Molefe' })).toBeVisible()
+    await expect(page.getByText(/Verified Model/i).first()).toBeVisible()
+  })
+
+  test('D-R3: digital ID page has no private fields', async ({ page }) => {
+    await page.goto('/p/amara-okafor')
+    await page.getByRole('link', { name: /Digital ID/i }).first().click()
+    await expect(page).toHaveURL(/\/id\//)
+    await expect(page.getByText(/VueKumi Digital ID/i).first()).toBeVisible()
+    await expect(page.getByText(/Open Creator/i).first()).toBeVisible()
+    await expect(page.getByText(/@vuekumi\.demo/i)).toHaveCount(0)
+    await expect(page.getByText(/Admin123/i)).toHaveCount(0)
+  })
 })

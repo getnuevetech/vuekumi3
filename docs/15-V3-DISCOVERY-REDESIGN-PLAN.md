@@ -1,10 +1,8 @@
 # VueKumi v3 discovery redesign — recommendations and implementation plan
 
-**Status: D-R2 visual shell shipped on this branch.** Public pages use one marketplace
-chrome (header, home, library, category, photo). D-R2 section aliases
-(`category_chips`, `featured_collections`, `spotlight`, `top_creators`,
-`library_preview`) sit beside legacy CMS keys. Profile depth, Digital ID, and
-cursor search remain **D-R3**.
+**Status: D-R2 shipped; D-R3 profiles / directories / Digital ID in progress on this branch.**
+Public pages use one marketplace chrome. Role-aware `/p` and `/m` layouts, `/models`
+talent directory, and `DigitalIdentityCard` + `/id/:token` are the D-R3 scope.
 
 Sources reviewed 30 September 2026 against `main`:
 

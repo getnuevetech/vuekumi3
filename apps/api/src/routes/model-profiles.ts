@@ -12,6 +12,7 @@ import {
   PROFILE_PHOTO_FILTER,
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
+import { ensureDigitalIdCard } from '../lib/digital-id.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPublicModel(
@@ -19,17 +20,25 @@ function toPublicModel(
     name: string
     avatarUrl: string | null
     modelProfile: {
+      id?: string
       handle: string
       location: string | null
       bio: string | null
       availability: 'open' | 'limited' | 'unavailable'
       dayRateUsd: number | null
       profileViews?: number
+      createdAt?: Date
     } | null
     contributorProfile?: { handle: string } | null
   },
   photosCount: number,
-  extras?: { profileViews?: number },
+  extras?: {
+    profileViews?: number
+    coverPhotoUrl?: string | null
+    specialties?: string[]
+    commercialAppearanceCount?: number
+    digitalId?: ModelPublicDto['digitalId']
+  },
 ): ModelPublicDto | null {
   if (!user.modelProfile) return null
   return {
@@ -44,6 +53,11 @@ function toPublicModel(
     photographerHandle: user.contributorProfile?.handle ?? null,
     earns: false,
     profileViews: extras?.profileViews ?? user.modelProfile.profileViews,
+    coverPhotoUrl: extras?.coverPhotoUrl ?? null,
+    memberSince: user.modelProfile.createdAt?.toISOString() ?? null,
+    specialties: extras?.specialties ?? [],
+    commercialAppearanceCount: extras?.commercialAppearanceCount ?? 0,
+    digitalId: extras?.digitalId ?? null,
   }
 }
 
@@ -102,8 +116,24 @@ export async function modelProfileRoutes(app: FastifyInstance) {
     const start = (query.page - 1) * query.limit
     const pageItems = items.slice(start, start + query.limit)
 
+    const enriched = await Promise.all(pageItems.map(async (row) => {
+      const profile = users.find((user) => user.modelProfile?.handle === row.handle)
+      if (!profile?.modelProfile) return row
+      const digitalId = await ensureDigitalIdCard({
+        profileId: profile.modelProfile.id,
+        cardType: 'model',
+        handle: row.handle,
+        preferredToken: `seed-${row.handle}-model-id`,
+      })
+      return {
+        ...row,
+        memberSince: profile.modelProfile.createdAt.toISOString(),
+        digitalId,
+      }
+    }))
+
     return {
-      items: pageItems,
+      items: enriched,
       page: query.page,
       limit: query.limit,
       total: items.length,
@@ -189,8 +219,43 @@ export async function modelProfileRoutes(app: FastifyInstance) {
 
     const favorited = await favoriteIdSet(request.userId, ordered.map((p) => p.id))
 
+    const [cover, specialtyRows, commercialCount, digitalId] = await Promise.all([
+      prisma.photo.findFirst({
+        where: modelPortfolioPhotoWhere(profile.userId),
+        orderBy: [{ createdAt: 'desc' }],
+        select: { src: true },
+      }),
+      prisma.photo.groupBy({
+        by: ['category'],
+        where: modelPortfolioPhotoWhere(profile.userId),
+        _count: { _all: true },
+        orderBy: { _count: { category: 'desc' } },
+        take: 6,
+      }),
+      prisma.photoAppearance.count({
+        where: {
+          modelUserId: profile.userId,
+          status: 'approved',
+          confirmedLikeness: true,
+          photo: { ...PROFILE_PHOTO_FILTER, commercialStatus: 'ENABLED' },
+        },
+      }),
+      ensureDigitalIdCard({
+        profileId: profile.id,
+        cardType: 'model',
+        handle: profile.handle,
+        preferredToken: `seed-${profile.handle}-model-id`,
+      }),
+    ])
+
     return {
-      model,
+      model: {
+        ...model,
+        coverPhotoUrl: cover?.src ?? null,
+        specialties: specialtyRows.map((row) => row.category),
+        commercialAppearanceCount: commercialCount,
+        digitalId,
+      },
       items: ordered.map((p) => serializeCatalogPhoto(p, request.userId ? favorited.has(p.id) : undefined)),
       page: query.page,
       limit: query.limit,

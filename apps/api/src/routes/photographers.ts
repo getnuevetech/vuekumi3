@@ -13,6 +13,7 @@ import {
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
 import { accountHasFeature, accountTypesWithFeature } from '../lib/account-features.js'
+import { contributorCardType, ensureDigitalIdCard } from '../lib/digital-id.js'
 import { creatorKindWhere } from '../lib/creator-kind.js'
 import { followBlocked } from '../lib/follows.js'
 import { prisma } from '../lib/prisma.js'
@@ -24,6 +25,7 @@ function toPhotographer(
     accountType?: string
     avatarUrl: string | null
     contributorProfile: {
+      id?: string
       handle: string
       location: string | null
       bio: string | null
@@ -31,6 +33,7 @@ function toPhotographer(
       availability: 'open' | 'limited' | 'unavailable'
       dayRateUsd: number | null
       profileViews?: number
+      createdAt?: Date
     } | null
     modelProfile?: { handle: string } | null
     representation?: { status: string } | null
@@ -38,10 +41,20 @@ function toPhotographer(
   photosCount: number,
   downloads: number,
   followers: number,
-  extras?: { following?: boolean; profileViews?: number; hireable?: boolean },
+  extras?: {
+    following?: boolean
+    profileViews?: number
+    hireable?: boolean
+    coverPhotoUrl?: string | null
+    specialties?: string[]
+    digitalId?: PhotographerDto['digitalId']
+  },
 ): PhotographerDto | null {
   if (!user.contributorProfile) return null
   const hireable = extras?.hireable ?? user.accountType === 'photographer'
+  const accountType = (user.accountType === 'contributor' || user.accountType === 'photo_influencer' || user.accountType === 'photographer')
+    ? user.accountType
+    : 'photographer'
   return {
     handle: user.contributorProfile.handle,
     name: user.name,
@@ -49,6 +62,7 @@ function toPhotographer(
     location: user.contributorProfile.location,
     bio: user.contributorProfile.bio,
     creatorKind: user.contributorProfile.creatorKind,
+    accountType,
     availability: hireable ? user.contributorProfile.availability : 'unavailable',
     dayRateUsd: hireable ? user.contributorProfile.dayRateUsd : null,
     represented: user.representation?.status === 'represented',
@@ -58,6 +72,10 @@ function toPhotographer(
     profileViews: extras?.profileViews ?? user.contributorProfile.profileViews,
     following: extras?.following,
     modelHandle: user.modelProfile?.handle ?? null,
+    coverPhotoUrl: extras?.coverPhotoUrl ?? null,
+    memberSince: user.contributorProfile.createdAt?.toISOString() ?? null,
+    specialties: extras?.specialties ?? [],
+    digitalId: extras?.digitalId ?? null,
   }
 }
 
@@ -135,8 +153,28 @@ export async function photographerRoutes(app: FastifyInstance) {
     const start = (query.page - 1) * query.limit
     const pageItems = hireScoped.slice(start, start + query.limit)
 
+    const enriched = await Promise.all(pageItems.map(async (row) => {
+      const profile = users.find((user) => user.contributorProfile?.handle === row.handle)
+      if (!profile?.contributorProfile) return row
+      const cardType = contributorCardType(profile.accountType, profile.contributorProfile.creatorKind)
+      const digitalId = await ensureDigitalIdCard({
+        profileId: profile.contributorProfile.id,
+        cardType,
+        handle: row.handle,
+        preferredToken: `seed-${row.handle}-${cardType}-id`,
+      })
+      return {
+        ...row,
+        accountType: (profile.accountType === 'contributor' || profile.accountType === 'photo_influencer' || profile.accountType === 'photographer')
+          ? profile.accountType
+          : 'photographer' as const,
+        memberSince: profile.contributorProfile.createdAt.toISOString(),
+        digitalId,
+      }
+    }))
+
     return {
-      items: pageItems,
+      items: enriched,
       page: query.page,
       limit: query.limit,
       total: hireScoped.length,
@@ -225,7 +263,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       profile.profileViews = updated.profileViews
     }
 
-    const [total, photos, live, followers, followingRow] = await Promise.all([
+    const [total, photos, live, followers, followingRow, cover, specialtyRows] = await Promise.all([
       prisma.photo.count({ where }),
       prisma.photo.findMany({
         where,
@@ -247,7 +285,27 @@ export async function photographerRoutes(app: FastifyInstance) {
             },
           })
         : Promise.resolve(null),
+      prisma.photo.findFirst({
+        where: { contributorId: profile.userId, ...PROFILE_PHOTO_FILTER },
+        orderBy: [{ createdAt: 'desc' }],
+        select: { src: true },
+      }),
+      prisma.photo.groupBy({
+        by: ['category'],
+        where: { contributorId: profile.userId, ...PROFILE_PHOTO_FILTER },
+        _count: { _all: true },
+        orderBy: { _count: { category: 'desc' } },
+        take: 6,
+      }),
     ])
+
+    const cardType = contributorCardType(profile.user.accountType, profile.creatorKind)
+    const digitalId = await ensureDigitalIdCard({
+      profileId: profile.id,
+      cardType,
+      handle: profile.handle,
+      preferredToken: `seed-${profile.handle}-${cardType}-id`,
+    })
 
     const photographer = toPhotographer(
       { ...profile.user, contributorProfile: profile, modelProfile: profile.user.modelProfile },
@@ -258,6 +316,9 @@ export async function photographerRoutes(app: FastifyInstance) {
         following: request.userId ? Boolean(followingRow) : undefined,
         profileViews: profile.profileViews,
         hireable: await accountHasFeature(profile.user.accountType, 'receive_bookings'),
+        coverPhotoUrl: cover?.src ?? null,
+        specialties: specialtyRows.map((row) => row.category),
+        digitalId,
       },
     )
     if (!photographer) {

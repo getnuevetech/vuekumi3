@@ -32,6 +32,13 @@ export const publicQueryKeys = {
     ] as const,
   homeFeed: ['public', 'photos', 'home-feed'] as const,
   plans: ['public', 'plans'] as const,
+  photographer: (handle: string, sort = 'newest') => ['public', 'photographer', handle, sort] as const,
+  model: (handle: string, sort = 'newest') => ['public', 'model', handle, sort] as const,
+  creators: (filters: { q?: string; kind?: string; hire?: string }) =>
+    ['public', 'creators', filters.q ?? '', filters.kind ?? '', filters.hire ?? ''] as const,
+  modelsDirectory: (filters: { q?: string; hire?: string }) =>
+    ['public', 'models-directory', filters.q ?? '', filters.hire ?? ''] as const,
+  digitalId: (token: string) => ['public', 'digital-id', token] as const,
 }
 
 /** Invalidate public Home / Site / catalog caches after admin curation or site edits. */

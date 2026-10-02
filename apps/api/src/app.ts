@@ -57,6 +57,7 @@ import { compensationRoutes } from './routes/compensation.js'
 import { identityVerificationRoutes } from './routes/identity-verification.js'
 import { complianceScreeningRoutes } from './routes/compliance-screening.js'
 import { creatorBriefRoutes } from './routes/creator-briefs.js'
+import { digitalIdRoutes } from './routes/digital-id.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -160,6 +161,7 @@ export async function buildApp() {
     await api.register(identityVerificationRoutes)
     await api.register(complianceScreeningRoutes)
     await api.register(creatorBriefRoutes)
+    await api.register(digitalIdRoutes)
   }, { prefix: '/api' })
 
   app.setNotFoundHandler((_request, reply) => {

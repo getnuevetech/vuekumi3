@@ -1,243 +1,250 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS, creatorKindLabel } from '@vuekumi/shared'
-import { PhotoMasonry } from '../components/shared'
+import { PhotoTileMasonry } from '../components/marketplace'
+import { DigitalIdCard } from '../components/marketplace/DigitalIdCard'
 import { CountryMark, PhotoHoverActions } from '../components/PhotoActions'
 import { FollowButton } from '../components/FollowButton'
 import { useAuth } from '../context/AuthContext'
-import { api, ApiError } from '../api/client'
-import { fmt } from '../data/content'
+import { api } from '../api/client'
+import { fmt } from '../lib/format'
 import { categoryPath } from '../lib/categories'
+import { publicQueryKeys } from '../lib/query-keys'
+
+function memberLabel(iso?: string | null) {
+  if (!iso) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+}
+
+function FeaturedRow({ photos }: { photos: PhotoDto[] }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {photos.map((photo) => (
+        <Link key={photo.id} to={`/photo/${photo.id}`} className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-cream">
+          <img src={photo.src} alt={photo.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <CountryMark country={photo.country} />
+          <PhotoHoverActions photo={photo} />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3">
+            <p className="text-sm font-semibold text-white">{photo.title}</p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}
 
 export default function Photographer() {
-  const { handle } = useParams()
+  const { handle = '' } = useParams()
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
-  const [profile, setProfile] = useState<PhotographerDto | null>(null)
-  const [items, setItems] = useState<PhotoDto[]>([])
-  const [total, setTotal] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const [page, setPage] = useState(1)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
   const sort = params.get('sort') ?? 'newest'
 
-  useEffect(() => {
-    if (!handle) return
-    let cancelled = false
-    setStatus('loading')
-    api.photographer(handle, { page: 1, limit: 24, sort })
-      .then((data) => {
-        if (cancelled) return
-        setProfile(data.photographer)
-        setItems(data.items)
-        setTotal(data.total)
-        setHasMore(data.hasMore)
-        setPage(1)
-        setStatus('ready')
-      })
-      .catch((err) => {
-        if (!cancelled) setStatus(err instanceof ApiError && err.status === 404 ? 'missing' : 'missing')
-      })
-    return () => { cancelled = true }
-  }, [handle, sort])
+  const query = useInfiniteQuery({
+    queryKey: publicQueryKeys.photographer(handle, sort),
+    queryFn: ({ pageParam }) => api.photographer(handle, { page: pageParam, limit: 24, sort }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    enabled: Boolean(handle),
+    retry: false,
+  })
 
-  async function loadMore() {
-    if (!handle) return
-    const next = page + 1
-    const data = await api.photographer(handle, { page: next, limit: 24, sort })
-    setItems((prev) => [...prev, ...data.items])
-    setHasMore(data.hasMore)
-    setPage(next)
-  }
-
-  const openCreator = profile?.creatorKind === 'photo_influencer'
+  const profile = query.data?.pages[0]?.photographer ?? null
+  const items = useMemo(
+    () => query.data?.pages.flatMap((page) => page.items) ?? [],
+    [query.data],
+  )
+  const total = query.data?.pages[0]?.total ?? 0
+  const missing = query.isError || (query.isFetched && !profile)
+  const openCreator = profile?.creatorKind === 'photo_influencer' || profile?.accountType === 'photo_influencer'
+  const paidContributor = profile?.accountType === 'contributor' && !openCreator
+  const verifiedPhotographer = !openCreator && !paidContributor
+  const cover = profile?.coverPhotoUrl ?? items[0]?.src ?? null
   const featured = items.slice(0, 4)
   const downloaded = useMemo(() => [...items].sort((a, b) => b.downloads - a.downloads).slice(0, 4), [items])
   const verifiedPlus = items.filter((photo) => photo.libraryTier === 'VERIFIED_PLUS').slice(0, 8)
-  const categories = useMemo(() => {
-    const counts = new Map<string, { count: number; photo: PhotoDto }>()
-    for (const photo of items) {
-      const current = counts.get(photo.category)
-      if (current) current.count += 1
-      else counts.set(photo.category, { count: 1, photo })
-    }
-    return [...counts.entries()].slice(0, 8)
-  }, [items])
+  const specialties = profile?.specialties?.length
+    ? profile.specialties
+    : [...new Set(items.map((photo) => photo.category))].slice(0, 6)
+  const since = memberLabel(profile?.memberSince)
 
-  if (status === 'missing' || !handle) {
+  if (missing || !handle) {
     return (
       <div className="min-h-screen bg-paper text-ink">
         <div className="mx-auto max-w-md px-6 pb-24 pt-16 text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-terra">404</p>
-          <h1 className="font-display mt-2 text-4xl">Photographer not found.</h1>
-          <Link to="/search" className="mt-8 inline-flex rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white">
-            Back to the library
+          <h1 className="font-display mt-2 text-4xl">Creator not found.</h1>
+          <Link to="/creators" className="mt-8 inline-flex rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white">
+            Browse creators
           </Link>
         </div>
       </div>
     )
   }
 
+  if (query.isLoading || !profile) {
+    return <p className="py-20 text-center text-sm text-ink-soft">Loading creator profile…</p>
+  }
+
   return (
     <div className="min-h-screen bg-paper text-ink">
       <section className="relative min-h-[280px] overflow-hidden bg-[#14110e] md:min-h-[360px]">
-        {items[0]?.src && <img src={items[0].src} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/30" />
-        <p className="relative px-5 pt-6 text-sm text-white/80 md:px-8">Home / Creators / {profile?.name ?? handle}</p>
+        {cover && <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/35" />
+        <p className="relative px-5 pt-6 text-sm text-white/80 md:px-8">Home / Creators / {profile.name}</p>
       </section>
 
       <div className="mx-auto max-w-[1500px] px-5 pb-16 md:px-8">
-        {profile && (
-          <div className={`grid gap-6 rounded-3xl border border-sand bg-white p-6 md:grid-cols-[auto_1fr_auto] md:items-center ${items[0]?.src ? '-mt-20' : 'mt-8'}`}>
-            {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="" className="h-28 w-28 rounded-full object-cover ring-4 ring-white" />
-            ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-cream text-3xl font-semibold ring-4 ring-white">{profile.name.slice(0, 1)}</div>
-            )}
-            <div>
-              <p className="text-sm font-semibold text-terra">
-                {creatorKindLabel(profile.creatorKind)}
-                {openCreator ? ' · Open Creator' : ''}
-              </p>
-              <h1 className="font-display mt-1 text-4xl text-ink md:text-5xl">{profile.name}</h1>
-              <p className="mt-1 text-sm text-ink-soft">@{profile.handle} · {profile.location ?? 'Africa'}</p>
-              {profile.bio && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{profile.bio}</p>}
+        <div className={`grid gap-6 rounded-3xl border border-sand bg-white p-6 lg:grid-cols-[auto_1fr_320px] lg:items-start ${cover ? '-mt-20' : 'mt-8'}`}>
+          {profile.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="" className="h-28 w-28 rounded-full object-cover ring-4 ring-white" />
+          ) : (
+            <div className="flex h-28 w-28 items-center justify-center rounded-full bg-cream text-3xl font-semibold ring-4 ring-white">{profile.name.slice(0, 1)}</div>
+          )}
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${openCreator ? 'bg-[#ef5b24] text-white' : 'bg-ink text-white'}`}>
+                {openCreator ? 'Photo Influencer · Open Creator' : paidContributor ? 'Contributor' : creatorKindLabel(profile.creatorKind)}
+              </span>
+              {verifiedPhotographer && profile.represented && (
+                <span className="rounded-full bg-[#f3eee9] px-3 py-1 text-[11px] font-semibold text-ink">Represented</span>
+              )}
+            </div>
+            <h1 className="font-display mt-2 text-4xl text-ink md:text-5xl">{profile.name}</h1>
+            <p className="mt-1 text-sm text-ink-soft">
+              @{profile.handle} · {profile.location ?? 'Africa'}
+              {since ? ` · Member since ${since}` : ''}
+            </p>
+            {profile.bio && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">{profile.bio}</p>}
+            {specialties.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
-                <FollowButton
-                  handle={profile.handle}
-                  following={profile.following}
-                  mine={user?.contributorHandle === profile.handle}
-                  redirectTo={`/p/${profile.handle}`}
-                  onChange={(result) => {
-                    setProfile((p) => p ? { ...p, following: result.following, followers: result.followers } : p)
-                  }}
-                />
-                {!openCreator && profile.availability !== 'unavailable' && user?.contributorHandle !== profile.handle && (
-                  <Link to={`/hire/${profile.handle}`} className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-terra">
-                    Hire {profile.name.split(' ')[0]}
+                {specialties.map((label) => (
+                  <Link key={label} to={categoryPath(label)} className="rounded-full border border-sand px-3 py-1 text-xs font-medium text-ink hover:border-terra">
+                    {label}
                   </Link>
-                )}
-                <Link to={`/search?photographer=${encodeURIComponent(profile.handle)}`} className="rounded-full border border-sand px-5 py-2.5 text-sm font-semibold hover:border-ink">
-                  Open in search
-                </Link>
-                {profile.modelHandle && (
-                  <Link to={`/m/${profile.modelHandle}`} className="rounded-full border border-sand px-5 py-2.5 text-sm font-semibold hover:border-ink">
-                    Model portfolio
-                  </Link>
-                )}
+                ))}
               </div>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <FollowButton
+                handle={profile.handle}
+                following={profile.following}
+                mine={user?.contributorHandle === profile.handle}
+                redirectTo={`/p/${profile.handle}`}
+                onChange={() => { void query.refetch() }}
+              />
+              {!openCreator && profile.availability !== 'unavailable' && user?.contributorHandle !== profile.handle && (
+                <Link to={`/hire/${profile.handle}`} className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-terra">
+                  Hire {profile.name.split(' ')[0]}
+                </Link>
+              )}
+              {profile.modelHandle && (
+                <Link to={`/m/${profile.modelHandle}`} className="rounded-full border border-sand px-5 py-2.5 text-sm font-semibold text-ink">
+                  Model portfolio
+                </Link>
+              )}
             </div>
-            <dl className="grid grid-cols-3 gap-3 md:w-72">
+            <div className="mt-5 flex flex-wrap gap-6 text-sm">
               <Stat label="Photos" value={fmt(profile.photosCount)} />
-              <Stat label="Downloads" value={fmt(profile.downloads)} />
+              {!openCreator && <Stat label="Downloads" value={fmt(profile.downloads)} />}
               <Stat label="Followers" value={fmt(profile.followers)} />
-            </dl>
-          </div>
-        )}
-
-        {profile && (
-          <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-3xl border border-sand bg-white p-6">
-              <h2 className="font-display text-3xl text-ink">About</h2>
-              <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-                {profile.bio || (openCreator
-                  ? 'Photo Influencer photographs stay in the Free Library. This profile is for discovery, not paid stock.'
-                  : 'Photographs on this profile are offered under the rights recorded for each image.')}
-              </p>
-              <p className="mt-4 text-sm text-ink-soft">
-                {AVAILABILITY_LABELS[profile.availability]}
-                {!openCreator && profile.dayRateUsd != null ? ` · from $${profile.dayRateUsd.toLocaleString()} / day` : ''}
-                {profile.represented ? ' · Represented by VueQuatro' : ''}
-                {profile.profileViews != null ? ` · ${fmt(profile.profileViews)} profile views` : ''}
-              </p>
-            </div>
-            <div className="rounded-3xl border border-sand bg-white p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-terra">Creator profile</p>
-              <p className="font-display mt-2 text-2xl text-ink">{profile.name}</p>
-              <p className="mt-1 text-sm text-ink-soft">@{profile.handle}</p>
-              <p className="mt-3 text-sm text-ink-soft">
-                {openCreator ? 'Free Library only. Photo Influencer accounts do not sell licensed stock from this page.' : `${profile.photosCount} live photographs · ${fmt(profile.downloads)} downloads`}
-              </p>
-              <p className="mt-4 text-xs text-ink-faint">Public profile card. This is not an identity check.</p>
+              {profile.profileViews != null && <Stat label="Profile views" value={fmt(profile.profileViews)} />}
+              {!openCreator && <Stat label="Availability" value={AVAILABILITY_LABELS[profile.availability]} />}
             </div>
           </div>
-        )}
+          {profile.digitalId && (
+            <DigitalIdCard
+              preview={profile.digitalId}
+              name={profile.name}
+              handle={profile.handle}
+              location={profile.location}
+              avatarUrl={profile.avatarUrl}
+            />
+          )}
+        </div>
 
         {openCreator && (
-          <div className="mt-6 rounded-3xl bg-[#14110e] px-6 py-6 text-white md:flex md:items-center md:justify-between">
+          <div className="mt-8 rounded-3xl border border-[#ef5b24]/30 bg-[#fff7f2] p-6 md:flex md:items-center md:justify-between md:gap-6">
             <div>
-              <p className="text-sm font-semibold text-[#e0a36a]">Open Creator</p>
-              <h2 className="font-display mt-1 text-3xl">Take your creativity further</h2>
-              <p className="mt-2 max-w-xl text-sm text-white/75">Photo Influencer work stays in the Free Library. A Photographer or Contributor account is how paid library tiers are offered.</p>
+              <p className="text-sm font-semibold text-[#ef5b24]">Open Creator program</p>
+              <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+                Free Library uploads only. Monetized participation starts after an account upgrade and image reclassification — current Open images are not for sale.
+              </p>
             </div>
-            <Link to="/account" className="mt-4 inline-flex rounded-full bg-terra px-5 py-3 text-sm font-semibold text-white md:mt-0">Upgrade now</Link>
+            <Link to="/account" className="mt-4 inline-flex rounded-full bg-[#ef5b24] px-5 py-2.5 text-sm font-semibold text-white md:mt-0">
+              Upgrade account
+            </Link>
           </div>
         )}
 
-        <PhotoRow
-          title={openCreator ? 'Featured Open Images' : 'Featured Shoots'}
-          photos={featured}
-          sort={sort}
-          onSort={(value) => {
-            const next = new URLSearchParams(params)
-            if (value === 'newest') next.delete('sort')
-            else next.set('sort', value)
-            setParams(next)
-          }}
-        />
+        {paidContributor && (
+          <p className="mt-8 text-sm text-ink-soft">
+            Paid Contributor portfolio — Licensed and Editorial work. Photographers and Contributors do not upload to Free Library.
+          </p>
+        )}
+
+        {featured.length > 0 && (
+          <section className="mt-12">
+            <SectionTitle title={openCreator ? 'Featured Open images' : verifiedPhotographer ? 'Featured shoots' : 'Featured portfolio'} />
+            <FeaturedRow photos={featured} />
+          </section>
+        )}
 
         {!openCreator && downloaded.length > 0 && (
-          <PhotoRow title="Most downloaded" photos={downloaded} />
+          <section className="mt-12">
+            <SectionTitle title="Top licensed work" />
+            <FeaturedRow photos={downloaded} />
+          </section>
         )}
 
         {!openCreator && verifiedPlus.length > 0 && (
-          <PhotoRow title="Verified+" photos={verifiedPlus} />
-        )}
-
-        {categories.length > 0 && (
           <section className="mt-12">
-            <h2 className="font-display text-3xl text-ink">Categories</h2>
-            <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar">
-              {categories.map(([name, row]) => (
-                <Link key={name} to={categoryPath(name)} className="relative h-28 w-40 shrink-0 overflow-hidden rounded-2xl">
-                  <img src={row.photo.src} alt="" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <p className="absolute bottom-2 left-3 text-sm font-semibold text-white">{name}</p>
-                  <p className="absolute right-3 top-2 text-xs text-white">{row.count}</p>
-                </Link>
-              ))}
-            </div>
+            <SectionTitle title="Verified+" note="Marketplace placement — separate from rights clearance." />
+            <FeaturedRow photos={verifiedPlus} />
           </section>
         )}
 
-        {profile && (
-          <section className="mt-12 grid gap-3 rounded-3xl border border-sand bg-white p-6 sm:grid-cols-4">
-            <Stat label="Live photos" value={fmt(total || profile.photosCount)} />
-            <Stat label="Downloads" value={fmt(profile.downloads)} />
-            <Stat label="Followers" value={fmt(profile.followers)} />
-            <Stat label="Profile views" value={fmt(profile.profileViews ?? 0)} />
-          </section>
-        )}
-
-        {items.length > 4 && (
-          <section className="mt-12">
-            <h2 className="font-display text-3xl text-ink">Portfolio</h2>
-            <PhotoMasonry photos={items.slice(4)} />
-          </section>
-        )}
-
-        {hasMore && (
-          <div className="mt-10 text-center">
-            <button
-              type="button"
-              onClick={() => void loadMore()}
-              className="rounded-full border border-ink px-8 py-3 text-sm font-semibold hover:bg-ink hover:text-white"
+        <section className="mt-12">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <SectionTitle title="Portfolio" note={`${total} photograph${total === 1 ? '' : 's'}`} />
+            <select
+              aria-label="Sort portfolio"
+              value={sort}
+              onChange={(e) => {
+                const next = new URLSearchParams(params)
+                if (e.target.value === 'newest') next.delete('sort')
+                else next.set('sort', e.target.value)
+                setParams(next)
+              }}
+              className="rounded-full border border-sand bg-white px-3 py-2 text-sm"
             >
-              Load more
-            </button>
+              <option value="newest">Most recent</option>
+              <option value="downloads">Downloads</option>
+              <option value="views">Views</option>
+              <option value="likes">Likes</option>
+            </select>
           </div>
-        )}
+          {items.length > 0 ? (
+            <PhotoTileMasonry photos={items} />
+          ) : (
+            <p className="text-sm text-ink-soft">No public photographs yet.</p>
+          )}
+          {query.hasNextPage && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                disabled={query.isFetchingNextPage}
+                onClick={() => void query.fetchNextPage()}
+                className="rounded-full border border-sand px-5 py-2.5 text-sm font-semibold text-ink hover:border-ink"
+              >
+                {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )
@@ -245,56 +252,21 @@ export default function Photographer() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-paper px-3 py-3 text-center">
-      <p className="text-lg font-semibold text-ink">{value}</p>
-      <p className="text-xs text-ink-soft">{label}</p>
+    <div>
+      <p className="text-[11px] uppercase tracking-[0.14em] text-ink-faint">{label}</p>
+      <p className="mt-0.5 font-semibold text-ink">{value}</p>
     </div>
   )
 }
 
-function PhotoRow({
-  title,
-  photos,
-  sort,
-  onSort,
-}: {
-  title: string
-  photos: PhotoDto[]
-  sort?: string
-  onSort?: (value: string) => void
-}) {
-  if (photos.length === 0) return null
+function SectionTitle({ title, note }: { title: string; note?: string }) {
   return (
-    <section className="mt-12">
-      <div className="mb-4 flex items-end justify-between gap-3">
-        <h2 className="font-display text-3xl text-ink">{title}</h2>
-        {onSort && (
-          <select
-            aria-label="Sort"
-            value={sort}
-            onChange={(e) => onSort(e.target.value)}
-            className="rounded-full border border-sand bg-white px-3 py-2 text-sm outline-none"
-          >
-            <option value="newest">Newest</option>
-            <option value="downloads">Downloads</option>
-            <option value="views">Views</option>
-            <option value="likes">Likes</option>
-          </select>
-        )}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {photos.map((photo) => (
-          <Link key={photo.id} to={`/photo/${photo.id}`} className="group block">
-            <div className="relative overflow-hidden rounded-2xl bg-cream">
-              <img src={photo.src} alt={photo.title} className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-              <CountryMark country={photo.country} />
-              <PhotoHoverActions photo={photo} />
-            </div>
-            <p className="mt-2 truncate text-sm font-semibold text-ink">{photo.title}</p>
-            <p className="truncate text-xs text-ink-soft">{photo.country} · {fmt(photo.downloads)} downloads</p>
-          </Link>
-        ))}
-      </div>
-    </section>
+    <div className="mb-4">
+      <h2 className="font-display text-3xl text-ink">{title}</h2>
+      {note && <p className="mt-1 text-sm text-ink-soft">{note}</p>}
+    </div>
   )
 }
+
+// Keep type import used for documentation / future layout helpers.
+export type CreatorProfile = PhotographerDto
