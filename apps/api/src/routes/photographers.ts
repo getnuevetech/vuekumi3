@@ -251,6 +251,7 @@ export async function photographerRoutes(app: FastifyInstance) {
     const where = {
       ...profilePhotoWhere(profile.userId),
       ...(query.category && query.category !== 'All' ? { category: query.category } : {}),
+      ...(query.libraryTier ? { libraryTier: query.libraryTier } : {}),
     }
 
     const countOwnView = query.page === 1 && request.userId !== profile.userId
@@ -263,7 +264,7 @@ export async function photographerRoutes(app: FastifyInstance) {
       profile.profileViews = updated.profileViews
     }
 
-    const [total, photos, live, followers, followingRow, cover, specialtyRows] = await Promise.all([
+    const [total, photos, live, followers, followingRow, cover, specialtyRows, tierRows] = await Promise.all([
       prisma.photo.count({ where }),
       prisma.photo.findMany({
         where,
@@ -296,6 +297,12 @@ export async function photographerRoutes(app: FastifyInstance) {
         _count: { _all: true },
         orderBy: { _count: { category: 'desc' } },
         take: 6,
+      }),
+      prisma.photo.groupBy({
+        by: ['libraryTier'],
+        where: { contributorId: profile.userId, ...PROFILE_PHOTO_FILTER },
+        _count: { _all: true },
+        orderBy: { _count: { libraryTier: 'desc' } },
       }),
     ])
 
@@ -334,6 +341,10 @@ export async function photographerRoutes(app: FastifyInstance) {
       limit: query.limit,
       total,
       hasMore: query.page * query.limit < total,
+      libraryTierFacets: tierRows.map((row) => ({
+        value: row.libraryTier,
+        count: row._count._all,
+      })),
     }
   })
 

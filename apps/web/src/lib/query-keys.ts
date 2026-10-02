@@ -32,7 +32,8 @@ export const publicQueryKeys = {
     ] as const,
   homeFeed: ['public', 'photos', 'home-feed'] as const,
   plans: ['public', 'plans'] as const,
-  photographer: (handle: string, sort = 'newest') => ['public', 'photographer', handle, sort] as const,
+  photographer: (handle: string, sort = 'newest', libraryTier = '') =>
+    ['public', 'photographer', handle, sort, libraryTier] as const,
   model: (handle: string, sort = 'newest') => ['public', 'model', handle, sort] as const,
   creators: (filters: { q?: string; kind?: string; hire?: string }) =>
     ['public', 'creators', filters.q ?? '', filters.kind ?? '', filters.hire ?? ''] as const,

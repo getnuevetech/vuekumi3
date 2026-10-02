@@ -130,6 +130,9 @@ test.describe('Phase 45 + 55 web smoke', () => {
     await page.goto('/p/thandiwe-nkosi')
     await expect(page.getByRole('heading', { name: /Thandiwe/i }).first()).toBeVisible()
     await expect(page.getByText(/Digital ID/i).first()).toBeVisible()
+    await expect(page.getByRole('tablist', { name: /Portfolio library tier/i })).toBeVisible()
+    await page.getByRole('tab', { name: /Licensed/i }).click()
+    await expect(page).toHaveURL(/libraryTier=LICENSED/)
 
     await page.goto('/models')
     await expect(page.getByRole('heading', { name: 'Models.' })).toBeVisible()

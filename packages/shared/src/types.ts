@@ -360,6 +360,8 @@ export interface ContributorStatsDto {
 
 export interface PhotographerProfileDto extends PaginatedPhotos {
   photographer: PhotographerDto
+  /** Available library tiers on this profile's public portfolio (for filter chips). */
+  libraryTierFacets?: CatalogFacet[]
 }
 
 export interface ModelPublicProfileDto extends PaginatedPhotos {

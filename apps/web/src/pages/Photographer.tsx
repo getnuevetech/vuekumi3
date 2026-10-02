@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { PhotoDto, PhotographerDto } from '@vuekumi/shared'
-import { AVAILABILITY_LABELS, creatorKindLabel } from '@vuekumi/shared'
+import type { LibraryTier, PhotoDto, PhotographerDto } from '@vuekumi/shared'
+import { AVAILABILITY_LABELS, LIBRARY_TIER_LABEL, creatorKindLabel } from '@vuekumi/shared'
 import { PhotoTileMasonry } from '../components/marketplace'
 import { DigitalIdCard } from '../components/marketplace/DigitalIdCard'
 import { CountryMark, PhotoHoverActions } from '../components/PhotoActions'
@@ -37,15 +37,23 @@ function FeaturedRow({ photos }: { photos: PhotoDto[] }) {
   )
 }
 
+const PORTFOLIO_TIER_ORDER: LibraryTier[] = ['LICENSED', 'EDITORIAL', 'VERIFIED_PLUS', 'OPEN', 'PRIVATE']
+
 export default function Photographer() {
   const { handle = '' } = useParams()
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const sort = params.get('sort') ?? 'newest'
+  const libraryTier = (params.get('libraryTier') ?? '') as LibraryTier | ''
 
   const query = useInfiniteQuery({
-    queryKey: publicQueryKeys.photographer(handle, sort),
-    queryFn: ({ pageParam }) => api.photographer(handle, { page: pageParam, limit: 24, sort }),
+    queryKey: publicQueryKeys.photographer(handle, sort, libraryTier),
+    queryFn: ({ pageParam }) => api.photographer(handle, {
+      page: pageParam,
+      limit: 24,
+      sort,
+      ...(libraryTier ? { libraryTier } : {}),
+    }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     enabled: Boolean(handle),
@@ -53,6 +61,7 @@ export default function Photographer() {
   })
 
   const profile = query.data?.pages[0]?.photographer ?? null
+  const tierFacets = query.data?.pages[0]?.libraryTierFacets ?? []
   const items = useMemo(
     () => query.data?.pages.flatMap((page) => page.items) ?? [],
     [query.data],
@@ -64,12 +73,34 @@ export default function Photographer() {
   const verifiedPhotographer = !openCreator && !paidContributor
   const cover = profile?.coverPhotoUrl ?? items[0]?.src ?? null
   const featured = items.slice(0, 4)
-  const downloaded = useMemo(() => [...items].sort((a, b) => b.downloads - a.downloads).slice(0, 4), [items])
+  const downloaded = useMemo(
+    () => [...items]
+      .filter((photo) => photo.libraryTier === 'LICENSED' || photo.libraryTier === 'VERIFIED_PLUS')
+      .sort((a, b) => b.downloads - a.downloads)
+      .slice(0, 4),
+    [items],
+  )
   const verifiedPlus = items.filter((photo) => photo.libraryTier === 'VERIFIED_PLUS').slice(0, 8)
   const specialties = profile?.specialties?.length
     ? profile.specialties
     : [...new Set(items.map((photo) => photo.category))].slice(0, 6)
   const since = memberLabel(profile?.memberSince)
+  const showTier = !openCreator
+  const portfolioTiers = PORTFOLIO_TIER_ORDER
+    .map((tier) => ({
+      tier,
+      count: tierFacets.find((row) => row.value === tier)?.count ?? 0,
+    }))
+    // D05: do not show an empty Free Library tab for paid contributors / photographers.
+    .filter((row) => row.count > 0 && !(row.tier === 'OPEN' && (paidContributor || verifiedPhotographer)))
+    .filter((row) => row.tier !== 'PRIVATE')
+
+  const setLibraryTier = (nextTier: LibraryTier | '') => {
+    const next = new URLSearchParams(params)
+    if (!nextTier) next.delete('libraryTier')
+    else next.set('libraryTier', nextTier)
+    setParams(next)
+  }
 
   if (missing || !handle) {
     return (
@@ -186,21 +217,21 @@ export default function Photographer() {
           </p>
         )}
 
-        {featured.length > 0 && (
+        {featured.length > 0 && !libraryTier && (
           <section className="mt-12">
             <SectionTitle title={openCreator ? 'Featured Open images' : verifiedPhotographer ? 'Featured shoots' : 'Featured portfolio'} />
             <FeaturedRow photos={featured} />
           </section>
         )}
 
-        {!openCreator && downloaded.length > 0 && (
+        {!openCreator && downloaded.length > 0 && !libraryTier && (
           <section className="mt-12">
             <SectionTitle title="Top licensed work" />
             <FeaturedRow photos={downloaded} />
           </section>
         )}
 
-        {!openCreator && verifiedPlus.length > 0 && (
+        {!openCreator && verifiedPlus.length > 0 && !libraryTier && (
           <section className="mt-12">
             <SectionTitle title="Verified+" note="Marketplace placement — separate from rights clearance." />
             <FeaturedRow photos={verifiedPlus} />
@@ -227,10 +258,39 @@ export default function Photographer() {
               <option value="likes">Likes</option>
             </select>
           </div>
+          {showTier && portfolioTiers.length > 0 && (
+            <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Portfolio library tier">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!libraryTier}
+                onClick={() => setLibraryTier('')}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${!libraryTier ? 'bg-ink text-white' : 'border border-sand text-ink hover:border-ink'}`}
+              >
+                All
+              </button>
+              {portfolioTiers.map(({ tier, count }) => (
+                <button
+                  key={tier}
+                  type="button"
+                  role="tab"
+                  aria-selected={libraryTier === tier}
+                  onClick={() => setLibraryTier(tier)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${libraryTier === tier ? 'bg-ink text-white' : 'border border-sand text-ink hover:border-ink'}`}
+                >
+                  {LIBRARY_TIER_LABEL[tier]} · {count}
+                </button>
+              ))}
+            </div>
+          )}
           {items.length > 0 ? (
             <PhotoTileMasonry photos={items} />
           ) : (
-            <p className="text-sm text-ink-soft">No public photographs yet.</p>
+            <p className="text-sm text-ink-soft">
+              {libraryTier
+                ? `No ${LIBRARY_TIER_LABEL[libraryTier]} photographs in this portfolio.`
+                : 'No public photographs yet.'}
+            </p>
           )}
           {query.hasNextPage && (
             <div className="mt-8 flex justify-center">
