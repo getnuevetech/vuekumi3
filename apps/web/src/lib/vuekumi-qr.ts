@@ -1,68 +1,57 @@
 import QRCode from 'qrcode'
 
-/** Brand mark geometry mirrored from `LogoMark` in `components/shared.tsx`. */
-function drawVuekumiMark(
+/** Wordmark mirrored from `LogoMark`: VUE in ink, KUMI in brand accent. */
+function drawVuekumiWordmark(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  size: number,
+  qrSize: number,
   accent = '#ef5b24',
 ) {
-  const r = size / 2
-  const stroke = Math.max(1.4, size * 0.055)
+  const fontSize = Math.max(8, Math.round(qrSize * 0.095))
+  ctx.font = `700 ${fontSize}px ui-sans-serif, system-ui, -apple-system, sans-serif`
+  ctx.textBaseline = 'middle'
+  ctx.textAlign = 'left'
+  ctx.letterSpacing = `${Math.max(0.5, fontSize * 0.06)}px`
 
-  // White pad so the mark stays legible on the module grid.
-  const pad = r * 1.15
+  const vue = 'VUE'
+  const kumi = 'KUMI'
+  const vueWidth = ctx.measureText(vue).width
+  const kumiWidth = ctx.measureText(kumi).width
+  const gap = Math.max(1, fontSize * 0.04)
+  const textWidth = vueWidth + gap + kumiWidth
+  const padX = Math.max(6, fontSize * 0.55)
+  const padY = Math.max(4, fontSize * 0.45)
+  const boxW = textWidth + padX * 2
+  const boxH = fontSize + padY * 2
+  const radius = Math.max(3, fontSize * 0.28)
+  const x = cx - boxW / 2
+  const y = cy - boxH / 2
+
   ctx.fillStyle = '#ffffff'
-  const x = cx - pad
-  const y = cy - pad
-  const side = pad * 2
-  const radius = pad * 0.28
   ctx.beginPath()
   if (typeof ctx.roundRect === 'function') {
-    ctx.roundRect(x, y, side, side, radius)
+    ctx.roundRect(x, y, boxW, boxH, radius)
   } else {
     ctx.moveTo(x + radius, y)
-    ctx.arcTo(x + side, y, x + side, y + side, radius)
-    ctx.arcTo(x + side, y + side, x, y + side, radius)
-    ctx.arcTo(x, y + side, x, y, radius)
-    ctx.arcTo(x, y, x + side, y, radius)
+    ctx.arcTo(x + boxW, y, x + boxW, y + boxH, radius)
+    ctx.arcTo(x + boxW, y + boxH, x, y + boxH, radius)
+    ctx.arcTo(x, y + boxH, x, y, radius)
+    ctx.arcTo(x, y, x + boxW, y, radius)
     ctx.closePath()
   }
   ctx.fill()
 
-  ctx.strokeStyle = '#14110e'
-  ctx.lineWidth = stroke
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2)
-  ctx.stroke()
-
-  ctx.strokeStyle = accent
-  ctx.beginPath()
-  ctx.arc(cx, cy, r * 0.5, 0, Math.PI * 2)
-  ctx.stroke()
-
+  let cursor = cx - textWidth / 2
+  ctx.fillStyle = '#14110e'
+  ctx.fillText(vue, cursor, cy)
+  cursor += vueWidth + gap
   ctx.fillStyle = accent
-  ctx.beginPath()
-  ctx.arc(cx, cy, r * 0.15, 0, Math.PI * 2)
-  ctx.fill()
-
-  ctx.strokeStyle = '#14110e'
-  ctx.beginPath()
-  ctx.moveTo(cx, cy - r)
-  ctx.lineTo(cx, cy - r * 0.7)
-  ctx.moveTo(cx, cy + r * 0.7)
-  ctx.lineTo(cx, cy + r)
-  ctx.moveTo(cx - r, cy)
-  ctx.lineTo(cx - r * 0.7, cy)
-  ctx.moveTo(cx + r * 0.7, cy)
-  ctx.lineTo(cx + r, cy)
-  ctx.stroke()
+  ctx.fillText(kumi, cursor, cy)
 }
 
 /**
- * Build a QR data URL with the VueKumi logo mark centered.
+ * Build a QR data URL with the VUEKUMI text logo centered.
  * Uses high error correction so the logo overlay remains scannable.
  */
 export async function vuekumiQrDataUrl(
@@ -80,7 +69,6 @@ export async function vuekumiQrDataUrl(
   const ctx = canvas.getContext('2d')
   if (!ctx) return canvas.toDataURL('image/png')
 
-  const markSize = Math.max(18, Math.round(size * 0.22))
-  drawVuekumiMark(ctx, size / 2, size / 2, markSize, accent)
+  drawVuekumiWordmark(ctx, size / 2, size / 2, size, accent)
   return canvas.toDataURL('image/png')
 }
