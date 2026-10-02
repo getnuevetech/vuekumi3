@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import QRCode from 'qrcode'
 import type { DigitalIdCardType, DigitalIdPreviewDto, DigitalIdPublicDto } from '@vuekumi/shared'
 import { DIGITAL_ID_CARD_LABEL } from '@vuekumi/shared'
+import { vuekumiQrDataUrl } from '../../lib/vuekumi-qr'
 
 function cardAccent(cardType: DigitalIdCardType) {
   if (cardType === 'photo_influencer') return '#ef5b24'
@@ -34,17 +34,15 @@ export function DigitalIdCard({
 
   useEffect(() => {
     let cancelled = false
-    void QRCode.toDataURL(absolute, {
-      margin: 1,
-      width: compact ? 96 : 140,
-      color: { dark: '#14110e', light: '#ffffff' },
-    }).then((url) => {
-      if (!cancelled) setDataUrl(url)
-    }).catch(() => {
-      if (!cancelled) setDataUrl(null)
-    })
+    void vuekumiQrDataUrl(absolute, compact ? 96 : 140, accent)
+      .then((url) => {
+        if (!cancelled) setDataUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setDataUrl(null)
+      })
     return () => { cancelled = true }
-  }, [absolute, compact])
+  }, [absolute, compact, accent])
 
   return (
     <Link
@@ -93,11 +91,11 @@ export function DigitalIdPublicView({ card }: { card: DigitalIdPublicDto }) {
 
   useEffect(() => {
     let cancelled = false
-    void QRCode.toDataURL(absolute, { margin: 1, width: 180, color: { dark: '#14110e', light: '#ffffff' } })
+    void vuekumiQrDataUrl(absolute, 180, accent)
       .then((url) => { if (!cancelled) setDataUrl(url) })
       .catch(() => { if (!cancelled) setDataUrl(null) })
     return () => { cancelled = true }
-  }, [absolute])
+  }, [absolute, accent])
 
   return (
     <div className="mx-auto max-w-lg rounded-3xl border border-sand bg-white p-6 shadow-sm">
