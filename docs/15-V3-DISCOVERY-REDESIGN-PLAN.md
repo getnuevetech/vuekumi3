@@ -1,6 +1,6 @@
 # VueKumi v3 discovery redesign — recommendations and implementation plan
 
-**Status: D-R2 shipped; D-R3 profiles / directories / Digital ID in progress on this branch.**
+**Status: D-R2 shipped; D-R3 profiles / directories / Digital ID shipped on this branch.**
 Public pages use one marketplace chrome. Role-aware `/p` and `/m` layouts, `/models`
 talent directory, and `DigitalIdentityCard` + `/id/:token` are the D-R3 scope.
 
