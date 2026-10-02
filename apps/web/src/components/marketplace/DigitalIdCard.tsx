@@ -16,13 +16,13 @@ export function DigitalIdCard({
   name,
   handle,
   location,
-  avatarUrl: _avatarUrl,
   compact = false,
 }: {
   preview: DigitalIdPreviewDto
   name: string
   handle: string
   location?: string | null
+  /** Accepted for callers; portrait lives on the surrounding profile chrome. */
   avatarUrl?: string | null
   compact?: boolean
 }) {
