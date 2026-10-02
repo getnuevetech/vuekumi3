@@ -1198,6 +1198,18 @@ export const api = {
   adminAccount: (id: string) =>
     request<{ user: AdminAccount }>(`/api/admin/accounts/${id}`),
 
+  revokeDigitalId: (accountId: string, cardId: string) =>
+    request<{ user: AdminAccount }>(`/api/admin/accounts/${accountId}/digital-id/${encodeURIComponent(cardId)}/revoke`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
+  reinstateDigitalId: (accountId: string, cardId: string) =>
+    request<{ user: AdminAccount }>(`/api/admin/accounts/${accountId}/digital-id/${encodeURIComponent(cardId)}/reinstate`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
   createAccount: (body: {
     email: string
     name?: string

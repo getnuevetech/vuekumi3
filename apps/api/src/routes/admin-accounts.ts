@@ -23,6 +23,7 @@ import {
   provisionStaffCreatedUser,
   serializeAdminAccount,
 } from '../lib/admin-accounts.js'
+import { listDigitalIdsForProfiles, setDigitalIdStatus } from '../lib/digital-id.js'
 import { requireAdminCapability, requireAccountTypes } from '../lib/auth-middleware.js'
 import { assertContributorCountry } from '../lib/geo.js'
 import { prisma } from '../lib/prisma.js'
@@ -98,7 +99,75 @@ export async function adminAccountRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     const user = await prisma.user.findUnique({ where: { id }, include: adminAccountInclude })
     if (!user) return reply.code(404).send({ error: 'Account not found' })
-    return { user: serializeAdminAccount(user) }
+    const digitalIds = await listDigitalIdsForProfiles({
+      contributorProfileId: user.contributorProfile?.id,
+      modelProfileId: user.modelProfile?.id,
+    })
+    return { user: { ...serializeAdminAccount(user), digitalIds } }
+  })
+
+  app.post('/admin/accounts/:id/digital-id/:cardId/revoke', staff, async (request, reply) => {
+    const { id, cardId } = request.params as { id: string; cardId: string }
+    const user = await prisma.user.findUnique({ where: { id }, include: adminAccountInclude })
+    if (!user) return reply.code(404).send({ error: 'Account not found' })
+    const allowed =
+      adminHas(request.authUser, accountWriteCapability(user.accountType))
+      || (Boolean(user.modelProfile) && adminHas(request.authUser, 'accounts.models.write'))
+    if (!allowed) return reply.code(403).send({ error: 'Forbidden' })
+    const owned = await listDigitalIdsForProfiles({
+      contributorProfileId: user.contributorProfile?.id,
+      modelProfileId: user.modelProfile?.id,
+    })
+    if (!owned.some((card) => card.id === cardId)) {
+      return reply.code(404).send({ error: 'Digital ID card not found on this account' })
+    }
+    const updated = await setDigitalIdStatus({ cardId, status: 'revoked' })
+    if (!updated) return reply.code(404).send({ error: 'Digital ID card not found' })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.digital_id.revoke',
+      entityType: 'digital_identity_card',
+      entityId: cardId,
+      metadata: { userId: id, token: updated.publicToken, cardType: updated.cardType },
+      ipAddress: request.ip,
+    })
+    const digitalIds = await listDigitalIdsForProfiles({
+      contributorProfileId: user.contributorProfile?.id,
+      modelProfileId: user.modelProfile?.id,
+    })
+    return { user: { ...serializeAdminAccount(user), digitalIds } }
+  })
+
+  app.post('/admin/accounts/:id/digital-id/:cardId/reinstate', staff, async (request, reply) => {
+    const { id, cardId } = request.params as { id: string; cardId: string }
+    const user = await prisma.user.findUnique({ where: { id }, include: adminAccountInclude })
+    if (!user) return reply.code(404).send({ error: 'Account not found' })
+    const allowed =
+      adminHas(request.authUser, accountWriteCapability(user.accountType))
+      || (Boolean(user.modelProfile) && adminHas(request.authUser, 'accounts.models.write'))
+    if (!allowed) return reply.code(403).send({ error: 'Forbidden' })
+    const owned = await listDigitalIdsForProfiles({
+      contributorProfileId: user.contributorProfile?.id,
+      modelProfileId: user.modelProfile?.id,
+    })
+    if (!owned.some((card) => card.id === cardId)) {
+      return reply.code(404).send({ error: 'Digital ID card not found on this account' })
+    }
+    const updated = await setDigitalIdStatus({ cardId, status: 'active' })
+    if (!updated) return reply.code(404).send({ error: 'Digital ID card not found' })
+    await writeAuditLog({
+      actorId: request.userId,
+      action: 'admin.digital_id.reinstate',
+      entityType: 'digital_identity_card',
+      entityId: cardId,
+      metadata: { userId: id, token: updated.publicToken, cardType: updated.cardType },
+      ipAddress: request.ip,
+    })
+    const digitalIds = await listDigitalIdsForProfiles({
+      contributorProfileId: user.contributorProfile?.id,
+      modelProfileId: user.modelProfile?.id,
+    })
+    return { user: { ...serializeAdminAccount(user), digitalIds } }
   })
 
   app.post('/admin/accounts', staff, async (request, reply) => {

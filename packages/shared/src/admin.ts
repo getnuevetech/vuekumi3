@@ -118,4 +118,17 @@ export interface AdminAccountDto {
   agencyStatus: AgencyEntityStatus | null
   appearances?: number
   dualRole?: boolean
+  /** Digital ID cards for contributor and/or model profiles — detail views only. */
+  digitalIds?: AdminDigitalIdCardDto[]
+}
+
+export interface AdminDigitalIdCardDto {
+  id: string
+  token: string
+  cardType: import('./digital-id.js').DigitalIdCardType
+  status: 'active' | 'revoked'
+  roleLabel: string
+  issuedAt: string
+  revokedAt: string | null
+  profileKind: 'contributor' | 'model'
 }

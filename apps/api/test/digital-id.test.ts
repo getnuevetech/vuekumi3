@@ -76,3 +76,72 @@ test('digital ID public payload excludes private fields and links to profile', a
 
   await app.close()
 })
+
+test('admin can revoke and reinstate a Digital ID from the account screen', async () => {
+  function cookies(res: { headers: Record<string, unknown> }) {
+    const raw = res.headers['set-cookie']
+    return (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
+  }
+
+  const app = await buildApp()
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { email: 'admin@vuekumi.com', password: 'Admin123!' },
+  })
+  assert.equal(login.statusCode, 200, login.body)
+  const admin = cookies(login)
+
+  const influencer = await prisma.contributorProfile.findFirst({
+    where: { handle: 'amara-okafor' },
+    include: { user: { select: { id: true } } },
+  })
+  assert.ok(influencer)
+  await ensureDigitalIdCard({
+    profileId: influencer.id,
+    cardType: 'photo_influencer',
+    handle: influencer.handle,
+    preferredToken: 'seed-amara-okafor-photo_influencer-id',
+  })
+
+  const detail = await app.inject({
+    method: 'GET',
+    url: `/api/admin/accounts/${influencer.user.id}`,
+    headers: { cookie: admin },
+  })
+  assert.equal(detail.statusCode, 200, detail.body)
+  const account = detail.json() as {
+    user: { digitalIds?: { id: string; token: string; status: string }[] }
+  }
+  const card = account.user.digitalIds?.find((row) => row.token === 'seed-amara-okafor-photo_influencer-id')
+  assert.ok(card)
+
+  const revoke = await app.inject({
+    method: 'POST',
+    url: `/api/admin/accounts/${influencer.user.id}/digital-id/${card.id}/revoke`,
+    headers: { cookie: admin },
+    payload: {},
+  })
+  assert.equal(revoke.statusCode, 200, revoke.body)
+  const revoked = revoke.json() as { user: { digitalIds: { id: string; status: string }[] } }
+  assert.equal(revoked.user.digitalIds.find((row) => row.id === card.id)?.status, 'revoked')
+
+  const publicCard = await app.inject({
+    method: 'GET',
+    url: '/api/digital-id/seed-amara-okafor-photo_influencer-id',
+  })
+  assert.equal(publicCard.statusCode, 200)
+  assert.equal((publicCard.json() as { status: string }).status, 'revoked')
+
+  const reinstate = await app.inject({
+    method: 'POST',
+    url: `/api/admin/accounts/${influencer.user.id}/digital-id/${card.id}/reinstate`,
+    headers: { cookie: admin },
+    payload: {},
+  })
+  assert.equal(reinstate.statusCode, 200, reinstate.body)
+  const active = reinstate.json() as { user: { digitalIds: { id: string; status: string }[] } }
+  assert.equal(active.user.digitalIds.find((row) => row.id === card.id)?.status, 'active')
+
+  await app.close()
+})

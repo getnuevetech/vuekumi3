@@ -307,6 +307,52 @@ export function AdminAccountList({ kind }: { kind: Kind }) {
                   </select>
                 </label>
               )}
+              {(kind === 'photographers' || kind === 'influencers' || kind === 'contributors' || kind === 'models') && (
+                <div className="rounded-xl border border-sand-soft p-3">
+                  <p className="font-mono-tech text-[10px] uppercase tracking-[0.15em] text-ink-faint">Digital ID</p>
+                  {!selected.digitalIds?.length ? (
+                    <p className="mt-2 text-xs text-ink-soft">No Digital ID issued yet. Cards appear after a public profile or directory view.</p>
+                  ) : (
+                    <ul className="mt-2 space-y-2">
+                      {selected.digitalIds.map((card) => (
+                        <li key={card.id} className="flex items-start justify-between gap-2 rounded-lg bg-[#faf6f3] px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-ink">{card.roleLabel}</p>
+                            <p className="truncate font-mono-tech text-[10px] text-ink-faint">{card.token}</p>
+                            <p className="mt-1 text-[11px] text-ink-soft">
+                              {card.status === 'revoked' ? 'Revoked' : 'Active'}
+                              {card.revokedAt ? ` · ${new Date(card.revokedAt).toLocaleDateString()}` : ''}
+                            </p>
+                          </div>
+                          {canWrite && (
+                            <button
+                              type="button"
+                              disabled={saving}
+                              onClick={async () => {
+                                setSaving(true)
+                                try {
+                                  const next = card.status === 'revoked'
+                                    ? await api.reinstateDigitalId(selected.id, card.id)
+                                    : await api.revokeDigitalId(selected.id, card.id)
+                                  setSelected(next.user)
+                                  toast.success(card.status === 'revoked' ? 'Digital ID reinstated' : 'Digital ID revoked')
+                                } catch (err) {
+                                  toast.error(err instanceof ApiError ? err.message : 'Could not update Digital ID')
+                                } finally {
+                                  setSaving(false)
+                                }
+                              }}
+                              className="shrink-0 rounded-full border border-sand px-3 py-1 font-mono-tech text-[10px] uppercase tracking-[0.12em] text-ink-soft hover:border-terra"
+                            >
+                              {card.status === 'revoked' ? 'Reinstate' : 'Revoke'}
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               {kind === 'admins' && canWrite && selected.id !== user?.id && (
                 <>
                   <label className="block text-sm">Preset

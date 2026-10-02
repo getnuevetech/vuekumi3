@@ -121,3 +121,46 @@ export async function getDigitalIdPublic(token: string): Promise<DigitalIdPublic
     badge: resolvedType === 'photo_influencer' ? 'Open Creator' : DIGITAL_ID_CARD_LABEL[resolvedType],
   }
 }
+
+export async function listDigitalIdsForProfiles(input: {
+  contributorProfileId?: string | null
+  modelProfileId?: string | null
+}): Promise<import('@vuekumi/shared').AdminDigitalIdCardDto[]> {
+  const profileIds = [input.contributorProfileId, input.modelProfileId].filter(
+    (id): id is string => Boolean(id),
+  )
+  if (!profileIds.length) return []
+  const cards = await prisma.digitalIdentityCard.findMany({
+    where: { profileId: { in: profileIds } },
+    orderBy: [{ issuedAt: 'desc' }],
+  })
+  return cards.map((card) => {
+    const cardType = card.cardType as DigitalIdCardType
+    const profileKind = card.profileId === input.modelProfileId ? 'model' : 'contributor'
+    return {
+      id: card.id,
+      token: card.publicToken,
+      cardType,
+      status: card.status === 'revoked' ? 'revoked' as const : 'active' as const,
+      roleLabel: DIGITAL_ID_CARD_LABEL[cardType],
+      issuedAt: card.issuedAt.toISOString(),
+      revokedAt: card.revokedAt?.toISOString() ?? null,
+      profileKind,
+    }
+  })
+}
+
+export async function setDigitalIdStatus(input: {
+  cardId: string
+  status: 'active' | 'revoked'
+}) {
+  const card = await prisma.digitalIdentityCard.findUnique({ where: { id: input.cardId } })
+  if (!card) return null
+  return prisma.digitalIdentityCard.update({
+    where: { id: input.cardId },
+    data: {
+      status: input.status,
+      revokedAt: input.status === 'revoked' ? new Date() : null,
+    },
+  })
+}
