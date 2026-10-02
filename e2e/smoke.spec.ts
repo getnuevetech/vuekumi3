@@ -80,4 +80,29 @@ test.describe('Phase 45 + 55 web smoke', () => {
     await page.goto('/bookings')
     await expect(page.getByRole('heading', { name: /Briefs/i })).toBeVisible()
   })
+
+  test('D-R2: home search and featured sections load', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: /Africa/i }).first()).toBeVisible()
+    await expect(page.getByPlaceholder(/Search photos/i).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Featured Photos' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Latest from the Library' })).toBeVisible()
+  })
+
+  test('D-R2: library filters update the URL', async ({ page }) => {
+    await page.goto('/search')
+    await expect(page.getByRole('heading', { name: 'The library' })).toBeVisible()
+    await page.getByRole('button', { name: 'Free Library' }).click()
+    await expect(page).toHaveURL(/libraryTier=OPEN/)
+    await expect(page.getByText(/Free Library \(Open\)/i)).toBeVisible()
+  })
+
+  test('D-R2: category hero and photo license panel load', async ({ page }) => {
+    await page.goto('/category/landscape')
+    await expect(page.getByRole('heading', { name: /Landscape/i }).first()).toBeVisible()
+
+    await page.goto('/photo/afr-001')
+    await expect(page.getByText(/Usage permission/i)).toBeVisible()
+    await expect(page.locator('img').first()).toBeVisible()
+  })
 })

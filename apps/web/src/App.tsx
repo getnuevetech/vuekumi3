@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, Route, Routes, useLocation } from 'react-router'
-import { PublicFooter, SiteHeader } from './components/shared'
+import { PublicFooter, SiteHeader } from './components/marketplace'
 import Home from './pages/Home'
 import PhotoDetail from './pages/PhotoDetail'
 import Pricing from './pages/Pricing'
@@ -123,8 +123,8 @@ export default function App() {
       <ScrollToTop />
       <PortalTheme />
       <Routes>
-        <Route path="/" element={<Home />} />
         <Route element={<MarketplaceLayout />}>
+        <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />
         <Route path="/p/:handle" element={<Photographer />} />
         <Route path="/m/:handle" element={<ModelProfile />} />

@@ -13,8 +13,8 @@ import type {
 } from '@vuekumi/shared'
 import {
   DEFAULT_CATEGORY_BANNER_FRAME,
-  DEFAULT_HOME_SECTION_ORDER,
   DEFAULT_PEOPLE_FRAME,
+  HOME_BUILTIN_SECTIONS,
   HOME_PEOPLE_ACCOUNT,
   HOME_PEOPLE_LIMIT,
   HOME_PEOPLE_SLOT_LABEL,
@@ -353,7 +353,7 @@ export async function planHomeLayout(input: PatchHomeFeaturedInput): Promise<Lay
   const knownBannerIds = banners
     ? banners.updates.map((row) => row.id)
     : (await prisma.homeStaticBanner.findMany({ select: { id: true } })).map((row) => row.id)
-  const allowed = new Set<string>([...DEFAULT_HOME_SECTION_ORDER, ...knownBannerIds.map(homeBannerSectionKey)])
+  const allowed = new Set<string>([...HOME_BUILTIN_SECTIONS, ...knownBannerIds.map(homeBannerSectionKey)])
   const checkKeys = (keys: string[]) => {
     const seen = new Set<string>()
     for (const key of keys) {

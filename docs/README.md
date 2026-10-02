@@ -3,8 +3,8 @@
 Read in this order:
 
 0. **[15-V3-DISCOVERY-REDESIGN-PLAN.md](./15-V3-DISCOVERY-REDESIGN-PLAN.md)** —
-   **D-R2 visual shell in progress (30 Sep 2026).** Public discovery redesign against Design Page Index
-   v1.0 (D01–D07) and Master Development Specification v3.0. D-R2 then D-R3.
+   **D-R2 visual shell shipped; D-R3 next.** Public discovery redesign against Design Page Index
+   v1.0 (D01–D07) and Master Development Specification v3.0.
    Does not restart shipped rights, RevenuePolicy, or Free Library work in **`12`** / **`13`**.
    Photo Influencer stays the public name for the v3 “Free Contributor” layout.
 0b. **[13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md](./13-V21-IMAGERY-CONCEPT-RECOMMENDATIONS-AND-EXECUTION-PLAN.md)** —
