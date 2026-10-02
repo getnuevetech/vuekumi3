@@ -20,7 +20,8 @@ test.describe('Phase 45 + 55 web smoke', () => {
 
     await page.goto('/m/ada-molefe')
     await expect(page.getByRole('heading', { name: 'Ada Molefe' })).toBeVisible()
-    await expect(page.getByText('@ada-molefe')).toBeVisible()
+    await expect(page.getByText(/@ada-molefe · Gaborone/i).first()).toBeVisible()
+    await expect(page.getByText(/Verified Model/i).first()).toBeVisible()
   })
 
   test('pricing, legal, and DMCA public pages load', async ({ page }) => {
