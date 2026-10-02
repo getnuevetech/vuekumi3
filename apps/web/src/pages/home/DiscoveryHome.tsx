@@ -2,7 +2,8 @@ import { useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode
 import { Link, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { HomePageDto, PhotoDto, PhotographerDto } from '@vuekumi/shared'
-import { SearchForm } from '../../components/shared'
+import { homeSectionVisible } from '@vuekumi/shared'
+import { SearchForm } from '../../components/marketplace'
 import { CountryMark, PhotoHoverActions, type HoverPhoto } from '../../components/PhotoActions'
 import { api } from '../../api/client'
 import { categoryPath } from '../../lib/categories'
@@ -58,8 +59,8 @@ function managedHeroSrc(photos: PhotoDto[], index: number) {
   return row.src
 }
 
-function hidden(home: HomePageDto | null, key: string) {
-  return Boolean(home?.layout.hidden.includes(key))
+function hidden(home: HomePageDto | null, ...keys: string[]) {
+  return !homeSectionVisible(home?.layout ?? null, keys)
 }
 
 function SectionHead({ title, text, to, label, className = 'mb-4' }: { title: string; text: string; to: string; label: string; className?: string }) {
@@ -257,15 +258,15 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
   const contributorRail = home?.layout.people.contributors.people ?? home?.contributors ?? []
   const people = [
     ...(!hidden(home, 'photographers') ? photographerRail : []),
-    ...(!hidden(home, 'photo_influencers') ? influencerRail : []),
-    ...(!hidden(home, 'contributors') ? contributorRail : []),
+    ...(!hidden(home, 'photo_influencers', 'spotlight') ? influencerRail : []),
+    ...(!hidden(home, 'contributors', 'top_creators') ? contributorRail : []),
   ].filter((person, index, list) => list.findIndex((row) => row.handle === person.handle) === index)
   const spotlight = [
-    ...(!hidden(home, 'photo_influencers') ? influencerRail : []),
+    ...(!hidden(home, 'photo_influencers', 'spotlight') ? influencerRail : []),
     ...(!hidden(home, 'photographers') ? photographerRail : []),
-    ...(!hidden(home, 'contributors') ? contributorRail : []),
+    ...(!hidden(home, 'contributors', 'top_creators') ? contributorRail : []),
   ].slice(0, 2)
-  const showSpotlight = !(home && hidden(home, 'photo_influencers') && hidden(home, 'photographers') && hidden(home, 'contributors'))
+  const showSpotlight = !(home && hidden(home, 'photo_influencers', 'spotlight') && hidden(home, 'photographers') && hidden(home, 'contributors', 'top_creators'))
 
   const { data: latest = [] } = useQuery({
     queryKey: publicQueryKeys.homeFeed,
@@ -273,7 +274,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
   })
 
   const heroLink = content.home.hero.primaryTo.startsWith('#')
-    ? (hidden(home, 'feed') ? '/search' : content.home.hero.primaryTo)
+    ? (hidden(home, 'feed', 'library_preview') ? '/search' : content.home.hero.primaryTo)
     : content.home.hero.primaryTo
 
   const bannerSrc = managedHeroSrc(heroPhotos, 0) ?? '/home/design/hero-collage.png'
@@ -392,10 +393,10 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
                   <span className="text-[#ff7227]">Africa&apos;s</span> story.
                 </h1>
                 <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/80">
-                  Discover premium photos, videos and illustrations celebrating African life, culture, business and creativity.
+                  Discover premium photographs celebrating African life, culture, business and creativity.
                 </p>
                 <div className="mt-5 max-w-lg">
-                  <SearchForm wide iconButton scope placeholder="Search photos, videos, vectors and more..." />
+                  <SearchForm wide iconButton scope placeholder="Search photos, people, places, and more…" />
                 </div>
                 <Link to={heroLink} className="mt-4 inline-flex text-sm font-semibold text-[#e6c27a] hover:text-white">
                   {content.home.hero.primaryLabel}
@@ -419,7 +420,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
         </section>
       )}
 
-      {!hidden(home, 'marquee') && (
+      {!hidden(home, 'marquee', 'category_chips') && (
         <section className="border-b border-[#efe8e1] bg-white">
           <div className="mx-auto flex max-w-[1440px] items-start justify-between gap-1 overflow-x-auto px-5 py-4 no-scrollbar lg:px-8">
             {icons.map((icon) => (
@@ -463,7 +464,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
         </section>
       )}
 
-      {!hidden(home, 'editorial') && (
+      {!hidden(home, 'editorial', 'featured_collections') && (
         <section className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <SectionHead title="Featured Collections" text="Curated stories for every project." to="/search" label="View all collections" />
           <ScrollStrip>
@@ -496,9 +497,9 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
 
       {showSpotlight && <Spotlight people={spotlight} photo={spotlightPhoto} />}
 
-      {!hidden(home, 'contributors') && (
+      {!hidden(home, 'contributors', 'top_creators') && (
         <section className="mx-auto max-w-[1440px] px-3 py-6 lg:px-4">
-          <SectionHead className="mb-3" title="Top African Creators" text="Talented photographers, filmmakers and visual artists from across Africa." to="/creators" label="View all creators" />
+          <SectionHead className="mb-3" title="Top African Creators" text="Talented photographers and visual artists from across Africa." to="/creators" label="View all creators" />
           <CreatorRow people={people.length > 0 ? people.slice(0, 12).map((person) => ({
             name: person.name,
             country: countryFromLocation(person.location),
@@ -522,7 +523,7 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
         </section>
       )}
 
-      {!hidden(home, 'feed') && (
+      {!hidden(home, 'feed', 'library_preview') && (
         <section id="feed" className="mx-auto max-w-[1440px] px-5 py-10 lg:px-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-baseline gap-3">
@@ -530,10 +531,8 @@ export function DiscoveryHome({ home }: { home: HomePageDto | null }) {
               <p className="text-sm text-ink-soft">Fresh African imagery, added daily.</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">All</span>
-              <Link to="/search" className="rounded-full bg-[#f3eee9] px-3 py-1 text-xs font-semibold text-ink">Photos</Link>
-              <Link to="/search" className="rounded-full bg-[#f3eee9] px-3 py-1 text-xs font-semibold text-ink">Videos</Link>
-              <Link to="/search" className="rounded-full bg-[#f3eee9] px-3 py-1 text-xs font-semibold text-ink">Illustrations</Link>
+              <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">Photos</span>
+              <Link to="/search?libraryTier=OPEN" className="rounded-full bg-[#f3eee9] px-3 py-1 text-xs font-semibold text-ink">Free Library</Link>
               <Link to="/search" className="ml-2 text-sm font-semibold text-[#ef5b24]">View more →</Link>
             </div>
           </div>

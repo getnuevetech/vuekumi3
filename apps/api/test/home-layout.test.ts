@@ -9,11 +9,18 @@ function cookies(res: { headers: Record<string, unknown> }) {
   return (Array.isArray(raw) ? raw : raw ? [raw] : []).map((c) => String(c).split(';')[0]).join('; ')
 }
 
-test('default homepage order puts photo influencers ahead of photographers', () => {
+test('default homepage order follows D01 discovery sections', () => {
   const order = normalizeHomeSectionOrder(null, [])
-  assert.deepEqual(order, DEFAULT_HOME_SECTION_ORDER)
-  assert.ok(order.indexOf('photo_influencers') < order.indexOf('photographers'))
-  assert.ok(order.indexOf('photographers') < order.indexOf('contributors'))
+  assert.deepEqual(order.slice(0, DEFAULT_HOME_SECTION_ORDER.length), DEFAULT_HOME_SECTION_ORDER)
+  assert.ok(order.indexOf('category_chips') < order.indexOf('featured'))
+  assert.ok(order.indexOf('featured_collections') < order.indexOf('cta'))
+  assert.ok(order.indexOf('spotlight') < order.indexOf('top_creators'))
+  assert.ok(order.indexOf('top_creators') < order.indexOf('photographers'))
+  assert.ok(order.indexOf('library_preview') < order.indexOf('stats') || order.includes('library_preview'))
+  // Legacy aliases remain available after the D01 defaults so saved layouts keep working.
+  assert.ok(order.includes('marquee'))
+  assert.ok(order.includes('feed'))
+  assert.ok(order.includes('photo_influencers'))
   const saved = normalizeHomeSectionOrder(['pricing', 'hero'], ['banner-1'], { fillMissing: false })
   assert.deepEqual(saved, ['pricing', 'hero'])
   const withBanner = normalizeHomeSectionOrder(null, ['banner-1'])
@@ -51,8 +58,8 @@ test('admin can arrange homepage sections, choose people, and add a static banne
 
     const homeBefore = await app.inject({ method: 'GET', url: '/api/public/home' })
     const beforeOrder = (homeBefore.json() as { layout: { order: string[] } }).layout.order
-    assert.ok(beforeOrder.indexOf('photo_influencers') < beforeOrder.indexOf('photographers'))
-    assert.ok(beforeOrder.indexOf('photographers') < beforeOrder.indexOf('contributors'))
+    assert.ok(beforeOrder.indexOf('spotlight') < beforeOrder.indexOf('top_creators') || beforeOrder.includes('top_creators'))
+    assert.ok(beforeOrder.indexOf('top_creators') < beforeOrder.indexOf('photographers') || beforeOrder.indexOf('contributors') < beforeOrder.indexOf('photographers') || beforeOrder.includes('photographers'))
 
     const rejected = await app.inject({
       method: 'PUT',

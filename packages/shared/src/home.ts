@@ -95,44 +95,104 @@ export function normalizeFeaturedFrame(input?: { widthVw?: number | null; height
   return parsed.success ? parsed.data : { ...DEFAULT_FEATURED_FRAME }
 }
 
-/** Built-in homepage sections. Header, footer, and back-to-top stay fixed. */
+/**
+ * Built-in homepage sections. Header, footer, and back-to-top stay fixed.
+ * D-R2 adds discovery aliases (`category_chips`, `featured_collections`,
+ * `spotlight`, `top_creators`, `library_preview`) beside legacy keys so
+ * production CMS JSON does not go blank when admins have not reordered yet.
+ */
 export const HOME_BUILTIN_SECTIONS = [
   'hero',
+  'category_chips',
   'marquee',
   'featured',
   'icons',
   'category_banners',
-  'cta',
-  'feed',
+  'featured_collections',
   'editorial',
-  'stats',
+  'cta',
+  'spotlight',
+  'top_creators',
   'photo_influencers',
   'photographers',
   'contributors',
   'models',
   'pricing',
+  'library_preview',
+  'feed',
+  'stats',
 ] as const
 export type HomeBuiltinSection = (typeof HOME_BUILTIN_SECTIONS)[number]
 
+/** Legacy keys that render the same module as a D-R2 alias (and vice versa). */
+export const HOME_SECTION_ALIASES: Record<string, HomeBuiltinSection> = {
+  category_chips: 'marquee',
+  marquee: 'category_chips',
+  featured_collections: 'editorial',
+  editorial: 'featured_collections',
+  spotlight: 'photo_influencers',
+  top_creators: 'contributors',
+  contributors: 'top_creators',
+  library_preview: 'feed',
+  feed: 'library_preview',
+}
+
 export const HOME_SECTION_LABEL: Record<HomeBuiltinSection, string> = {
   hero: 'D01 Hero — Images that tell Africa’s story',
-  marquee: 'D01 Category chips',
+  category_chips: 'D01 Category chips',
+  marquee: 'D01 Category chips (legacy)',
   featured: 'D01 Featured Photos',
   icons: 'D01 Trust row',
   category_banners: 'D01 Browse by Categories',
+  featured_collections: 'D01 Featured Collections',
+  editorial: 'D01 Featured Collections (legacy)',
   cta: 'D01 Continent banner',
-  feed: 'D01 Latest from the Library',
-  editorial: 'D01 Editorial feature',
-  stats: 'D01 Library stats',
+  spotlight: 'D01 Creator spotlight',
+  top_creators: 'D01 Top African Creators',
   photo_influencers: 'D01 Photo Influencer spotlight',
   photographers: 'D01 Top photographers',
-  contributors: 'D01 Top contributors',
+  contributors: 'D01 Top creators (legacy)',
   models: 'D01 Top models',
   pricing: 'D01 License banner',
+  library_preview: 'D01 Latest from the Library',
+  feed: 'D01 Latest from the Library (legacy)',
+  stats: 'D01 Library stats',
 }
 
-/** Photo influencers sit where photographers used to, and photographers sit where contributors used to. */
-export const DEFAULT_HOME_SECTION_ORDER: HomeBuiltinSection[] = [...HOME_BUILTIN_SECTIONS]
+/**
+ * Default public order matches D01 top-to-bottom. Legacy aliases stay in
+ * HOME_BUILTIN_SECTIONS so saved admin layouts keep working, but they are
+ * omitted here to avoid duplicate modules on a fresh layout.
+ */
+export const DEFAULT_HOME_SECTION_ORDER: HomeBuiltinSection[] = [
+  'hero',
+  'category_chips',
+  'featured',
+  'icons',
+  'category_banners',
+  'featured_collections',
+  'cta',
+  'spotlight',
+  'top_creators',
+  'photographers',
+  'models',
+  'pricing',
+  'library_preview',
+  'stats',
+]
+
+/** True when any key in the group is present in order and not hidden. */
+export function homeSectionVisible(
+  layout: { order?: string[] | null; hidden?: string[] | null } | null | undefined,
+  keys: string[],
+): boolean {
+  const hidden = new Set(layout?.hidden ?? [])
+  const order = layout?.order
+  if (order && order.length > 0) {
+    return keys.some((key) => order.includes(key) && !hidden.has(key))
+  }
+  return keys.some((key) => !hidden.has(key))
+}
 
 export const HOME_PEOPLE_SLOTS = ['photographers', 'photo_influencers', 'contributors'] as const
 export type HomePeopleSlot = (typeof HOME_PEOPLE_SLOTS)[number]
@@ -210,8 +270,19 @@ export function normalizeHomeSectionOrder(
     next.push(key)
   }
   if (!fillMissing) return next
+  // Prefer the D01 default order; append any remaining builtins (legacy aliases)
+  // that a saved layout never listed so staff can still enable them later.
+  for (const key of DEFAULT_HOME_SECTION_ORDER) {
+    if (!seen.has(key)) {
+      seen.add(key)
+      next.push(key)
+    }
+  }
   for (const key of HOME_BUILTIN_SECTIONS) {
-    if (!seen.has(key)) next.push(key)
+    if (!seen.has(key)) {
+      seen.add(key)
+      next.push(key)
+    }
   }
   for (const id of bannerIds) {
     const key = homeBannerSectionKey(id)
@@ -275,8 +346,8 @@ export const patchHomeFeaturedSchema = z.object({
     ids: z.array(z.string().trim().min(1).max(80)).max(24),
     randomize: z.boolean(),
   }).optional(),
-  layoutOrder: z.array(z.string().trim().min(1).max(120)).max(40).optional(),
-  layoutHidden: z.array(z.string().trim().min(1).max(120)).max(40).optional(),
+  layoutOrder: z.array(z.string().trim().min(1).max(120)).max(60).optional(),
+  layoutHidden: z.array(z.string().trim().min(1).max(120)).max(60).optional(),
   people: z.object({
     photographers: homePeoplePatchSchema.optional(),
     photo_influencers: homePeoplePatchSchema.optional(),

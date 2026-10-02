@@ -262,17 +262,32 @@ export default function PhotoDetail() {
           <span className="text-terra">{view.id.toUpperCase()}</span>
         </p>
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_380px]">
-          <div className="overflow-hidden rounded-3xl border border-sand bg-cream p-2">
-            <BlurImage src={view.src} alt={view.title} className="w-full rounded-2xl object-contain" />
-            <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-3 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+        <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+          <div className="overflow-hidden rounded-[28px] border border-sand bg-[#14110e] p-2 md:p-3">
+            <BlurImage src={view.src} alt={view.title} className="max-h-[78vh] w-full rounded-[22px] object-contain" />
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-white/70">
               <span>{view.country}</span>
               <span>{fmt(view.views)} views · {fmt(view.downloads)} downloads · {fmt(view.likes)} likes</span>
             </div>
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <h1 className="font-display text-4xl text-ink">{view.title}</h1>
+            <div className="flex flex-wrap gap-2">
+              {view.libraryTier && (
+                <span className="rounded-full bg-[#f3eee9] px-3 py-1 text-[11px] font-semibold text-ink">
+                  {LIBRARY_TIER_LABEL[view.libraryTier]}
+                </span>
+              )}
+              {view.rights?.rightsVerified && (
+                <span className="rounded-full bg-ink px-3 py-1 text-[11px] font-semibold text-white">Rights Verified</span>
+              )}
+              {view.permissionState && permissionPublicCopy(view.permissionState, view.restrictionNotes) && (
+                <span className="rounded-full border border-sand px-3 py-1 text-[11px] font-semibold text-ink-soft">
+                  Public rights note
+                </span>
+              )}
+            </div>
+            <h1 className="font-display mt-4 text-4xl text-ink md:text-5xl">{view.title}</h1>
             <p className="mt-2 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-faint">
               Usage permission — not ownership
             </p>
@@ -282,7 +297,7 @@ export default function PhotoDetail() {
               </p>
             )}
 
-            <div className="mt-6 flex items-center gap-4 border border-sand bg-white p-4">
+            <div className="mt-6 flex items-center gap-4 rounded-2xl border border-sand bg-white p-4">
               <Link to={`/p/${photographer.handle}`} className="flex flex-1 items-center gap-4">
                 {photographer.avatar ? (
                   <img src={photographer.avatar} alt={photographer.name} className="h-12 w-12 rounded-full object-cover" />
@@ -325,17 +340,24 @@ export default function PhotoDetail() {
               </Link>
             )}
             {(view.appearances ?? []).some((a) => a.modelHandle) && (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {(view.appearances ?? [])
                   .filter((a) => a.modelHandle)
                   .map((a) => (
-                    <Link
-                      key={a.modelHandle}
-                      to={`/book/${a.modelHandle}`}
-                      className="inline-flex border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft hover:border-ink hover:text-ink"
-                    >
-                      Book @{a.modelHandle}
-                    </Link>
+                    <div key={a.modelHandle} className="flex flex-wrap gap-2">
+                      <Link
+                        to={`/m/${a.modelHandle}`}
+                        className="inline-flex rounded-full border border-sand px-3 py-1.5 text-xs font-semibold text-ink hover:border-ink"
+                      >
+                        Model @{a.modelHandle}
+                      </Link>
+                      <Link
+                        to={`/book/${a.modelHandle}`}
+                        className="inline-flex rounded-full border border-sand px-3 py-1.5 font-mono-tech text-[10px] uppercase tracking-[0.14em] text-ink-soft hover:border-ink hover:text-ink"
+                      >
+                        Book
+                      </Link>
+                    </div>
                   ))}
               </div>
             )}

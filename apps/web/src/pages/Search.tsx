@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { fillSiteTokens, LIBRARY_TIER_LABEL, type LibraryTier, type PhotoSort } from '@vuekumi/shared'
-import { PhotoMasonry, SearchForm } from '../components/shared'
+import { fillSiteTokens, PHOTO_CATEGORIES, type LibraryTier, type PhotoSort } from '@vuekumi/shared'
+import { LibraryFilterPanel, PhotoTileMasonry, SearchForm, type PhotoDensity } from '../components/marketplace'
 import { api } from '../api/client'
 import { useSiteContent } from '../context/SiteContentContext'
-import { categories } from '../data/content'
 import { publicQueryKeys } from '../lib/query-keys'
 
 const sorts: { value: PhotoSort; label: string }[] = [
@@ -15,18 +14,6 @@ const sorts: { value: PhotoSort; label: string }[] = [
   { value: 'likes', label: 'Likes' },
 ]
 
-function FilterOption({ active, label, count, onClick }: { active: boolean; label: string; count?: number; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className={`flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left text-sm ${active ? 'font-semibold text-ink' : 'text-ink-soft hover:text-ink'}`}>
-      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${active ? 'border-terra bg-terra text-white' : 'border-sand bg-white'}`}>
-        {active ? '✓' : ''}
-      </span>
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      {count != null && count > 0 && <span className="text-xs text-ink-faint">{count}</span>}
-    </button>
-  )
-}
-
 function param(params: URLSearchParams, key: string) {
   return params.get(key) ?? ''
 }
@@ -35,6 +22,8 @@ export default function Search() {
   const { content } = useSiteContent()
   const library = content.pages.search
   const [params, setParams] = useSearchParams()
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [density, setDensity] = useState<PhotoDensity>('comfortable')
   const sentinel = useRef<HTMLDivElement>(null)
 
   const q = param(params, 'q')
@@ -101,13 +90,29 @@ export default function Search() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, items.length])
 
   const heading = q ? `Results for “${q}”` : tag ? `Tagged ${tag}` : photographer ? `@${photographer}` : library.title
-
-  const categoryOptions = facets?.categories ?? categories.filter((c) => c !== 'All').map((value) => ({ value, count: 0 }))
+  const categoryOptions = facets?.categories ?? PHOTO_CATEGORIES.map((value) => ({ value, count: 0 }))
   const tierOptions = facets?.libraryTiers?.length
     ? facets.libraryTiers
     : (['OPEN', 'LICENSED', 'VERIFIED_PLUS', 'EDITORIAL'] as LibraryTier[]).map((tier) => ({ value: tier, count: 0 }))
   const visibleTitle = q || tag || photographer ? heading : 'Discover authentic African imagery'
   const heroPhoto = items[0]
+
+  const filterPanel = (
+    <LibraryFilterPanel
+      q={q}
+      category={category}
+      country={country}
+      license={license}
+      libraryTier={libraryTier}
+      tag={tag}
+      photographer={photographer}
+      categoryOptions={categoryOptions}
+      tierOptions={tierOptions}
+      countryOptions={facets?.countries ?? []}
+      tagOptions={facets?.tags ?? []}
+      onFilter={setFilter}
+    />
+  )
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -128,122 +133,76 @@ export default function Search() {
       </section>
 
       <div className="mx-auto max-w-[1500px] px-5 pb-16 pt-8 md:px-8">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="rounded-full border border-sand bg-white px-4 py-2 text-sm font-semibold text-ink"
+          >
+            Filters
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-pressed={density === 'comfortable'}
+              onClick={() => setDensity('comfortable')}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${density === 'comfortable' ? 'bg-ink text-white' : 'bg-[#f3eee9] text-ink'}`}
+            >
+              Large
+            </button>
+            <button
+              type="button"
+              aria-pressed={density === 'compact'}
+              onClick={() => setDensity('compact')}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${density === 'compact' ? 'bg-ink text-white' : 'bg-[#f3eee9] text-ink'}`}
+            >
+              Dense
+            </button>
+          </div>
+        </div>
+
         <div className="grid items-start gap-8 lg:grid-cols-[260px_1fr]">
-          <aside className="rounded-2xl border border-sand bg-white p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-ink">Filter Results</p>
-              {(q || category || country || license || libraryTier || tag || photographer) && (
-                <Link to="/search" className="text-xs font-semibold text-terra">Clear all</Link>
-              )}
-            </div>
-
-            <div className="mt-4 border-t border-sand pt-4">
-              <p className="text-sm font-semibold text-ink">Category</p>
-              <div className="mt-2 max-h-56 space-y-0.5 overflow-y-auto">
-                <FilterOption active={!category} label="All categories" onClick={() => setFilter({ category: '' })} />
-                {categoryOptions.map((row) => (
-                  <FilterOption
-                    key={row.value}
-                    active={category === row.value}
-                    label={row.value}
-                    count={row.count}
-                    onClick={() => setFilter({ category: category === row.value ? '' : row.value })}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 border-t border-sand pt-4">
-              <p className="text-sm font-semibold text-ink">License type</p>
-              <div className="mt-2">
-                <FilterOption active={!license} label="All licences" onClick={() => setFilter({ license: '' })} />
-                <FilterOption active={license === 'free'} label="Free" onClick={() => setFilter({ license: license === 'free' ? '' : 'free' })} />
-                <FilterOption active={license === 'premium'} label="Premium" onClick={() => setFilter({ license: license === 'premium' ? '' : 'premium' })} />
-              </div>
-            </div>
-
-            <div className="mt-4 border-t border-sand pt-4">
-              <p className="text-sm font-semibold text-ink">Library</p>
-              <div className="mt-2">
-                <FilterOption active={!libraryTier} label="All library tiers" onClick={() => setFilter({ libraryTier: '' })} />
-                {tierOptions.map((row) => {
-                  const tier = row.value as LibraryTier
-                  const label = LIBRARY_TIER_LABEL[tier] ?? row.value
-                  return (
-                    <FilterOption
-                      key={row.value}
-                      active={libraryTier === row.value}
-                      label={label}
-                      count={row.count}
-                      onClick={() => setFilter({ libraryTier: libraryTier === row.value ? '' : row.value })}
-                    />
-                  )
-                })}
-              </div>
-              {libraryTier === 'VERIFIED_PLUS' && (
-                <p className="mt-2 text-[11px] text-ink-soft">
-                  Verified+ is marketplace placement above Licensed. It is separate from rights clearance.
-                </p>
-              )}
-              {libraryTier === 'OPEN' && (
-                <p className="mt-2 text-[11px] text-ink-soft">
-                  Free Library (Open) — zero-price downloads when rights allow. Photo Influencers upload here only.
-                </p>
-              )}
-            </div>
-
-            <div className="mt-4 border-t border-sand pt-4">
-              <p className="text-sm font-semibold text-ink">Country</p>
-              <select
-                aria-label="Country"
-                value={country}
-                onChange={(e) => setFilter({ country: e.target.value })}
-                className="mt-2 w-full rounded-xl border border-sand bg-paper px-3 py-2 text-sm outline-none focus:border-terra"
-              >
-                <option value="">All countries</option>
-                {(facets?.countries ?? []).map((c) => (
-                  <option key={c.value} value={c.value}>{c.value} ({c.count})</option>
-                ))}
-              </select>
-            </div>
-
-            {facets?.tags && facets.tags.length > 0 && (
-              <div className="mt-4 border-t border-sand pt-4">
-                <p className="text-sm font-semibold text-ink">Topics</p>
-                <div className="mt-2 max-h-48 space-y-0.5 overflow-y-auto">
-                  {facets.tags.map((row) => (
-                    <FilterOption
-                      key={row.value}
-                      active={tag === row.value}
-                      label={row.value}
-                      count={row.count}
-                      onClick={() => setFilter({ tag: tag === row.value ? '' : row.value })}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </aside>
+          <div className="hidden lg:block">{filterPanel}</div>
 
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-ink-soft">
                 {loading ? 'Searching…' : fillSiteTokens(library.intro, { count: total })}
               </p>
-              <select
-                aria-label="Sort"
-                value={sort}
-                onChange={(e) => setFilter({ sort: e.target.value })}
-                className="rounded-full border border-sand bg-white px-3 py-2 text-sm outline-none focus:border-terra"
-              >
-                {sorts.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="hidden items-center gap-2 lg:flex">
+                  <button
+                    type="button"
+                    aria-pressed={density === 'comfortable'}
+                    onClick={() => setDensity('comfortable')}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${density === 'comfortable' ? 'bg-ink text-white' : 'bg-[#f3eee9] text-ink'}`}
+                  >
+                    Large
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={density === 'compact'}
+                    onClick={() => setDensity('compact')}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${density === 'compact' ? 'bg-ink text-white' : 'bg-[#f3eee9] text-ink'}`}
+                  >
+                    Dense
+                  </button>
+                </div>
+                <select
+                  aria-label="Sort"
+                  value={sort}
+                  onChange={(e) => setFilter({ sort: e.target.value })}
+                  className="rounded-full border border-sand bg-white px-3 py-2 text-sm outline-none focus:border-terra"
+                >
+                  {sorts.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {items.length > 0 ? (
-              <PhotoMasonry photos={items} />
+              <PhotoTileMasonry photos={items} density={density} />
             ) : !loading ? (
               <p className="mt-16 text-sm text-ink-soft">No photographs match those filters.</p>
             ) : null}
@@ -256,6 +215,21 @@ export default function Search() {
           </div>
         </div>
       </div>
+
+      {filtersOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          <button type="button" aria-label="Close filters" className="absolute inset-0 bg-noir/50" onClick={() => setFiltersOpen(false)} />
+          <div className="absolute inset-y-0 left-0 w-[min(100%,320px)] overflow-y-auto bg-paper p-4 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold text-ink">Filters</p>
+              <button type="button" className="text-sm font-semibold text-terra" onClick={() => setFiltersOpen(false)}>
+                Done
+              </button>
+            </div>
+            {filterPanel}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

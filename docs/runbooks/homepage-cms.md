@@ -80,6 +80,20 @@ Staff edits that must invalidate this response: Site content save, Menu save, lo
 - Prefer invalidating React Query keys (`publicQueryKeys.home` / `site`) after admin saves — already wired on Homepage, Featured, Site, Menu.
 - Seed defaults live in `packages/shared/src/site-content.ts` (`DEFAULT_SITE_CONTENT`); production uses DB `SiteContent` after first save.
 
+### D-R2 section keys (discovery aliases)
+
+Public `layout.order` / `layout.hidden` accept both legacy and D01 alias keys. Rendering treats these pairs as the same module (show if either key is visible):
+
+| D-R2 alias | Legacy key | Module |
+| --- | --- | --- |
+| `category_chips` | `marquee` | Category chip / icon strip |
+| `featured_collections` | `editorial` | Featured collections rail |
+| `spotlight` | `photo_influencers` (plus people rails) | Creator spotlight |
+| `top_creators` | `contributors` | Top African Creators |
+| `library_preview` | `feed` | Latest from the Library |
+
+Default order prefers the D01 aliases. Unrecognized older keys keep rendering until staff reorders. Do not delete legacy keys from `HOME_BUILTIN_SECTIONS` without a migration of saved `HomeLayout` rows.
+
 ---
 
 ## 6. Smoke after a CMS edit
@@ -88,3 +102,4 @@ Staff edits that must invalidate this response: Site content save, Menu save, lo
 2. Hard-refresh a menu destination — link still resolves.
 3. `/search?libraryTier=OPEN` still reachable from Free Library nav when that link is enabled.
 4. Featured strip on home matches `/admin/featured` pins (empty slots may auto-fill from the live library).
+5. Home, `/search`, `/category/:slug`, and `/photo/:id` share one marketplace header/footer (D-R2).
