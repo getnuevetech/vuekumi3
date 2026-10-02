@@ -148,7 +148,7 @@ test('admin can arrange homepage sections, choose people, and add a static banne
       layout: {
         order: string[]
         people: {
-          photographers: { people: { handle: string }[]; frame: { heightVw: number } }
+          photographers: { people: { handle: string; digitalId?: { token: string } | null }[]; frame: { heightVw: number } }
           photo_influencers: { mode: string }
         }
         categoryBannerFrame: { widthVw: number }
@@ -159,6 +159,7 @@ test('admin can arrange homepage sections, choose people, and add a static banne
     assert.equal(page.layout.order[heroAt], 'marquee')
     assert.equal(page.layout.people.photographers.people.length, 1)
     assert.equal(page.layout.people.photographers.people[0]?.handle, photographer.contributorProfile.handle)
+    assert.ok(page.layout.people.photographers.people[0]?.digitalId?.token)
     assert.equal(page.layout.people.photographers.frame.heightVw, 28)
     assert.equal(page.layout.people.photo_influencers.mode, 'downloads')
     assert.equal(page.layout.categoryBannerFrame.widthVw, 18)

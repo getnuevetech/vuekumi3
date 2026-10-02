@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { HomePageDto, PhotoDto, PhotographerDto } from '@vuekumi/shared'
 import { homeSectionVisible } from '@vuekumi/shared'
-import { SearchForm } from '../../components/marketplace'
+import { SearchForm, DigitalIdCard } from '../../components/marketplace'
 import { CountryMark, PhotoHoverActions, type HoverPhoto } from '../../components/PhotoActions'
 import { api } from '../../api/client'
 import { categoryPath } from '../../lib/categories'
@@ -663,6 +663,10 @@ type SpotlightCard = {
   tags: string[]
   qr: string
   href: string
+  digitalId?: PhotographerDto['digitalId']
+  handle?: string
+  avatarUrl?: string | null
+  location?: string | null
 }
 
 const DESIGN_SPOTLIGHT: SpotlightCard[] = [
@@ -706,6 +710,10 @@ function spotlightCard(person: PhotographerDto, photo: string, index: number): S
     tags: fallback.tags,
     qr: fallback.qr,
     href: `/p/${person.handle}`,
+    digitalId: person.digitalId ?? null,
+    handle: person.handle,
+    avatarUrl: person.avatarUrl,
+    location: person.location,
   }
 }
 
@@ -749,7 +757,7 @@ function Spotlight({ people, photo }: { people: PhotographerDto[]; photo: string
           </div>
         )}
         {cards.map((card) => (
-          <CreatorIdCard key={card.name} card={card} />
+          <CreatorIdCard key={`${card.handle ?? card.name}-${card.href}`} card={card} />
         ))}
       </div>
     </section>
@@ -757,6 +765,45 @@ function Spotlight({ people, photo }: { people: PhotographerDto[]; photo: string
 }
 
 function CreatorIdCard({ card }: { card: SpotlightCard }) {
+  if (card.digitalId && card.handle) {
+    return (
+      <div className="flex shrink-0 items-center gap-3">
+        <div className="w-[236px]">
+          <div className="flex items-center gap-3">
+            <img src={card.portrait} alt="" className="h-14 w-14 rounded-full object-cover" />
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#ef5b24] px-2 py-0.5 text-[10px] font-semibold text-white">
+                {card.digitalId.roleLabel || 'Creator'}
+              </span>
+              <p className="mt-1 truncate text-base font-semibold text-ink">{card.name}</p>
+              <p className="truncate text-xs text-ink-soft">📍 {card.place} {card.flag ? <span aria-hidden="true">{card.flag}</span> : null}</p>
+            </div>
+          </div>
+          <dl className="mt-3 grid grid-cols-3 text-center">
+            <Stat label="Assets" value={card.assets} />
+            <Stat label="Downloads" value={card.downloads} />
+            <Stat label="Rating" value={card.rating} />
+          </dl>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {card.tags.map((label) => (
+              <span key={label} className="rounded-full bg-[#f3eee9] px-2.5 py-1 text-[11px] font-medium text-ink">{label}</span>
+            ))}
+          </div>
+        </div>
+        <div className="w-[220px] shrink-0">
+          <DigitalIdCard
+            preview={card.digitalId}
+            name={card.name}
+            handle={card.handle}
+            location={card.location}
+            avatarUrl={card.avatarUrl}
+            compact
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex shrink-0 items-center gap-3">
       <div className="w-[236px]">

@@ -26,6 +26,7 @@ import {
 } from '@vuekumi/shared'
 import { accountTypesWithFeature } from './account-features.js'
 import { PROFILE_PHOTO_FILTER } from './catalog.js'
+import { contributorCardType, ensureDigitalIdCard } from './digital-id.js'
 import { prisma } from './prisma.js'
 
 function httpError(message: string, statusCode = 400) {
@@ -59,6 +60,9 @@ function toPerson(user: PeopleUser, hireable: boolean): PhotographerDto | null {
   if (!user.contributorProfile) return null
   const photosCount = user.photos.length
   const downloads = user.photos.reduce((sum, photo) => sum + photo.downloads, 0)
+  const accountType = (user.accountType === 'contributor' || user.accountType === 'photo_influencer' || user.accountType === 'photographer')
+    ? user.accountType
+    : 'photographer'
   return {
     handle: user.contributorProfile.handle,
     name: user.name,
@@ -66,6 +70,7 @@ function toPerson(user: PeopleUser, hireable: boolean): PhotographerDto | null {
     location: user.contributorProfile.location,
     bio: user.contributorProfile.bio,
     creatorKind: user.contributorProfile.creatorKind,
+    accountType,
     availability: hireable ? user.contributorProfile.availability : 'unavailable',
     dayRateUsd: hireable ? user.contributorProfile.dayRateUsd : null,
     represented: user.representation?.status === 'represented',
@@ -75,6 +80,26 @@ function toPerson(user: PeopleUser, hireable: boolean): PhotographerDto | null {
     profileViews: user.contributorProfile.profileViews,
     modelHandle: user.modelProfile?.handle ?? null,
   }
+}
+
+async function withDigitalIds(users: PeopleUser[], people: PhotographerDto[]): Promise<PhotographerDto[]> {
+  const byHandle = new Map(
+    users
+      .filter((user) => user.contributorProfile)
+      .map((user) => [user.contributorProfile!.handle, user] as const),
+  )
+  return Promise.all(people.map(async (person) => {
+    const user = byHandle.get(person.handle)
+    if (!user?.contributorProfile) return person
+    const cardType = contributorCardType(user.accountType, user.contributorProfile.creatorKind)
+    const digitalId = await ensureDigitalIdCard({
+      profileId: user.contributorProfile.id,
+      cardType,
+      handle: person.handle,
+      preferredToken: `seed-${person.handle}-${cardType}-id`,
+    })
+    return { ...person, digitalId }
+  }))
 }
 
 function toPick(user: { id: string; name: string; avatarUrl: string | null; accountType: string; contributorProfile: { handle: string; location: string | null } | null }): HomeContributorPick | null {
@@ -107,11 +132,12 @@ async function rankedPeople(accountType: string, exclude: string[], hireable: bo
     },
     include: userInclude,
   })
-  return users
+  const people = users
     .map((user) => toPerson(user, hireable))
     .filter((row): row is PhotographerDto => Boolean(row))
     .sort((a, b) => b.downloads - a.downloads || a.name.localeCompare(b.name))
     .slice(0, HOME_PEOPLE_LIMIT)
+  return withDigitalIds(users, people)
 }
 
 async function peopleByIds(ids: string[], accountType: string, hireable: boolean): Promise<PhotographerDto[]> {
@@ -126,11 +152,12 @@ async function peopleByIds(ids: string[], accountType: string, hireable: boolean
     include: userInclude,
   })
   const byId = new Map(users.map((user) => [user.id, user]))
-  return ids.flatMap((id) => {
+  const people = ids.flatMap((id) => {
     const user = byId.get(id)
     const person = user ? toPerson(user, hireable) : null
     return person ? [person] : []
   })
+  return withDigitalIds(users, people)
 }
 
 async function loadPeopleRail(

@@ -90,6 +90,16 @@ test.describe('Phase 45 + 55 web smoke', () => {
     await expect(page.getByRole('heading', { name: 'Latest from the Library' })).toBeVisible()
   })
 
+  test('D-R3: home spotlight Digital ID opens public card', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: 'Contributor Spotlight' })).toBeVisible()
+    const digitalId = page.getByRole('link', { name: /VueKumi Digital ID/i }).first()
+    await expect(digitalId).toBeVisible()
+    await digitalId.click()
+    await expect(page).toHaveURL(/\/id\//)
+    await expect(page.getByText(/VueKumi Digital ID/i).first()).toBeVisible()
+  })
+
   test('D-R2: library filters update the URL', async ({ page }) => {
     await page.goto('/search')
     await expect(page.getByRole('heading', { name: 'The library' })).toBeVisible()

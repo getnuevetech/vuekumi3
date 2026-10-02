@@ -1,8 +1,8 @@
 # VueKumi v3 discovery redesign — recommendations and implementation plan
 
-**Status: D-R2 shipped; D-R3 profiles / directories / Digital ID shipped on this branch.**
+**Status: D-R2 and D-R3 shipped on `main`.**
 Public pages use one marketplace chrome. Role-aware `/p` and `/m` layouts, `/models`
-talent directory, and `DigitalIdentityCard` + `/id/:token` are the D-R3 scope.
+talent directory, and `DigitalIdentityCard` + `/id/:token` (including home spotlight) are done.
 
 Sources reviewed 30 September 2026 against `main`:
 
@@ -28,8 +28,8 @@ Redesign the **public discovery surface** to the attached image-forward marketpl
 | v3 spec release | What it asks | On `main` today |
 | --- | --- | --- |
 | **R1 — Reconciliation** | RevenuePolicy, role/tier model, Open download events, country waitlist / ACTIVE enforcement | **Shipped.** `RevenuePolicy`, `OpenDownloadEvent`, library tiers, PDS country gates, Photo Influencer → Free Library only. |
-| **R2 — Discovery UI** | D01, D02, D03, D10; React Query; endless scroll | **Partial.** Routes and data exist. Visual system and page composition do not match the mockups. |
-| **R3 — Premium profiles** | D04–D07, directories, Digital ID / QR | **Partial.** `/p/:handle` and `/m/:handle` are thin profile cards plus a masonry grid. No Digital ID. `/models` is a photo grid, not a talent directory. |
+| **R2 — Discovery UI** | D01, D02, D03, D10; React Query; endless scroll | **Shipped (D-R2).** Marketplace chrome, home section map, library/category/photo layout. |
+| **R3 — Premium profiles** | D04–D07, directories, Digital ID / QR | **Shipped (D-R3).** Role-aware `/p`/`/m`, `/models` directory, Digital ID + home spotlight QR. |
 | **R4 — Rights & negotiation** | Invitations, proposals, identity behind OFF gates | **Shipped as foundations.** Identity verification stays OFF (Dec-Bio). |
 | **R5 — Finance** | Ledger lines, payout provider, withdrawals after approval | **Ledger shipped.** Withdrawal flag stays OFF. Do not invent Wise, tax rates, or a permanent split. |
 | **R6 — Expansion** | Brand Studio, Hire, API, Opportunity Engine, enterprise | **Foundations shipped.** Fees and dataset sales stay off (Dec-Fee, Dec-AI). |
