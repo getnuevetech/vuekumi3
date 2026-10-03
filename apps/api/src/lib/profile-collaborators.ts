@@ -79,12 +79,13 @@ export async function photographerCollaboratingModels(
 
   const seen = new Map<string, ProfileCollaboratorDto>()
   for (const row of rows) {
-    const profile = row.modelUser.modelProfile
-    if (!profile?.handle || seen.has(profile.handle)) continue
+    const modelUser = row.modelUser
+    const profile = modelUser?.modelProfile
+    if (!modelUser || !profile?.handle || seen.has(profile.handle)) continue
     seen.set(profile.handle, {
       handle: profile.handle,
-      name: row.modelUser.name,
-      avatarUrl: row.modelUser.avatarUrl,
+      name: modelUser.name,
+      avatarUrl: modelUser.avatarUrl,
       kind: 'model',
       location: profile.location,
     })
