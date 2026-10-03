@@ -141,6 +141,8 @@ test.describe('Phase 45 + 55 web smoke', () => {
     await page.goto('/m/ada-molefe')
     await expect(page.getByRole('heading', { name: 'Ada Molefe' })).toBeVisible()
     await expect(page.getByText(/Verified Model/i).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Collaborating photographers/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Thandiwe/i }).first()).toBeVisible()
   })
 
   test('D-R3: digital ID page has no private fields', async ({ page }) => {

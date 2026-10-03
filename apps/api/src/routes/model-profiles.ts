@@ -13,6 +13,7 @@ import {
   serializeCatalogPhoto,
 } from '../lib/catalog.js'
 import { ensureDigitalIdCard } from '../lib/digital-id.js'
+import { modelCollaboratingPhotographers } from '../lib/profile-collaborators.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPublicModel(
@@ -37,6 +38,7 @@ function toPublicModel(
     coverPhotoUrl?: string | null
     specialties?: string[]
     commercialAppearanceCount?: number
+    collaborators?: ModelPublicDto['collaborators']
     digitalId?: ModelPublicDto['digitalId']
   },
 ): ModelPublicDto | null {
@@ -57,6 +59,7 @@ function toPublicModel(
     memberSince: user.modelProfile.createdAt?.toISOString() ?? null,
     specialties: extras?.specialties ?? [],
     commercialAppearanceCount: extras?.commercialAppearanceCount ?? 0,
+    collaborators: extras?.collaborators ?? [],
     digitalId: extras?.digitalId ?? null,
   }
 }
@@ -219,7 +222,7 @@ export async function modelProfileRoutes(app: FastifyInstance) {
 
     const favorited = await favoriteIdSet(request.userId, ordered.map((p) => p.id))
 
-    const [cover, specialtyRows, commercialCount, digitalId] = await Promise.all([
+    const [cover, specialtyRows, commercialCount, digitalId, collaborators] = await Promise.all([
       prisma.photo.findFirst({
         where: modelPortfolioPhotoWhere(profile.userId),
         orderBy: [{ createdAt: 'desc' }],
@@ -246,6 +249,7 @@ export async function modelProfileRoutes(app: FastifyInstance) {
         handle: profile.handle,
         preferredToken: `seed-${profile.handle}-model-id`,
       }),
+      modelCollaboratingPhotographers(profile.userId),
     ])
 
     return {
@@ -254,6 +258,7 @@ export async function modelProfileRoutes(app: FastifyInstance) {
         coverPhotoUrl: cover?.src ?? null,
         specialties: specialtyRows.map((row) => row.category),
         commercialAppearanceCount: commercialCount,
+        collaborators,
         digitalId,
       },
       items: ordered.map((p) => serializeCatalogPhoto(p, request.userId ? favorited.has(p.id) : undefined)),

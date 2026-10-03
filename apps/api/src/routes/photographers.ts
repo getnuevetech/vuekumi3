@@ -16,6 +16,7 @@ import { accountHasFeature, accountTypesWithFeature } from '../lib/account-featu
 import { contributorCardType, ensureDigitalIdCard } from '../lib/digital-id.js'
 import { creatorKindWhere } from '../lib/creator-kind.js'
 import { followBlocked } from '../lib/follows.js'
+import { photographerCollaboratingModels } from '../lib/profile-collaborators.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPhotographer(
@@ -47,6 +48,7 @@ function toPhotographer(
     hireable?: boolean
     coverPhotoUrl?: string | null
     specialties?: string[]
+    collaborators?: PhotographerDto['collaborators']
     digitalId?: PhotographerDto['digitalId']
   },
 ): PhotographerDto | null {
@@ -75,6 +77,7 @@ function toPhotographer(
     coverPhotoUrl: extras?.coverPhotoUrl ?? null,
     memberSince: user.contributorProfile.createdAt?.toISOString() ?? null,
     specialties: extras?.specialties ?? [],
+    collaborators: extras?.collaborators ?? [],
     digitalId: extras?.digitalId ?? null,
   }
 }
@@ -307,12 +310,15 @@ export async function photographerRoutes(app: FastifyInstance) {
     ])
 
     const cardType = contributorCardType(profile.user.accountType, profile.creatorKind)
-    const digitalId = await ensureDigitalIdCard({
-      profileId: profile.id,
-      cardType,
-      handle: profile.handle,
-      preferredToken: `seed-${profile.handle}-${cardType}-id`,
-    })
+    const [digitalId, collaborators] = await Promise.all([
+      ensureDigitalIdCard({
+        profileId: profile.id,
+        cardType,
+        handle: profile.handle,
+        preferredToken: `seed-${profile.handle}-${cardType}-id`,
+      }),
+      photographerCollaboratingModels(profile.userId),
+    ])
 
     const photographer = toPhotographer(
       { ...profile.user, contributorProfile: profile, modelProfile: profile.user.modelProfile },
@@ -325,6 +331,7 @@ export async function photographerRoutes(app: FastifyInstance) {
         hireable: await accountHasFeature(profile.user.accountType, 'receive_bookings'),
         coverPhotoUrl: cover?.src ?? null,
         specialties: specialtyRows.map((row) => row.category),
+        collaborators,
         digitalId,
       },
     )

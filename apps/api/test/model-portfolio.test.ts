@@ -50,7 +50,12 @@ test('public model list and Ada / Kofi portfolios hide emails and keep photograp
   const ada = await app.inject({ method: 'GET', url: '/api/models/ada-molefe' })
   assert.equal(ada.statusCode, 200)
   const adaProfile = ada.json() as {
-    model: { handle: string; earns: boolean; photographerHandle: string | null }
+    model: {
+      handle: string
+      earns: boolean
+      photographerHandle: string | null
+      collaborators?: { handle: string; name: string; kind: string; avatarUrl?: string | null }[]
+    }
     items: { id: string; photographer: string; appearances?: { inviteEmail?: string | null; modelHandle?: string | null }[] }[]
   }
   assert.equal(adaProfile.model.handle, 'ada-molefe')
@@ -59,6 +64,9 @@ test('public model list and Ada / Kofi portfolios hide emails and keep photograp
   assert.equal(adaProfile.items.some((p) => p.id === 'afr-001'), true)
   assert.equal(adaProfile.items.every((p) => p.photographer !== 'ada-molefe'), true)
   assert.equal(adaProfile.items.find((p) => p.id === 'afr-001')?.photographer, 'thandiwe-nkosi')
+  const adaCollaborators = adaProfile.model.collaborators ?? []
+  assert.ok(adaCollaborators.some((row) => row.handle === 'thandiwe-nkosi' && row.kind === 'photographer'))
+  assert.equal(JSON.stringify(adaCollaborators).includes('@vuekumi.demo'), false)
   assert.equal(JSON.stringify(adaProfile).includes('ada@vuekumi.demo'), false)
   assert.equal(JSON.stringify(ada.json()).toLowerCase().includes('book this model'), false)
 
@@ -78,12 +86,25 @@ test('public model list and Ada / Kofi portfolios hide emails and keep photograp
   const kofiPhotographer = await app.inject({ method: 'GET', url: '/api/photographers/kofi-mensah' })
   assert.equal(kofiPhotographer.statusCode, 200)
   const kofiPhotos = kofiPhotographer.json() as {
-    photographer: { modelHandle?: string | null }
+    photographer: {
+      modelHandle?: string | null
+      collaborators?: { handle: string; kind: string }[]
+    }
     items: { id: string }[]
     total: number
   }
   assert.equal(kofiPhotos.photographer.modelHandle, 'kofi-mensah')
   assert.ok(kofiPhotos.total > kofiPortfolio.total)
+
+  const thandiwe = await app.inject({ method: 'GET', url: '/api/photographers/thandiwe-nkosi' })
+  assert.equal(thandiwe.statusCode, 200)
+  const thandiweBody = thandiwe.json() as {
+    photographer: { collaborators?: { handle: string; kind: string; name: string }[] }
+  }
+  assert.ok((thandiweBody.photographer.collaborators ?? []).some(
+    (row) => row.handle === 'ada-molefe' && row.kind === 'model',
+  ))
+  assert.equal(JSON.stringify(thandiweBody.photographer.collaborators).includes('@vuekumi.demo'), false)
 
   const photo = await app.inject({ method: 'GET', url: '/api/photos/afr-001' })
   assert.equal(photo.statusCode, 200)

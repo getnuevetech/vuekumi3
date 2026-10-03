@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { PhotoDto } from '@vuekumi/shared'
 import { AVAILABILITY_LABELS, formatDayRateUsd, isHireableAvailability } from '@vuekumi/shared'
 import { PhotoTileMasonry } from '../components/marketplace'
 import { DigitalIdCard } from '../components/marketplace/DigitalIdCard'
@@ -46,14 +45,7 @@ export default function ModelProfile() {
   const specialties = profile?.specialties?.length
     ? profile.specialties
     : [...new Set(items.map((photo) => photo.category))].slice(0, 6)
-  const photographers = useMemo(() => {
-    const seen = new Map<string, PhotoDto>()
-    for (const photo of items) {
-      if (!photo.photographer || seen.has(photo.photographer)) continue
-      seen.set(photo.photographer, photo)
-    }
-    return [...seen.values()].slice(0, 8)
-  }, [items])
+  const photographers = profile?.collaborators ?? []
   const since = memberLabel(profile?.memberSince)
   const hireable = profile ? isHireableAvailability(profile.availability) : false
 
@@ -182,16 +174,16 @@ export default function ModelProfile() {
           <section className="mt-12">
             <h2 className="font-display text-3xl text-ink">Collaborating photographers</h2>
             <div className="mt-4 flex gap-5 overflow-x-auto no-scrollbar">
-              {photographers.map((photo) => (
-                <Link key={photo.photographer} to={`/p/${photo.photographer}`} className="w-28 shrink-0 text-center">
-                  {photo.photographerAvatar ? (
-                    <img src={photo.photographerAvatar} alt="" className="mx-auto h-20 w-20 rounded-full object-cover" />
+              {photographers.map((person) => (
+                <Link key={person.handle} to={`/p/${person.handle}`} className="w-28 shrink-0 text-center">
+                  {person.avatarUrl ? (
+                    <img src={person.avatarUrl} alt="" className="mx-auto h-20 w-20 rounded-full object-cover" />
                   ) : (
                     <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-cream text-lg font-semibold">
-                      {(photo.photographerName ?? photo.photographer).slice(0, 1)}
+                      {person.name.slice(0, 1)}
                     </span>
                   )}
-                  <p className="mt-2 truncate text-sm font-semibold text-ink">{photo.photographerName ?? photo.photographer}</p>
+                  <p className="mt-2 truncate text-sm font-semibold text-ink">{person.name}</p>
                 </Link>
               ))}
             </div>

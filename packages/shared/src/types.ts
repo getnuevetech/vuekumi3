@@ -279,6 +279,15 @@ export interface PaginatedPhotos {
   facets?: CatalogFacets
 }
 
+/** Public collaborator chip for profile rails — no email, phone, or economics. */
+export interface ProfileCollaboratorDto {
+  handle: string
+  name: string
+  avatarUrl: string | null
+  kind: 'photographer' | 'model'
+  location?: string | null
+}
+
 export interface PhotographerDto {
   handle: string
   name: string
@@ -303,6 +312,8 @@ export interface PhotographerDto {
   memberSince?: string | null
   /** Top category labels from public portfolio. */
   specialties?: string[]
+  /** Models with approved likeness on this photographer's public photos. */
+  collaborators?: ProfileCollaboratorDto[]
   /** Digital ID preview — never includes PII beyond public profile fields. */
   digitalId?: import('./digital-id.js').DigitalIdPreviewDto | null
 }
@@ -324,6 +335,8 @@ export interface ModelPublicDto {
   specialties?: string[]
   /** Approved commercial appearances (public count only). */
   commercialAppearanceCount?: number
+  /** Distinct copyright owners on approved, profile-visible appearances. */
+  collaborators?: ProfileCollaboratorDto[]
   digitalId?: import('./digital-id.js').DigitalIdPreviewDto | null
 }
 

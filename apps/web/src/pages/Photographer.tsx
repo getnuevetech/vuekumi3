@@ -238,6 +238,26 @@ export default function Photographer() {
           </section>
         )}
 
+        {(profile.collaborators?.length ?? 0) > 0 && !libraryTier && (
+          <section className="mt-12">
+            <SectionTitle title="Collaborating models" note="Approved likeness on public photographs." />
+            <div className="mt-4 flex gap-5 overflow-x-auto no-scrollbar">
+              {(profile.collaborators ?? []).map((person) => (
+                <Link key={person.handle} to={`/m/${person.handle}`} className="w-28 shrink-0 text-center">
+                  {person.avatarUrl ? (
+                    <img src={person.avatarUrl} alt="" className="mx-auto h-20 w-20 rounded-full object-cover" />
+                  ) : (
+                    <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-cream text-lg font-semibold">
+                      {person.name.slice(0, 1)}
+                    </span>
+                  )}
+                  <p className="mt-2 truncate text-sm font-semibold text-ink">{person.name}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="mt-12">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <SectionTitle title="Portfolio" note={`${total} photograph${total === 1 ? '' : 's'}`} />
