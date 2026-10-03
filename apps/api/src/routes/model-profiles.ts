@@ -14,6 +14,7 @@ import {
 } from '../lib/catalog.js'
 import { ensureDigitalIdCard } from '../lib/digital-id.js'
 import { modelCollaboratingPhotographers } from '../lib/profile-collaborators.js'
+import { modelPublicCollections } from '../lib/profile-collections.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPublicModel(
@@ -39,6 +40,7 @@ function toPublicModel(
     specialties?: string[]
     commercialAppearanceCount?: number
     collaborators?: ModelPublicDto['collaborators']
+    collections?: ModelPublicDto['collections']
     digitalId?: ModelPublicDto['digitalId']
   },
 ): ModelPublicDto | null {
@@ -60,6 +62,7 @@ function toPublicModel(
     specialties: extras?.specialties ?? [],
     commercialAppearanceCount: extras?.commercialAppearanceCount ?? 0,
     collaborators: extras?.collaborators ?? [],
+    collections: extras?.collections ?? [],
     digitalId: extras?.digitalId ?? null,
   }
 }
@@ -222,7 +225,7 @@ export async function modelProfileRoutes(app: FastifyInstance) {
 
     const favorited = await favoriteIdSet(request.userId, ordered.map((p) => p.id))
 
-    const [cover, specialtyRows, commercialCount, digitalId, collaborators] = await Promise.all([
+    const [cover, specialtyRows, commercialCount, digitalId, collaborators, collections] = await Promise.all([
       prisma.photo.findFirst({
         where: modelPortfolioPhotoWhere(profile.userId),
         orderBy: [{ createdAt: 'desc' }],
@@ -250,6 +253,7 @@ export async function modelProfileRoutes(app: FastifyInstance) {
         preferredToken: `seed-${profile.handle}-model-id`,
       }),
       modelCollaboratingPhotographers(profile.userId),
+      modelPublicCollections(profile.userId),
     ])
 
     return {
@@ -259,6 +263,7 @@ export async function modelProfileRoutes(app: FastifyInstance) {
         specialties: specialtyRows.map((row) => row.category),
         commercialAppearanceCount: commercialCount,
         collaborators,
+        collections,
         digitalId,
       },
       items: ordered.map((p) => serializeCatalogPhoto(p, request.userId ? favorited.has(p.id) : undefined)),

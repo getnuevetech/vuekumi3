@@ -190,6 +190,31 @@ export default function ModelProfile() {
           </section>
         )}
 
+        {(profile.collections?.length ?? 0) > 0 && (
+          <section className="mt-12">
+            <h2 className="font-display text-3xl text-ink">Featured collections</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(profile.collections ?? []).map((collection) => (
+                <Link
+                  key={collection.id}
+                  to={`/c/${collection.id}`}
+                  className="group overflow-hidden rounded-2xl border border-sand bg-white"
+                >
+                  <div className="aspect-[16/10] bg-cream">
+                    {collection.coverSrc ? (
+                      <img src={collection.coverSrc} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    ) : null}
+                  </div>
+                  <div className="p-4">
+                    <p className="font-semibold text-ink">{collection.name}</p>
+                    <p className="mt-1 text-xs text-ink-soft">{collection.photoCount} photograph{collection.photoCount === 1 ? '' : 's'}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="mt-12">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>

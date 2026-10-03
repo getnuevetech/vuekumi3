@@ -17,6 +17,7 @@ import { contributorCardType, ensureDigitalIdCard } from '../lib/digital-id.js'
 import { creatorKindWhere } from '../lib/creator-kind.js'
 import { followBlocked } from '../lib/follows.js'
 import { photographerCollaboratingModels } from '../lib/profile-collaborators.js'
+import { photographerPublicCollections } from '../lib/profile-collections.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPhotographer(
@@ -49,6 +50,7 @@ function toPhotographer(
     coverPhotoUrl?: string | null
     specialties?: string[]
     collaborators?: PhotographerDto['collaborators']
+    collections?: PhotographerDto['collections']
     digitalId?: PhotographerDto['digitalId']
   },
 ): PhotographerDto | null {
@@ -78,6 +80,7 @@ function toPhotographer(
     memberSince: user.contributorProfile.createdAt?.toISOString() ?? null,
     specialties: extras?.specialties ?? [],
     collaborators: extras?.collaborators ?? [],
+    collections: extras?.collections ?? [],
     digitalId: extras?.digitalId ?? null,
   }
 }
@@ -310,7 +313,7 @@ export async function photographerRoutes(app: FastifyInstance) {
     ])
 
     const cardType = contributorCardType(profile.user.accountType, profile.creatorKind)
-    const [digitalId, collaborators] = await Promise.all([
+    const [digitalId, collaborators, collections] = await Promise.all([
       ensureDigitalIdCard({
         profileId: profile.id,
         cardType,
@@ -318,6 +321,7 @@ export async function photographerRoutes(app: FastifyInstance) {
         preferredToken: `seed-${profile.handle}-${cardType}-id`,
       }),
       photographerCollaboratingModels(profile.userId),
+      photographerPublicCollections(profile.userId),
     ])
 
     const photographer = toPhotographer(
@@ -332,6 +336,7 @@ export async function photographerRoutes(app: FastifyInstance) {
         coverPhotoUrl: cover?.src ?? null,
         specialties: specialtyRows.map((row) => row.category),
         collaborators,
+        collections,
         digitalId,
       },
     )

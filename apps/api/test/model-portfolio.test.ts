@@ -105,6 +105,16 @@ test('public model list and Ada / Kofi portfolios hide emails and keep photograp
     (row) => row.handle === 'ada-molefe' && row.kind === 'model',
   ))
   assert.equal(JSON.stringify(thandiweBody.photographer.collaborators).includes('@vuekumi.demo'), false)
+  const thandiweCollections = (thandiwe.json() as {
+    photographer: { collections?: { name: string; photoCount: number; coverSrc?: string | null }[] }
+  }).photographer.collections ?? []
+  assert.ok(thandiweCollections.some((row) => row.name === 'Southern light' && row.photoCount >= 1))
+
+  const adaCollections = (ada.json() as {
+    model: { collections?: { name: string; photoCount: number }[] }
+  }).model.collections ?? []
+  assert.ok(adaCollections.some((row) => row.name === 'Southern light'))
+  assert.equal(JSON.stringify(adaCollections).includes('shareToken'), false)
 
   const photo = await app.inject({ method: 'GET', url: '/api/photos/afr-001' })
   assert.equal(photo.statusCode, 200)

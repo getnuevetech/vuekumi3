@@ -894,6 +894,27 @@ async function main() {
   const amaraUserId = contributorUsers.get('amara-okafor')
   const thandiweUserId = contributorUsers.get('thandiwe-nkosi')
   const kofiUserId = contributorUsers.get('kofi-mensah')
+
+  // Public discovery collection — surfaces on Thandiwe + Ada profile rails (D-R3).
+  if (thandiweUserId) {
+    await prisma.collection.create({
+      data: {
+        ownerId: thandiweUserId,
+        name: 'Southern light',
+        description: 'Public board of Cape and Kalahari work.',
+        visibility: 'public',
+        shareToken: randomBytes(16).toString('hex'),
+        photos: {
+          create: [
+            { photoId: 'afr-001', addedById: thandiweUserId },
+            { photoId: 'afr-003', addedById: thandiweUserId },
+            { photoId: 'afr-008', addedById: thandiweUserId },
+          ],
+        },
+      },
+    })
+  }
+
   if (amaraUserId && thandiweUserId) {
     await prisma.photographerFollow.createMany({
       data: [
