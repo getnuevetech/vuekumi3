@@ -288,6 +288,13 @@ export interface ProfileCollectionSummaryDto {
   coverSrc: string | null
 }
 
+/** Compact portfolio thumbs for directory cards. */
+export interface ProfilePortfolioThumbDto {
+  id: string
+  src: string
+  title: string
+}
+
 /** Public collaborator chip for profile rails — no email, phone, or economics. */
 export interface ProfileCollaboratorDto {
   handle: string
@@ -325,6 +332,8 @@ export interface PhotographerDto {
   collaborators?: ProfileCollaboratorDto[]
   /** Public collections featuring this photographer's work. */
   collections?: ProfileCollectionSummaryDto[]
+  /** Directory card portfolio strip (top public photos). */
+  portfolioStrip?: ProfilePortfolioThumbDto[]
   /** Digital ID preview — never includes PII beyond public profile fields. */
   digitalId?: import('./digital-id.js').DigitalIdPreviewDto | null
 }
@@ -350,6 +359,8 @@ export interface ModelPublicDto {
   collaborators?: ProfileCollaboratorDto[]
   /** Public collections featuring this model's approved appearances. */
   collections?: ProfileCollectionSummaryDto[]
+  /** Directory card portfolio strip (top approved appearances). */
+  portfolioStrip?: ProfilePortfolioThumbDto[]
   digitalId?: import('./digital-id.js').DigitalIdPreviewDto | null
 }
 

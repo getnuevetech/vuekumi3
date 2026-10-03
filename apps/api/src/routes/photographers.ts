@@ -18,6 +18,7 @@ import { creatorKindWhere } from '../lib/creator-kind.js'
 import { followBlocked } from '../lib/follows.js'
 import { photographerCollaboratingModels } from '../lib/profile-collaborators.js'
 import { photographerPublicCollections } from '../lib/profile-collections.js'
+import { photographerDirectoryExtras } from '../lib/profile-directory.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPhotographer(
@@ -51,6 +52,7 @@ function toPhotographer(
     specialties?: string[]
     collaborators?: PhotographerDto['collaborators']
     collections?: PhotographerDto['collections']
+    portfolioStrip?: PhotographerDto['portfolioStrip']
     digitalId?: PhotographerDto['digitalId']
   },
 ): PhotographerDto | null {
@@ -81,6 +83,7 @@ function toPhotographer(
     specialties: extras?.specialties ?? [],
     collaborators: extras?.collaborators ?? [],
     collections: extras?.collections ?? [],
+    portfolioStrip: extras?.portfolioStrip ?? [],
     digitalId: extras?.digitalId ?? null,
   }
 }
@@ -159,6 +162,12 @@ export async function photographerRoutes(app: FastifyInstance) {
     const start = (query.page - 1) * query.limit
     const pageItems = hireScoped.slice(start, start + query.limit)
 
+    const extrasByUser = await photographerDirectoryExtras(
+      pageItems
+        .map((row) => users.find((user) => user.contributorProfile?.handle === row.handle)?.id)
+        .filter((id): id is string => Boolean(id)),
+    )
+
     const enriched = await Promise.all(pageItems.map(async (row) => {
       const profile = users.find((user) => user.contributorProfile?.handle === row.handle)
       if (!profile?.contributorProfile) return row
@@ -169,12 +178,16 @@ export async function photographerRoutes(app: FastifyInstance) {
         handle: row.handle,
         preferredToken: `seed-${row.handle}-${cardType}-id`,
       })
+      const extras = extrasByUser.get(profile.id)
       return {
         ...row,
         accountType: (profile.accountType === 'contributor' || profile.accountType === 'photo_influencer' || profile.accountType === 'photographer')
           ? profile.accountType
           : 'photographer' as const,
         memberSince: profile.contributorProfile.createdAt.toISOString(),
+        specialties: extras?.specialties ?? [],
+        portfolioStrip: extras?.portfolioStrip ?? [],
+        coverPhotoUrl: extras?.coverPhotoUrl ?? null,
         digitalId,
       }
     }))

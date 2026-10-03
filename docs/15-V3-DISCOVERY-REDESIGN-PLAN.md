@@ -1,6 +1,6 @@
 # VueKumi v3 discovery redesign — recommendations and implementation plan
 
-**Status: D-R2 and D-R3 shipped on `main` (including home spotlight Digital ID, admin revoke, portfolio tier filters, collaborator rails, and profile collection summaries).**
+**Status: D-R2 and D-R3 shipped on `main` (Digital ID, portfolio filters, collaborator rails, collection summaries; directory specialty + portfolio strips in flight).**
 Public pages use one marketplace chrome. Role-aware `/p` and `/m` layouts, `/models`
 talent directory, and `DigitalIdentityCard` + `/id/:token` are done.
 

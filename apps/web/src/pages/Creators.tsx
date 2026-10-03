@@ -121,32 +121,64 @@ export default function Creators() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((creator) => {
             const openCreator = creator.creatorKind === 'photo_influencer' || creator.accountType === 'photo_influencer'
+            const strip = creator.portfolioStrip ?? []
+            const specialties = creator.specialties ?? []
             return (
               <article key={creator.handle} className="overflow-hidden rounded-2xl border border-sand bg-white transition-colors hover:border-ink">
-                <Link to={`/p/${creator.handle}`} className="group block p-5">
-                  {creator.avatarUrl ? (
-                    <img src={creator.avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover" />
+                <Link to={`/p/${creator.handle}`} className="group block">
+                  {strip.length > 0 ? (
+                    <div className="grid grid-cols-4 gap-0.5 bg-cream">
+                      {strip.slice(0, 4).map((photo) => (
+                        <img key={photo.id} src={photo.src} alt="" className="aspect-square w-full object-cover" />
+                      ))}
+                    </div>
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-cream text-2xl font-semibold">{creator.name.slice(0, 1)}</div>
+                    <div className="flex aspect-[4/1] items-center justify-center bg-cream p-5">
+                      {creator.avatarUrl ? (
+                        <img src={creator.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-2xl font-semibold">{creator.name.slice(0, 1)}</div>
+                      )}
+                    </div>
                   )}
-                  <h2 className="font-display mt-4 text-2xl tracking-tight group-hover:text-terra">
-                    {creator.name}
-                  </h2>
-                  <p className="mt-1 text-sm text-ink-soft">
-                    @{creator.handle} · {creator.location ?? 'Africa'}
-                  </p>
-                  <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-terra">
-                    {openCreator ? 'Photo Influencer · Open Creator' : creator.accountType === 'contributor' ? 'Contributor' : creatorKindLabel(creator.creatorKind)}
-                  </p>
-                  {isHireableAvailability(creator.availability) && (
-                    <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-ink-soft">
-                      {AVAILABILITY_LABELS[creator.availability]}
-                      {formatDayRateUsd(creator.dayRateUsd) ? ` · ${formatDayRateUsd(creator.dayRateUsd)}` : ''}
+                  <div className="p-5">
+                    <div className="flex items-center gap-3">
+                      {creator.avatarUrl ? (
+                        <img src={creator.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cream text-lg font-semibold">{creator.name.slice(0, 1)}</div>
+                      )}
+                      <div className="min-w-0">
+                        <h2 className="font-display truncate text-2xl tracking-tight group-hover:text-terra">
+                          {creator.name}
+                        </h2>
+                        <p className="truncate text-sm text-ink-soft">
+                          @{creator.handle} · {creator.location ?? 'Africa'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-terra">
+                      {openCreator ? 'Photo Influencer · Open Creator' : creator.accountType === 'contributor' ? 'Contributor' : creatorKindLabel(creator.creatorKind)}
                     </p>
-                  )}
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-ink-faint">
-                    {creator.photosCount} photograph{creator.photosCount === 1 ? '' : 's'} · {fmt(creator.followers)} followers
-                  </p>
+                    {specialties.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {specialties.map((label) => (
+                          <span key={label} className="rounded-full border border-sand px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {isHireableAvailability(creator.availability) && (
+                      <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-ink-soft">
+                        {AVAILABILITY_LABELS[creator.availability]}
+                        {formatDayRateUsd(creator.dayRateUsd) ? ` · ${formatDayRateUsd(creator.dayRateUsd)}` : ''}
+                      </p>
+                    )}
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-ink-faint">
+                      {creator.photosCount} photograph{creator.photosCount === 1 ? '' : 's'} · {fmt(creator.followers)} followers
+                    </p>
+                  </div>
                 </Link>
                 <div className="flex flex-wrap gap-2 border-t border-sand px-5 py-3">
                   {isHireableAvailability(creator.availability) && (

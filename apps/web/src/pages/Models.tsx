@@ -104,6 +104,22 @@ export default function Models() {
                     </div>
                     <h2 className="mt-2 font-display text-2xl text-ink">{model.name}</h2>
                     <p className="text-sm text-ink-soft">@{model.handle} · {model.location ?? 'Africa'}</p>
+                    {(model.specialties?.length ?? 0) > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(model.specialties ?? []).map((label) => (
+                          <span key={label} className="rounded-full border border-sand px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {(model.portfolioStrip?.length ?? 0) > 0 && (
+                      <div className="mt-3 grid grid-cols-4 gap-1">
+                        {(model.portfolioStrip ?? []).slice(0, 4).map((photo) => (
+                          <img key={photo.id} src={photo.src} alt="" className="aspect-square w-full rounded-md object-cover" />
+                        ))}
+                      </div>
+                    )}
                     <p className="mt-2 text-xs text-ink-faint">
                       {fmt(model.photosCount)} appearance{model.photosCount === 1 ? '' : 's'}
                       {model.dayRateUsd != null && hireable ? ` · ${formatDayRateUsd(model.dayRateUsd)}` : ''}

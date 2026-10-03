@@ -15,6 +15,7 @@ import {
 import { ensureDigitalIdCard } from '../lib/digital-id.js'
 import { modelCollaboratingPhotographers } from '../lib/profile-collaborators.js'
 import { modelPublicCollections } from '../lib/profile-collections.js'
+import { modelDirectoryExtras } from '../lib/profile-directory.js'
 import { prisma } from '../lib/prisma.js'
 
 function toPublicModel(
@@ -41,6 +42,7 @@ function toPublicModel(
     commercialAppearanceCount?: number
     collaborators?: ModelPublicDto['collaborators']
     collections?: ModelPublicDto['collections']
+    portfolioStrip?: ModelPublicDto['portfolioStrip']
     digitalId?: ModelPublicDto['digitalId']
   },
 ): ModelPublicDto | null {
@@ -63,6 +65,7 @@ function toPublicModel(
     commercialAppearanceCount: extras?.commercialAppearanceCount ?? 0,
     collaborators: extras?.collaborators ?? [],
     collections: extras?.collections ?? [],
+    portfolioStrip: extras?.portfolioStrip ?? [],
     digitalId: extras?.digitalId ?? null,
   }
 }
@@ -122,6 +125,12 @@ export async function modelProfileRoutes(app: FastifyInstance) {
     const start = (query.page - 1) * query.limit
     const pageItems = items.slice(start, start + query.limit)
 
+    const extrasByUser = await modelDirectoryExtras(
+      pageItems
+        .map((row) => users.find((user) => user.modelProfile?.handle === row.handle)?.id)
+        .filter((id): id is string => Boolean(id)),
+    )
+
     const enriched = await Promise.all(pageItems.map(async (row) => {
       const profile = users.find((user) => user.modelProfile?.handle === row.handle)
       if (!profile?.modelProfile) return row
@@ -131,9 +140,13 @@ export async function modelProfileRoutes(app: FastifyInstance) {
         handle: row.handle,
         preferredToken: `seed-${row.handle}-model-id`,
       })
+      const extras = extrasByUser.get(profile.id)
       return {
         ...row,
         memberSince: profile.modelProfile.createdAt.toISOString(),
+        specialties: extras?.specialties ?? row.specialties ?? [],
+        portfolioStrip: extras?.portfolioStrip ?? [],
+        coverPhotoUrl: extras?.coverPhotoUrl ?? row.coverPhotoUrl ?? null,
         digitalId,
       }
     }))

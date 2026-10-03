@@ -33,7 +33,10 @@ test('public model list and Ada / Kofi portfolios hide emails and keep photograp
   const body = JSON.stringify(listed)
   assert.equal(body.includes('@vuekumi.demo'), false)
 
-  const adaCard = listed.items.find((row) => row.handle === 'ada-molefe')
+  const adaCard = listed.items.find((row) => row.handle === 'ada-molefe') as typeof listed.items[number] & {
+    specialties?: string[]
+    portfolioStrip?: { id: string; src: string }[]
+  }
   const kofiCard = listed.items.find((row) => row.handle === 'kofi-mensah')
   assert.ok(adaCard, 'Ada is listed')
   assert.ok(kofiCard, 'Kofi is listed')
@@ -43,6 +46,19 @@ test('public model list and Ada / Kofi portfolios hide emails and keep photograp
   assert.equal(kofiCard?.earns, false)
   assert.ok((adaCard?.photosCount ?? 0) >= 1)
   assert.ok((kofiCard?.photosCount ?? 0) >= 1)
+  assert.ok((adaCard.portfolioStrip?.length ?? 0) >= 1)
+  assert.ok((adaCard.specialties?.length ?? 0) >= 1)
+
+  const photographers = await app.inject({ method: 'GET', url: '/api/photographers?kind=photographer&limit=50' })
+  assert.equal(photographers.statusCode, 200)
+  const photographerList = photographers.json() as {
+    items: { handle: string; specialties?: string[]; portfolioStrip?: { id: string; src: string }[] }[]
+  }
+  const thandiweCard = photographerList.items.find((row) => row.handle === 'thandiwe-nkosi')
+  assert.ok(thandiweCard)
+  assert.ok((thandiweCard?.portfolioStrip?.length ?? 0) >= 1)
+  assert.ok((thandiweCard?.specialties?.length ?? 0) >= 1)
+  assert.equal(JSON.stringify(thandiweCard?.portfolioStrip).includes('@vuekumi.demo'), false)
 
   const missing = await app.inject({ method: 'GET', url: '/api/models/nomsa-dlamini' })
   assert.equal(missing.statusCode, 404)

@@ -17,11 +17,20 @@ test.describe('Phase 45 + 55 web smoke', () => {
   test('models directory and seed profile load', async ({ page }) => {
     await page.goto('/models')
     await expect(page.getByRole('heading', { name: 'Models.' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Ada Molefe/i }).first()).toBeVisible()
 
     await page.goto('/m/ada-molefe')
     await expect(page.getByRole('heading', { name: 'Ada Molefe' })).toBeVisible()
     await expect(page.getByText(/@ada-molefe · Gaborone/i).first()).toBeVisible()
     await expect(page.getByText(/Verified Model/i).first()).toBeVisible()
+  })
+
+  test('D-R3: creators directory shows specialty and portfolio strip', async ({ page }) => {
+    await page.goto('/creators')
+    await expect(page.getByRole('heading').first()).toBeVisible()
+    const thandiwe = page.getByRole('article').filter({ hasText: /Thandiwe/i }).first()
+    await expect(thandiwe).toBeVisible()
+    await expect(thandiwe.locator('img').first()).toBeVisible()
   })
 
   test('pricing, legal, and DMCA public pages load', async ({ page }) => {
