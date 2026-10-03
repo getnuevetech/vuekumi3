@@ -50,6 +50,9 @@ async function main() {
   await prisma.agencyInvite.deleteMany()
   await prisma.likenessCheck.deleteMany()
   await prisma.photoAppearance.deleteMany()
+  // Digital ID cards have no FK to profiles; clear them before wiping people
+  // so preferred seed tokens are not left pointing at deleted profile ids.
+  await prisma.digitalIdentityCard.deleteMany()
   await prisma.modelProfile.deleteMany()
   await prisma.modelRelease.deleteMany()
   await prisma.moderationItem.deleteMany()

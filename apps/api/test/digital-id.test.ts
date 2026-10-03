@@ -77,6 +77,51 @@ test('digital ID public payload excludes private fields and links to profile', a
   await app.close()
 })
 
+test('ensureDigitalIdCard ignores orphaned preferred tokens after profile wipe', async () => {
+  const influencer = await prisma.contributorProfile.findFirst({
+    where: { handle: 'amara-okafor' },
+  })
+  assert.ok(influencer)
+
+  const preferred = 'seed-amara-okafor-photo_influencer-id'
+  await prisma.digitalIdentityCard.deleteMany({
+    where: { OR: [{ profileId: influencer.id }, { publicToken: preferred }] },
+  })
+  // Simulate a re-seed that deleted profiles but left the preferred token behind.
+  await prisma.digitalIdentityCard.create({
+    data: {
+      profileId: 'orphan-profile-id-from-previous-seed',
+      cardType: 'photo_influencer',
+      publicToken: preferred,
+      status: 'active',
+    },
+  })
+
+  const preview = await ensureDigitalIdCard({
+    profileId: influencer.id,
+    cardType: 'photo_influencer',
+    handle: influencer.handle,
+    preferredToken: preferred,
+  })
+  assert.notEqual(preview.token, preferred)
+  assert.match(preview.token, /^vkid-pho-/)
+
+  const owned = await prisma.digitalIdentityCard.findFirst({
+    where: { profileId: influencer.id, cardType: 'photo_influencer' },
+  })
+  assert.ok(owned)
+  assert.equal(owned.publicToken, preview.token)
+
+  // Clean preferred token back for later seed/e2e determinism.
+  await prisma.digitalIdentityCard.deleteMany({
+    where: { publicToken: preferred },
+  })
+  await prisma.digitalIdentityCard.update({
+    where: { id: owned.id },
+    data: { publicToken: preferred },
+  })
+})
+
 test('admin can revoke and reinstate a Digital ID from the account screen', async () => {
   function cookies(res: { headers: Record<string, unknown> }) {
     const raw = res.headers['set-cookie']
